@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">VolumeProfiler</string>
+    <string name="tab_scheduler">Scheduler</string>
+    <string name="tab_profiles">Profiles</string>
+    <string name="workingDaysTitle">Select the days on which the profile activates</string>
+    <string name="cancel">Cancel</string>
+    <string name="apply">Apply</string>
+    <string-array name="daysOfWeek">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+</resources>
