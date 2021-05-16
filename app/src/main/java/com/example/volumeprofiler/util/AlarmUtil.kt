@@ -18,7 +18,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 
  /*
-   * Utility class which has useful methods for settings alarms, dealing with date objects and schedules
+   *  Utility class which has useful methods for settings alarms, dealing with date objects and schedules
   */
 
 class AlarmUtil constructor (val context: Context) {
@@ -67,11 +67,12 @@ class AlarmUtil constructor (val context: Context) {
                 }
             }
         }
+        val currentTimeInMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() + delay, pendingIntent)
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
         else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() + delay, pendingIntent)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
     }
 
@@ -151,6 +152,9 @@ class AlarmUtil constructor (val context: Context) {
         private fun getNextDayOnSchedule(eventOccurrences: Array<Int>): DayOfWeek? {
             if (eventOccurrences.isEmpty()) {
                 return null
+            }
+            if (eventOccurrences.size == 1) {
+                return DayOfWeek.of(eventOccurrences[0])
             }
             val today = LocalDateTime.now().dayOfWeek.value
             for (i in eventOccurrences) {

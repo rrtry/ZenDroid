@@ -8,7 +8,8 @@ import java.util.UUID
 @Entity
 data class Profile(var title: String,
                    @PrimaryKey val id: UUID = UUID.randomUUID(),
-                   var mediaVolume: Int = 0, var callVolume: Int = 0,
+                   var mediaVolume: Int = 0,
+                   var callVolume: Int = 0,
                    var notificationVolume: Int = 0,
                    var ringVolume: Int = 0,
                    var alarmVolume: Int = 0,

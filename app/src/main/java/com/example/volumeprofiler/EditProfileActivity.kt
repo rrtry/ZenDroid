@@ -115,7 +115,7 @@ class EditProfileActivity: AppCompatActivity() {
         }
         else {
             if (viewModel.mutableProfile == null) {
-                viewModel.mutableProfile = Profile("Profile", id = UUID.fromString("fa3c5c9a-dbe7-4cbd-a2fc-983d1214c0ba"))
+                viewModel.mutableProfile = Profile("Profile")
             }
             supportActionBar?.title = "Create profile"
         }
@@ -153,7 +153,7 @@ class EditProfileActivity: AppCompatActivity() {
     }
 
     private fun reScheduleAlarm(event: Event, profile: Profile): Unit {
-        val eventOccurrences: Array<Int> = event.workingDays.toCharArray().map { it.toInt() }.toTypedArray()
+        val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId)

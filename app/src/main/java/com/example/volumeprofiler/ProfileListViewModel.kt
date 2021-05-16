@@ -3,6 +3,7 @@ package com.example.volumeprofiler
 import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
+import java.util.*
 
 class ProfileListViewModel: ViewModel() {
 
@@ -16,7 +17,8 @@ class ProfileListViewModel: ViewModel() {
 
     fun removeProfile(profile: Profile): Unit {
         viewModelScope.launch {
-            associatedEventsLiveData.value = repository.getProfileWithScheduledEvents(profile.id)
+            val id: UUID = profile.id
+            associatedEventsLiveData.value = repository.getProfileWithScheduledEvents(id)
             Log.i("ProfileListViewModel", associatedEventsLiveData.value?.size.toString())
             repository.removeProfile(profile)
         }

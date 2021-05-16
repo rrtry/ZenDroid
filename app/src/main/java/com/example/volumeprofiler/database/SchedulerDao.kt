@@ -26,4 +26,7 @@ interface SchedulerDao {
 
     @Query("SELECT * FROM Profile INNER JOIN Event ON profile.id = Event.profileUUID WHERE profile.id = (:id) AND event.isScheduled = 1")
     suspend fun getProfileWithScheduledEvents(id: UUID): List<ProfileAndEvent>?
+
+    @Query("SELECT * FROM Profile INNER JOIN Event ON Event.eventId = (:id) AND event.isScheduled = 1")
+    fun observeScheduledEventWithProfile(id: Long): LiveData<ProfileAndEvent?>
 }

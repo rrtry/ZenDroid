@@ -16,15 +16,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        supportActionBar?.title = "Volume Scheduler"
+        supportActionBar?.title = "Scheduler"
         viewPager = findViewById(R.id.pager)
         val pagerAdapter = ScreenSlidePagerAdapter(this)
         viewPager.adapter = pagerAdapter
         setupTabLayout()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
     }
 
     private fun setupTabLayout(): Unit {

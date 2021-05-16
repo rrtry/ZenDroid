@@ -2,10 +2,8 @@ package com.example.volumeprofiler
 
 import android.util.Log
 import androidx.lifecycle.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.*
 
 class EditEventViewModel: ViewModel() {
 
@@ -22,6 +20,7 @@ class EditEventViewModel: ViewModel() {
         get() {
             return repository.observeProfiles()
         }
+    var profileAndEventLiveData: LiveData<ProfileAndEvent?> = Transformations.switchMap(eventIdLiveData) { eventId -> repository.observeScheduledEventWithProfile(eventId) }
 
     fun selectEvent(id: Long): Unit {
         eventIdLiveData.value = id
@@ -29,6 +28,19 @@ class EditEventViewModel: ViewModel() {
 
     fun selectMutableEvent(event: Event) {
         mutableEvent.value = event
+    }
+
+    fun updateEvent(event: Event) {
+        viewModelScope.launch {
+            repository.updateEvent(event)
+        }
+    }
+
+    fun addEvent(event: Event) {
+        Log.i("EditEventViewModel", "addEvent")
+        viewModelScope.launch {
+            repository.addEvent(event)
+        }
     }
 
     override fun onCleared(): Unit {

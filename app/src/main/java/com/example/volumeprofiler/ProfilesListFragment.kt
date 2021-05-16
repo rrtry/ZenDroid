@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
@@ -25,13 +26,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.util.AlarmUtil
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class ProfilesListFragment: Fragment(), AnimImplementation, AlarmReceiver.Callbacks {
+class ProfilesListFragment: Fragment(), AnimImplementation {
 
     private lateinit var floatingButtonAction: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
     private val profileAdapter: ProfileAdapter = ProfileAdapter()
     private var expandedViews: ArrayList<Int> = arrayListOf()
     private val model: ProfileListViewModel by viewModels()
+    private val sharedModel: SharedViewModel by activityViewModels()
     private lateinit var audioManager: AudioManager
     var lastCheckedIndex: Int = -1
 
@@ -77,12 +79,14 @@ class ProfilesListFragment: Fragment(), AnimImplementation, AlarmReceiver.Callba
         model.profileListLiveData.observe(viewLifecycleOwner,
                 Observer<List<Profile>> { t ->
                     if (t != null) {
+                        Log.i("ProfilesListFragment", t.isEmpty().toString())
+                        sharedModel.setValue(t.isEmpty())
                         updateUI(t)
                     }
                 })
         model.associatedEventsLiveData.observe(viewLifecycleOwner,
             Observer<List<ProfileAndEvent>?> { t ->
-                if (t != null) {
+                if (t != null && t.isNotEmpty()) {
                     Log.i("ProfilesListFragment", "removing redundant alarms, amount of alarms: ${t.size}")
                     val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
                     alarmUtil.cancelMultipleAlarms(t)
@@ -236,9 +240,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, AlarmReceiver.Callba
         private const val KEY_LAST_CHECKED_INDEX = "Last_checked_index"
         private const val PROFILE_LAYOUT = R.layout.item_view
         private const val KEY_EXPANDED_VIEWS = "Expanded_views"
-    }
 
-    override fun onProfileActivation() {
-        TODO("Not yet implemented")
     }
 }

@@ -10,6 +10,8 @@ import android.widget.Spinner
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.AudioUtil
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -27,13 +29,15 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     private val profileMap: HashMap<String, Profile> = hashMapOf()
     private val viewModel: EditEventViewModel by viewModels()
     private var event: Event? = null
+    private var eventId: Long? = null
+    private var profileAndEvent: ProfileAndEvent? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.create_event)
-        val eventId: Long? = intent?.extras?.get(EXTRA_ID) as? Long
+        eventId = intent?.extras?.get(EXTRA_ID) as? Long
         if (eventId != null) {
-            viewModel.selectEvent(eventId)
+            viewModel.selectEvent(eventId!!)
         }
         supportActionBar?.title = if (eventId != null) "Edit event" else "Create event"
         instantiateViews()
@@ -49,16 +53,12 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
     private fun setupViews(): Unit {
         startTimeSelectButton.setOnClickListener {
-            if (event != null) {
-                val fragment: TimePickerFragment = TimePickerFragment.newInstance(event!!.localDateTime)
-                fragment.show(supportFragmentManager, null)
-            }
+            val fragment: TimePickerFragment = TimePickerFragment.newInstance(event!!.localDateTime)
+            fragment.show(supportFragmentManager, null)
         }
         workingDaysSelectButton.setOnClickListener {
-            if (event != null) {
-                val fragment: WorkingDaysPickerDialog = WorkingDaysPickerDialog.newInstance(event!!)
-                fragment.show(supportFragmentManager, null)
-            }
+            val fragment: WorkingDaysPickerDialog = WorkingDaysPickerDialog.newInstance(event!!)
+            fragment.show(supportFragmentManager, null)
         }
         arrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item)
         profileSelectSpinner.adapter = arrayAdapter
@@ -69,6 +69,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         viewModel.profileListLiveData.observe(this, Observer<List<Profile>?> {
             if (it != null && it.isNotEmpty()) {
                 if (event == null) {
+                    Log.i(LOG_TAG, "creating and settings mutable event object")
                     event = Event(profileUUID = it[0].id, workingDays = LocalDateTime.now().dayOfWeek.value.toString())
                     viewModel.selectMutableEvent(event as Event)
                 }
@@ -83,16 +84,22 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
         viewModel.eventLiveData.observe(this, Observer<Event?> {
             if (it != null) {
+                Log.i(LOG_TAG, "observing livedata and setting mutable event object")
                 viewModel.selectMutableEvent(it)
             }
         })
 
         viewModel.mutableEvent.observe(this, Observer {
             if (it != null) {
-                Log.i("EditEventActivity", "observing mutable object")
+                Log.i("EditEventActivity", "observing mutable event object and updating ui")
                 event = it
                 updateStartTimeText()
                 updateScheduledDaysText()
+            }
+        })
+        viewModel.profileAndEventLiveData.observe(this, Observer {
+            if (it != null) {
+                profileAndEvent = it
             }
         })
     }
@@ -115,22 +122,24 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
     private fun updateScheduledDaysText(): Unit {
         val event: Event = event as Event
-        if (event.workingDays.isNotEmpty()) {
-            var result: String
-            result = if (event.workingDays.length == 7) {
-                "Every day"
-            } else {
+        val result: String
+        val workingDays: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
+        if (workingDays.isNotEmpty()) {
+            if (workingDays.size == 1) {
+                result = DayOfWeek.of(workingDays[0]).getDisplayName(TextStyle.FULL, Locale.getDefault())
+            }
+            else if (workingDays.size == 7) {
+                result = "Every day"
+            }
+            else {
                 val stringBuilder: java.lang.StringBuilder = StringBuilder()
-                val workingsDays: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-                for (i in workingsDays) {
+                for (i in workingDays) {
                     stringBuilder.append(DayOfWeek.of(i).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
                 }
-                if (stringBuilder.length > 2) {
-                    for (i in 0..1) {
-                        stringBuilder.deleteCharAt(stringBuilder.lastIndex)
-                    }
+                for (i in 0..1) {
+                    stringBuilder.deleteCharAt(stringBuilder.lastIndex)
                 }
-                stringBuilder.toString()
+                result = stringBuilder.toString()
             }
             workingDaysSelectButton.text = result
         }
@@ -160,13 +169,37 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         updateScheduledDaysText()
     }
 
+    private fun saveChanges(): Unit {
+        if (profileAndEvent != null) {
+            val profile: Profile? = profileAndEvent?.profile
+            if (profile != null) {
+                resetAlarm(event!!, profile)
+            }
+        }
+        if (eventId == null) {
+            Log.i(LOG_TAG, "adding new event: ${event?.localDateTime}")
+            viewModel.addEvent(event!!)
+        }
+        else {
+            Log.i(LOG_TAG, "updating existing event")
+            viewModel.updateEvent(event!!)
+        }
+    }
+
+    private fun resetAlarm(event: Event, profile: Profile): Unit {
+        val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
+        val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
+        val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
+        alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId)
+    }
+
     override fun onDismiss() {
         Log.i("EditEventActivity", "Dialog was dismissed()")
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.i("EditEventActivity", (event as Event).workingDays)
+    override fun onBackPressed() {
+        super.onBackPressed()
+        saveChanges()
     }
 
     companion object {

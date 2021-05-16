@@ -1,6 +1,5 @@
 package com.example.volumeprofiler
 
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,12 +9,6 @@ import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
 
 class AlarmReceiver: BroadcastReceiver() {
-
-    interface Callbacks {
-
-        fun onProfileActivation(): Unit
-
-    }
 
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {

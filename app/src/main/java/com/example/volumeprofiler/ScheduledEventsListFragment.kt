@@ -18,6 +18,7 @@ import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
@@ -32,13 +33,16 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.format.TextStyle
 import java.util.*
 
 class ScheduledEventsListFragment: Fragment(), AnimImplementation {
 
+    private var requireDialog: Boolean = false
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
     private val model: ScheduledEventsViewModel by viewModels()
+    private val sharedModel: SharedViewModel by activityViewModels()
     private val eventAdapter: EventAdapter = EventAdapter()
     private lateinit var alarmManager: AlarmManager
 
@@ -57,11 +61,15 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         floatingActionButton.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (Settings.System.canWrite(context)) {
-                    /*
-                    val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
-                    startActivity(intent)
-                     */
-                    model.addEvent(Event(profileUUID = UUID.fromString("02e0a6f9-6e17-4057-ab0e-2b8fcc9ee694"), localDateTime = LocalDateTime.now().withHour(18).withMinute(25).withSecond(0)))
+                    if (!requireDialog) {
+                        val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
+                        startActivity(intent)
+                    }
+                    else {
+                        val fragment: NoProfilesDialog = NoProfilesDialog()
+                        val fragmentManager = requireActivity().supportFragmentManager
+                        fragment.show(fragmentManager, null)
+                    }
                 }
                 else {
                     val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
@@ -71,12 +79,15 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                 }
             }
             else {
-
-                /*
-                val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
-                startActivity(intent)
-                 */
-                model.addEvent(Event(profileUUID = UUID.fromString("02e0a6f9-6e17-4057-ab0e-2b8fcc9ee694"), localDateTime = LocalDateTime.now().withHour(18).withMinute(25).withSecond(0)))
+                if (!requireDialog) {
+                    val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
+                    startActivity(intent)
+                }
+                else {
+                    val fragment: NoProfilesDialog = NoProfilesDialog()
+                    val fragmentManager = requireActivity().supportFragmentManager
+                    fragment.show(fragmentManager, null)
+                }
             }
         }
         recyclerView = view.findViewById(R.id.recyclerView)
@@ -90,9 +101,17 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         model.eventListLiveData.observe(viewLifecycleOwner,
                 Observer<List<ProfileAndEvent>> { t ->
                     if (t != null) {
+                        Log.i("ScheduledEventsFragment", "observing data: ${t.size}")
                         updateUI(t)
                     }
                 })
+        sharedModel.isProfileQueryEmpty.observe(viewLifecycleOwner,
+            Observer<Boolean> { t ->
+                if (t != null) {
+                    Log.i("ScheduledEventsFragment", "sharedModel: $t")
+                    requireDialog = t
+                }
+            })
     }
 
     private fun updateUI(events: List<ProfileAndEvent>) {
@@ -107,7 +126,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         eventAdapter.submitList(events)
     }
 
-    private inner class EventHolder(view: View) : RecyclerView.ViewHolder(view) {
+    private inner class EventHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener {
 
         private val timeTextView: TextView = itemView.findViewById(R.id.timeTextView)
         @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -118,6 +137,10 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         private lateinit var event: Event
         private lateinit var profile: Profile
 
+        init {
+            view.setOnClickListener(this)
+        }
+
         private fun setupCallbacks(): Unit {
             profileTextView.setOnClickListener {
                 event.profileUUID = UUID.fromString("4eb9764c-af80-4f49-b352-4dd7d9ddc3f3")
@@ -126,7 +149,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             enableSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
                 val event: Event = profileAndEvent.event
-                val eventOccurrences: Array<Int> = event.workingDays.toCharArray().map { it.toInt() }.toTypedArray()
+                val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
                 val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
                 val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
                 if (isChecked && enableSwitch.isPressed) {
@@ -154,13 +177,18 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
 
         private fun setupScheduledDaysTextView(): String {
             val stringBuilder: StringBuilder = StringBuilder()
-            val workingsDays: Array<Int> = event.workingDays.toCharArray().map { it.toInt() }.toTypedArray()
+            val workingsDays: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
             if (workingsDays.isNotEmpty()) {
-                for (i in workingsDays) {
-                    stringBuilder.append(DayOfWeek.of(i).toString().toLowerCase() + ", ")
+                if (workingsDays.size == 1) {
+                    return DayOfWeek.of(workingsDays[0]).getDisplayName(TextStyle.FULL, Locale.getDefault())
                 }
-                if (stringBuilder.length > 2) {
-                    stringBuilder.deleteCharAt(stringBuilder.lastIndex)
+                else if (workingsDays.size == 7) {
+                    return "Every day"
+                }
+                for (i in workingsDays) {
+                    stringBuilder.append(DayOfWeek.of(i).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
+                }
+                for (i in 0..1) {
                     stringBuilder.deleteCharAt(stringBuilder.lastIndex)
                 }
                 return stringBuilder.toString()
@@ -182,8 +210,15 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             setupCallbacks()
             updateTextViews()
         }
-    }
 
+        override fun onClick(v: View?) {
+            val eventId: Long = eventAdapter.getEvent(absoluteAdapterPosition).event.eventId
+            val intent: Intent = Intent(requireContext(), EditEventActivity::class.java).apply {
+                this.putExtra(EditEventActivity.EXTRA_ID, eventId)
+            }
+            startActivity(intent)
+        }
+    }
 
     private inner class EventAdapter : androidx.recyclerview.widget.ListAdapter<ProfileAndEvent, EventHolder>(object : DiffUtil.ItemCallback<ProfileAndEvent>() {
 

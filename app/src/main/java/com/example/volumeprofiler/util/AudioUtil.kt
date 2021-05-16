@@ -34,7 +34,7 @@ class AudioUtil {
             val primarySettings = volumeSettingsMapPair.first
             val additionalSettings = volumeSettingsMapPair.second
             for ((key, value) in primarySettings) {
-                audioManager.setStreamVolume(key, value, 0)
+                audioManager.setStreamVolume(key, value, AudioManager.FLAG_SHOW_UI)
             }
             for ((key, value) in additionalSettings) {
                 Settings.System.putInt(context.contentResolver, key, value)

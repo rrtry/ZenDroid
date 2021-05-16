@@ -10,12 +10,6 @@ class ScheduledEventsViewModel: ViewModel() {
             return repository.observeProfilesWithEvents()
         }
 
-    fun addEvent(event: Event) {
-        viewModelScope.launch {
-            repository.addEvent(event)
-        }
-    }
-
     fun removeEvent(event: Event) {
         viewModelScope.launch {
             repository.removeEvent(event)

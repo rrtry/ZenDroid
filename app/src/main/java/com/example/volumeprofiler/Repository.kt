@@ -59,6 +59,10 @@ class Repository private constructor(context: Context) {
         }
     }
 
+    fun observeScheduledEventWithProfile(id: Long): LiveData<ProfileAndEvent?> {
+        return schedulerDao.observeScheduledEventWithProfile(id)
+    }
+
     fun observeProfilesWithEvents(): LiveData<List<ProfileAndEvent>> = profileDao.observeProfilesWithEvents()
 
     fun observeProfileWithScheduledEvents(id: UUID): LiveData<List<ProfileAndEvent>?> = profileDao.observeProfileWithScheduledEvents(id)
