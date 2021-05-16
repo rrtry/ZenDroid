@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.services
 
 import android.annotation.TargetApi
 import android.app.Notification
@@ -12,6 +12,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import android.util.Log
+import com.example.volumeprofiler.R
+import com.example.volumeprofiler.Repository
+import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
 
 class AlarmRescheduleWorker constructor (val context: Context, args: WorkerParameters): CoroutineWorker(context, args) {
@@ -62,7 +65,7 @@ class AlarmRescheduleWorker constructor (val context: Context, args: WorkerParam
     private fun createNotificationChannel(): NotificationChannel {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         return NotificationChannel(
-            NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW
+                NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW
         ).also { channel ->
             notificationManager.createNotificationChannel(channel)
         }

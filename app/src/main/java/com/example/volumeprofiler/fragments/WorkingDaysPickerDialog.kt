@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.fragments
 
 import android.app.AlertDialog
 import android.app.Dialog
@@ -6,6 +6,8 @@ import android.content.DialogInterface
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
 import android.util.Log
+import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.R
 import kotlin.collections.ArrayList
 
 class WorkingDaysPickerDialog: DialogFragment() {

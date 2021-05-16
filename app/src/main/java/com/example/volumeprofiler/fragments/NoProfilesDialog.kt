@@ -1,9 +1,10 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.fragments
 
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
+import com.example.volumeprofiler.R
 
 class NoProfilesDialog: DialogFragment() {
 

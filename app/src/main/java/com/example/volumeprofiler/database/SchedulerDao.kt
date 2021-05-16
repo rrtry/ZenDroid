@@ -2,8 +2,8 @@ package com.example.volumeprofiler.database
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
-import com.example.volumeprofiler.Event
-import com.example.volumeprofiler.ProfileAndEvent
+import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.ProfileAndEvent
 import java.util.*
 
 @Dao

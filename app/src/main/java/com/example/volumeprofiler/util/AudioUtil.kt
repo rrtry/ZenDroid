@@ -3,7 +3,7 @@ package com.example.volumeprofiler.util
 import android.content.Context
 import android.media.AudioManager
 import android.provider.Settings
-import com.example.volumeprofiler.Profile
+import com.example.volumeprofiler.models.Profile
 
 /*
    * Utility class which simplifies work with audio-related values

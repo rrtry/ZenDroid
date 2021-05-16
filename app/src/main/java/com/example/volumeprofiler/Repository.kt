@@ -6,6 +6,9 @@ import androidx.room.Room
 import com.example.volumeprofiler.database.ProfileDao
 import com.example.volumeprofiler.database.SchedulerDao
 import com.example.volumeprofiler.database.VolumeProfilerDatabase
+import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.models.ProfileAndEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID

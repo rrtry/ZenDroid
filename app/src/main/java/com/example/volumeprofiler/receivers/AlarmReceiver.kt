@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.receivers
 
 import android.content.BroadcastReceiver
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.activities
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -13,8 +13,13 @@ import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import android.util.Log
 import android.widget.*
+import com.example.volumeprofiler.*
+import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class EditProfileActivity: AppCompatActivity() {

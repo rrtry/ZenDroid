@@ -1,10 +1,11 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.receivers
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.work.*
+import com.example.volumeprofiler.services.AlarmRescheduleWorker
 
 class BootCompletedReceiver: BroadcastReceiver() {
 

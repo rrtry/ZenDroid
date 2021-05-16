@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlarmManager
@@ -24,12 +24,19 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.volumeprofiler.*
+import com.example.volumeprofiler.activities.EditEventActivity
+import com.example.volumeprofiler.interfaces.AnimImplementation
+import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.viewmodels.ScheduledEventsViewModel
+import com.example.volumeprofiler.viewmodels.SharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.lang.StringBuilder
 import java.time.DayOfWeek
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle

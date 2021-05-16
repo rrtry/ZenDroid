@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.models
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

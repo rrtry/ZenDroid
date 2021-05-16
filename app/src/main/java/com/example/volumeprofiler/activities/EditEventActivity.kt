@@ -1,4 +1,4 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.activities
 
 import android.os.Bundle
 import android.util.Log
@@ -10,8 +10,15 @@ import android.widget.Spinner
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import com.example.volumeprofiler.*
+import com.example.volumeprofiler.fragments.TimePickerFragment
+import com.example.volumeprofiler.fragments.WorkingDaysPickerDialog
+import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.viewmodels.EditEventViewModel
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime

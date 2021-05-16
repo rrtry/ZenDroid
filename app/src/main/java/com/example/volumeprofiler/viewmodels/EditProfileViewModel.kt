@@ -1,7 +1,10 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.*
+import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.Repository
 import kotlinx.coroutines.launch
 import java.util.*
 
