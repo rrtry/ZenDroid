@@ -13,6 +13,8 @@ import androidx.lifecycle.Observer
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.WorkingDaysPickerDialog
+import com.example.volumeprofiler.interfaces.DaysPickerDialogCallbacks
+import com.example.volumeprofiler.interfaces.TimePickerFragmentCallbacks
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
@@ -27,7 +29,7 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.*
 
-class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragment.Callbacks, WorkingDaysPickerDialog.Callbacks {
+class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallbacks, DaysPickerDialogCallbacks {
 
     private lateinit var profileSelectSpinner: Spinner
     private lateinit var startTimeSelectButton: Button
@@ -198,10 +200,6 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId)
-    }
-
-    override fun onDismiss() {
-        Log.i("EditEventActivity", "Dialog was dismissed()")
     }
 
     override fun onBackPressed() {

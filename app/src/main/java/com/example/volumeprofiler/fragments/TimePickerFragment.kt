@@ -8,6 +8,7 @@ import android.text.format.DateFormat
 import android.util.Log
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
+import com.example.volumeprofiler.interfaces.TimePickerFragmentCallbacks
 import java.time.LocalDateTime
 
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
@@ -34,7 +35,7 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
         Log.i("TimePickerDialog", "onTimeSet(), hourOfDay: $hourOfDay, minute: $minute")
         val localDateTime: LocalDateTime = LocalDateTime.now()
         val adjusted: LocalDateTime = localDateTime.withHour(hourOfDay).withMinute(minute).withSecond(0)
-        (activity as Callbacks).onTimeSelected(adjusted)
+        (activity as TimePickerFragmentCallbacks).onTimeSelected(adjusted)
     }
 
     companion object {

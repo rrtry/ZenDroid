@@ -8,6 +8,7 @@ import androidx.fragment.app.DialogFragment
 import android.util.Log
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.interfaces.DaysPickerDialogCallbacks
 import kotlin.collections.ArrayList
 
 class WorkingDaysPickerDialog: DialogFragment() {
@@ -76,7 +77,7 @@ class WorkingDaysPickerDialog: DialogFragment() {
                             })
                     .setPositiveButton(R.string.apply,
                             DialogInterface.OnClickListener { dialog, id ->
-                                (activity as Callbacks).onDaysSelected(selectedItems)
+                                (activity as DaysPickerDialogCallbacks).onDaysSelected(selectedItems)
                             })
                     .setNegativeButton(R.string.cancel,
                             DialogInterface.OnClickListener { dialog, id ->
