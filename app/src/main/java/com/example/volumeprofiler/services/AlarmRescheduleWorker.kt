@@ -13,7 +13,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import android.util.Log
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.Repository
+import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
 

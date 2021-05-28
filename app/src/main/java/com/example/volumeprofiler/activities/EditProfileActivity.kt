@@ -3,6 +3,7 @@ package com.example.volumeprofiler.activities
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.Editable
 import android.view.KeyEvent
@@ -12,8 +13,13 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.*
+import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.*
+import com.example.volumeprofiler.fragments.ApplyChangesDialog
+import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
@@ -22,7 +28,7 @@ import com.example.volumeprofiler.util.AudioUtil
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
-class EditProfileActivity: AppCompatActivity() {
+class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
 
     private val viewModel: EditProfileViewModel by viewModels()
     private lateinit var editText: EditText
@@ -38,6 +44,44 @@ class EditProfileActivity: AppCompatActivity() {
     private lateinit var shutterSoundSwitch: Switch
     private lateinit var dialTonesSwitch: Switch
     private var profilesAndEvents: List<ProfileAndEvent>? = null
+
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        super.onPrepareOptionsMenu(menu)
+        if (menu != null) {
+            val drawable: Drawable?
+            val item: MenuItem = menu.findItem(R.id.saveChangesButton)
+            return if (intent.extras?.get(EXTRA_UUID) != null) {
+                drawable = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null)
+                item.icon = drawable
+                true
+            } else {
+                drawable = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_add, null)
+                item.icon = drawable
+                true
+            }
+        }
+        return false
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        super.onOptionsItemSelected(item)
+        if (item.itemId == R.id.saveChangesButton) {
+            onApply()
+            return true
+        }
+        return false
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        super.onCreateOptionsMenu(menu)
+        return if (menu != null) {
+            menuInflater.inflate(R.menu.action_menu_save_changes, menu)
+            true
+        }
+        else {
+            false
+        }
+    }
 
     private fun hideSoftInput(): Unit {
         Log.i(LOG_TAG, "hideSoftInput()")
@@ -113,25 +157,22 @@ class EditProfileActivity: AppCompatActivity() {
     @SuppressWarnings("unchecked")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.i(LOG_TAG, "changedMade: ${viewModel.changesMade}")
         setContentView(R.layout.create_profile)
         if (intent.extras?.get(EXTRA_UUID) != null) {
             supportActionBar?.title = "Edit profile"
-            viewModel.loadProfile(intent.extras?.get(EXTRA_UUID) as UUID)
+            viewModel.setProfile(intent.extras?.get(EXTRA_UUID) as UUID)
         }
         else {
             if (viewModel.mutableProfile == null) {
                 viewModel.mutableProfile = Profile("Profile")
+                viewModel.changesMade = true
             }
             supportActionBar?.title = "Create profile"
         }
         initializeViews()
         setViewCallbacks()
         setLiveDataObservers()
-    }
-
-    override fun onBackPressed() {
-        super.onBackPressed()
-        saveChanges()
     }
 
     private fun saveChanges(): Unit {
@@ -144,7 +185,7 @@ class EditProfileActivity: AppCompatActivity() {
             Log.i("EditProfileActivity", "profile has associated event")
             for (i in profilesAndEvents!!) {
                 val event: Event = i.event
-                reScheduleAlarm(event, profile)
+                setAlarm(event, profile)
             }
         }
         if (viewModel.mutableProfile != null) {
@@ -157,11 +198,11 @@ class EditProfileActivity: AppCompatActivity() {
         }
     }
 
-    private fun reScheduleAlarm(event: Event, profile: Profile): Unit {
+    private fun setAlarm(event: Event, profile: Profile): Unit {
         val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
-        alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId)
+        alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId, false, profile.id)
     }
 
     private fun updateUI() {
@@ -177,7 +218,6 @@ class EditProfileActivity: AppCompatActivity() {
         touchVibrationSwitch.isChecked = viewModel.mutableProfile!!.touchVibration != 0
         shutterSoundSwitch.isChecked = viewModel.mutableProfile!!.shutterSound != 0
         dialTonesSwitch.isChecked = viewModel.mutableProfile!!.dialTones != 0
-        
     }
 
     private inner class SwitchChangeListener: CompoundButton.OnCheckedChangeListener {
@@ -186,7 +226,8 @@ class EditProfileActivity: AppCompatActivity() {
             if (editText.hasFocus()) {
                 hideSoftInput()
             }
-            if (buttonView != null) {
+            if (buttonView != null && buttonView.isPressed) {
+                viewModel.changesMade = true
                 buttonView.isChecked = isChecked
 
                 when (buttonView) {
@@ -223,6 +264,7 @@ class EditProfileActivity: AppCompatActivity() {
 
         override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
             if (seekBar != null && fromUser) {
+                viewModel.changesMade = true
                 seekBar.progress = progress
                 when (seekBar) {
 
@@ -272,5 +314,25 @@ class EditProfileActivity: AppCompatActivity() {
             }
             return intent
         }
+    }
+
+    override fun onBackPressed() {
+        Log.i(LOG_TAG, "viewModel.changesMade: ${viewModel.changesMade}")
+        if (viewModel.changesMade) {
+            val fragment: ApplyChangesDialog = ApplyChangesDialog()
+            fragment.show(supportFragmentManager, null)
+        }
+        else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onApply() {
+        saveChanges()
+        super.onBackPressed()
+    }
+
+    override fun onDismiss() {
+        super.onBackPressed()
     }
 }

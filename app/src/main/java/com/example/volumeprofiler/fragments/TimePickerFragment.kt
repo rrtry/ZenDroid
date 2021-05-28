@@ -13,11 +13,6 @@ import java.time.LocalDateTime
 
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
-    interface Callbacks {
-
-        fun onTimeSelected(date: LocalDateTime)
-    }
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         Log.i("TimePickerDialog", "onCreateDialog()")
         val context: Context = requireContext()

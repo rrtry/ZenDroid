@@ -1,11 +1,8 @@
-package com.example.volumeprofiler
+package com.example.volumeprofiler.database
 
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.room.Room
-import com.example.volumeprofiler.database.ProfileDao
-import com.example.volumeprofiler.database.SchedulerDao
-import com.example.volumeprofiler.database.VolumeProfilerDatabase
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
@@ -18,7 +15,7 @@ class Repository private constructor(context: Context) {
     private val database: VolumeProfilerDatabase = Room.databaseBuilder(
         context.applicationContext,
         VolumeProfilerDatabase::class.java,
-        DATABASE_NAME
+            DATABASE_NAME
     ).fallbackToDestructiveMigration().build()
 
     private val profileDao: ProfileDao = database.profileDao()
@@ -56,9 +53,9 @@ class Repository private constructor(context: Context) {
         }
     }
 
-    suspend fun getProfileWithScheduledEvents(id: UUID): List<ProfileAndEvent>? {
+    suspend fun getEventsByProfileId(id: UUID): List<ProfileAndEvent>? {
         return withContext(Dispatchers.IO) {
-            schedulerDao.getProfileWithScheduledEvents(id)
+            schedulerDao.getEventsByProfileId(id)
         }
     }
 
@@ -95,8 +92,7 @@ class Repository private constructor(context: Context) {
     companion object {
 
         private const val DATABASE_NAME = "volumeprofiler-database"
-
-        @Volatile
+        
         private var INSTANCE: Repository? = null
 
         fun initialize(context: Context) {
@@ -106,7 +102,8 @@ class Repository private constructor(context: Context) {
         }
 
         fun get(): Repository {
-            return INSTANCE ?:
+            return INSTANCE
+                    ?:
             throw IllegalStateException("Repository must be initialized")
         }
     }

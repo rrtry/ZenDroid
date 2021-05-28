@@ -2,7 +2,7 @@ package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.*
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.ProfileAndEvent
-import com.example.volumeprofiler.Repository
+import com.example.volumeprofiler.database.Repository
 import kotlinx.coroutines.launch
 
 class ScheduledEventsViewModel: ViewModel() {

@@ -12,8 +12,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.Animation
-import android.view.animation.ScaleAnimation
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
@@ -140,6 +139,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         private val enableSwitch: Switch = itemView.findViewById(R.id.scheduleSwitch)
         private val daysTextView: TextView = itemView.findViewById(R.id.occurrencesTextView)
         private val profileTextView: TextView = itemView.findViewById(R.id.profileName)
+        private val deleteEventButton: Button = itemView.findViewById(R.id.deleteEventButton)
         private lateinit var profileAndEvent: ProfileAndEvent
         private lateinit var event: Event
         private lateinit var profile: Profile
@@ -148,14 +148,22 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             view.setOnClickListener(this)
         }
 
+        private fun removeEvent(): Unit {
+            val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
+            val event: Event = profileAndEvent.event
+            model.removeEvent(event)
+            val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
+            val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
+            val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
+            alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
+                    event.localDateTime, event.eventId, profile.id)
+        }
+
         private fun setupCallbacks(): Unit {
-            profileTextView.setOnClickListener {
-                event.profileUUID = UUID.fromString("4eb9764c-af80-4f49-b352-4dd7d9ddc3f3")
-                model.updateEvent(event)
-            }
             enableSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
                 val event: Event = profileAndEvent.event
+                val profile: Profile = profileAndEvent.profile
                 val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
                 val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
                 val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
@@ -163,14 +171,20 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                     event.isScheduled = 1
                     model.updateEvent(event)
                     Log.i("ScheduleListFragment", "is checked, scheduling alarm")
-                    alarmUtil.setAlarm(volumeMapPair, eventOccurrences, event.localDateTime, event.eventId)
+                    alarmUtil.setAlarm(volumeMapPair, eventOccurrences, event.localDateTime,
+                            event.eventId, false, profile.id)
                 }
                 else if (!isChecked && enableSwitch.isPressed) {
                     event.isScheduled = 0
                     model.updateEvent(event)
                     Log.i("ScheduleListFragment", "isn't checked, cancelling alarm")
-                    alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences, event.localDateTime, event.eventId)
+                    alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences, event.localDateTime,
+                            event.eventId, profile.id)
                 }
+            }
+            deleteEventButton.setOnClickListener {
+                scaleDownAnimation(itemView)
+                removeEvent()
             }
         }
 
@@ -178,11 +192,11 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             val time = event.localDateTime.toLocalTime()
             val pattern = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault())
             timeTextView.text = time.format(pattern)
-            daysTextView.text = setupScheduledDaysTextView()
+            daysTextView.text = updateScheduledDaysTextView()
             profileTextView.text = "${profile.title}"
         }
 
-        private fun setupScheduledDaysTextView(): String {
+        private fun updateScheduledDaysTextView(): String {
             val stringBuilder: StringBuilder = StringBuilder()
             val workingsDays: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
             if (workingsDays.isNotEmpty()) {
@@ -243,16 +257,10 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             return EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
         }
 
-        private fun startScaleUpAnimation(view: View) {
-            val anim = ScaleAnimation(0.0f, 1.0f, 0.0f, 1.0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
-            anim.duration = 300
-            view.startAnimation(anim)
-        }
-
         override fun onBindViewHolder(holder: EventHolder, position: Int) {
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
-                startScaleUpAnimation(holder.itemView)
+                scaleUpAnimation(holder.itemView)
             }
             holder.bindEvent(getItem(position), position)
         }

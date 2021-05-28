@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
-import com.example.volumeprofiler.*
+import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import java.io.Serializable
 import java.time.LocalTime
 import java.time.ZoneId
+import java.util.*
 
  /*
    *  Utility class which has useful methods for settings alarms, dealing with date objects and schedules
@@ -31,14 +32,15 @@ class AlarmUtil constructor (val context: Context) {
             volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
             eventOccurrences: Array<Int>,
             eventTime: LocalDateTime,
-            id: Long, onReschedule: Boolean = false): Unit {
+            id: Long, onReschedule: Boolean = false, profileId: UUID): Unit {
         val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = AlarmReceiver.ALARM_TRIGGER
+            this.action = AlarmReceiver.ACTION_TRIGGER_ALARM
             this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
             this.putExtra(AlarmReceiver.EXTRA_ALARM_ID, id)
+            this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
             this.putExtra(AlarmReceiver.EXTRA_ALARM_TRIGGER_TIME, eventTime)
         }
         val pendingIntent: PendingIntent = PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
@@ -60,7 +62,7 @@ class AlarmUtil constructor (val context: Context) {
                     Log.i("AlarmHelper", "no days on schedule, settings alarm for tomorrow: $delay, alarmId: $id, day: $nextDay")
                 }
                 else {
-                    cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id)
+                    cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId)
                     GlobalScope.launch {
                         val repository: Repository = Repository.get()
                         val event: Event = repository.getEvent(id)
@@ -84,15 +86,17 @@ class AlarmUtil constructor (val context: Context) {
             volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
             eventOccurrences: Array<Int>,
             eventTime: LocalDateTime,
-            id: Long): Unit {
+            id: Long,
+            profileId: UUID): Unit {
         Log.i("AlarmHelper", "request to cancel alarm with an id of $id")
         val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = AlarmReceiver.ALARM_TRIGGER
+            this.action = AlarmReceiver.ACTION_TRIGGER_ALARM
             this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
             this.putExtra(AlarmReceiver.EXTRA_ALARM_ID, id)
+            this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
             this.putExtra(AlarmReceiver.EXTRA_ALARM_TRIGGER_TIME, eventTime)
         }
         val pendingIntent: PendingIntent? = PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_NO_CREATE)
@@ -119,8 +123,7 @@ class AlarmUtil constructor (val context: Context) {
             val volumeSettingsMap = AudioUtil.getVolumeSettingsMapPair(profile)
             cancelAlarm(
                     volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.eventId
-            )
+                    event.localDateTime, event.eventId, profile.id)
         }
     }
 
@@ -138,8 +141,7 @@ class AlarmUtil constructor (val context: Context) {
             val volumeSettingsMap = AudioUtil.getVolumeSettingsMapPair(profile)
             setAlarm(
                     volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.eventId
-            )
+                    event.localDateTime, event.eventId, false, profile.id)
         }
     }
 

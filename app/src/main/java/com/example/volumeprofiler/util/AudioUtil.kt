@@ -1,9 +1,12 @@
 package com.example.volumeprofiler.util
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.media.AudioManager
 import android.provider.Settings
+import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.receivers.AlarmReceiver
 
 /*
    * Utility class which simplifies work with audio-related values
@@ -30,15 +33,26 @@ class AudioUtil {
         }
 
         fun applyAudioSettings(context: Context, volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>) {
+            val sharedPreferences: SharedPreferences = context.getSharedPreferences(ProfilesListFragment.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+            val editor: SharedPreferences.Editor = sharedPreferences.edit()
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val primarySettings = volumeSettingsMapPair.first
             val additionalSettings = volumeSettingsMapPair.second
             for ((key, value) in primarySettings) {
+                if (key == AudioManager.STREAM_NOTIFICATION) {
+                    editor.putInt(AlarmReceiver.PREFS_PROFILE_NOTIFICATION_VOLUME, value)
+                }
+                else if (key == AudioManager.STREAM_RING) {
+                    editor.putInt(AlarmReceiver.PREFS_PROFILE_RING_VOLUME, value)
+                }
                 audioManager.setStreamVolume(key, value, AudioManager.FLAG_SHOW_UI)
             }
+            /*
             for ((key, value) in additionalSettings) {
                 Settings.System.putInt(context.contentResolver, key, value)
             }
+             */
+            editor.apply()
         }
     }
 }

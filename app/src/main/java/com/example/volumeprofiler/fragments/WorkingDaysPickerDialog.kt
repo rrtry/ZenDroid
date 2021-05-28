@@ -15,13 +15,6 @@ class WorkingDaysPickerDialog: DialogFragment() {
 
     private var selectedItems: ArrayList<Int> = arrayListOf()
 
-    interface Callbacks {
-
-        fun onDaysSelected(arrayList: ArrayList<Int>): Unit
-
-        fun onDismiss(): Unit
-    }
-
     @SuppressWarnings("unchecked")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

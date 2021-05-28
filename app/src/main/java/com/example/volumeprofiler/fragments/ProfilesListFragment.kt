@@ -1,6 +1,6 @@
 package com.example.volumeprofiler.fragments
 
-import android.content.Context
+import android.content.*
 import android.media.AudioManager
 import android.os.Bundle
 import android.transition.AutoTransition
@@ -9,8 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.util.Log
-import android.view.animation.Animation
-import android.view.animation.ScaleAnimation
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.ImageView
@@ -20,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -28,35 +27,61 @@ import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.AudioUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
 import com.example.volumeprofiler.viewmodels.SharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlin.collections.ArrayList
 
 class ProfilesListFragment: Fragment(), AnimImplementation {
 
-    private lateinit var floatingButtonAction: FloatingActionButton
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
+    private lateinit var receiver: BroadcastReceiver
+    //private val ids: ArrayList<UUID> = arrayListOf()
     private val profileAdapter: ProfileAdapter = ProfileAdapter()
     private var expandedViews: ArrayList<Int> = arrayListOf()
-    private val model: ProfileListViewModel by viewModels()
-    private val sharedModel: SharedViewModel by activityViewModels()
+    private val viewModel: ProfileListViewModel by viewModels()
+    private val sharedViewModel: SharedViewModel by activityViewModels()
     private lateinit var audioManager: AudioManager
-    var lastCheckedIndex: Int = -1
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putIntegerArrayList(KEY_EXPANDED_VIEWS, expandedViews)
-        outState.putInt(KEY_LAST_CHECKED_INDEX, lastCheckedIndex)
+    private fun registerReceiver(): Unit {
+        receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == AlarmReceiver.ACTION_UPDATE_UI) {
+
+                }
+            }
+        }
+        val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
+        val filter: IntentFilter = IntentFilter(AlarmReceiver.ACTION_UPDATE_UI)
+        broadcastManager.registerReceiver(receiver, filter)
+    }
+
+    private fun unregisterReceiver(): Unit {
+        Log.i("ProfilesListFragment", "unregisterReceiver()")
+        val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
+        broadcastManager.unregisterReceiver(receiver)
+    }
+
+    override fun onDestroy(): Unit {
+        super.onDestroy()
+        unregisterReceiver()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        registerReceiver()
+        sharedPreferences = requireContext().getSharedPreferences(SHARED_PREFERENCES, Context.MODE_PRIVATE)
         audioManager = requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        /*
         if (savedInstanceState != null) {
             expandedViews = savedInstanceState.getIntegerArrayList(KEY_EXPANDED_VIEWS) as ArrayList<Int>
-            lastCheckedIndex = savedInstanceState.getInt(KEY_LAST_CHECKED_INDEX)
         }
+         */
     }
 
     override fun onResume() {
@@ -69,9 +94,10 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
+        Log.i("ProfilesListFragment", "onCreateView()")
         val view: View = inflater.inflate(R.layout.profiles, container, false)
-        floatingButtonAction = view.findViewById(R.id.fab)
-        floatingButtonAction.setOnClickListener {
+        floatingActionButton = view.findViewById(R.id.fab)
+        floatingActionButton.setOnClickListener {
             val intent = EditProfileActivity.newIntent(requireContext(), null)
             startActivity(intent)
         }
@@ -83,15 +109,22 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        model.profileListLiveData.observe(viewLifecycleOwner,
+        Log.i("ProfilesListFragment", "onViewCreated()")
+        viewModel.profileListLiveData.observe(viewLifecycleOwner,
                 Observer<List<Profile>> { t ->
                     if (t != null) {
-                        Log.i("ProfilesListFragment", t.isEmpty().toString())
-                        sharedModel.setValue(t.isEmpty())
+                        /*
+                        if (t.isNotEmpty()) {
+                            for (i in t) {
+                                ids.add(i.id)
+                            }
+                        }
+                         */
+                        sharedViewModel.setValue(t.isEmpty())
                         updateUI(t)
                     }
                 })
-        model.associatedEventsLiveData.observe(viewLifecycleOwner,
+        viewModel.associatedEventsLiveData.observe(viewLifecycleOwner,
             Observer<List<ProfileAndEvent>?> { t ->
                 if (t != null && t.isNotEmpty()) {
                     Log.i("ProfilesListFragment", "removing redundant alarms, amount of alarms: ${t.size}")
@@ -102,6 +135,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
     }
 
     private fun updateUI(profiles: List<Profile>) {
+        Log.i("ProfilesListFragment", "updateUI")
         if (profiles.isNotEmpty()) {
             view?.findViewById<TextView>(R.id.hint_profile)?.visibility = View.GONE
             view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.GONE
@@ -131,6 +165,40 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
             checkBox.setOnCheckedChangeListener(this)
         }
 
+        private fun removeProfile(): Unit {
+            val position: Int = absoluteAdapterPosition
+            if (position == viewModel.lastActiveProfileIndex) {
+                viewModel.lastActiveProfileIndex = -1
+            }
+            //expandedViews.remove(position)
+            //ids.removeAt(position)
+            profileAdapter.getProfile(position).let {
+                Log.i("ProfilesListFragment", "deleting profile and cancelling alarms")
+                scaleDownAnimation(itemView)
+                viewModel.removeProfile(it)
+            }
+        }
+
+        private fun expandView(animate: Boolean): Unit {
+            if (animate) {
+                TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
+                expandableView.visibility = View.VISIBLE
+                expandImageView.animate().rotation(180.0f).start()
+            }
+            else {
+                expandableView.visibility = View.VISIBLE
+                expandImageView.rotation = 180.0f
+            }
+            //expandedViews.add(absoluteAdapterPosition)
+        }
+
+        private fun collapseView(): Unit {
+            TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
+            expandableView.visibility = View.GONE
+            expandImageView.animate().rotation(0.0f).start()
+            //expandedViews.remove(absoluteAdapterPosition)
+        }
+
         private fun setupTextViews(profile: Profile): Unit {
             checkBox.text = profile.title
             mediaVolValue.text = "${profile.mediaVolume}/${audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)}"
@@ -140,67 +208,51 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
             ringerVolValue.text = "${profile.ringVolume}/${audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)}"
         }
 
-        private fun setupCallbacks(profile: Profile): Unit {
+        private fun setCallbacks(profile: Profile): Unit {
             expandImageView.setOnClickListener {
-                TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
-
                 if (expandableView.visibility == View.GONE) {
-                    expandableView.visibility = View.VISIBLE
-                    expandImageView.animate().rotation(180.0f).start()
-                    expandedViews.add(absoluteAdapterPosition)
+                    expandView(true)
                 }
                 else {
-                    expandableView.visibility = View.GONE
-                    expandImageView.animate().rotation(0.0f).start()
-                    expandedViews.remove(absoluteAdapterPosition)
+                    collapseView()
                 }
             }
             editTextView.setOnClickListener { startActivity(EditProfileActivity.newIntent(requireContext(), profile.id)) }
             removeTextView.setOnClickListener {
-                val position: Int = absoluteAdapterPosition
-                if (position == lastCheckedIndex) {
-                    lastCheckedIndex = -1
-                }
-                expandedViews.remove(position)
-                profileAdapter.getProfile(position).let {
-                    Log.i("ProfilesListFragment", "deleting profile and cancelling alarms")
-                    scaleDownAnimation(itemView)
-                    model.removeProfile(it)
-                }
+                removeProfile()
             }
         }
 
         fun bindProfile(profile: Profile, position: Int): Unit {
             checkBox.isChecked = profile.isActive
             setupTextViews(profile)
-            setupCallbacks(profile)
+            setCallbacks(profile)
             if (expandedViews.contains(position)) {
-                expandableView.visibility = View.VISIBLE
-                expandImageView.rotation = 180.0f
+                expandView(false)
             }
         }
 
         override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean) {
-            if (buttonView?.isPressed!!) {
-                val lastIndex = lastCheckedIndex
-                if (isChecked && lastIndex != -1) {
-                    profileAdapter.getProfile(lastIndex).isActive = false
-                    profileAdapter.notifyItemChanged(lastIndex)
-                    profileAdapter.getProfile(absoluteAdapterPosition).isActive = isChecked
-                    lastCheckedIndex = absoluteAdapterPosition
-                    Log.d("ProfilesListFragment", "select single view and deselect others $lastCheckedIndex")
+            if (buttonView != null && buttonView.isPressed) {
+                val lastIndex: Int = viewModel.lastActiveProfileIndex
+                val currentIndex: Int = absoluteAdapterPosition
+                val currentProfile: Profile = profileAdapter.getProfile(currentIndex)
+                if (isChecked) {
+                    AudioUtil.applyAudioSettings(requireContext(), AudioUtil.getVolumeSettingsMapPair(currentProfile))
+                    currentProfile.isActive = true
+                    profileAdapter.notifyItemChanged(currentIndex)
+                    viewModel.lastActiveProfileIndex = currentIndex
+                    if (lastIndex != -1) {
+                        profileAdapter.getProfile(lastIndex).isActive = false
+                        profileAdapter.notifyItemChanged(lastIndex)
+                    }
                 }
-                else if (!isChecked && lastIndex != -1) {
-                    profileAdapter.getProfile(absoluteAdapterPosition).isActive = isChecked
-                    lastCheckedIndex = -1
-                    Log.d("ProfilesListFragment", "deselect single view $lastCheckedIndex")
+                else {
+                    currentProfile.isActive = false
+                    if (lastIndex != -1) {
+                        viewModel.lastActiveProfileIndex = -1
+                    }
                 }
-                else if (isChecked && lastIndex == -1) {
-                    profileAdapter.getProfile(absoluteAdapterPosition).isActive = isChecked
-                    lastCheckedIndex = absoluteAdapterPosition
-                    Log.d("ProfilesListFragment", "select single view $lastCheckedIndex")
-                }
-                checkBox.isChecked = isChecked
             }
         }
     }
@@ -226,17 +278,11 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
             return ProfileHolder(view)
         }
 
-        private fun startScaleUpAnimation(view: View) {
-            val anim = ScaleAnimation(0.0f, 1.0f, 0.0f, 1.0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
-            anim.duration = 400
-            view.startAnimation(anim)
-        }
-
         override fun onBindViewHolder(holder: ProfileHolder, position: Int) {
             val profile = getItem(position)
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
-                startScaleUpAnimation(holder.itemView)
+                scaleUpAnimation(holder.itemView)
             }
             holder.bindProfile(profile, position)
         }
@@ -244,9 +290,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
 
     companion object {
 
-        private const val KEY_LAST_CHECKED_INDEX = "Last_checked_index"
+        const val SHARED_PREFERENCES = "volumeprofiler_shared_prefs"
         private const val PROFILE_LAYOUT = R.layout.item_view
-        private const val KEY_EXPANDED_VIEWS = "Expanded_views"
-
     }
 }

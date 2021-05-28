@@ -5,15 +5,14 @@ import androidx.lifecycle.*
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
-import com.example.volumeprofiler.Repository
+import com.example.volumeprofiler.database.Repository
 import kotlinx.coroutines.launch
 
 class EditEventViewModel: ViewModel() {
 
     private val repository: Repository = Repository.get()
-
+    var changesMade: Boolean = false
     var selectedProfile: Int = 0
-    val mutableEvent: MutableLiveData<Event> = MutableLiveData()
 
     private val eventIdLiveData = MutableLiveData<Long>()
     val eventLiveData: LiveData<Event> = Transformations.switchMap(eventIdLiveData) {
@@ -24,12 +23,13 @@ class EditEventViewModel: ViewModel() {
             return repository.observeProfiles()
         }
     var profileAndEventLiveData: LiveData<ProfileAndEvent?> = Transformations.switchMap(eventIdLiveData) { eventId -> repository.observeScheduledEventWithProfile(eventId) }
+    var mutableEvent: MutableLiveData<Event> = MutableLiveData()
 
-    fun selectEvent(id: Long): Unit {
+    fun setEvent(id: Long): Unit {
         eventIdLiveData.value = id
     }
 
-    fun selectMutableEvent(event: Event) {
+    fun setMutableEvent(event: Event) {
         mutableEvent.value = event
     }
 
