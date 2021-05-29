@@ -26,6 +26,7 @@ import com.example.volumeprofiler.interfaces.AnimImplementation
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.VolumeProfilerApplication
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.util.AlarmUtil
@@ -51,13 +52,13 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
     private fun registerReceiver(): Unit {
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == AlarmReceiver.ACTION_UPDATE_UI) {
+                if (intent?.action == VolumeProfilerApplication.ACTION_UPDATE_UI) {
 
                 }
             }
         }
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
-        val filter: IntentFilter = IntentFilter(AlarmReceiver.ACTION_UPDATE_UI)
+        val filter: IntentFilter = IntentFilter(VolumeProfilerApplication.ACTION_UPDATE_UI)
         broadcastManager.registerReceiver(receiver, filter)
     }
 

@@ -8,6 +8,7 @@ import android.media.AudioManager
 import java.time.LocalDateTime
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.example.volumeprofiler.VolumeProfilerApplication
 import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.fragments.ProfilesListFragment.Companion.SHARED_PREFERENCES
 import com.example.volumeprofiler.util.AlarmUtil
@@ -19,7 +20,7 @@ class AlarmReceiver: BroadcastReceiver() {
 
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (context != null && intent?.action == ACTION_TRIGGER_ALARM) {
+        if (context != null && intent?.action == VolumeProfilerApplication.ACTION_TRIGGER_ALARM) {
             Log.i("AlarmReceiver", "onReceive")
             val primaryVolumeSettings: Map<Int, Int> = intent.getSerializableExtra(EXTRA_PRIMARY_VOLUME_SETTINGS) as HashMap<Int, Int>
             val optionalVolumeSettings: Map<String, Int> = intent.getSerializableExtra(EXTRA_OPTIONAL_VOLUME_SETTINGS) as HashMap<String, Int>
@@ -37,7 +38,7 @@ class AlarmReceiver: BroadcastReceiver() {
 
     private fun sendBroadcastToUpdateUI(context: Context, profileId: UUID): Unit {
         val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-        val intent: Intent = Intent(ACTION_UPDATE_UI).apply {
+        val intent: Intent = Intent(VolumeProfilerApplication.ACTION_UPDATE_UI).apply {
             this.putExtra(EXTRA_PROFILE_ID, profileId)
         }
         localBroadcastManager.sendBroadcast(intent)
@@ -48,13 +49,11 @@ class AlarmReceiver: BroadcastReceiver() {
         const val PREFS_PROFILE_ID = "prefs_profile_id"
         const val PREFS_PROFILE_NOTIFICATION_VOLUME = "prefs_profile_notification_volume"
         const val PREFS_PROFILE_RING_VOLUME = "prefs_profile_ring_volume"
-        const val ACTION_UPDATE_UI = "update_ui"
         const val EXTRA_ALARM_TRIGGER_TIME = "alarm_trigger_time"
         const val EXTRA_PRIMARY_VOLUME_SETTINGS = "primary_volume_settings"
         const val EXTRA_OPTIONAL_VOLUME_SETTINGS = "optional_volume_settings"
         const val EXTRA_ALARM_ID = "alarm_id"
         const val EXTRA_PROFILE_ID = "profile_id"
         const val EXTRA_EVENT_OCCURRENCES = "event_occurrences"
-        const val ACTION_TRIGGER_ALARM = "trigger_alarm"
     }
 }

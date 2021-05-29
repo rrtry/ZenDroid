@@ -9,4 +9,10 @@ class VolumeProfilerApplication: Application() {
         super.onCreate()
         Repository.initialize(this)
     }
+
+    companion object {
+        
+        const val ACTION_TRIGGER_ALARM: String = "com.example.volumeprofiler.ACTION_TRIGGER_ALARM"
+        const val ACTION_UPDATE_UI: String = "com.example.volumeprofiler.ACTION_UPDATE_UI"
+    }
 }

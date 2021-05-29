@@ -4,23 +4,30 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
-import androidx.annotation.RequiresApi
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkRequest
-import com.example.volumeprofiler.services.AlarmRescheduleWorker
+import com.example.volumeprofiler.services.AlarmRescheduleService
+
 
 class BootCompletedReceiver: BroadcastReceiver() {
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context?, intent: Intent?) {
 
-        if (intent?.action == Intent.ACTION_LOCKED_BOOT_COMPLETED ||
-                intent?.action == Intent.ACTION_BOOT_COMPLETED) {
-            Log.i("BootCompletedReceiver", "onReceive()")
-            val reScheduleRequest: WorkRequest = OneTimeWorkRequestBuilder<AlarmRescheduleWorker>().build()
-            WorkManager.getInstance(context!!).enqueue(reScheduleRequest)
+        if (intent?.action == Intent.ACTION_BOOT_COMPLETED && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            val intent: Intent = Intent(context, AlarmRescheduleService::class.java)
+            context?.startService(intent)
         }
+        else if (intent?.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
+            val intent: Intent = Intent(context, AlarmRescheduleService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context?.startForegroundService(intent)
+            }
+            else {
+                context?.startService(intent)
+            }
+        }
+    }
+
+    companion object {
+
+        private const val LOG_TAG: String = "BootCompletedReceiver"
     }
 }

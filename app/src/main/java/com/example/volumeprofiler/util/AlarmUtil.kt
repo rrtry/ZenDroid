@@ -10,6 +10,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
+import com.example.volumeprofiler.VolumeProfilerApplication
 import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
@@ -35,7 +36,7 @@ class AlarmUtil constructor (val context: Context) {
             id: Long, onReschedule: Boolean = false, profileId: UUID): Unit {
         val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = AlarmReceiver.ACTION_TRIGGER_ALARM
+            this.action = VolumeProfilerApplication.ACTION_TRIGGER_ALARM
             this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
@@ -91,7 +92,7 @@ class AlarmUtil constructor (val context: Context) {
         Log.i("AlarmHelper", "request to cancel alarm with an id of $id")
         val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = AlarmReceiver.ACTION_TRIGGER_ALARM
+            this.action = VolumeProfilerApplication.ACTION_TRIGGER_ALARM
             this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
