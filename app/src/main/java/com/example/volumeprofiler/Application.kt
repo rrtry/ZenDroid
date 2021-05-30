@@ -3,10 +3,9 @@ package com.example.volumeprofiler
 import android.app.Application
 import android.content.Context
 import android.os.Build
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.volumeprofiler.database.Repository
 
-class VolumeProfilerApplication: Application() {
+class Application: Application() {
 
     override fun onCreate() {
         super.onCreate()

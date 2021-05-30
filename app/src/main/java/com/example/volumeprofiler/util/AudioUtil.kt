@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Build
 import android.provider.Settings
-import com.example.volumeprofiler.VolumeProfilerApplication
+import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.receivers.AlarmReceiver
 
@@ -39,7 +39,7 @@ class AudioUtil {
             } else {
                 context
             }
-            val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(VolumeProfilerApplication.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+            val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
             val editor: SharedPreferences.Editor = sharedPreferences.edit()
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val primarySettings = volumeSettingsMapPair.first

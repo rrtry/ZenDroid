@@ -4,13 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.media.AudioManager
 import android.os.Build
 import java.time.LocalDateTime
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.example.volumeprofiler.VolumeProfilerApplication
-import com.example.volumeprofiler.fragments.ProfilesListFragment
+import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
 import java.util.*
@@ -21,7 +19,7 @@ class AlarmReceiver: BroadcastReceiver() {
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.i("AlarmReceiver", "onReceive")
-        if (context != null && intent?.action == VolumeProfilerApplication.ACTION_TRIGGER_ALARM) {
+        if (context != null && intent?.action == Application.ACTION_TRIGGER_ALARM) {
             val primaryVolumeSettings: Map<Int, Int> = intent.getSerializableExtra(EXTRA_PRIMARY_VOLUME_SETTINGS) as HashMap<Int, Int>
             val optionalVolumeSettings: Map<String, Int> = intent.getSerializableExtra(EXTRA_OPTIONAL_VOLUME_SETTINGS) as HashMap<String, Int>
             val eventOccurrences: Array<Int> = intent.extras?.get(EXTRA_EVENT_OCCURRENCES) as Array<Int>
@@ -40,7 +38,7 @@ class AlarmReceiver: BroadcastReceiver() {
     private fun saveProfileId(context: Context, id: UUID): Unit {
         val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
             context.createDeviceProtectedStorageContext() else context
-        val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(VolumeProfilerApplication.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         editor.putString(PREFS_PROFILE_ID, id.toString())
         editor.apply()
@@ -48,7 +46,7 @@ class AlarmReceiver: BroadcastReceiver() {
 
     private fun sendBroadcastToUpdateUI(context: Context, profileId: UUID): Unit {
         val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-        val intent: Intent = Intent(VolumeProfilerApplication.ACTION_UPDATE_UI).apply {
+        val intent: Intent = Intent(Application.ACTION_UPDATE_UI).apply {
             this.putExtra(EXTRA_PROFILE_ID, profileId)
         }
         localBroadcastManager.sendBroadcast(intent)

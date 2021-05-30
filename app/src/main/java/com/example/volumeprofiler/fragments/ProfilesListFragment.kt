@@ -27,9 +27,8 @@ import com.example.volumeprofiler.interfaces.AnimImplementation
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.VolumeProfilerApplication
+import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.activities.EditProfileActivity
-import com.example.volumeprofiler.services.AlarmRescheduleService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
@@ -53,13 +52,13 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     private fun registerReceiver(): Unit {
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == VolumeProfilerApplication.ACTION_UPDATE_UI) {
+                if (intent?.action == Application.ACTION_UPDATE_UI) {
 
                 }
             }
         }
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
-        val filter: IntentFilter = IntentFilter(VolumeProfilerApplication.ACTION_UPDATE_UI)
+        val filter: IntentFilter = IntentFilter(Application.ACTION_UPDATE_UI)
         broadcastManager.registerReceiver(receiver, filter)
     }
 
@@ -83,7 +82,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         else {
             requireContext()
         }
-        sharedPreferences = context.getSharedPreferences(VolumeProfilerApplication.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        sharedPreferences = context.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
         audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
         /*
         if (savedInstanceState != null) {
