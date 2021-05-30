@@ -54,13 +54,13 @@ class AlarmUtil constructor (val context: Context) {
             var nextDay: DayOfWeek? = getNextDayOnSchedule(eventOccurrences)
             if (nextDay != null) {
                 delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
-                Log.i("AlarmHelper", "scheduled for the next day, delay: $delay, alarmId: $id, day: $nextDay")
+                Log.i(LOG_TAG, "scheduled for the next day, delay: $delay, alarmId: $id, day: $nextDay")
             }
             else {
                 if (!onReschedule) {
                     nextDay = now.dayOfWeek.plus(1)
                     delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
-                    Log.i("AlarmHelper", "no days on schedule, settings alarm for tomorrow: $delay, alarmId: $id, day: $nextDay")
+                    Log.i(LOG_TAG, "no days on schedule, settings alarm for tomorrow: $delay, alarmId: $id, day: $nextDay")
                 }
                 else {
                     cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId)
@@ -89,7 +89,7 @@ class AlarmUtil constructor (val context: Context) {
             eventTime: LocalDateTime,
             id: Long,
             profileId: UUID): Unit {
-        Log.i("AlarmHelper", "request to cancel alarm with an id of $id")
+        Log.i(LOG_TAG, "request to cancel alarm with an id of $id")
         val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             this.action = VolumeProfilerApplication.ACTION_TRIGGER_ALARM
@@ -102,11 +102,11 @@ class AlarmUtil constructor (val context: Context) {
         }
         val pendingIntent: PendingIntent? = PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_NO_CREATE)
         if (pendingIntent != null) {
-            Log.i("AlarmHelper", "pendingIntent exists, cancelling alarm...")
+            Log.i(LOG_TAG, "pendingIntent exists, cancelling alarm...")
             alarmManager.cancel(pendingIntent)
         }
         else {
-            Log.i("AlarmHelper", "failed to cancel alarm with an id of $id")
+            Log.i(LOG_TAG, "failed to cancel alarm with an id of $id")
         }
     }
 
@@ -147,6 +147,8 @@ class AlarmUtil constructor (val context: Context) {
     }
 
     companion object {
+
+        private const val LOG_TAG: String = "AlarmUtil"
 
         private fun diffBetweenDatesInMillis(nextDay: DayOfWeek, hour: Int, minute: Int): Long {
             val now: LocalDateTime = LocalDateTime.now()

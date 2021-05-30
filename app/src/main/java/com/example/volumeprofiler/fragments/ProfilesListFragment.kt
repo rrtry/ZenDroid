@@ -2,6 +2,7 @@ package com.example.volumeprofiler.fragments
 
 import android.content.*
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.transition.AutoTransition
 import android.transition.TransitionManager
@@ -17,7 +18,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
+import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,7 +29,7 @@ import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.VolumeProfilerApplication
 import com.example.volumeprofiler.activities.EditProfileActivity
-import com.example.volumeprofiler.receivers.AlarmReceiver
+import com.example.volumeprofiler.services.AlarmRescheduleService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
@@ -36,7 +37,7 @@ import com.example.volumeprofiler.viewmodels.SharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlin.collections.ArrayList
 
-class ProfilesListFragment: Fragment(), AnimImplementation {
+class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var floatingActionButton: FloatingActionButton
@@ -76,8 +77,14 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         registerReceiver()
-        sharedPreferences = requireContext().getSharedPreferences(SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        audioManager = requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val context: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            requireContext().createDeviceProtectedStorageContext()
+        }
+        else {
+            requireContext()
+        }
+        sharedPreferences = context.getSharedPreferences(VolumeProfilerApplication.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
         /*
         if (savedInstanceState != null) {
             expandedViews = savedInstanceState.getIntegerArrayList(KEY_EXPANDED_VIEWS) as ArrayList<Int>
@@ -291,7 +298,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation {
 
     companion object {
 
-        const val SHARED_PREFERENCES = "volumeprofiler_shared_prefs"
+        private const val LOG_TAG: String = "ProfilesListFragment"
         private const val PROFILE_LAYOUT = R.layout.item_view
     }
 }

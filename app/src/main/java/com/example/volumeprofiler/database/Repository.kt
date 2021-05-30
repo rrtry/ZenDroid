@@ -1,6 +1,8 @@
 package com.example.volumeprofiler.database
 
 import android.content.Context
+import android.os.Build
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.room.Room
 import com.example.volumeprofiler.models.Event
@@ -13,7 +15,7 @@ import java.util.UUID
 class Repository private constructor(context: Context) {
 
     private val database: VolumeProfilerDatabase = Room.databaseBuilder(
-        context.applicationContext,
+        context,
         VolumeProfilerDatabase::class.java,
             DATABASE_NAME
     ).fallbackToDestructiveMigration().build()
@@ -91,12 +93,17 @@ class Repository private constructor(context: Context) {
 
     companion object {
 
-        private const val DATABASE_NAME = "volumeprofiler-database"
+        const val DATABASE_NAME = "volumeprofiler-database"
         
         private var INSTANCE: Repository? = null
+        private const val LOG_TAG: String = "Repository"
 
         fun initialize(context: Context) {
+
             if (INSTANCE == null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    Log.i(LOG_TAG, "is context a deviceProtectedStorageContext?: ${context.isDeviceProtectedStorage}")
+                }
                 INSTANCE = Repository(context)
             }
         }

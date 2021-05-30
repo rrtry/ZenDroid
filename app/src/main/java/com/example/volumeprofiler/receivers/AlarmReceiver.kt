@@ -5,12 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
+import android.os.Build
 import java.time.LocalDateTime
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.volumeprofiler.VolumeProfilerApplication
 import com.example.volumeprofiler.fragments.ProfilesListFragment
-import com.example.volumeprofiler.fragments.ProfilesListFragment.Companion.SHARED_PREFERENCES
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
 import java.util.*
@@ -20,8 +20,8 @@ class AlarmReceiver: BroadcastReceiver() {
 
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
+        Log.i("AlarmReceiver", "onReceive")
         if (context != null && intent?.action == VolumeProfilerApplication.ACTION_TRIGGER_ALARM) {
-            Log.i("AlarmReceiver", "onReceive")
             val primaryVolumeSettings: Map<Int, Int> = intent.getSerializableExtra(EXTRA_PRIMARY_VOLUME_SETTINGS) as HashMap<Int, Int>
             val optionalVolumeSettings: Map<String, Int> = intent.getSerializableExtra(EXTRA_OPTIONAL_VOLUME_SETTINGS) as HashMap<String, Int>
             val eventOccurrences: Array<Int> = intent.extras?.get(EXTRA_EVENT_OCCURRENCES) as Array<Int>
@@ -33,7 +33,17 @@ class AlarmReceiver: BroadcastReceiver() {
                     eventTime, eventId, true, profileId)
             AudioUtil.applyAudioSettings(context, Pair(primaryVolumeSettings, optionalVolumeSettings))
             //sendBroadcastToUpdateUI(context.applicationContext, profileId)
+            saveProfileId(context, profileId)
         }
+    }
+
+    private fun saveProfileId(context: Context, id: UUID): Unit {
+        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            context.createDeviceProtectedStorageContext() else context
+        val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(VolumeProfilerApplication.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+        editor.putString(PREFS_PROFILE_ID, id.toString())
+        editor.apply()
     }
 
     private fun sendBroadcastToUpdateUI(context: Context, profileId: UUID): Unit {
@@ -46,9 +56,13 @@ class AlarmReceiver: BroadcastReceiver() {
 
     companion object {
 
+        private const val LOG_TAG: String = "AlarmReceiver"
         const val PREFS_PROFILE_ID = "prefs_profile_id"
-        const val PREFS_PROFILE_NOTIFICATION_VOLUME = "prefs_profile_notification_volume"
-        const val PREFS_PROFILE_RING_VOLUME = "prefs_profile_ring_volume"
+        const val PREFS_PROFILE_STREAM_ALARM = "prefs_profile_stream_alarm"
+        const val PREFS_PROFILE_STREAM_VOICE_CALL = "prefs_profile_voice_call"
+        const val PREFS_PROFILE_STREAM_MUSIC = "prefs_profile_stream_music"
+        const val PREFS_PROFILE_STREAM_NOTIFICATION = "prefs_profile_stream_notification"
+        const val PREFS_PROFILE_STREAM_RING = "prefs_profile_streams_ring"
         const val EXTRA_ALARM_TRIGGER_TIME = "alarm_trigger_time"
         const val EXTRA_PRIMARY_VOLUME_SETTINGS = "primary_volume_settings"
         const val EXTRA_OPTIONAL_VOLUME_SETTINGS = "optional_volume_settings"

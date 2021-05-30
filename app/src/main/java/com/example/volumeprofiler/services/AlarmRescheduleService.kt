@@ -9,34 +9,34 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.MainActivity
 import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class AlarmRescheduleService: Service() {
+
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.Main + job)
 
     private suspend fun doWork(): Unit {
         val repository: Repository = Repository.get()
         val toSchedule: List<ProfileAndEvent>? = repository.getProfilesWithScheduledEvents()
-        if (toSchedule != null) {
+        if (toSchedule != null && toSchedule.isNotEmpty()) {
             Log.i(LOG_TAG, "setting the alarms again")
-            val alarmUtil = AlarmUtil(this.applicationContext)
+            val alarmUtil = AlarmUtil(this)
             alarmUtil.setMultipleAlarms(toSchedule)
         }
         else {
-            Log.i(LOG_TAG, "there are no alarms set")
+            Log.i(LOG_TAG, "there are no alarms")
         }
     }
 
-    private fun createNotification(contentIntent: PendingIntent): Notification {
-        val builder = NotificationCompat.Builder(this, 1.toString())
+    private fun createNotification(): Notification {
+        val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle("Rescheduling alarms")
                 .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
                 .setOngoing(true)
-                .setContentIntent(contentIntent)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel().also {
                 builder.setChannelId(it.id)
@@ -57,33 +57,33 @@ class AlarmRescheduleService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i("AlarmRescheduleService", "onStartCommand()")
-        val pendingIntent: PendingIntent =
-                Intent(this, MainActivity::class.java).let { notificationIntent ->
-                    PendingIntent.getActivity(this, ACTIVITY_REQUEST_CODE, notificationIntent, 0)
-                }
-        startForeground(SERVICE_ID, createNotification(pendingIntent))
-        GlobalScope.launch {
-            doWork()
+        startForeground(SERVICE_ID, createNotification())
+        scope.launch {
+            val request = async {
+                doWork()
+            }
+            request.await()
             stopForeground(true)
             stopSelf()
         }
         return START_NOT_STICKY
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.i(LOG_TAG, "onDestroy()")
-    }
-
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.i(LOG_TAG, "onDestroy")
+        job.cancel()
     }
 
     companion object {
 
         private const val LOG_TAG: String = "AlarmRescheduleService"
         private const val NOTIFICATION_CHANNEL_ID: String = "channel_162"
-        private const val NOTIFICATION_CHANNEL_NAME: String = "channel_volumeprofiler"
+        private const val NOTIFICATION_CHANNEL_NAME: String = "Service's notification"
         private const val SERVICE_ID: Int = 162
         private const val ACTIVITY_REQUEST_CODE: Int = 0
     }
