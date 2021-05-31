@@ -18,6 +18,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VolumeProfiler">
 
+        <receiver android:name=".receivers.NotificationActionReceiver" android:enabled="true" android:directBootAware="true"
+            tools:targetApi="n">
+            <intent-filter>
+                <action android:name="com.example.volumeprofiler.ACTION_SELECT_PROFILE"/>
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".receivers.BootCompletedReceiver" android:enabled="true" android:directBootAware="true" tools:targetApi="n">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
@@ -42,6 +49,7 @@
         </receiver>
 
         <service android:name=".services.AlarmRescheduleService" android:enabled="true" android:directBootAware="true" tools:targetApi="n"/>
+        <service android:name=".services.ProfileSelectService" android:enabled="true" android:directBootAware="true" tools:targetApi="n"/>
 
         <activity android:name=".activities.EditProfileActivity"/>
         <activity android:name=".activities.EditEventActivity"/>

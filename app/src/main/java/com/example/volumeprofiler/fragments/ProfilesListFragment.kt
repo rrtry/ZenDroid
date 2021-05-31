@@ -29,6 +29,7 @@ import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.services.ProfileSelectService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.AudioUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
@@ -41,41 +42,56 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
-    private lateinit var receiver: BroadcastReceiver
     //private val ids: ArrayList<UUID> = arrayListOf()
     private val profileAdapter: ProfileAdapter = ProfileAdapter()
     private var expandedViews: ArrayList<Int> = arrayListOf()
     private val viewModel: ProfileListViewModel by viewModels()
     private val sharedViewModel: SharedViewModel by activityViewModels()
     private lateinit var audioManager: AudioManager
+    private var uiReceiver: BroadcastReceiver = object: BroadcastReceiver() {
 
-    private fun registerReceiver(): Unit {
-        receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Application.ACTION_UPDATE_UI) {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Application.ACTION_UPDATE_UI) {
 
-                }
             }
         }
+    }
+    private var processLifecycleReceiver: BroadcastReceiver = object: BroadcastReceiver() {
+
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.i(LOG_TAG, "onReceive()")
+            if (intent?.action == Application.ACTION_GONE_BACKGROUND) {
+                Log.i(LOG_TAG, "ACTION_GONE_BACKGROUND")
+                startService()
+            }
+            else if (intent?.action == Application.ACTION_GONE_FOREGROUND) {
+                Log.i(LOG_TAG, "ACTION_GONE_FOREGROUND")
+                stopService()
+            }
+        }
+    }
+
+    private fun registerReceiver(receiver: BroadcastReceiver, actions: Array<String>): Unit {
+        Log.i(LOG_TAG, "registerReceiver")
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
-        val filter: IntentFilter = IntentFilter(Application.ACTION_UPDATE_UI)
+        val filter: IntentFilter = IntentFilter().apply {
+            for (i in actions) {
+                this.addAction(i)
+            }
+        }
         broadcastManager.registerReceiver(receiver, filter)
     }
 
-    private fun unregisterReceiver(): Unit {
+    private fun unregisterReceiver(receiver: BroadcastReceiver): Unit {
         Log.i("ProfilesListFragment", "unregisterReceiver()")
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
         broadcastManager.unregisterReceiver(receiver)
     }
 
-    override fun onDestroy(): Unit {
-        super.onDestroy()
-        unregisterReceiver()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        registerReceiver()
+        registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_UI))
+        registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND, Application.ACTION_GONE_FOREGROUND))
         val context: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             requireContext().createDeviceProtectedStorageContext()
         }
@@ -89,11 +105,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             expandedViews = savedInstanceState.getIntegerArrayList(KEY_EXPANDED_VIEWS) as ArrayList<Int>
         }
          */
-    }
-
-    override fun onResume() {
-        super.onResume()
-        profileAdapter.notifyDataSetChanged()
     }
 
     override fun onCreateView(
@@ -116,7 +127,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        Log.i("ProfilesListFragment", "onViewCreated()")
+        //Log.i("ProfilesListFragment", "onViewCreated()")
         viewModel.profileListLiveData.observe(viewLifecycleOwner,
                 Observer<List<Profile>> { t ->
                     if (t != null) {
@@ -134,15 +145,29 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         viewModel.associatedEventsLiveData.observe(viewLifecycleOwner,
             Observer<List<ProfileAndEvent>?> { t ->
                 if (t != null && t.isNotEmpty()) {
-                    Log.i("ProfilesListFragment", "removing redundant alarms, amount of alarms: ${t.size}")
+                    //Log.i("ProfilesListFragment", "removing redundant alarms, amount of alarms: ${t.size}")
                     val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
                     alarmUtil.cancelMultipleAlarms(t)
                 }
             })
     }
 
+    override fun onDestroy(): Unit {
+        super.onDestroy()
+        Log.i(LOG_TAG, "onDestroy()")
+        unregisterReceiver(processLifecycleReceiver)
+        unregisterReceiver(uiReceiver)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (profileAdapter.currentList.isNotEmpty()) {
+            profileAdapter.notifyDataSetChanged()
+        }
+    }
+
     private fun updateUI(profiles: List<Profile>) {
-        Log.i("ProfilesListFragment", "updateUI")
+        //Log.i("ProfilesListFragment", "updateUI")
         if (profiles.isNotEmpty()) {
             view?.findViewById<TextView>(R.id.hint_profile)?.visibility = View.GONE
             view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.GONE
@@ -152,6 +177,25 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.VISIBLE
         }
         profileAdapter.submitList(profiles)
+    }
+
+    private fun startService(): Unit {
+        Log.i(LOG_TAG, "startService")
+        val context: Context = requireContext()
+        val intent: Intent = Intent(context, ProfileSelectService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        }
+        else {
+            context.startService(intent)
+        }
+    }
+
+    private fun stopService(): Unit {
+        Log.i(LOG_TAG, "stopService")
+        val context: Context = requireContext()
+        val intent: Intent = Intent(context, ProfileSelectService::class.java)
+        context.stopService(intent)
     }
 
     private inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view), CompoundButton.OnCheckedChangeListener {
@@ -245,16 +289,19 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
                 val currentIndex: Int = absoluteAdapterPosition
                 val currentProfile: Profile = profileAdapter.getProfile(currentIndex)
                 if (isChecked) {
+                    Log.i(LOG_TAG, "selecting view as active")
                     AudioUtil.applyAudioSettings(requireContext(), AudioUtil.getVolumeSettingsMapPair(currentProfile))
                     currentProfile.isActive = true
                     profileAdapter.notifyItemChanged(currentIndex)
                     viewModel.lastActiveProfileIndex = currentIndex
                     if (lastIndex != -1) {
+                        Log.i(LOG_TAG, "deselecting other views")
                         profileAdapter.getProfile(lastIndex).isActive = false
                         profileAdapter.notifyItemChanged(lastIndex)
                     }
                 }
                 else {
+                    Log.i(LOG_TAG, "deselecting current view")
                     currentProfile.isActive = false
                     if (lastIndex != -1) {
                         viewModel.lastActiveProfileIndex = -1
