@@ -10,12 +10,12 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.MainActivity
-import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.receivers.NotificationActionReceiver
+import java.util.*
 
-class ProfileSelectService: Service() {
+class NotificationWidgetService: Service() {
 
-    private lateinit var profileArray: Array<Profile>
+    private lateinit var profilesUUIDArray: Array<UUID>
 
     override fun onCreate() {
         super.onCreate()
@@ -55,6 +55,12 @@ class ProfileSelectService: Service() {
         if (intent != null) {
             val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let {
                 PendingIntent.getActivity(this, ACTIVITY_REQUEST_CODE, it, 0)
+            }
+            if (intent.extras != null) {
+
+            }
+            else {
+
             }
             startForeground(SERVICE_ID, createNotification(pendingIntent))
         }

@@ -25,7 +25,7 @@ import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.viewmodels.EditEventViewModel
 import java.time.DayOfWeek
 import java.time.LocalDateTime
@@ -257,7 +257,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
     private fun setAlarm(event: Event, profile: Profile): Unit {
         val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-        val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
+        val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId, false, profile.id)
     }

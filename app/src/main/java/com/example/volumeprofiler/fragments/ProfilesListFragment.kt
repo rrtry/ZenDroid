@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.fragments
 
+import android.app.ActivityManager
 import android.content.*
 import android.media.AudioManager
 import android.os.Build
@@ -9,7 +10,6 @@ import android.transition.TransitionManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.util.Log
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.ImageView
@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
+import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,12 +30,14 @@ import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.activities.EditProfileActivity
-import com.example.volumeprofiler.services.ProfileSelectService
+import com.example.volumeprofiler.receivers.AlarmReceiver
+import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
 import com.example.volumeprofiler.viewmodels.SharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.util.*
 import kotlin.collections.ArrayList
 
 class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
@@ -42,7 +45,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
-    //private val ids: ArrayList<UUID> = arrayListOf()
+    private val ids: ArrayList<UUID> = arrayListOf()
     private val profileAdapter: ProfileAdapter = ProfileAdapter()
     private var expandedViews: ArrayList<Int> = arrayListOf()
     private val viewModel: ProfileListViewModel by viewModels()
@@ -51,28 +54,36 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     private var uiReceiver: BroadcastReceiver = object: BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Application.ACTION_UPDATE_UI) {
-
+            if (intent?.action == Application.ACTION_UPDATE_SELECTED_PROFILE) {
+                val id: UUID? = intent.extras?.getSerializable(AlarmReceiver.EXTRA_PROFILE_ID) as UUID?
+                if (id != null) {
+                    for ((index, item) in profileAdapter.currentList.withIndex()) {
+                        if (item.id == id) {
+                            checkProfileView(false, index)
+                        }
+                    }
+                }
             }
         }
     }
     private var processLifecycleReceiver: BroadcastReceiver = object: BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.i(LOG_TAG, "onReceive()")
             if (intent?.action == Application.ACTION_GONE_BACKGROUND) {
-                Log.i(LOG_TAG, "ACTION_GONE_BACKGROUND")
-                startService()
+                val isProfileQueryEmpty: Boolean? = sharedViewModel.isProfileQueryEmpty.value
+                if (isProfileQueryEmpty != null && !isProfileQueryEmpty) {
+                    startService()
+                }
             }
             else if (intent?.action == Application.ACTION_GONE_FOREGROUND) {
-                Log.i(LOG_TAG, "ACTION_GONE_FOREGROUND")
-                stopService()
+                if (isServiceRunning()) {
+                    stopService()
+                }
             }
         }
     }
 
     private fun registerReceiver(receiver: BroadcastReceiver, actions: Array<String>): Unit {
-        Log.i(LOG_TAG, "registerReceiver")
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
         val filter: IntentFilter = IntentFilter().apply {
             for (i in actions) {
@@ -83,22 +94,21 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     }
 
     private fun unregisterReceiver(receiver: BroadcastReceiver): Unit {
-        Log.i("ProfilesListFragment", "unregisterReceiver()")
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
         broadcastManager.unregisterReceiver(receiver)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_UI))
+        registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_SELECTED_PROFILE))
         registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND, Application.ACTION_GONE_FOREGROUND))
-        val context: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             requireContext().createDeviceProtectedStorageContext()
         }
         else {
             requireContext()
         }
-        sharedPreferences = context.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        sharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
         audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
         /*
         if (savedInstanceState != null) {
@@ -112,7 +122,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        Log.i("ProfilesListFragment", "onCreateView()")
         val view: View = inflater.inflate(R.layout.profiles, container, false)
         floatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
@@ -127,17 +136,14 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        //Log.i("ProfilesListFragment", "onViewCreated()")
         viewModel.profileListLiveData.observe(viewLifecycleOwner,
                 Observer<List<Profile>> { t ->
                     if (t != null) {
-                        /*
                         if (t.isNotEmpty()) {
                             for (i in t) {
                                 ids.add(i.id)
                             }
                         }
-                         */
                         sharedViewModel.setValue(t.isEmpty())
                         updateUI(t)
                     }
@@ -145,7 +151,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         viewModel.associatedEventsLiveData.observe(viewLifecycleOwner,
             Observer<List<ProfileAndEvent>?> { t ->
                 if (t != null && t.isNotEmpty()) {
-                    //Log.i("ProfilesListFragment", "removing redundant alarms, amount of alarms: ${t.size}")
                     val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
                     alarmUtil.cancelMultipleAlarms(t)
                 }
@@ -154,7 +159,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     override fun onDestroy(): Unit {
         super.onDestroy()
-        Log.i(LOG_TAG, "onDestroy()")
         unregisterReceiver(processLifecycleReceiver)
         unregisterReceiver(uiReceiver)
     }
@@ -167,7 +171,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     }
 
     private fun updateUI(profiles: List<Profile>) {
-        //Log.i("ProfilesListFragment", "updateUI")
         if (profiles.isNotEmpty()) {
             view?.findViewById<TextView>(R.id.hint_profile)?.visibility = View.GONE
             view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.GONE
@@ -180,9 +183,10 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     }
 
     private fun startService(): Unit {
-        Log.i(LOG_TAG, "startService")
         val context: Context = requireContext()
-        val intent: Intent = Intent(context, ProfileSelectService::class.java)
+        val intent: Intent = Intent(context, NotificationWidgetService::class.java).apply {
+            this.putExtra(NotificationWidgetService.EXTRA_PROFILES, ids)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         }
@@ -192,10 +196,36 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     }
 
     private fun stopService(): Unit {
-        Log.i(LOG_TAG, "stopService")
         val context: Context = requireContext()
-        val intent: Intent = Intent(context, ProfileSelectService::class.java)
+        val intent: Intent = Intent(context, NotificationWidgetService::class.java)
         context.stopService(intent)
+    }
+
+    @SuppressWarnings("deprecation")
+    private fun isServiceRunning(): Boolean {
+        val serviceName: String = NotificationWidgetService::class.java.name
+        val context: Context = requireContext()
+        val activityManager: ActivityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val services = activityManager.getRunningServices(Int.MAX_VALUE)
+        for (i in services) {
+            if (i.service.className == serviceName) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun checkProfileView(isPressed: Boolean, currentPosition: Int): Unit {
+        val lastIndex: Int = viewModel.lastActiveProfileIndex
+        val currentProfile: Profile = profileAdapter.getProfile(currentPosition)
+        profileAdapter.notifyItemChanged(currentPosition)
+        viewModel.lastActiveProfileIndex = currentPosition
+        if (isPressed) {
+            applyAudioSettings(currentProfile)
+        }
+        if (lastIndex != -1) {
+            profileAdapter.notifyItemChanged(lastIndex)
+        }
     }
 
     private inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view), CompoundButton.OnCheckedChangeListener {
@@ -224,7 +254,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             //expandedViews.remove(position)
             //ids.removeAt(position)
             profileAdapter.getProfile(position).let {
-                Log.i("ProfilesListFragment", "deleting profile and cancelling alarms")
+                clearSharedPreferences(it.id)
                 scaleDownAnimation(itemView)
                 viewModel.removeProfile(it)
             }
@@ -275,7 +305,11 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         }
 
         fun bindProfile(profile: Profile, position: Int): Unit {
-            checkBox.isChecked = profile.isActive
+            val isProfileActive: Boolean = isProfileActive(profile)
+            checkBox.isChecked = isProfileActive
+            if (isProfileActive) {
+                viewModel.lastActiveProfileIndex = absoluteAdapterPosition
+            }
             setupTextViews(profile)
             setCallbacks(profile)
             if (expandedViews.contains(position)) {
@@ -285,30 +319,40 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
         override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean) {
             if (buttonView != null && buttonView.isPressed) {
-                val lastIndex: Int = viewModel.lastActiveProfileIndex
-                val currentIndex: Int = absoluteAdapterPosition
-                val currentProfile: Profile = profileAdapter.getProfile(currentIndex)
                 if (isChecked) {
-                    Log.i(LOG_TAG, "selecting view as active")
-                    AudioUtil.applyAudioSettings(requireContext(), AudioUtil.getVolumeSettingsMapPair(currentProfile))
-                    currentProfile.isActive = true
-                    profileAdapter.notifyItemChanged(currentIndex)
-                    viewModel.lastActiveProfileIndex = currentIndex
-                    if (lastIndex != -1) {
-                        Log.i(LOG_TAG, "deselecting other views")
-                        profileAdapter.getProfile(lastIndex).isActive = false
-                        profileAdapter.notifyItemChanged(lastIndex)
-                    }
+                    checkProfileView(true, absoluteAdapterPosition)
                 }
                 else {
-                    Log.i(LOG_TAG, "deselecting current view")
-                    currentProfile.isActive = false
+                    val lastIndex: Int = viewModel.lastActiveProfileIndex
+                    val currentProfile: Profile = profileAdapter.getProfile(absoluteAdapterPosition)
+                    clearSharedPreferences(currentProfile.id)
                     if (lastIndex != -1) {
                         viewModel.lastActiveProfileIndex = -1
                     }
                 }
             }
         }
+    }
+
+    private fun clearSharedPreferences(id: UUID): Unit {
+        if (sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "") == id.toString()) {
+            val editor: SharedPreferences.Editor = sharedPreferences.edit()
+            editor.clear().apply()
+        }
+    }
+
+    private fun isProfileActive(profile: Profile): Boolean {
+        val id: String? = sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "")
+        if (id != null && profile.id.toString() == id) {
+            return true
+        }
+        return false
+    }
+
+    private fun applyAudioSettings(profile: Profile): Unit {
+        val profileUtil = ProfileUtil(requireContext())
+        val settingsPair = ProfileUtil.getVolumeSettingsMapPair(profile)
+        profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, profile.id)
     }
 
     private inner class ProfileAdapter : androidx.recyclerview.widget.ListAdapter<Profile, ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {

@@ -30,7 +30,7 @@ import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.viewmodels.ScheduledEventsViewModel
 import com.example.volumeprofiler.viewmodels.SharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -161,7 +161,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             model.removeEvent(event)
             val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
             val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-            val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
+            val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
             alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
                     event.localDateTime, event.eventId, profile.id)
         }
@@ -172,7 +172,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                 val event: Event = profileAndEvent.event
                 val profile: Profile = profileAndEvent.profile
                 val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-                val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
+                val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
                 val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
                 if (isChecked && enableSwitch.isPressed) {
                     event.isScheduled = 1

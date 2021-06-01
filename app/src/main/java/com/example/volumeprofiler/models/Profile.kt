@@ -18,6 +18,4 @@ data class Profile(var title: String,
                    var chargingSoundsAndVibration: Int = 0,
                    var touchSounds: Int = 0,
                    var touchVibration: Int = 0,
-                   var shutterSound: Int = 0) {
-    @Ignore var isActive: Boolean = false
-}
+                   var shutterSound: Int = 0)

@@ -121,7 +121,7 @@ class AlarmUtil constructor (val context: Context) {
             else {
                 eventOccurrences = arrayOf()
             }
-            val volumeSettingsMap = AudioUtil.getVolumeSettingsMapPair(profile)
+            val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
             cancelAlarm(
                     volumeSettingsMap, eventOccurrences,
                     event.localDateTime, event.eventId, profile.id)
@@ -139,7 +139,7 @@ class AlarmUtil constructor (val context: Context) {
             else {
                 eventOccurrences = arrayOf()
             }
-            val volumeSettingsMap = AudioUtil.getVolumeSettingsMapPair(profile)
+            val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
             setAlarm(
                     volumeSettingsMap, eventOccurrences,
                     event.localDateTime, event.eventId, false, profile.id)

@@ -17,15 +17,15 @@ import com.example.volumeprofiler.fragments.ProfilesListFragment
 
 class Application: Application(), LifecycleObserver {
 
-    override fun onCreate() {
+    override fun onCreate(): Unit {
         super.onCreate()
-        val context: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             this.createDeviceProtectedStorageContext()
         }
         else {
             this
         }
-        Repository.initialize(context)
+        Repository.initialize(storageContext)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
@@ -38,7 +38,11 @@ class Application: Application(), LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun onApplicationInForeground(): Unit {
         Log.i(LOG_TAG, "onApplicationForeground")
-        Handler(Looper.getMainLooper()).postDelayed({ sendBroadcast(ACTION_GONE_FOREGROUND) }, 200)
+        Handler(Looper.getMainLooper()).postDelayed(object : Runnable {
+            override fun run() {
+                sendBroadcast(ACTION_GONE_FOREGROUND)
+            }
+        }, 200)
     }
 
     private fun sendBroadcast(action: String): Unit {
@@ -52,11 +56,10 @@ class Application: Application(), LifecycleObserver {
     companion object {
 
         private const val LOG_TAG: String = "Application"
-        const val SHARED_PREFERENCES = "volumeprofiler_shared_prefs"
+        const val SHARED_PREFERENCES: String = "volumeprofiler_shared_prefs"
         const val ACTION_TRIGGER_ALARM: String = "com.example.volumeprofiler.ACTION_TRIGGER_ALARM"
-        const val ACTION_UPDATE_UI: String = "com.example.volumeprofiler.ACTION_UPDATE_UI"
+        const val ACTION_UPDATE_SELECTED_PROFILE: String = "com.example.volumeprofiler.ACTION_PROFILE_SELECTED"
         const val ACTION_GONE_FOREGROUND: String = "com.example.volumeprofiler.ACTION_GONE_FOREGROUND"
         const val ACTION_GONE_BACKGROUND: String = "com.example.volumeprofiler.ACTION_GONE_BACKGROUND"
-        const val ACTION_SELECT_PROFILE: String = "com.example.volumeprofiler.ACTION_SELECT_PROFILE"
     }
 }

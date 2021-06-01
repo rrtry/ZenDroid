@@ -3,7 +3,9 @@ package com.example.volumeprofiler.activities
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.view.KeyEvent
@@ -23,8 +25,9 @@ import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AudioUtil
+import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -84,7 +87,6 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     }
 
     private fun hideSoftInput(): Unit {
-        Log.i(LOG_TAG, "hideSoftInput()")
         val inputManager: InputMethodManager = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputManager.hideSoftInputFromWindow(editText.windowToken, 0)
         editText.clearFocus()
@@ -139,7 +141,6 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     private fun setLiveDataObservers(): Unit {
         viewModel.profileLiveData.observe(this, androidx.lifecycle.Observer {
             if (it != null) {
-                Log.d("EditProfileActivity", "observing state of existing profile")
                 if (viewModel.mutableProfile == null) {
                     viewModel.mutableProfile = it
                 }
@@ -148,7 +149,6 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
         })
         viewModel.profileAndEventLiveData.observe(this, androidx.lifecycle.Observer {
             if (it != null) {
-                Log.d("EditProfileActivity", "observing id of the associated event")
                 profilesAndEvents = it
             }
         })
@@ -162,8 +162,7 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
         if (intent.extras?.get(EXTRA_UUID) != null) {
             supportActionBar?.title = "Edit profile"
             viewModel.setProfile(intent.extras?.get(EXTRA_UUID) as UUID)
-        }
-        else {
+        } else {
             if (viewModel.mutableProfile == null) {
                 viewModel.mutableProfile = Profile("Profile")
                 viewModel.changesMade = true
@@ -175,6 +174,18 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
         setLiveDataObservers()
     }
 
+    private fun applyAudioSettings(): Unit {
+        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            this.createDeviceProtectedStorageContext() else this
+        val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        if (sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "")
+                == viewModel.mutableProfile!!.id.toString()) {
+            val profileUtil: ProfileUtil = ProfileUtil(this)
+            val settingsPair = ProfileUtil.getVolumeSettingsMapPair(viewModel.mutableProfile!!)
+            profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, viewModel.mutableProfile!!.id)
+        }
+    }
+
     private fun saveChanges(): Unit {
         val profile: Profile = viewModel.mutableProfile!!
         profile.title = editText.text.toString()
@@ -182,13 +193,13 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
             viewModel.mutableProfile!!.callVolume++
         }
         if (profilesAndEvents != null) {
-            Log.i("EditProfileActivity", "profile has associated event")
             for (i in profilesAndEvents!!) {
                 val event: Event = i.event
                 setAlarm(event, profile)
             }
         }
         if (viewModel.mutableProfile != null) {
+            applyAudioSettings()
             if (intent.extras?.get(EXTRA_UUID) == null) {
                 viewModel.addProfile(profile)
             }
@@ -200,7 +211,7 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
 
     private fun setAlarm(event: Event, profile: Profile): Unit {
         val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-        val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = AudioUtil.getVolumeSettingsMapPair(profile)
+        val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId, false, profile.id)
     }
@@ -317,7 +328,6 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     }
 
     override fun onBackPressed() {
-        Log.i(LOG_TAG, "viewModel.changesMade: ${viewModel.changesMade}")
         if (viewModel.changesMade) {
             val fragment: ApplyChangesDialog = ApplyChangesDialog()
             fragment.show(supportFragmentManager, null)
