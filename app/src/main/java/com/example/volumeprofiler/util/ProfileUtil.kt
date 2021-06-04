@@ -62,7 +62,7 @@ class ProfileUtil constructor (val context: Context) {
 
     fun sendBroadcastToUpdateUI(profileId: UUID): Unit {
         val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-        val intent: Intent = Intent(Application.ACTION_UPDATE_SELECTED_VIEW).apply {
+        val intent: Intent = Intent(Application.ACTION_UPDATE_UI).apply {
             this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
         }
         localBroadcastManager.sendBroadcast(intent)

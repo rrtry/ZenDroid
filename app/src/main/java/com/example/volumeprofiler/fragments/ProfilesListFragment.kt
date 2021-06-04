@@ -54,7 +54,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     private var uiReceiver: BroadcastReceiver = object: BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Application.ACTION_UPDATE_SELECTED_VIEW) {
+            if (intent?.action == Application.ACTION_UPDATE_UI) {
                 val id: UUID? = intent.extras?.getSerializable(AlarmReceiver.EXTRA_PROFILE_ID) as UUID?
                 if (id != null) {
                     for ((index, item) in profileAdapter.currentList.withIndex()) {
@@ -79,7 +79,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             else if (intent?.action == Application.ACTION_GONE_FOREGROUND) {
                 Log.i(LOG_TAG, "onReceive, stopping service")
                 stopService()
-
             }
         }
     }
@@ -101,7 +100,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_SELECTED_VIEW))
+        registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_UI))
         registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND, Application.ACTION_GONE_FOREGROUND))
         val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             requireContext().createDeviceProtectedStorageContext()
@@ -211,6 +210,17 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         if (lastIndex != -1) {
             profileAdapter.notifyItemChanged(lastIndex)
         }
+    }
+
+    private fun getActiveProfilePosition(id: UUID): Int {
+        var position: Int = -1
+        val sharedPrefsId: String? = sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "")
+        for ((index, i) in profileAdapter.currentList.withIndex()) {
+            if (i.id.toString() == sharedPrefsId) {
+                position = index
+            }
+        }
+        return position
     }
 
     private inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view), CompoundButton.OnCheckedChangeListener {

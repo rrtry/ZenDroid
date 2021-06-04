@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import java.time.LocalDateTime
 import android.util.Log
 import com.example.volumeprofiler.Application
@@ -18,7 +19,7 @@ class AlarmReceiver: BroadcastReceiver() {
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.i("AlarmReceiver", "onReceive")
-        if (context != null && intent?.action == Application.ACTION_TRIGGER_ALARM) {
+        if (context != null && intent?.action == Application.ACTION_ALARM_TRIGGER) {
 
             val profileUtil: ProfileUtil = ProfileUtil(context)
             val alarmUtil = AlarmUtil(context.applicationContext)
@@ -27,17 +28,29 @@ class AlarmReceiver: BroadcastReceiver() {
             val primaryVolumeSettings: Map<Int, Int> = intent.getSerializableExtra(EXTRA_PRIMARY_VOLUME_SETTINGS) as HashMap<Int, Int>
             val optionalVolumeSettings: Map<String, Int> = intent.getSerializableExtra(EXTRA_OPTIONAL_VOLUME_SETTINGS) as HashMap<String, Int>
             val eventOccurrences: Array<Int> = intent.extras?.get(EXTRA_EVENT_OCCURRENCES) as Array<Int>
-            val eventId: Long = intent.extras?.get(EXTRA_ALARM_ID) as Long
-            val profileId: UUID = intent.extras?.get(EXTRA_PROFILE_ID) as UUID
-            val eventTime: LocalDateTime = intent.extras?.get(EXTRA_ALARM_TRIGGER_TIME) as LocalDateTime
+            val eventId: Long = intent.extras?.getLong(EXTRA_ALARM_ID) as Long
+            val profileId: UUID = intent.extras?.getSerializable(EXTRA_PROFILE_ID) as UUID
+            val eventTime: LocalDateTime = intent.extras?.getSerializable(EXTRA_ALARM_TRIGGER_TIME) as LocalDateTime
 
             alarmUtil.setAlarm(Pair(primaryVolumeSettings, optionalVolumeSettings), eventOccurrences,
                     eventTime, eventId, true, profileId, profileTitle)
             profileUtil.applyAudioSettings(primaryVolumeSettings, optionalVolumeSettings, profileId, profileTitle)
             profileUtil.sendBroadcastToUpdateUI(profileId)
             if (isServiceRunning(context)) {
-                // TODO update notification contents with notificationManager.notify(SERVICE_ID, notification)
+                updateNotification(context)
             }
+        }
+    }
+
+    private fun updateNotification(context: Context): Unit {
+        val intent: Intent = Intent(context, NotificationWidgetService::class.java).apply {
+            this.putExtra(NotificationWidgetService.EXTRA_UPDATE_NOTIFICATION, true)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        }
+        else {
+            context.startService(intent)
         }
     }
 

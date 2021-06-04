@@ -126,6 +126,7 @@ class NotificationWidgetService: Service() {
             }
         }
         else if (intent.extras!!.getBoolean(EXTRA_UPDATE_NOTIFICATION)) {
+            Log.i(LOG_TAG, "updating notification")
             setActiveProfilePosition()
             val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(SERVICE_ID, createNotification())

@@ -163,7 +163,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
             val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
             alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
-                    event.localDateTime, event.eventId, profile.id)
+                    event.localDateTime, event.eventId, profile.id, profile.title)
         }
 
         private fun setupCallbacks(): Unit {
@@ -186,7 +186,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                     model.updateEvent(event)
                     Log.i("ScheduleListFragment", "isn't checked, cancelling alarm")
                     alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences, event.localDateTime,
-                            event.eventId, profile.id)
+                            event.eventId, profile.id, profile.title)
                 }
             }
             deleteEventButton.setOnClickListener {

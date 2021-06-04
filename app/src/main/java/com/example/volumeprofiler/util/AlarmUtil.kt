@@ -16,10 +16,7 @@ import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.receivers.AlarmReceiver
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.io.Serializable
 import java.time.LocalTime
 import java.time.ZoneId
@@ -31,22 +28,15 @@ import java.util.*
 
 class AlarmUtil constructor (val context: Context) {
 
+    private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
     fun setAlarm(
             volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
             eventOccurrences: Array<Int>,
             eventTime: LocalDateTime,
             id: Long, onReschedule: Boolean = false, profileId: UUID, profileTitle: String): Unit {
-        val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = Application.ACTION_TRIGGER_ALARM
-            this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
-            this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
-            this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
-            this.putExtra(AlarmReceiver.EXTRA_ALARM_ID, id)
-            this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
-            this.putExtra(AlarmReceiver.EXTRA_ALARM_TRIGGER_TIME, eventTime)
-        }
-        val pendingIntent: PendingIntent = PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
+        val pendingIntent: PendingIntent = createIntent(volumeSettingsMapPair, eventOccurrences,
+        eventTime, id, profileId, profileTitle)
         val now: LocalDateTime = LocalDateTime.now()
         var delay: Long
         if ((eventOccurrences.contains(now.dayOfWeek.value) || eventOccurrences.isEmpty()) && now.toLocalTime() < eventTime.toLocalTime()) {
@@ -65,13 +55,12 @@ class AlarmUtil constructor (val context: Context) {
                     Log.i(LOG_TAG, "no days on schedule, settings alarm for tomorrow: $delay, alarmId: $id, day: $nextDay")
                 }
                 else {
-                    cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId)
+                    cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId, profileTitle)
                     GlobalScope.launch {
-                        val repository: Repository = Repository.get()
-                        val event: Event = repository.getEvent(id)
-                        event.isScheduled = 0
-                        repository.updateEvent(event)
+                        updateDB(id)
                     }
+                    val profileUtil: ProfileUtil = ProfileUtil(context)
+                    profileUtil.sendBroadcastToUpdateUI(profileId)
                     return
                 }
             }
@@ -85,24 +74,41 @@ class AlarmUtil constructor (val context: Context) {
         }
     }
 
-    fun cancelAlarm(
-            volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
-            eventOccurrences: Array<Int>,
-            eventTime: LocalDateTime,
-            id: Long,
-            profileId: UUID): Unit {
-        Log.i(LOG_TAG, "request to cancel alarm with an id of $id")
-        val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private fun createIntent(volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
+                             eventOccurrences: Array<Int>,
+                             eventTime: LocalDateTime,
+                             id: Long,
+                             profileId: UUID,
+                             profileTitle: String): PendingIntent {
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = Application.ACTION_TRIGGER_ALARM
+            this.action = Application.ACTION_ALARM_TRIGGER
             this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
             this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
             this.putExtra(AlarmReceiver.EXTRA_ALARM_ID, id)
             this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
             this.putExtra(AlarmReceiver.EXTRA_ALARM_TRIGGER_TIME, eventTime)
+            this.putExtra(AlarmReceiver.EXTRA_PROFILE_TITLE, profileTitle)
         }
-        val pendingIntent: PendingIntent? = PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_NO_CREATE)
+        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
+    }
+
+    private suspend fun updateDB(id: Long): Unit {
+        val repository: Repository = Repository.get()
+        val event: Event = repository.getEvent(id)
+        event.isScheduled = 0
+        repository.updateEvent(event)
+    }
+
+    fun cancelAlarm(
+            volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
+            eventOccurrences: Array<Int>,
+            eventTime: LocalDateTime,
+            id: Long,
+            profileId: UUID, profileTitle: String): Unit {
+        Log.i(LOG_TAG, "request to cancel alarm with an id of $id")
+        val pendingIntent: PendingIntent? = createIntent(volumeSettingsMapPair, eventOccurrences,
+        eventTime, id, profileId, profileTitle)
         if (pendingIntent != null) {
             Log.i(LOG_TAG, "pendingIntent exists, cancelling alarm...")
             alarmManager.cancel(pendingIntent)
@@ -126,7 +132,7 @@ class AlarmUtil constructor (val context: Context) {
             val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
             cancelAlarm(
                     volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.eventId, profile.id)
+                    event.localDateTime, event.eventId, profile.id, profile.title)
         }
     }
 
