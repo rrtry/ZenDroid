@@ -15,6 +15,9 @@ interface ProfileDao {
     @Query("SELECT * FROM Profile WHERE id=(:id)")
     fun observeProfile(id: UUID): LiveData<Profile?>
 
+    @Query("SELECT * FROM Profile")
+    suspend fun getProfiles(): List<Profile>
+
     @Insert
     suspend fun addProfile(profile: Profile)
 

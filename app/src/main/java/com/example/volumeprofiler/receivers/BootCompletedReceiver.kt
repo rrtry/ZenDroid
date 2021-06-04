@@ -6,33 +6,33 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.example.volumeprofiler.services.AlarmRescheduleService
+import com.example.volumeprofiler.services.NotificationWidgetService
 
 
 class BootCompletedReceiver: BroadcastReceiver() {
 
-    private fun startService(context: Context): Unit {
-        val intent: Intent = Intent(context, AlarmRescheduleService::class.java)
+    private fun startService(context: Context, service: Class<*>): Unit {
+        val intent: Intent = Intent(context, service)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Log.i(LOG_TAG, "Starting foreground service ( ... >= Api 26)")
             context.startForegroundService(intent)
         }
         else {
-            Log.i(LOG_TAG, "Starting foreground service (Api 26 < ...")
             context.startService(intent)
         }
     }
 
     override fun onReceive(context: Context?, intent: Intent?): Unit {
 
+        val context: Context = context as Context
+
         if (intent?.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
-            Log.i(LOG_TAG, "onReceive(), action: ACTION_LOCKED_BOOT_COMPLETED")
-            startService(context!!)
+            startService(context, AlarmRescheduleService::class.java)
+            startService(context, NotificationWidgetService::class.java)
         }
-        else if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
-            Log.i(LOG_TAG, "onReceive(), action: ACTION_BOOT_COMPLETED")
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                startService(context!!)
-            }
+        else if (intent?.action == Intent.ACTION_BOOT_COMPLETED &&
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            startService(context, AlarmRescheduleService::class.java)
+            startService(context, NotificationWidgetService::class.java)
         }
     }
 

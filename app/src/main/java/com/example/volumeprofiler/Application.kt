@@ -58,8 +58,9 @@ class Application: Application(), LifecycleObserver {
         private const val LOG_TAG: String = "Application"
         const val SHARED_PREFERENCES: String = "volumeprofiler_shared_prefs"
         const val ACTION_TRIGGER_ALARM: String = "com.example.volumeprofiler.ACTION_TRIGGER_ALARM"
-        const val ACTION_UPDATE_SELECTED_PROFILE: String = "com.example.volumeprofiler.ACTION_PROFILE_SELECTED"
+        const val ACTION_UPDATE_SELECTED_VIEW: String = "com.example.volumeprofiler.ACTION_UPDATE_SELECTED_VIEW"
         const val ACTION_GONE_FOREGROUND: String = "com.example.volumeprofiler.ACTION_GONE_FOREGROUND"
         const val ACTION_GONE_BACKGROUND: String = "com.example.volumeprofiler.ACTION_GONE_BACKGROUND"
+        const val ACTION_WIDGET_PROFILE_SELECTED: String = "com.example.volumeprofiler.WIDGET_PROFILE_SELECTED"
     }
 }

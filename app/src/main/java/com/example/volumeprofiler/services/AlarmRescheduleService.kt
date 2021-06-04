@@ -18,6 +18,12 @@ class AlarmRescheduleService: Service() {
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
+    private lateinit var notificationManager: NotificationManager
+
+    override fun onCreate() {
+        super.onCreate()
+        notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
 
     private suspend fun doWork(): Unit {
         val repository: Repository = Repository.get()
@@ -47,7 +53,6 @@ class AlarmRescheduleService: Service() {
 
     @TargetApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): NotificationChannel {
-        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         return NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW
         ).also { channel ->

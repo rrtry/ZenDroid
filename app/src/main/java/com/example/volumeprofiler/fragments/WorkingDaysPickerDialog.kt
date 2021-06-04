@@ -32,7 +32,6 @@ class WorkingDaysPickerDialog: DialogFragment() {
         super.onResume()
         val alertDialog: AlertDialog = dialog as AlertDialog
         if (selectedItems.isEmpty()) {
-            Log.i("WorkingDaysPickerDialog", "selectedItems array is empty, filling it with argument's data")
             val workingDays: Array<Int> = arguments?.get(ARG_WORKING_DAYS) as Array<Int>
             if (workingDays.isNotEmpty()) {
                 for (value in workingDays) {
@@ -43,7 +42,6 @@ class WorkingDaysPickerDialog: DialogFragment() {
             }
         }
         else {
-            Log.i("WorkingDaysPickerDialog", "selectedItems array is not empty")
             for (value in selectedItems) {
                 alertDialog.listView.setItemChecked(value, true)
             }
@@ -56,7 +54,6 @@ class WorkingDaysPickerDialog: DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        Log.i("WorkingDaysPickerDialog", "onCreateDialog()")
         return activity?.let {
             val builder = AlertDialog.Builder(it)
             builder.setTitle(R.string.workingDaysTitle)

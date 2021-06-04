@@ -179,7 +179,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                     model.updateEvent(event)
                     Log.i("ScheduleListFragment", "is checked, scheduling alarm")
                     alarmUtil.setAlarm(volumeMapPair, eventOccurrences, event.localDateTime,
-                            event.eventId, false, profile.id)
+                            event.eventId, false, profile.id, profile.title)
                 }
                 else if (!isChecked && enableSwitch.isPressed) {
                     event.isScheduled = 0
@@ -274,7 +274,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
     }
 
     companion object {
-        private const val EVERY_DAY_OF_WEEK: Int = "Mon, Tue, Wed, Thu, Fri, Sat, Sun".length
+
         private const val EVENT_LAYOUT: Int = R.layout.item_view_event
     }
 }

@@ -89,6 +89,12 @@ class Repository private constructor(context: Context) {
 
     fun observeProfile(uuid: UUID): LiveData<Profile?> = profileDao.observeProfile(uuid)
 
+    suspend fun getProfiles(): List<Profile> {
+        return withContext(Dispatchers.IO) {
+            profileDao.getProfiles()
+        }
+    }
+
     fun observeProfiles(): LiveData<List<Profile>> = profileDao.observeProfiles()
 
     companion object {

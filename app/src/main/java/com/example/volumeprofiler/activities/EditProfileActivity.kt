@@ -182,7 +182,7 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
                 == viewModel.mutableProfile!!.id.toString()) {
             val profileUtil: ProfileUtil = ProfileUtil(this)
             val settingsPair = ProfileUtil.getVolumeSettingsMapPair(viewModel.mutableProfile!!)
-            profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, viewModel.mutableProfile!!.id)
+            profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, viewModel.mutableProfile!!.id, viewModel.mutableProfile!!.title)
         }
     }
 
@@ -213,7 +213,8 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
         val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
-        alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime, event.eventId, false, profile.id)
+        alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences,
+                event.localDateTime, event.eventId, false, profile.id, profile.title)
     }
 
     private fun updateUI() {

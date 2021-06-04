@@ -6,7 +6,6 @@ import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Profile
@@ -22,7 +21,7 @@ class ProfileUtil constructor (val context: Context) {
         context.createDeviceProtectedStorageContext() else context
     private val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
-    private fun saveProfileToSharedPrefs(id: UUID, primarySettings: Map<Int, Int>, optionalSettings: Map<String, Int>): Unit {
+    private fun saveProfileToSharedPrefs(id: UUID, primarySettings: Map<Int, Int>, optionalSettings: Map<String, Int>, title: String): Unit {
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         for ((key, value) in primarySettings) {
             when (key) {
@@ -43,15 +42,12 @@ class ProfileUtil constructor (val context: Context) {
                 }
             }
         }
+        editor.putString(AlarmReceiver.PREFS_PROFILE_TITLE, title)
         editor.putString(AlarmReceiver.PREFS_PROFILE_ID, id.toString())
         editor.apply()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            Log.i("ProfileUtil", "is limited context: ${storageContext.isDeviceProtectedStorage}")
-        }
-        Log.i("ProfileUtil", "saveProfileToSharedPrefs()")
     }
 
-    fun applyAudioSettings(primarySettings: Map<Int, Int>, optionalSettings: Map<String, Int>, id: UUID) {
+    fun applyAudioSettings(primarySettings: Map<Int, Int>, optionalSettings: Map<String, Int>, id: UUID, title: String) {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         for ((key, value) in primarySettings) {
             audioManager.setStreamVolume(key, value, AudioManager.FLAG_SHOW_UI)
@@ -61,12 +57,12 @@ class ProfileUtil constructor (val context: Context) {
             Settings.System.putInt(context.contentResolver, key, value)
         }
          */
-        saveProfileToSharedPrefs(id, primarySettings, optionalSettings)
+        saveProfileToSharedPrefs(id, primarySettings, optionalSettings, title)
     }
 
-    fun sendBroadcast(profileId: UUID): Unit {
+    fun sendBroadcastToUpdateUI(profileId: UUID): Unit {
         val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-        val intent: Intent = Intent(Application.ACTION_UPDATE_SELECTED_PROFILE).apply {
+        val intent: Intent = Intent(Application.ACTION_UPDATE_SELECTED_VIEW).apply {
             this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
         }
         localBroadcastManager.sendBroadcast(intent)

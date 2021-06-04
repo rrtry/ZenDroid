@@ -16,6 +16,8 @@ import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.receivers.AlarmReceiver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.Serializable
@@ -33,7 +35,7 @@ class AlarmUtil constructor (val context: Context) {
             volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
             eventOccurrences: Array<Int>,
             eventTime: LocalDateTime,
-            id: Long, onReschedule: Boolean = false, profileId: UUID): Unit {
+            id: Long, onReschedule: Boolean = false, profileId: UUID, profileTitle: String): Unit {
         val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             this.action = Application.ACTION_TRIGGER_ALARM
@@ -142,7 +144,7 @@ class AlarmUtil constructor (val context: Context) {
             val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
             setAlarm(
                     volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.eventId, false, profile.id)
+                    event.localDateTime, event.eventId, false, profile.id, profile.title)
         }
     }
 
