@@ -57,12 +57,14 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         alarmManager = requireActivity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
     }
 
+    /*
     override fun onResume() {
         super.onResume()
         if (eventAdapter.currentList.isNotEmpty()) {
             eventAdapter.notifyDataSetChanged()
         }
     }
+     */
 
     override fun onCreateView(
             inflater: LayoutInflater,

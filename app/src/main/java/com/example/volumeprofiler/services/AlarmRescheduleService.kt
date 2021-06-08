@@ -43,6 +43,7 @@ class AlarmRescheduleService: Service() {
                 .setContentTitle("Rescheduling alarms")
                 .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
                 .setOngoing(true)
+                .setNotificationSilent()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel().also {
                 builder.setChannelId(it.id)
@@ -64,10 +65,10 @@ class AlarmRescheduleService: Service() {
         Log.i("AlarmRescheduleService", "onStartCommand()")
         startForeground(SERVICE_ID, createNotification())
         scope.launch {
-            val request = async {
+            val request = launch {
                 doWork()
             }
-            request.await()
+            request.join()
             stopForeground(true)
             stopSelf()
         }
@@ -79,9 +80,9 @@ class AlarmRescheduleService: Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         Log.i(LOG_TAG, "onDestroy")
         job.cancel()
+        super.onDestroy()
     }
 
     companion object {

@@ -186,7 +186,9 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     }
 
     private fun updateStartTimeText(): Unit {
-        startTimeSelectButton.text = (event as Event).localDateTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault()))
+        startTimeSelectButton.text = (event as Event).localDateTime.
+        format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).
+        withLocale(Locale.getDefault()))
     }
 
     private fun updateScheduledDaysText(): Unit {

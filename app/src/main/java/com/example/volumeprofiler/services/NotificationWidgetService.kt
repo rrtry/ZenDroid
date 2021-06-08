@@ -15,10 +15,16 @@ import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.receivers.AlarmReceiver
 import kotlinx.coroutines.*
-import android.util.Log
+import androidx.collection.ArrayMap
 import com.example.volumeprofiler.Application.Companion.ACTION_WIDGET_PROFILE_SELECTED
+import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.receivers.NotificationActionReceiver
 import com.example.volumeprofiler.util.ProfileUtil
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.util.*
+import kotlin.Comparator
+import kotlin.collections.ArrayList
 
 class NotificationWidgetService: Service() {
 
@@ -114,19 +120,46 @@ class NotificationWidgetService: Service() {
         return builder.build()
     }
 
+    private fun restoreChangedPosition(list: List<Profile>, positionMap: ArrayMap<UUID, Int>): List<Profile> {
+        if (positionMap.isNotEmpty()) {
+            val arrayList: ArrayList<Profile> = list as ArrayList<Profile>
+            arrayList.sortWith(object : Comparator<Profile> {
+
+                override fun compare(o1: Profile?, o2: Profile?): Int {
+                    if (o1 != null && o2 != null) {
+                        if (positionMap.containsKey(o1.id) && positionMap.containsKey(o2.id)) {
+                            return positionMap[o1.id]!! - positionMap[o2.id]!!
+                        }
+                        return 0
+                    }
+                    return 0
+                }
+            })
+            return arrayList.toList()
+        }
+        return list
+    }
+
     @SuppressWarnings("unchecked")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.extras == null) {
-            Log.i(LOG_TAG, "starting service and fetching data")
+            val positionMap = Gson().fromJson<ArrayMap<UUID, Int>>(sharedPreferences.getString(
+                    ProfilesListFragment.PREFS_POSITIONS_MAP, null), object : TypeToken<ArrayMap<UUID, Int>>() {}.type
+            )
             scope.launch {
                 val repository: Repository = Repository.get()
-                profilesArray = async { repository.getProfiles() }.await()
+                val profiles = async { repository.getProfiles() }
+                profilesArray = if (positionMap != null
+                        && positionMap.isNotEmpty()) {
+                    restoreChangedPosition(profiles.await(), positionMap)
+                } else {
+                    profiles.await()
+                }
                 setActiveProfilePosition()
                 startForeground(SERVICE_ID, createNotification())
             }
         }
         else if (intent.extras!!.getBoolean(EXTRA_UPDATE_NOTIFICATION)) {
-            Log.i(LOG_TAG, "updating notification")
             setActiveProfilePosition()
             val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(SERVICE_ID, createNotification())
@@ -135,8 +168,8 @@ class NotificationWidgetService: Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         job.cancel()
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -151,6 +184,7 @@ class NotificationWidgetService: Service() {
         private const val ACTIVITY_REQUEST_CODE: Int = 0
         private const val BROADCAST_REQUEST_CODE_NEXT_PROFILE: Int = 1
         private const val BROADCAST_REQUEST_CODE_PREVIOUS_PROFILE: Int = 2
+        const val EXTRA_POSITIONS_MAP: String = "extra_positions_map"
         const val EXTRA_PROFILE_SETTINGS: String = "extra_profile_settings"
         const val EXTRA_UPDATE_NOTIFICATION: String = "extra_update_notification"
         const val EXTRA_PROFILE_ID: String = "extra_profile_id"

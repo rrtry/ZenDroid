@@ -42,7 +42,7 @@ class Application: Application(), LifecycleObserver {
             override fun run() {
                 sendBroadcast(ACTION_GONE_FOREGROUND)
             }
-        }, 200)
+        }, 100)
     }
 
     private fun sendBroadcast(action: String): Unit {

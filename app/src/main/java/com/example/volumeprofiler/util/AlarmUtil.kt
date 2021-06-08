@@ -46,13 +46,11 @@ class AlarmUtil constructor (val context: Context) {
             var nextDay: DayOfWeek? = getNextDayOnSchedule(eventOccurrences)
             if (nextDay != null) {
                 delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
-                Log.i(LOG_TAG, "scheduled for the next day, delay: $delay, alarmId: $id, day: $nextDay")
             }
             else {
                 if (!onReschedule) {
                     nextDay = now.dayOfWeek.plus(1)
                     delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
-                    Log.i(LOG_TAG, "no days on schedule, settings alarm for tomorrow: $delay, alarmId: $id, day: $nextDay")
                 }
                 else {
                     cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId, profileTitle)

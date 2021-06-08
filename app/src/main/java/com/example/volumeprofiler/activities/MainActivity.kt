@@ -11,6 +11,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.ScheduledEventsListFragment
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import android.util.Log
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,11 +20,16 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        supportActionBar?.title = "Scheduler"
+        supportActionBar?.title = "Title"
         viewPager = findViewById(R.id.pager)
         val pagerAdapter = ScreenSlidePagerAdapter(this)
         viewPager.adapter = pagerAdapter
         setupTabLayout()
+    }
+
+    override fun onStop() {
+        Log.i("MainActivity", "onStop()")
+        super.onStop()
     }
 
     private fun setupTabLayout(): Unit {
@@ -59,12 +65,14 @@ class MainActivity : AppCompatActivity() {
                 return ProfilesListFragment()
             }
             return ScheduledEventsListFragment()
+
         }
     }
 
     companion object {
 
-        private val drawables: Array<Int> = arrayOf(android.R.drawable.ic_menu_recent_history, android.R.drawable.ic_menu_sort_by_size,
+        private val drawables: Array<Int> = arrayOf(android.R.drawable.ic_menu_recent_history,
+                android.R.drawable.ic_menu_sort_by_size,
             android.R.drawable.ic_lock_silent_mode)
         private const val NUM_PAGES = 2
     }

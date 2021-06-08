@@ -53,7 +53,7 @@ class ProfileUtil constructor (val context: Context) {
             audioManager.setStreamVolume(key, value, AudioManager.FLAG_SHOW_UI)
         }
         /*
-        for ((key, value) in additionalSettings) {
+        for ((key, value) in optionalSettings) {
             Settings.System.putInt(context.contentResolver, key, value)
         }
          */

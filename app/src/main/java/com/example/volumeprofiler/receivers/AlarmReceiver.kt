@@ -35,7 +35,7 @@ class AlarmReceiver: BroadcastReceiver() {
             alarmUtil.setAlarm(Pair(primaryVolumeSettings, optionalVolumeSettings), eventOccurrences,
                     eventTime, eventId, true, profileId, profileTitle)
             profileUtil.applyAudioSettings(primaryVolumeSettings, optionalVolumeSettings, profileId, profileTitle)
-            profileUtil.sendBroadcastToUpdateUI(profileId)
+            //profileUtil.sendBroadcastToUpdateUI(profileId)
             if (isServiceRunning(context)) {
                 updateNotification(context)
             }
