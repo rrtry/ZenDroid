@@ -12,8 +12,6 @@ import java.util.*
 
 class NotificationActionReceiver: BroadcastReceiver() {
 
-    private lateinit var context: Context
-
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.i("NotificationReceiver",  "onReceive()")
@@ -23,7 +21,7 @@ class NotificationActionReceiver: BroadcastReceiver() {
                     as Pair<Map<Int, Int>, Map<String, Int>>
             val id = intent.extras!!.get(NotificationWidgetService.EXTRA_PROFILE_ID) as UUID
             val profileUtil = ProfileUtil(context!!)
-
+            profileUtil.sendBroadcastToUpdateUI(id)
             profileUtil.applyAudioSettings(settings.first, settings.second, id, title!!)
             startService(context)
         }

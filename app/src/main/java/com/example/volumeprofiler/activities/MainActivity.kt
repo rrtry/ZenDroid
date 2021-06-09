@@ -55,6 +55,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        Log.i("MainActivity", "onDestroy()")
+        super.onDestroy()
+    }
+
     private inner class ScreenSlidePagerAdapter(fa: AppCompatActivity) : FragmentStateAdapter(fa) {
 
         override fun getItemCount(): Int = NUM_PAGES

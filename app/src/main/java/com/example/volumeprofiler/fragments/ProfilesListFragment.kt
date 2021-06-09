@@ -60,6 +60,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Application.ACTION_UPDATE_UI) {
+                Log.i(LOG_TAG, "onReceive()")
                 val id: UUID? = intent.extras?.getSerializable(AlarmReceiver.EXTRA_PROFILE_ID) as UUID?
                 if (id != null) {
                     for ((index, item) in profileAdapter.currentList.withIndex()) {
@@ -80,16 +81,13 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
                     startService()
                 }
             }
-            else if (intent?.action == Application.ACTION_GONE_FOREGROUND) {
-                stopService()
-            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_UI))
-        registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND, Application.ACTION_GONE_FOREGROUND))
+        registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND))
         val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             requireContext().createDeviceProtectedStorageContext()
         }
@@ -185,12 +183,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         }
     }
 
-    private fun stopService(): Unit {
-        val context: Context = requireContext()
-        val intent: Intent = Intent(context, NotificationWidgetService::class.java)
-        context.stopService(intent)
-    }
-
     private fun checkProfileView(isPressed: Boolean, currentPosition: Int): Unit {
         val lastIndex: Int = viewModel.lastActiveProfileIndex
         val currentProfile: Profile = profileAdapter.getProfile(currentPosition)
@@ -246,6 +238,12 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
                 val adapterData: List<Profile> = profileAdapter.currentList
                 positionMap[adapterData[fromPos].id] = toPos
                 positionMap[adapterData[toPos].id] = fromPos
+                if (viewModel.lastActiveProfileIndex == fromPos) {
+                    viewModel.lastActiveProfileIndex = toPos
+                }
+                else if (viewModel.lastActiveProfileIndex == toPos) {
+                    viewModel.lastActiveProfileIndex = fromPos
+                }
                 val modifiedList: List<Profile> = swapViews(fromPos, toPos, adapterData)
                 submitDataToAdapter(modifiedList)
             }
@@ -258,7 +256,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     private fun restoreChangedPositions(list: List<Profile>): List<Profile> {
         if (positionMap.isNotEmpty()) {
-            Log.i(LOG_TAG, "restoreChangedPositions")
             val arrayList: ArrayList<Profile> = list as ArrayList<Profile>
             arrayList.sortWith(object : Comparator<Profile> {
 
@@ -295,7 +292,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     private fun saveMapToSharedPrefs(): Unit {
         if (positionMap.isNotEmpty()) {
-            Log.i(LOG_TAG, "saveMapToSharedPrefs(): $positionMap")
             val gson: Gson = Gson()
             val str: String = gson.toJson(positionMap)
             val editor: SharedPreferences.Editor = sharedPreferences.edit()

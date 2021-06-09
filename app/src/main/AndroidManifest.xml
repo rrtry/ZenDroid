@@ -48,6 +48,7 @@
             </intent-filter>
         </receiver>
 
+        <service android:name=".services.TaskService" android:enabled="true"/>
         <service android:name=".services.AlarmRescheduleService" android:enabled="true" android:directBootAware="true" tools:targetApi="n"/>
         <service android:name=".services.NotificationWidgetService" android:enabled="true" android:directBootAware="true" tools:targetApi="n"/>
 
