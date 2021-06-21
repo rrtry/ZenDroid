@@ -37,25 +37,24 @@ import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.util.SharedPreferencesUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
 import com.example.volumeprofiler.viewmodels.SharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.util.*
 import kotlin.Comparator
 import kotlin.collections.ArrayList
 
 class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
-    private lateinit var sharedPreferences: SharedPreferences
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
+    private var sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
     private val profileAdapter: ProfileAdapter = ProfileAdapter()
-    private var positionMap: ArrayMap<UUID, Int> = arrayMapOf()
+    private lateinit var positionMap: ArrayMap<UUID, Int>
     private val viewModel: ProfileListViewModel by viewModels()
     private val sharedViewModel: SharedViewModel by activityViewModels()
-    private lateinit var audioManager: AudioManager
+
     private var uiReceiver: BroadcastReceiver = object: BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -88,20 +87,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         super.onCreate(savedInstanceState)
         registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_UI))
         registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND))
-        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            requireContext().createDeviceProtectedStorageContext()
-        }
-        else {
-            requireContext()
-        }
-        sharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val map = Gson().fromJson<ArrayMap<UUID, Int>>(sharedPreferences.getString(
-                PREFS_POSITIONS_MAP, null), object : TypeToken<ArrayMap<UUID, Int>>() {}.type
-        )
-        if (map != null) {
-            positionMap = map as ArrayMap<UUID, Int>
-        }
+        positionMap = sharedPreferencesUtil.getRecyclerViewPositionsMap() ?: arrayMapOf()
         /*
         if (savedInstanceState != null) {
             expandedViews = savedInstanceState.getIntegerArrayList(KEY_EXPANDED_VIEWS) as ArrayList<Int>
@@ -120,11 +106,15 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             val intent = EditProfileActivity.newIntent(requireContext(), null)
             startActivity(intent)
         }
+        initRecyclerView(view)
+        setItemTouchHelper()
+        return view
+    }
+
+    private fun initRecyclerView(view: View): Unit {
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = profileAdapter
-        setItemTouchHelper()
-        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -140,14 +130,16 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         viewModel.associatedEventsLiveData.observe(viewLifecycleOwner,
                 Observer<List<ProfileAndEvent>?> { t ->
                     if (t != null && t.isNotEmpty()) {
-                        val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
+                        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
                         alarmUtil.cancelMultipleAlarms(t)
                     }
                 })
     }
 
     override fun onPause() {
-        saveMapToSharedPrefs()
+        if (positionMap.isNotEmpty()) {
+            sharedPreferencesUtil.saveRecyclerViewPositionsMap(positionMap)
+        }
         super.onPause()
     }
 
@@ -281,23 +273,11 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     private fun updateUI(profiles: List<Profile>) {
         if (profiles.isNotEmpty()) {
             view?.findViewById<TextView>(R.id.hint_profile)?.visibility = View.GONE
-            view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.GONE
         }
         else {
             view?.findViewById<TextView>(R.id.hint_profile)?.visibility = View.VISIBLE
-            view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.VISIBLE
         }
         submitDataToAdapter(profiles)
-    }
-
-    private fun saveMapToSharedPrefs(): Unit {
-        if (positionMap.isNotEmpty()) {
-            val gson: Gson = Gson()
-            val str: String = gson.toJson(positionMap)
-            val editor: SharedPreferences.Editor = sharedPreferences.edit()
-            editor.putString(PREFS_POSITIONS_MAP, str)
-            editor.apply()
-        }
     }
 
     private inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view), CompoundButton.OnCheckedChangeListener {
@@ -327,7 +307,9 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             //ids.removeAt(position)
             profileAdapter.getProfile(position).let {
                 val id: UUID = it.id
-                clearSharedPreferences(id)
+                if (sharedPreferencesUtil.getActiveProfileId() == id.toString()) {
+                    sharedPreferencesUtil.clearActiveProfileRecord(id)
+                }
                 positionMap.remove(id)
                 scaleDownAnimation(itemView)
                 viewModel.removeProfile(it)
@@ -355,6 +337,8 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         }
 
         private fun setupTextViews(profile: Profile): Unit {
+            val audioManager: AudioManager =
+                    requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
             checkBox.text = profile.title
             mediaVolValue.text = "${profile.mediaVolume}/${audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)}"
             callVolValue.text = "${profile.callVolume}/${audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL)}"
@@ -379,7 +363,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         }
 
         fun bindProfile(profile: Profile, position: Int): Unit {
-            val isProfileActive: Boolean = isProfileActive(profile)
+            val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
             checkBox.isChecked = isProfileActive
             if (isProfileActive) {
                 viewModel.lastActiveProfileIndex = absoluteAdapterPosition
@@ -401,7 +385,9 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
                 else {
                     val lastIndex: Int = viewModel.lastActiveProfileIndex
                     val currentProfile: Profile = profileAdapter.getProfile(absoluteAdapterPosition)
-                    clearSharedPreferences(currentProfile.id)
+                    if (sharedPreferencesUtil.getActiveProfileId() == currentProfile.id.toString()) {
+                        sharedPreferencesUtil.clearActiveProfileRecord(currentProfile.id)
+                    }
                     if (lastIndex != -1) {
                         viewModel.lastActiveProfileIndex = -1
                     }
@@ -410,23 +396,8 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         }
     }
 
-    private fun clearSharedPreferences(id: UUID): Unit {
-        if (sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "") == id.toString()) {
-            val editor: SharedPreferences.Editor = sharedPreferences.edit()
-            editor.clear().apply()
-        }
-    }
-
-    private fun isProfileActive(profile: Profile): Boolean {
-        val id: String? = sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "")
-        if (id != null && profile.id.toString() == id) {
-            return true
-        }
-        return false
-    }
-
     private fun applyAudioSettings(profile: Profile): Unit {
-        val profileUtil = ProfileUtil(requireContext())
+        val profileUtil = ProfileUtil.getInstance()
         val settingsPair = ProfileUtil.getVolumeSettingsMapPair(profile)
         profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, profile.id, profile.title)
     }
@@ -465,7 +436,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
 
     companion object {
 
-        const val PREFS_POSITIONS_MAP: String = "prefs_positions_map"
         private const val SWIPE_DIRS: Int = 0
         private const val DRAG_DIRS: Int = ItemTouchHelper.UP or ItemTouchHelper.DOWN
         private const val LOG_TAG: String = "ProfilesListFragment"

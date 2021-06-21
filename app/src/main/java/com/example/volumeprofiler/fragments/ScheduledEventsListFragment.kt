@@ -1,8 +1,6 @@
 package com.example.volumeprofiler.fragments
 
 import android.annotation.SuppressLint
-import android.app.AlarmManager
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -13,7 +11,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -50,21 +47,6 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
     private val model: ScheduledEventsViewModel by viewModels()
     private val sharedModel: SharedViewModel by activityViewModels()
     private val eventAdapter: EventAdapter = EventAdapter()
-    private lateinit var alarmManager: AlarmManager
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        alarmManager = requireActivity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    }
-
-    /*
-    override fun onResume() {
-        super.onResume()
-        if (eventAdapter.currentList.isNotEmpty()) {
-            eventAdapter.notifyDataSetChanged()
-        }
-    }
-     */
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -132,11 +114,9 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
     private fun updateUI(events: List<ProfileAndEvent>) {
         if (events.isEmpty()) {
             view?.findViewById<TextView>(R.id.hint_scheduler)?.visibility = View.VISIBLE
-            view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.VISIBLE
         }
         else {
             view?.findViewById<TextView>(R.id.hint_scheduler)?.visibility = View.GONE
-            view?.findViewById<ImageView>(R.id.hint_icon_scheduler)?.visibility = View.GONE
         }
         eventAdapter.submitList(events)
     }
@@ -161,21 +141,23 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
             val event: Event = profileAndEvent.event
             model.removeEvent(event)
-            val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
-            val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-            val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
-            alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
-                    event.localDateTime, event.eventId, profile.id, profile.title)
+            if (event.isScheduled == 1) {
+                val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
+                val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
+                val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
+                alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
+                        event.localDateTime, event.eventId, profile.id, profile.title)
+            }
         }
 
-        private fun setupCallbacks(): Unit {
+        private fun setCallbacks(): Unit {
             enableSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
                 val event: Event = profileAndEvent.event
                 val profile: Profile = profileAndEvent.profile
                 val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
                 val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
-                val alarmUtil: AlarmUtil = AlarmUtil(requireContext().applicationContext)
+                val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
                 if (isChecked && enableSwitch.isPressed) {
                     event.isScheduled = 1
                     model.updateEvent(event)
@@ -237,7 +219,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             this.event = profileAndEvent.event
             this.profile = profileAndEvent.profile
             enableSwitch.isChecked = event.isScheduled == 1
-            setupCallbacks()
+            setCallbacks()
             updateTextViews()
         }
 
@@ -262,9 +244,8 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
 
         fun getEvent(position: Int): ProfileAndEvent = getItem(position)
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventHolder {
-            return EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
-        }
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventHolder =
+                EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
 
         override fun onBindViewHolder(holder: EventHolder, position: Int) {
             if (holder.absoluteAdapterPosition > lastPosition) {

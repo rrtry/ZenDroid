@@ -3,20 +3,18 @@ package com.example.volumeprofiler.activities
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
-import android.os.Build
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
-import android.view.KeyEvent
-import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
+import android.view.*
 import android.widget.*
 import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.*
@@ -25,9 +23,9 @@ import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
-import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.util.SharedPreferencesUtil
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -40,12 +38,19 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     private lateinit var notificationSeekBar: SeekBar
     private lateinit var ringerSeekBar: SeekBar
     private lateinit var alarmSeekBar: SeekBar
-    private lateinit var screenLockingSoundSwitch: Switch
-    private lateinit var chargingSoundAndVibrationSwitch: Switch
-    private lateinit var touchSoundSwitch: Switch
-    private lateinit var touchVibrationSwitch: Switch
-    private lateinit var shutterSoundSwitch: Switch
-    private lateinit var dialTonesSwitch: Switch
+    private lateinit var phoneRingtoneLayout: LinearLayout
+    private lateinit var notificationSoundLayout: LinearLayout
+    private lateinit var alarmSoundLayout: LinearLayout
+    private lateinit var doNotDisturbLayout: RelativeLayout
+    private lateinit var phoneRingtoneTitle: TextView
+    private lateinit var notificationSoundTitle: TextView
+    private lateinit var alarmSoundTitle: TextView
+    //private lateinit var screenLockingSoundSwitch: Switch
+    //private lateinit var chargingSoundAndVibrationSwitch: Switch
+    //private lateinit var touchSoundSwitch: Switch
+    //private lateinit var touchVibrationSwitch: Switch
+    //private lateinit var shutterSoundSwitch: Switch
+    //private lateinit var dialTonesSwitch: Switch
     private var profilesAndEvents: List<ProfileAndEvent>? = null
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
@@ -94,32 +99,71 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     }
 
     private fun initializeViews(): Unit {
+        phoneRingtoneLayout = findViewById(R.id.phoneRingtoneLayout)
+        notificationSoundLayout = findViewById(R.id.notificationSoundLayout)
+        alarmSoundLayout = findViewById(R.id.alarmSoundLayout)
+        doNotDisturbLayout = findViewById(R.id.doNotDisturbLayout)
         editText = findViewById(R.id.profileName)
         mediaSeekBar = findViewById(R.id.mediaSeekBar)
         phoneSeekBar = findViewById(R.id.phoneSeekBar)
         notificationSeekBar = findViewById(R.id.notificationSeekBar)
         ringerSeekBar = findViewById(R.id.ringerSeekBar)
         alarmSeekBar = findViewById(R.id.alarmSeekBar)
-        screenLockingSoundSwitch = findViewById(R.id.screen_locking_sounds_switch)
-        chargingSoundAndVibrationSwitch = findViewById(R.id.charging_sounds_and_vibration_switch)
-        touchSoundSwitch = findViewById(R.id.touch_sounds_switch)
-        touchVibrationSwitch = findViewById(R.id.touch_vibration_switch)
-        shutterSoundSwitch = findViewById(R.id.shutter_sound_switch)
-        dialTonesSwitch = findViewById(R.id.dial_pad_tones_switch)
+
+        phoneRingtoneTitle = findViewById(R.id.currentPhoneRingtone)
+        alarmSoundTitle = findViewById(R.id.currentAlarmSound)
+        notificationSoundTitle = findViewById(R.id.currentNotificationSound)
+        if (intent.extras?.get(EXTRA_UUID) != null) {
+            phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
+            notificationSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
+            alarmSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
+        }
+        else {
+            if (viewModel.mutableProfile!!.phoneRingtoneUri == Uri.EMPTY) {
+                viewModel.mutableProfile!!.phoneRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(
+                        this, RingtoneManager.TYPE_RINGTONE
+                )
+            }
+            else if (viewModel.mutableProfile!!.alarmSoundUri == Uri.EMPTY) {
+                viewModel.mutableProfile!!.alarmSoundUri = RingtoneManager.getActualDefaultRingtoneUri(
+                        this, RingtoneManager.TYPE_ALARM
+                )
+            }
+            else if (viewModel.mutableProfile!!.notificationSoundUri == Uri.EMPTY) {
+                viewModel.mutableProfile!!.notificationSoundUri = RingtoneManager.getActualDefaultRingtoneUri(
+                        this, RingtoneManager.TYPE_NOTIFICATION
+                )
+            }
+            phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
+            alarmSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
+            notificationSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
+        }
+        //screenLockingSoundSwitch = findViewById(R.id.screen_locking_sounds_switch)
+        //chargingSoundAndVibrationSwitch = findViewById(R.id.charging_sounds_and_vibration_switch)
+        //touchSoundSwitch = findViewById(R.id.touch_sounds_switch)
+        //touchVibrationSwitch = findViewById(R.id.touch_vibration_switch)
+        //dialTonesSwitch = findViewById(R.id.dial_pad_tones_switch)
+    }
+
+    private fun getRingtoneTitle(uri: Uri): String {
+        val ringtone: Ringtone = RingtoneManager.getRingtone(this, uri)
+        return ringtone.getTitle(this)
     }
 
     private fun setViewCallbacks(): Unit {
         val seekBarArray: Array<SeekBar> = arrayOf(mediaSeekBar, phoneSeekBar, notificationSeekBar, ringerSeekBar, alarmSeekBar)
+        /*
         val switchArray: Array<Switch> = arrayOf(screenLockingSoundSwitch, chargingSoundAndVibrationSwitch, touchSoundSwitch,
-                touchVibrationSwitch, shutterSoundSwitch, dialTonesSwitch)
-
+                touchVibrationSwitch, dialTonesSwitch)
+         */
         for (element in seekBarArray) {
             element.setOnSeekBarChangeListener(SeekBarChangeListener())
         }
+        /*
         for (element in switchArray) {
             element.setOnCheckedChangeListener(SwitchChangeListener())
         }
-
+         */
         editText.onFocusChangeListener = View.OnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 editText.isCursorVisible = true
@@ -136,6 +180,42 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
                 return false
             }
         })
+        phoneRingtoneLayout.setOnClickListener {
+            val intent: Intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                this.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_RINGTONE)
+            }
+            startActivityForResult(intent, REQUEST_CODE_RINGTONE)
+        }
+        notificationSoundLayout.setOnClickListener {
+            val intent: Intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                this.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+            }
+            startActivityForResult(intent, REQUEST_CODE_NOTIFICATION)
+        }
+        alarmSoundLayout.setOnClickListener {
+            val intent: Intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                this.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+            }
+            startActivityForResult(intent, REQUEST_CODE_ALARM)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (data != null) {
+            when (requestCode) {
+
+                REQUEST_CODE_RINGTONE -> {
+                    viewModel.mutableProfile!!.phoneRingtoneUri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)!!
+                }
+                REQUEST_CODE_NOTIFICATION -> {
+                    viewModel.mutableProfile!!.notificationSoundUri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)!!
+                }
+                REQUEST_CODE_ALARM -> {
+                    viewModel.mutableProfile!!.alarmSoundUri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)!!
+                }
+            }
+        }
     }
 
     private fun setLiveDataObservers(): Unit {
@@ -175,12 +255,10 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     }
 
     private fun applyAudioSettings(): Unit {
-        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            this.createDeviceProtectedStorageContext() else this
-        val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        if (sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "")
+        val sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
+        if (sharedPreferencesUtil.getActiveProfileId()
                 == viewModel.mutableProfile!!.id.toString()) {
-            val profileUtil: ProfileUtil = ProfileUtil(this)
+            val profileUtil: ProfileUtil = ProfileUtil.getInstance()
             val settingsPair = ProfileUtil.getVolumeSettingsMapPair(viewModel.mutableProfile!!)
             profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, viewModel.mutableProfile!!.id, viewModel.mutableProfile!!.title)
         }
@@ -212,7 +290,7 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
     private fun setAlarm(event: Event, profile: Profile): Unit {
         val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
-        val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
+        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences,
                 event.localDateTime, event.eventId, false, profile.id, profile.title)
     }
@@ -224,14 +302,17 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
         notificationSeekBar.progress = viewModel.mutableProfile!!.notificationVolume
         ringerSeekBar.progress = viewModel.mutableProfile!!.ringVolume
         alarmSeekBar.progress = viewModel.mutableProfile!!.alarmVolume
+        /*
         screenLockingSoundSwitch.isChecked = viewModel.mutableProfile!!.screenLockingSounds != 0
         chargingSoundAndVibrationSwitch.isChecked = viewModel.mutableProfile!!.chargingSoundsAndVibration != 0
         touchSoundSwitch.isChecked = viewModel.mutableProfile!!.touchSounds != 0
         touchVibrationSwitch.isChecked = viewModel.mutableProfile!!.touchVibration != 0
         shutterSoundSwitch.isChecked = viewModel.mutableProfile!!.shutterSound != 0
         dialTonesSwitch.isChecked = viewModel.mutableProfile!!.dialTones != 0
+         */
     }
 
+    /*
     private inner class SwitchChangeListener: CompoundButton.OnCheckedChangeListener {
 
         override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean) {
@@ -260,10 +341,6 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
                         viewModel.mutableProfile!!.touchVibration = if (isChecked) 1 else 0
                     }
 
-                    shutterSoundSwitch -> {
-                        viewModel.mutableProfile!!.shutterSound = if (isChecked) 1 else 0
-                    }
-
                     dialTonesSwitch -> {
                         viewModel.mutableProfile!!.dialTones = if (isChecked) 1 else 0
                     }
@@ -271,6 +348,7 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
             }
         }
     }
+     */
 
     private inner class SeekBarChangeListener: SeekBar.OnSeekBarChangeListener {
 
@@ -313,20 +391,6 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
             Log.i(LOG_TAG, "onStopTrackingTouch()")
         }
     }
-    
-    companion object {
-
-        private const val EXTRA_UUID = "uuid"
-        private const val LOG_TAG = "EditProfileActivity"
-
-        fun newIntent(context: Context, id: UUID?): Intent {
-            val intent = Intent(context, EditProfileActivity::class.java)
-            if (id != null) {
-                intent.putExtra(EXTRA_UUID, id)
-            }
-            return intent
-        }
-    }
 
     override fun onBackPressed() {
         if (viewModel.changesMade) {
@@ -345,5 +409,22 @@ class EditProfileActivity: AppCompatActivity(), ApplyChangesDialogCallbacks {
 
     override fun onDismiss() {
         super.onBackPressed()
+    }
+    
+    companion object {
+
+        private const val EXTRA_UUID = "uuid"
+        private const val LOG_TAG = "EditProfileActivity"
+        private const val REQUEST_CODE_RINGTONE: Int = 1
+        private const val REQUEST_CODE_NOTIFICATION: Int = 2
+        private const val REQUEST_CODE_ALARM: Int = 4
+
+        fun newIntent(context: Context, id: UUID?): Intent {
+            val intent = Intent(context, EditProfileActivity::class.java)
+            if (id != null) {
+                intent.putExtra(EXTRA_UUID, id)
+            }
+            return intent
+        }
     }
 }

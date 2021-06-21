@@ -20,10 +20,10 @@ class NotificationActionReceiver: BroadcastReceiver() {
             val settings: Pair<Map<Int, Int>, Map<String, Int>> = intent.extras!!.getSerializable(NotificationWidgetService.EXTRA_PROFILE_SETTINGS)
                     as Pair<Map<Int, Int>, Map<String, Int>>
             val id = intent.extras!!.get(NotificationWidgetService.EXTRA_PROFILE_ID) as UUID
-            val profileUtil = ProfileUtil(context!!)
+            val profileUtil = ProfileUtil.getInstance()
             profileUtil.sendBroadcastToUpdateUI(id)
             profileUtil.applyAudioSettings(settings.first, settings.second, id, title!!)
-            startService(context)
+            startService(context!!)
         }
     }
 

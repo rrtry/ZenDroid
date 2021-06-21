@@ -30,7 +30,7 @@ class AlarmRescheduleService: Service() {
         val toSchedule: List<ProfileAndEvent>? = repository.getProfilesWithScheduledEvents()
         if (toSchedule != null && toSchedule.isNotEmpty()) {
             Log.i(LOG_TAG, "setting the alarms again")
-            val alarmUtil = AlarmUtil(this)
+            val alarmUtil = AlarmUtil.getInstance()
             alarmUtil.setMultipleAlarms(toSchedule)
         }
         else {

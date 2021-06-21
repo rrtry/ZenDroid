@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.database
 
+import android.net.Uri
 import androidx.room.TypeConverter
 import java.time.Instant
 import java.time.LocalDateTime
@@ -29,4 +30,10 @@ class Converters {
             Instant.ofEpochMilli(millisSinceEpoch).atZone(ZoneId.systemDefault()).toLocalDateTime()
         }
     }
+
+    @TypeConverter
+    fun fromUri(uri: Uri): String = uri.toString()
+
+    @TypeConverter
+    fun toUri(uriString: String): Uri = Uri.parse(uriString)
 }

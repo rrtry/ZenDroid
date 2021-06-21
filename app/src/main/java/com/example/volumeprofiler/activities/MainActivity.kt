@@ -1,6 +1,13 @@
 package com.example.volumeprofiler.activities
 
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -9,9 +16,9 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.ScheduledEventsListFragment
+import com.example.volumeprofiler.fragments.ZoomOutPageTransformer
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import android.util.Log
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,16 +27,29 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        if (Build.VERSION_CODES.M <= Build.VERSION.SDK_INT) {
+            getNotificationPolicy()
+        }
         supportActionBar?.title = "Title"
         viewPager = findViewById(R.id.pager)
         val pagerAdapter = ScreenSlidePagerAdapter(this)
         viewPager.adapter = pagerAdapter
+        viewPager.setPageTransformer(ZoomOutPageTransformer())
         setupTabLayout()
     }
 
-    override fun onStop() {
-        Log.i("MainActivity", "onStop()")
-        super.onStop()
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun getNotificationPolicy(): Unit {
+        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (notificationManager.isNotificationPolicyAccessGranted) {
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+        }
+        else {
+            val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        }
     }
 
     private fun setupTabLayout(): Unit {
@@ -49,15 +69,9 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (viewPager.currentItem == 0) {
             super.onBackPressed()
-        }
-        else {
+        } else {
             viewPager.currentItem = viewPager.currentItem - 1
         }
-    }
-
-    override fun onDestroy() {
-        Log.i("MainActivity", "onDestroy()")
-        super.onDestroy()
     }
 
     private inner class ScreenSlidePagerAdapter(fa: AppCompatActivity) : FragmentStateAdapter(fa) {
@@ -70,12 +84,12 @@ class MainActivity : AppCompatActivity() {
                 return ProfilesListFragment()
             }
             return ScheduledEventsListFragment()
-
         }
     }
 
     companion object {
 
+        private const val REQUEST_CODE_NOTIFICATION_POLICY: Int = 0
         private val drawables: Array<Int> = arrayOf(android.R.drawable.ic_menu_recent_history,
                 android.R.drawable.ic_menu_sort_by_size,
             android.R.drawable.ic_lock_silent_mode)

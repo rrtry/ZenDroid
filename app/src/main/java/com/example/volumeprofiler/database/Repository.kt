@@ -8,11 +8,10 @@ import androidx.room.Room
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.util.UUID
 
-class Repository private constructor(context: Context) {
+class Repository private constructor(private val context: Context) {
 
     private val database: VolumeProfilerDatabase = Room.databaseBuilder(
         context,
@@ -24,6 +23,13 @@ class Repository private constructor(context: Context) {
     private val schedulerDao: SchedulerDao = database.schedulerDao()
 
     fun observeEvent(id: Long): LiveData<Event> = schedulerDao.observeEvent(id)
+
+    suspend fun updateTriggeredEvent(id: Long): Unit {
+        Log.i(LOG_TAG, "updateTriggeredEvent")
+        val event: Event = getEvent(id)
+        event.isScheduled = 0
+        updateEvent(event)
+    }
 
     suspend fun getEvent(id: Long): Event {
         return withContext(Dispatchers.IO) {
@@ -107,9 +113,6 @@ class Repository private constructor(context: Context) {
         fun initialize(context: Context) {
 
             if (INSTANCE == null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    Log.i(LOG_TAG, "is context a deviceProtectedStorageContext?: ${context.isDeviceProtectedStorage}")
-                }
                 INSTANCE = Repository(context)
             }
         }

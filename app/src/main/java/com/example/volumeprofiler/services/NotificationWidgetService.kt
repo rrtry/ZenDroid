@@ -4,24 +4,19 @@ import android.annotation.TargetApi
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.example.volumeprofiler.Application.Companion.SHARED_PREFERENCES
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.MainActivity
 import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.receivers.AlarmReceiver
 import kotlinx.coroutines.*
 import androidx.collection.ArrayMap
 import com.example.volumeprofiler.Application.Companion.ACTION_WIDGET_PROFILE_SELECTED
-import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.receivers.NotificationActionReceiver
 import com.example.volumeprofiler.util.ProfileUtil
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.example.volumeprofiler.util.SharedPreferencesUtil
 import java.util.*
 import kotlin.Comparator
 import kotlin.collections.ArrayList
@@ -31,26 +26,17 @@ class NotificationWidgetService: Service() {
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
     private lateinit var profilesArray: List<Profile>
-    private lateinit var sharedPreferences: SharedPreferences
+    private val sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
     private var currentPosition: Int = -1
 
-    override fun onCreate() {
-        super.onCreate()
-        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            this.createDeviceProtectedStorageContext() else this
-        sharedPreferences = storageContext.getSharedPreferences(SHARED_PREFERENCES, Context.MODE_PRIVATE)
-    }
-
     private fun setActiveProfilePosition(): Unit {
-        val id: String? = sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_ID, "")
+        val id: String? = sharedPreferencesUtil.getActiveProfileId()
         for ((index, i) in profilesArray.withIndex()) {
             if (i.id.toString() == id) {
                 currentPosition = index
             }
         }
     }
-
-    private fun getActiveProfileTitle(): String? = sharedPreferences.getString(AlarmReceiver.PREFS_PROFILE_TITLE, "Select profile")
 
     @TargetApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(context: Context): NotificationChannel {
@@ -105,7 +91,7 @@ class NotificationWidgetService: Service() {
             PendingIntent.getActivity(this, ACTIVITY_REQUEST_CODE, it, 0)
         }
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getActiveProfileTitle())
+                .setContentTitle(sharedPreferencesUtil.getActiveProfileTitle())
                 .setSmallIcon(R.drawable.baseline_volume_down_deep_purple_300_24dp)
                 .setOngoing(true)
                 .setNotificationSilent()
@@ -117,7 +103,9 @@ class NotificationWidgetService: Service() {
                 builder.setChannelId(it.id)
             }
         }
-        return builder.build()
+        val notification: Notification = builder.build()
+        notification.flags = Notification.FLAG_ONLY_ALERT_ONCE
+        return notification
     }
 
     private fun restoreChangedPosition(list: List<Profile>, positionMap: ArrayMap<UUID, Int>): List<Profile> {
@@ -143,14 +131,11 @@ class NotificationWidgetService: Service() {
     @SuppressWarnings("unchecked")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.extras == null) {
-            val positionMap = Gson().fromJson<ArrayMap<UUID, Int>>(sharedPreferences.getString(
-                    ProfilesListFragment.PREFS_POSITIONS_MAP, null), object : TypeToken<ArrayMap<UUID, Int>>() {}.type
-            )
+            val positionMap = sharedPreferencesUtil.getRecyclerViewPositionsMap()
+            val repository: Repository = Repository.get()
             scope.launch {
-                val repository: Repository = Repository.get()
                 val profiles = async { repository.getProfiles() }
-                profilesArray = if (positionMap != null
-                        && positionMap.isNotEmpty()) {
+                profilesArray = if (positionMap != null && positionMap.isNotEmpty()) {
                     restoreChangedPosition(profiles.await(), positionMap)
                 } else {
                     profiles.await()
@@ -184,7 +169,6 @@ class NotificationWidgetService: Service() {
         private const val ACTIVITY_REQUEST_CODE: Int = 0
         private const val BROADCAST_REQUEST_CODE_NEXT_PROFILE: Int = 1
         private const val BROADCAST_REQUEST_CODE_PREVIOUS_PROFILE: Int = 2
-        const val EXTRA_POSITIONS_MAP: String = "extra_positions_map"
         const val EXTRA_PROFILE_SETTINGS: String = "extra_profile_settings"
         const val EXTRA_UPDATE_NOTIFICATION: String = "extra_update_notification"
         const val EXTRA_PROFILE_ID: String = "extra_profile_id"

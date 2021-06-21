@@ -1,4 +1,4 @@
- package com.example.volumeprofiler.util
+package com.example.volumeprofiler.util
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -16,7 +16,6 @@ import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.receivers.AlarmReceiver
-import kotlinx.coroutines.*
 import java.io.Serializable
 import java.time.LocalTime
 import java.time.ZoneId
@@ -26,7 +25,11 @@ import java.util.*
    *  Utility class which has useful methods for settings alarms, dealing with date objects and schedules
   */
 
-class AlarmUtil constructor (val context: Context) {
+class AlarmUtil private constructor (private val context: Context) {
+
+    /*
+        It's safe to pass context since context itself is not associated with any activity but with Application instance
+     */
 
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -34,12 +37,13 @@ class AlarmUtil constructor (val context: Context) {
             volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
             eventOccurrences: Array<Int>,
             eventTime: LocalDateTime,
-            id: Long, onReschedule: Boolean = false, profileId: UUID, profileTitle: String): Unit {
+            id: Long, onReschedule: Boolean = false, profileId: UUID, profileTitle: String): Long {
         val pendingIntent: PendingIntent = createIntent(volumeSettingsMapPair, eventOccurrences,
         eventTime, id, profileId, profileTitle)
         val now: LocalDateTime = LocalDateTime.now()
         var delay: Long
-        if ((eventOccurrences.contains(now.dayOfWeek.value) || eventOccurrences.isEmpty()) && now.toLocalTime() < eventTime.toLocalTime()) {
+        if ((eventOccurrences.contains(now.dayOfWeek.value) || eventOccurrences.isEmpty())
+                && now.toLocalTime() < eventTime.toLocalTime()) {
             delay = diffBetweenHoursInMillis(eventTime.toLocalTime())
         }
         else {
@@ -54,22 +58,20 @@ class AlarmUtil constructor (val context: Context) {
                 }
                 else {
                     cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId, profileTitle)
-                    GlobalScope.launch {
-                        updateDB(id)
-                    }
-                    val profileUtil: ProfileUtil = ProfileUtil(context)
-                    profileUtil.sendBroadcastToUpdateUI(profileId)
-                    return
+                    return id
                 }
             }
         }
         val currentTimeInMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Allows to receive alarm while being in doze mode
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
         else {
+            // doze mode was introduced in Android 8 (Api level 26)
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
+        return 0
     }
 
     private fun createIntent(volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
@@ -89,13 +91,6 @@ class AlarmUtil constructor (val context: Context) {
             this.putExtra(AlarmReceiver.EXTRA_PROFILE_TITLE, profileTitle)
         }
         return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
-    }
-
-    private suspend fun updateDB(id: Long): Unit {
-        val repository: Repository = Repository.get()
-        val event: Event = repository.getEvent(id)
-        event.isScheduled = 0
-        repository.updateEvent(event)
     }
 
     fun cancelAlarm(
@@ -155,6 +150,25 @@ class AlarmUtil constructor (val context: Context) {
     companion object {
 
         private const val LOG_TAG: String = "AlarmUtil"
+
+        private var INSTANCE: AlarmUtil? = null
+
+        fun getInstance(): AlarmUtil {
+
+            if (INSTANCE != null) {
+                return INSTANCE!!
+            }
+            else {
+                throw IllegalStateException("Singleton must be initialized")
+            }
+        }
+
+        fun initialize(context: Context) {
+
+            if (INSTANCE == null) {
+                INSTANCE = AlarmUtil(context)
+            }
+        }
 
         private fun diffBetweenDatesInMillis(nextDay: DayOfWeek, hour: Int, minute: Int): Long {
             val now: LocalDateTime = LocalDateTime.now()

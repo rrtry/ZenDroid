@@ -158,9 +158,6 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
                 event = it
                 updateStartTimeText()
                 updateScheduledDaysText()
-                if (viewModel.eventLiveData.hasActiveObservers()) {
-                    viewModel.eventLiveData.removeObserver(immutableEventObserver)
-                }
             }
         }
         viewModel.mutableEvent.observe(this, mutableEventObserver)
@@ -260,7 +257,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     private fun setAlarm(event: Event, profile: Profile): Unit {
         val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
-        val alarmUtil: AlarmUtil = AlarmUtil(this.applicationContext)
+        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime,
                 event.eventId, false, profile.id, profile.title)
     }

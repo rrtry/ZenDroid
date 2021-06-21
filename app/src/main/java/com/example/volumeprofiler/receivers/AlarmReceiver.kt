@@ -5,12 +5,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import java.time.LocalDateTime
 import android.util.Log
 import com.example.volumeprofiler.Application
+import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ProfileUtil
+import kotlinx.coroutines.*
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -21,8 +24,8 @@ class AlarmReceiver: BroadcastReceiver() {
         Log.i("AlarmReceiver", "onReceive")
         if (context != null && intent?.action == Application.ACTION_ALARM_TRIGGER) {
 
-            val profileUtil: ProfileUtil = ProfileUtil(context)
-            val alarmUtil = AlarmUtil(context.applicationContext)
+            val profileUtil: ProfileUtil = ProfileUtil.getInstance()
+            val alarmUtil = AlarmUtil.getInstance()
 
             val profileTitle: String = intent.getStringExtra(EXTRA_PROFILE_TITLE) as String
             val primaryVolumeSettings: Map<Int, Int> = intent.getSerializableExtra(EXTRA_PRIMARY_VOLUME_SETTINGS) as HashMap<Int, Int>
@@ -32,8 +35,13 @@ class AlarmReceiver: BroadcastReceiver() {
             val profileId: UUID = intent.extras?.getSerializable(EXTRA_PROFILE_ID) as UUID
             val eventTime: LocalDateTime = intent.extras?.getSerializable(EXTRA_ALARM_TRIGGER_TIME) as LocalDateTime
 
-            alarmUtil.setAlarm(Pair(primaryVolumeSettings, optionalVolumeSettings), eventOccurrences,
+            val result: Long = alarmUtil.setAlarm(Pair(primaryVolumeSettings, optionalVolumeSettings), eventOccurrences,
                     eventTime, eventId, true, profileId, profileTitle)
+            if (result > 0) {
+                goAsync(GlobalScope, Dispatchers.IO) {
+                    Repository.get().updateTriggeredEvent(result)
+                }
+            }
             profileUtil.applyAudioSettings(primaryVolumeSettings, optionalVolumeSettings, profileId, profileTitle)
             profileUtil.sendBroadcastToUpdateUI(profileId)
             if (isServiceRunning(context)) {
@@ -65,6 +73,18 @@ class AlarmReceiver: BroadcastReceiver() {
             }
         }
         return false
+    }
+
+    private fun BroadcastReceiver.goAsync(
+            coroutineScope: CoroutineScope,
+            dispatcher: CoroutineDispatcher,
+            block: suspend () -> Unit
+    ) {
+        val pendingResult = goAsync()
+        coroutineScope.launch(dispatcher) {
+            block()
+            pendingResult.finish()
+        }
     }
 
     companion object {

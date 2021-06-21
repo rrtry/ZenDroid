@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -13,20 +14,15 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.services.NotificationWidgetService
-import com.example.volumeprofiler.services.TaskService
+import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.util.SharedPreferencesUtil
 
 class Application: Application(), LifecycleObserver {
 
     override fun onCreate(): Unit {
         super.onCreate()
-        startTaskService()
-        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            this.createDeviceProtectedStorageContext()
-        }
-        else {
-            this
-        }
-        Repository.initialize(storageContext)
+        initializeSingletons()
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
@@ -42,17 +38,25 @@ class Application: Application(), LifecycleObserver {
         stopNotificationService()
     }
 
+    private fun initializeSingletons(): Unit {
+        val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            this.createDeviceProtectedStorageContext()
+        }
+        else {
+            this
+        }
+        SharedPreferencesUtil.initialize(storageContext)
+        Repository.initialize(storageContext)
+        AlarmUtil.initialize(this)
+        ProfileUtil.initialize(this)
+    }
+
     private fun sendGoneBackgroundBroadcast(): Unit {
         val intent: Intent = Intent(this, ProfilesListFragment::class.java).apply {
             this.action = ACTION_GONE_BACKGROUND
         }
         val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(this)
         localBroadcastManager.sendBroadcast(intent)
-    }
-
-    private fun startTaskService(): Unit {
-        val intent: Intent = Intent(this, TaskService::class.java)
-        this.startService(intent)
     }
 
     private fun stopNotificationService(): Unit {
