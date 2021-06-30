@@ -11,7 +11,6 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
 import com.example.volumeprofiler.Application
-import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent

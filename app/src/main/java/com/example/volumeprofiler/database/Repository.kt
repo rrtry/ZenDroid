@@ -31,7 +31,7 @@ class Repository private constructor(private val context: Context) {
         updateEvent(event)
     }
 
-    suspend fun getEvent(id: Long): Event {
+    private suspend fun getEvent(id: Long): Event {
         return withContext(Dispatchers.IO) {
             schedulerDao.getEvent(id)
         }

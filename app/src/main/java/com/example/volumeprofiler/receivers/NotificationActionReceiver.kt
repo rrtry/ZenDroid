@@ -16,13 +16,15 @@ class NotificationActionReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.i("NotificationReceiver",  "onReceive()")
         if (intent?.action == Application.ACTION_WIDGET_PROFILE_SELECTED && intent.extras != null) {
+
             val title: String? = intent.extras!!.getString(NotificationWidgetService.EXTRA_PROFILE_TITLE)
             val settings: Pair<Map<Int, Int>, Map<String, Int>> = intent.extras!!.getSerializable(NotificationWidgetService.EXTRA_PROFILE_SETTINGS)
                     as Pair<Map<Int, Int>, Map<String, Int>>
             val id = intent.extras!!.get(NotificationWidgetService.EXTRA_PROFILE_ID) as UUID
             val profileUtil = ProfileUtil.getInstance()
-            profileUtil.sendBroadcastToUpdateUI(id)
+
             profileUtil.applyAudioSettings(settings.first, settings.second, id, title!!)
+            profileUtil.sendLocalBroadcast(id)
             startService(context!!)
         }
     }

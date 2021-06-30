@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -66,9 +65,10 @@ class Application: Application(), LifecycleObserver {
 
     companion object {
 
+
         private const val LOG_TAG: String = "Application"
         const val SHARED_PREFERENCES: String = "volumeprofiler_shared_prefs"
-        const val ACTION_ALARM_TRIGGER: String = "com.example.volumeprofiler.ACTION_TRIGGER_ALARM"
+        const val ACTION_ALARM_TRIGGER: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
         const val ACTION_UPDATE_UI: String = "com.example.volumeprofiler.ACTION_UPDATE_UI"
         const val ACTION_GONE_BACKGROUND: String = "com.example.volumeprofiler.ACTION_GONE_BACKGROUND"
         const val ACTION_WIDGET_PROFILE_SELECTED: String = "com.example.volumeprofiler.WIDGET_PROFILE_SELECTED"

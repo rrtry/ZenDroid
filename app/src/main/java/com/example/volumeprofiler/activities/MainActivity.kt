@@ -24,12 +24,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var viewPager: ViewPager2
 
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        if (Build.VERSION_CODES.M <= Build.VERSION.SDK_INT) {
-            getNotificationPolicy()
-        }
+        getNotificationPolicy()
         supportActionBar?.title = "Title"
         viewPager = findViewById(R.id.pager)
         val pagerAdapter = ScreenSlidePagerAdapter(this)
@@ -38,11 +37,12 @@ class MainActivity : AppCompatActivity() {
         setupTabLayout()
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
+
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun getNotificationPolicy(): Unit {
         val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager.isNotificationPolicyAccessGranted) {
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+            Log.i("MainActivity", notificationManager.notificationPolicy.toString())
         }
         else {
             val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
+
 
     private fun setupTabLayout(): Unit {
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
@@ -69,7 +70,8 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (viewPager.currentItem == 0) {
             super.onBackPressed()
-        } else {
+        }
+        else {
             viewPager.currentItem = viewPager.currentItem - 1
         }
     }

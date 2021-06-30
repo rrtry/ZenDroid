@@ -35,6 +35,6 @@ class EditProfileViewModel: ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        Log.d("EditProfileViewModel", "onCleared")
+        Log.d("EditProfileActivity", "onCleared")
     }
 }

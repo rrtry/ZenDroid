@@ -63,7 +63,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                         startActivity(intent)
                     }
                     else {
-                        val fragment: NoProfilesDialog = NoProfilesDialog()
+                        val fragment: WarningDialog = WarningDialog()
                         val fragmentManager = requireActivity().supportFragmentManager
                         fragment.show(fragmentManager, null)
                     }
@@ -81,7 +81,7 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                     startActivity(intent)
                 }
                 else {
-                    val fragment: NoProfilesDialog = NoProfilesDialog()
+                    val fragment: WarningDialog = WarningDialog()
                     val fragmentManager = requireActivity().supportFragmentManager
                     fragment.show(fragmentManager, null)
                 }

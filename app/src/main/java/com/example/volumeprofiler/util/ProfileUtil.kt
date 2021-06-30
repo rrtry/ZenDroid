@@ -38,7 +38,7 @@ class ProfileUtil private constructor (private val context: Context) {
         SharedPreferencesUtil.getInstance().saveProfileToSharedPrefs(id, primarySettings, optionalSettings, title)
     }
 
-    fun sendBroadcastToUpdateUI(profileId: UUID): Unit {
+    fun sendLocalBroadcast(profileId: UUID): Unit {
         val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
         val intent: Intent = Intent(Application.ACTION_UPDATE_UI).apply {
             this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)

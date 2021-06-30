@@ -13,6 +13,18 @@ import java.time.LocalDateTime
 
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
+    private var callbacks: TimePickerFragmentCallbacks? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callbacks = activity as TimePickerFragmentCallbacks
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callbacks = null
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         Log.i("TimePickerDialog", "onCreateDialog()")
         val context: Context = requireContext()
@@ -30,7 +42,7 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
         Log.i("TimePickerDialog", "onTimeSet(), hourOfDay: $hourOfDay, minute: $minute")
         val localDateTime: LocalDateTime = LocalDateTime.now()
         val adjusted: LocalDateTime = localDateTime.withHour(hourOfDay).withMinute(minute).withSecond(0)
-        (activity as TimePickerFragmentCallbacks).onTimeSelected(adjusted)
+        callbacks?.onTimeSelected(adjusted)
     }
 
     companion object {

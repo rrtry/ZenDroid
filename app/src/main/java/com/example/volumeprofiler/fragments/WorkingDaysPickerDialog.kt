@@ -2,6 +2,7 @@ package com.example.volumeprofiler.fragments
 
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
@@ -14,6 +15,7 @@ import kotlin.collections.ArrayList
 class WorkingDaysPickerDialog: DialogFragment() {
 
     private var selectedItems: ArrayList<Int> = arrayListOf()
+    private var callbacks: DaysPickerDialogCallbacks? = null
 
     @SuppressWarnings("unchecked")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +23,16 @@ class WorkingDaysPickerDialog: DialogFragment() {
         if (savedInstanceState != null) {
             selectedItems = savedInstanceState.getSerializable(EXTRA_SELECTED_ITEMS) as ArrayList<Int>
         }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callbacks = activity as DaysPickerDialogCallbacks
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callbacks = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -61,17 +73,18 @@ class WorkingDaysPickerDialog: DialogFragment() {
                             DialogInterface.OnMultiChoiceClickListener { dialog, which, isChecked ->
                                 if (isChecked) {
                                     selectedItems.add(which)
-                                } else if (selectedItems.contains(which)) {
+                                }
+                                else if (selectedItems.contains(which)) {
                                     selectedItems.remove(Integer.valueOf(which))
                                 }
                             })
                     .setPositiveButton(R.string.apply,
                             DialogInterface.OnClickListener { dialog, id ->
-                                (activity as DaysPickerDialogCallbacks).onDaysSelected(selectedItems)
+                                callbacks?.onDaysSelected(selectedItems)
                             })
                     .setNegativeButton(R.string.cancel,
                             DialogInterface.OnClickListener { dialog, id ->
-
+                                dialog.dismiss()
                             })
 
             builder.create()

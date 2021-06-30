@@ -6,7 +6,7 @@ import android.os.Bundle
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
 
-class NoProfilesDialog: DialogFragment() {
+class WarningDialog: DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {

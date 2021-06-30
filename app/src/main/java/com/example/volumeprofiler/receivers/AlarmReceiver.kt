@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.provider.Settings
 import java.time.LocalDateTime
 import android.util.Log
 import com.example.volumeprofiler.Application
@@ -43,7 +42,7 @@ class AlarmReceiver: BroadcastReceiver() {
                 }
             }
             profileUtil.applyAudioSettings(primaryVolumeSettings, optionalVolumeSettings, profileId, profileTitle)
-            profileUtil.sendBroadcastToUpdateUI(profileId)
+            profileUtil.sendLocalBroadcast(profileId)
             if (isServiceRunning(context)) {
                 updateNotification(context)
             }

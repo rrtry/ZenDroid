@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import com.example.volumeprofiler.services.AlarmRescheduleService
 import com.example.volumeprofiler.services.NotificationWidgetService
 

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <group android:id="@+id/dnd_mode" >
+        <item
+            android:id="@+id/priority_only"
+            android:title="Priority only"/>
+        <item
+            android:id="@+id/alarms_only"
+            android:title="Alarms only"/>
+        <item
+            android:id="@+id/total_silence"
+            android:title="Total silence">
+        </item>
+    </group>
+</menu>

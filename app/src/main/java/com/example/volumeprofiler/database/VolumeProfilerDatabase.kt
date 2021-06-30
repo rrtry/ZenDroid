@@ -6,7 +6,7 @@ import androidx.room.TypeConverters
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 
-@Database(entities = [Profile::class, Event::class], version = 9, exportSchema = false)
+@Database(entities = [Profile::class, Event::class], version = 14, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class VolumeProfilerDatabase: RoomDatabase() {
 

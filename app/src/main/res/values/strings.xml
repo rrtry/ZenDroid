@@ -3,8 +3,17 @@
     <string name="tab_scheduler">Scheduler</string>
     <string name="tab_profiles">Profiles</string>
     <string name="workingDaysTitle">Select the days on which the profile activates</string>
+    <string name="customRestrictions">Custom restrictions</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
+    <string-array name="restrictions">
+        <item>Don\'t turn on screen</item>
+        <item>Don\'t wake for notifications</item>
+        <item>Hide notification dots on app icons</item>
+        <item>Hide status bar icons at top of screen</item>
+        <item>Don\'t pop notifications on screen</item>
+        <item>Hide from pull-down shade</item>
+    </string-array>
     <string-array name="daysOfWeek">
         <item>Monday</item>
         <item>Tuesday</item>
