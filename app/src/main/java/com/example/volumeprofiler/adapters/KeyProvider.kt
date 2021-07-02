@@ -1,17 +1,15 @@
 package com.example.volumeprofiler.adapters
 
 import androidx.recyclerview.selection.ItemKeyProvider
-import com.example.volumeprofiler.fragments.ProfilesListFragment
-import java.util.UUID
+import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 
-class KeyProvider (private val adapter: ProfilesListFragment.ProfileAdapter):
-    ItemKeyProvider<String>(SCOPE_CACHED) {
-
-    override fun getKey(position: Int): String? {
-        return adapter.currentList[position].id.toString()
+class KeyProvider <T> (private val adapter: ListAdapterItemProvider<T>) : ItemKeyProvider<T>(SCOPE_CACHED)
+{
+    override fun getKey(position: Int): T? {
+        return adapter.getItemKey(position)
     }
 
-    override fun getPosition(key: String): Int {
-        return adapter.currentList.indexOfFirst { it.id.toString() == key }
+    override fun getPosition(key: T): Int {
+        return adapter.getPosition(key)
     }
 }

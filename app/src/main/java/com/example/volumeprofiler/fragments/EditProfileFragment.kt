@@ -12,7 +12,6 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.provider.Settings
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.util.Log
@@ -23,7 +22,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.interfaces.ProfileNameInputDialogCallbacks
@@ -554,7 +552,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences,
-                event.localDateTime, event.eventId, false, profile.id, profile.title)
+                event.localDateTime, event.id, false, profile.id, profile.title)
     }
 
     private fun scheduleAlarms(): Unit {

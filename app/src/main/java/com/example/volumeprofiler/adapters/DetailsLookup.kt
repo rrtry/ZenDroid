@@ -4,15 +4,16 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.volumeprofiler.interfaces.ViewHolderDetails
+import com.example.volumeprofiler.fragments.ScheduledEventsListFragment
+import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 
-class DetailsLookup (private val recyclerView: RecyclerView): ItemDetailsLookup<String>() {
+class DetailsLookup <T> (private val recyclerView: RecyclerView): ItemDetailsLookup<T>() {
 
-    override fun getItemDetails(event: MotionEvent): ItemDetails<String>? {
+    override fun getItemDetails(event: MotionEvent): ItemDetails<T>? {
         val view: View? = recyclerView.findChildViewUnder(event.x, event.y)
         if (view != null) {
-            val ViewHolderInterface: ViewHolderDetails = recyclerView.getChildViewHolder(view) as ViewHolderDetails
-            return ViewHolderInterface.getItemDetails()
+            val viewHolderInterface = recyclerView.getChildViewHolder(view) as ViewHolderItemDetailsProvider<T>
+            return viewHolderInterface.getItemDetails()
         }
         return null
     }

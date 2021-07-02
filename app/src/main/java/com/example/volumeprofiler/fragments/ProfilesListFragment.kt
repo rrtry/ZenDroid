@@ -27,10 +27,7 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.recyclerview.selection.ItemDetailsLookup
-import androidx.recyclerview.selection.SelectionPredicates
-import androidx.recyclerview.selection.SelectionTracker
-import androidx.recyclerview.selection.StorageStrategy
+import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.R
@@ -40,7 +37,9 @@ import com.example.volumeprofiler.adapters.ItemDetails
 import com.example.volumeprofiler.adapters.KeyProvider
 import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.interfaces.AnimImplementation
+import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderDetails
+import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.receivers.AlarmReceiver
@@ -383,7 +382,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
     }
 
     inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view),
-        ViewHolderDetails, CompoundButton.OnCheckedChangeListener {
+        ViewHolderItemDetailsProvider<String>, CompoundButton.OnCheckedChangeListener {
 
         private val checkBox: CheckBox = itemView.findViewById(R.id.checkBox) as CheckBox
         private val editTextView: TextView = itemView.findViewById(R.id.editTextView) as TextView
@@ -401,7 +400,9 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             checkBox.setOnCheckedChangeListener(this)
         }
 
-        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> = ItemDetails(profileAdapter, absoluteAdapterPosition)
+        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> {
+            return ItemDetails(absoluteAdapterPosition, profileAdapter.getProfile(absoluteAdapterPosition).id.toString())
+        }
 
         private fun expandView(animate: Boolean): Unit {
             if (animate) {
@@ -508,7 +509,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             return oldItem == newItem
         }
 
-        }) {
+        }), ListAdapterItemProvider<String> {
 
         private var lastPosition: Int = -1
 
@@ -528,6 +529,14 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             tracker.let {
                 holder.bindProfile(profile, position, it.isSelected(getProfile(position).id.toString()))
             }
+        }
+
+        override fun getItemKey(position: Int): String {
+            return this.getProfile(position).id.toString()
+        }
+
+        override fun getPosition(key: String): Int {
+            return this.currentList.indexOfFirst { key == it.id.toString() }
         }
     }
 

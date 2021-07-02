@@ -124,7 +124,7 @@ class AlarmUtil private constructor (private val context: Context) {
             val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
             cancelAlarm(
                     volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.eventId, profile.id, profile.title)
+                    event.localDateTime, event.id, profile.id, profile.title)
         }
     }
 
@@ -142,7 +142,7 @@ class AlarmUtil private constructor (private val context: Context) {
             val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
             setAlarm(
                     volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.eventId, false, profile.id, profile.title)
+                    event.localDateTime, event.id, false, profile.id, profile.title)
         }
     }
 

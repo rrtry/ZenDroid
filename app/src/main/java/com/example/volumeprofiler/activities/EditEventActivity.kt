@@ -259,7 +259,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
         val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
         alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences, event.localDateTime,
-                event.eventId, false, profile.id, profile.title)
+                event.id, false, profile.id, profile.title)
     }
 
     override fun onBackPressed() {

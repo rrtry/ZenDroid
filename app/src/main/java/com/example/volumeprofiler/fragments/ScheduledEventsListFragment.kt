@@ -1,5 +1,7 @@
 package com.example.volumeprofiler.fragments
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
@@ -7,9 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Button
 import android.widget.Switch
 import android.widget.TextView
@@ -17,12 +17,19 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.recyclerview.selection.ItemDetailsLookup
+import androidx.recyclerview.selection.SelectionPredicates
+import androidx.recyclerview.selection.SelectionTracker
+import androidx.recyclerview.selection.StorageStrategy
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.activities.EditEventActivity
+import com.example.volumeprofiler.adapters.*
 import com.example.volumeprofiler.interfaces.AnimImplementation
+import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
+import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
@@ -44,9 +51,11 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
     private var requireDialog: Boolean = false
     private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
+    private lateinit var tracker: SelectionTracker<Long>
     private val model: ScheduledEventsViewModel by viewModels()
     private val sharedModel: SharedViewModel by activityViewModels()
     private val eventAdapter: EventAdapter = EventAdapter()
+    private var actionMode: ActionMode? = null
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -87,14 +96,78 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                 }
             }
         }
+        return view
+    }
+
+    private fun initRecyclerView(view: View): Unit {
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = eventAdapter
-        return view
+    }
+
+    private fun initSelectionTracker(): Unit {
+        tracker = SelectionTracker.Builder<Long>(
+                "SelectionId2",
+                recyclerView,
+                KeyProvider(eventAdapter),
+                DetailsLookup(recyclerView),
+                StorageStrategy.createLongStorage()
+        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
+                .build()
+        tracker.addObserver(object : SelectionTracker.SelectionObserver<Long>() {
+            override fun onSelectionChanged() {
+                super.onSelectionChanged()
+                if (tracker.hasSelection() && actionMode == null) {
+                    actionMode = requireActivity().startActionMode(object : ActionMode.Callback {
+
+                        override fun onActionItemClicked(
+                                mode: ActionMode?,
+                                item: MenuItem?
+                        ): Boolean {
+                            if (item?.itemId == R.id.deleteProfileButton) {
+                                for (i in tracker.selection) {
+                                    for ((index, j) in eventAdapter.currentList.withIndex()) {
+                                        if (j.event.id == i) {
+                                            removeEvent(index)
+                                        }
+                                    }
+                                }
+                                mode?.finish()
+                                return true
+                            }
+                            return false
+                        }
+
+                        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                            mode?.menuInflater?.inflate(R.menu.action_menu_selected, menu)
+                            return true
+                        }
+
+                        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean = true
+
+                        override fun onDestroyActionMode(mode: ActionMode?) {
+                            tracker.clearSelection()
+                        }
+                    })
+                    setSelectedTitle(tracker.selection.size())
+                } else if (!tracker.hasSelection()) {
+                    actionMode?.finish()
+                    actionMode = null
+                } else {
+                    setSelectedTitle(tracker.selection.size())
+                }
+            }
+        })
+    }
+
+    private fun setSelectedTitle(selected: Int) {
+        actionMode?.title = "Selected: $selected"
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initRecyclerView(view)
+        initSelectionTracker()
         model.eventListLiveData.observe(viewLifecycleOwner,
                 Observer<List<ProfileAndEvent>> { t ->
                     if (t != null) {
@@ -121,7 +194,20 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
         eventAdapter.submitList(events)
     }
 
-    private inner class EventHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener {
+    private fun removeEvent(adapterPosition: Int): Unit {
+        val profile: Profile = eventAdapter.getEventAndProfile(adapterPosition).profile
+        val event: Event = eventAdapter.getEventAndProfile(adapterPosition).event
+        model.removeEvent(event)
+        if (event.isScheduled == 1) {
+            val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
+            val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
+            val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
+            alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
+                    event.localDateTime, event.id, profile.id, profile.title)
+        }
+    }
+
+    inner class EventHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener, ViewHolderItemDetailsProvider<Long> {
 
         private val timeTextView: TextView = itemView.findViewById(R.id.timeTextView)
         @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -137,22 +223,13 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             view.setOnClickListener(this)
         }
 
-        private fun removeEvent(): Unit {
-            val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
-            val event: Event = profileAndEvent.event
-            model.removeEvent(event)
-            if (event.isScheduled == 1) {
-                val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-                val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-                val volumeMapPair: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
-                alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences,
-                        event.localDateTime, event.eventId, profile.id, profile.title)
-            }
+        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Long> {
+            return ItemDetails(absoluteAdapterPosition, eventAdapter.getEventAndProfile(absoluteAdapterPosition).event.id)
         }
 
         private fun setCallbacks(): Unit {
             enableSwitch.setOnCheckedChangeListener { _, isChecked ->
-                val profileAndEvent: ProfileAndEvent = eventAdapter.getEvent(absoluteAdapterPosition)
+                val profileAndEvent: ProfileAndEvent = eventAdapter.getEventAndProfile(absoluteAdapterPosition)
                 val event: Event = profileAndEvent.event
                 val profile: Profile = profileAndEvent.profile
                 val eventOccurrences: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
@@ -163,19 +240,19 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                     model.updateEvent(event)
                     Log.i("ScheduleListFragment", "is checked, scheduling alarm")
                     alarmUtil.setAlarm(volumeMapPair, eventOccurrences, event.localDateTime,
-                            event.eventId, false, profile.id, profile.title)
+                            event.id, false, profile.id, profile.title)
                 }
                 else if (!isChecked && enableSwitch.isPressed) {
                     event.isScheduled = 0
                     model.updateEvent(event)
                     Log.i("ScheduleListFragment", "isn't checked, cancelling alarm")
                     alarmUtil.cancelAlarm(volumeMapPair, eventOccurrences, event.localDateTime,
-                            event.eventId, profile.id, profile.title)
+                            event.id, profile.id, profile.title)
                 }
             }
             deleteEventButton.setOnClickListener {
                 scaleDownAnimation(itemView)
-                removeEvent()
+                removeEvent(absoluteAdapterPosition)
             }
         }
 
@@ -214,35 +291,49 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
             }
         }
 
-        fun bindEvent(profileAndEvent: ProfileAndEvent, position: Int) {
+        fun bindEvent(profileAndEvent: ProfileAndEvent, position: Int, isSelected: Boolean) {
             this.profileAndEvent = profileAndEvent
             this.event = profileAndEvent.event
             this.profile = profileAndEvent.profile
+            if (isSelected) {
+                scaleAnimation(0.9f)
+            }
+            else {
+                scaleAnimation(1.0f)
+            }
             enableSwitch.isChecked = event.isScheduled == 1
             setCallbacks()
             updateTextViews()
         }
 
         override fun onClick(v: View?) {
-            val eventId: Long = eventAdapter.getEvent(absoluteAdapterPosition).event.eventId
+            val eventId: Long = eventAdapter.getEventAndProfile(absoluteAdapterPosition).event.id
             val intent: Intent = Intent(requireContext(), EditEventActivity::class.java).apply {
                 this.putExtra(EditEventActivity.EXTRA_ID, eventId)
             }
             startActivity(intent)
         }
+
+        private fun scaleAnimation(value: Float): Unit {
+            val x: PropertyValuesHolder = PropertyValuesHolder.ofFloat(View.SCALE_X, value)
+            val y: PropertyValuesHolder = PropertyValuesHolder.ofFloat(View.SCALE_Y, value)
+            val animator = ObjectAnimator.ofPropertyValuesHolder(itemView, x, y)
+            animator.duration = 300
+            animator.start()
+        }
     }
 
-    private inner class EventAdapter : androidx.recyclerview.widget.ListAdapter<ProfileAndEvent, EventHolder>(object : DiffUtil.ItemCallback<ProfileAndEvent>() {
+    inner class EventAdapter : androidx.recyclerview.widget.ListAdapter<ProfileAndEvent, EventHolder>(object : DiffUtil.ItemCallback<ProfileAndEvent>() {
 
         override fun areItemsTheSame(oldItem: ProfileAndEvent, newItem: ProfileAndEvent): Boolean = oldItem == newItem
 
         override fun areContentsTheSame(oldItem: ProfileAndEvent, newItem: ProfileAndEvent): Boolean = oldItem == newItem
 
-    }) {
+    }), ListAdapterItemProvider<Long> {
 
         private var lastPosition: Int = -1
 
-        fun getEvent(position: Int): ProfileAndEvent = getItem(position)
+        fun getEventAndProfile(position: Int): ProfileAndEvent = getItem(position)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventHolder =
                 EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
@@ -252,7 +343,17 @@ class ScheduledEventsListFragment: Fragment(), AnimImplementation {
                 lastPosition = position
                 scaleUpAnimation(holder.itemView)
             }
-            holder.bindEvent(getItem(position), position)
+            tracker.let {
+                holder.bindEvent(getItem(position), position, it.isSelected(getItem(position).event.id))
+            }
+        }
+
+        override fun getItemKey(position: Int): Long {
+            return this.currentList[position].event.id
+        }
+
+        override fun getPosition(key: Long): Int {
+            return this.currentList.indexOfFirst { key == it.event.id }
         }
     }
 

@@ -1,20 +1,14 @@
 package com.example.volumeprofiler.adapters
 
-import android.view.MotionEvent
 import androidx.recyclerview.selection.ItemDetailsLookup
-import com.example.volumeprofiler.fragments.ProfilesListFragment
 
-class ItemDetails(val adapter: ProfilesListFragment.ProfileAdapter, val adapterPosition: Int): ItemDetailsLookup.ItemDetails<String>() {
+class ItemDetails <T> (private val adapterPosition: Int, private val selectionKey: T?): ItemDetailsLookup.ItemDetails<T>() {
 
-    override fun getSelectionKey(): String? {
-        return adapter.getProfile(adapterPosition).id.toString()
+    override fun getSelectionKey(): T? {
+        return selectionKey
     }
 
     override fun getPosition(): Int {
         return adapterPosition
-    }
-
-    override fun inSelectionHotspot(e: MotionEvent): Boolean {
-        return false
     }
 }
