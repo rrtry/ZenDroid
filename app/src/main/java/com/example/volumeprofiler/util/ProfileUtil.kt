@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.provider.Settings
+import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Profile
@@ -84,6 +85,58 @@ class ProfileUtil private constructor (private val context: Context) {
                     Pair(Settings.System.HAPTIC_FEEDBACK_ENABLED, profile.touchVibration))
 
             return Pair(streamVolumeMap, additionalSoundsMap)
+        }
+
+        fun updatePolicy(initialString: String, value: Int, append: Boolean): String {
+            val strInt: String = value.toString()
+            var result: String = initialString
+            Log.i("ProfileUtil", "initialString: $initialString")
+            if (append) {
+                val stringBuilder: StringBuilder = StringBuilder(initialString)
+                stringBuilder.append("$value,")
+                result = stringBuilder.toString()
+            }
+            else {
+                if (initialString.isNotEmpty()) {
+                    val list: ArrayList<String> = initialString.split(",") as ArrayList<String>
+                    for (i in list) {
+                        if (i == strInt) {
+                            list.remove(i)
+                            break
+                        }
+                    }
+                    result = list.joinToString(",")
+                }
+            }
+            Log.i("ProfileUtil", "result: $result")
+            return result
+        }
+
+        fun updatePolicy(initialString: String, values: List<Int>, append: Boolean): String {
+            Log.i("ProfileUtil", "initialString: $initialString")
+            var result: String = initialString
+            if (append) {
+                val stringBuilder: StringBuilder = java.lang.StringBuilder(initialString)
+                for (i in values) {
+                    stringBuilder.append("$i,")
+                }
+                result = stringBuilder.toString()
+            }
+            else {
+                if (initialString.isNotEmpty()) {
+                    val list: ArrayList<String> = initialString.split(",") as ArrayList<String>
+                    for (i in list) {
+                        for (j in values) {
+                            if (i == j.toString()) {
+                                list.remove(i)
+                            }
+                        }
+                    }
+                    result = list.joinToString(",")
+                }
+            }
+            Log.i("ProfileUtil", "result: $result")
+            return result
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.fragments
+package com.example.volumeprofiler.fragments.dialogs.multiChoice
 
 import android.app.AlertDialog
 import android.app.Dialog
@@ -9,13 +9,13 @@ import androidx.fragment.app.DialogFragment
 import android.util.Log
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.interfaces.DaysPickerDialogCallbacks
+import com.example.volumeprofiler.interfaces.DaysPickerDialogCallback
 import kotlin.collections.ArrayList
 
 class WorkingDaysPickerDialog: DialogFragment() {
 
     private var selectedItems: ArrayList<Int> = arrayListOf()
-    private var callbacks: DaysPickerDialogCallbacks? = null
+    private var callbacks: DaysPickerDialogCallback? = null
 
     @SuppressWarnings("unchecked")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +27,7 @@ class WorkingDaysPickerDialog: DialogFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callbacks = activity as DaysPickerDialogCallbacks
+        callbacks = activity as DaysPickerDialogCallback
     }
 
     override fun onDetach() {

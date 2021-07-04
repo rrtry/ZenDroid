@@ -1,7 +1,5 @@
 package com.example.volumeprofiler.fragments
 
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -36,15 +34,14 @@ import com.example.volumeprofiler.adapters.DetailsLookup
 import com.example.volumeprofiler.adapters.ItemDetails
 import com.example.volumeprofiler.adapters.KeyProvider
 import com.example.volumeprofiler.database.Repository
-import com.example.volumeprofiler.interfaces.AnimImplementation
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
-import com.example.volumeprofiler.interfaces.ViewHolderDetails
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
 import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.AnimationUtils
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
@@ -60,7 +57,7 @@ import kotlin.collections.sortWith
 import kotlin.collections.toList
 import kotlin.collections.withIndex
 
-class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
+class ProfilesListFragment: Fragment(), LifecycleObserver {
 
     private var actionMode: ActionMode? = null
     private var sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
@@ -121,11 +118,8 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         val view: View = inflater.inflate(R.layout.profiles, container, false)
         val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
-            val repo = Repository.get()
-            val profile: Profile = Profile(title = "Profile #${Random().nextInt(100)}")
-            lifecycleScope.launch {
-                repo.addProfile(profile)
-            }
+            val intent: Intent = EditProfileActivity.newIntent(requireContext(), null)
+            startActivity(intent)
         }
         initRecyclerView(view)
         setItemTouchHelper()
@@ -137,7 +131,6 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = profileAdapter
-        recyclerView.itemAnimator = DefaultItemAnimator()
     }
 
     private fun initSelectionTracker(): Unit {
@@ -223,6 +216,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
         if (positionMap.isNotEmpty()) {
             sharedPreferencesUtil.saveRecyclerViewPositionsMap(positionMap)
         }
+        tracker.clearSelection()
         super.onPause()
     }
 
@@ -448,21 +442,8 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             }
         }
 
-        private fun scaleAnimation(value: Float): Unit {
-            val x: PropertyValuesHolder = PropertyValuesHolder.ofFloat(View.SCALE_X, value)
-            val y: PropertyValuesHolder = PropertyValuesHolder.ofFloat(View.SCALE_Y, value)
-            val animator = ObjectAnimator.ofPropertyValuesHolder(itemView, x, y)
-            animator.duration = 300
-            animator.start()
-        }
-
         fun bindProfile(profile: Profile, position: Int, isSelected: Boolean): Unit {
-            if (isSelected) {
-                scaleAnimation(0.9f)
-            }
-            else {
-                scaleAnimation(1.0f)
-            }
+            AnimationUtils.selectedItemAnimation(itemView, isSelected)
             val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
             checkBox.isChecked = isProfileActive
             if (isProfileActive) {
@@ -524,7 +505,7 @@ class ProfilesListFragment: Fragment(), AnimImplementation, LifecycleObserver {
             val profile = getItem(position)
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
-                scaleUpAnimation(holder.itemView)
+                AnimationUtils.scaleAnimation(holder.itemView, true)
             }
             tracker.let {
                 holder.bindProfile(profile, position, it.isSelected(getProfile(position).id.toString()))

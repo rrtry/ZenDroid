@@ -27,7 +27,7 @@ import java.util.*
 class AlarmUtil private constructor (private val context: Context) {
 
     /*
-        It's safe to pass context since context itself is not associated with any activity but with Application instance
+        It's safe to hold on to reference of ApplicationContext
      */
 
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager

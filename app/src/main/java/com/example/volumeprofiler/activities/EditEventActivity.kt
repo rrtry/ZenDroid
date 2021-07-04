@@ -17,9 +17,9 @@ import androidx.lifecycle.Observer
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.fragments.ApplyChangesDialog
 import com.example.volumeprofiler.fragments.TimePickerFragment
-import com.example.volumeprofiler.fragments.WorkingDaysPickerDialog
+import com.example.volumeprofiler.fragments.dialogs.multiChoice.WorkingDaysPickerDialog
 import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
-import com.example.volumeprofiler.interfaces.DaysPickerDialogCallbacks
+import com.example.volumeprofiler.interfaces.DaysPickerDialogCallback
 import com.example.volumeprofiler.interfaces.TimePickerFragmentCallbacks
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
@@ -35,7 +35,7 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.*
 
-class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallbacks, DaysPickerDialogCallbacks, ApplyChangesDialogCallbacks {
+class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallbacks, DaysPickerDialogCallback, ApplyChangesDialogCallbacks {
 
     private lateinit var profileSelectSpinner: Spinner
     private lateinit var startTimeSelectButton: Button

@@ -1,6 +1,6 @@
 package com.example.volumeprofiler.interfaces
 
-interface CustomPolicyDialogCallbacks {
+interface CustomPolicyDialogCallback {
 
     fun onPolicySelected(selectedItems: String)
 }

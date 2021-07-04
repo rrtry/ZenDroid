@@ -2,7 +2,7 @@ package com.example.volumeprofiler.interfaces
 
 import java.util.ArrayList
 
-interface DaysPickerDialogCallbacks {
+interface DaysPickerDialogCallback {
 
     fun onDaysSelected(arrayList: ArrayList<Int>): Unit
 }

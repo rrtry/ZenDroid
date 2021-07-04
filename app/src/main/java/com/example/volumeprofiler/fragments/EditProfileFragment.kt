@@ -22,9 +22,11 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
 import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
-import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.interfaces.ProfileNameInputDialogCallbacks
+import com.example.volumeprofiler.interfaces.FragmentTransition
+import com.example.volumeprofiler.interfaces.ProfileNameInputDialogCallback
 import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.ProfileAndEvent
@@ -35,7 +37,7 @@ import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import java.util.*
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
-class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameInputDialogCallbacks {
+class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameInputDialogCallback {
 
     private val viewModel: EditProfileViewModel by activityViewModels()
 
@@ -52,7 +54,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
     private var alarmSoundTitle: TextView? = null
     private var doNotDisturbPreferencesLayout: RelativeLayout? = null
     private var silentModeLayout: RelativeLayout? = null
-    private var callbacks: EditProfileActivityCallbacks? = null
+    private var callbacks: FragmentTransition? = null
     private var profilesAndEvents: List<ProfileAndEvent>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +75,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callbacks = requireActivity() as EditProfileActivityCallbacks
+        callbacks = requireActivity() as FragmentTransition
     }
 
     override fun onDetach() {
@@ -177,7 +179,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
             when (it.id) {
 
                 R.id.profileName -> {
-                    val fragment = ProfileNameInputDialog().apply {
+                    val fragment = ProfileNameInputDialog.newInstance(profileName!!.text.toString()).apply {
                         this.setTargetFragment(this@EditProfileFragment, 1)
                     }
                     activity?.supportFragmentManager?.let { it1 -> fragment.show(it1, null) }
@@ -204,7 +206,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                     showPopupMenu(it)
                 }
                 R.id.doNotDisturbPreferencesLayout -> {
-                    callbacks?.onFragmentReplace()
+                    callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
                 }
             }
         }

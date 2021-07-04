@@ -7,12 +7,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.fragments.CustomPolicyFragment
 import com.example.volumeprofiler.fragments.DnDPreferencesFragment
 import com.example.volumeprofiler.fragments.EditProfileFragment
-import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import com.example.volumeprofiler.interfaces.FragmentTransition
 import java.util.*
 
-class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
+class EditProfileActivity: AppCompatActivity(), FragmentTransition {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,13 +44,20 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
                 .commit()
     }
 
-    override fun onFragmentReplace(): Unit {
-        replaceFragment(DnDPreferencesFragment())
+    override fun onFragmentReplace(fragment: Int): Unit {
+        if (fragment == DND_PREFERENCES_FRAGMENT) {
+            replaceFragment(DnDPreferencesFragment())
+        }
+        else if (fragment == CUSTOM_RESTRICTIONS_FRAGMENT) {
+            replaceFragment(CustomPolicyFragment())
+        }
     }
     
     companion object {
 
-        private const val EXTRA_UUID = "uuid"
+        const val EXTRA_UUID = "uuid"
+        const val CUSTOM_RESTRICTIONS_FRAGMENT: Int = 1
+        const val DND_PREFERENCES_FRAGMENT: Int = 0
 
         fun newIntent(context: Context, id: UUID?): Intent {
             val intent = Intent(context, EditProfileActivity::class.java)

@@ -1,6 +1,6 @@
 package com.example.volumeprofiler.interfaces
 
-interface ProfileNameInputDialogCallbacks {
+interface ProfileNameInputDialogCallback {
 
     fun onApply(str: String)
 }
