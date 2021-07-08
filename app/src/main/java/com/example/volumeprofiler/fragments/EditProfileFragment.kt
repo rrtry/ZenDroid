@@ -2,7 +2,6 @@ package com.example.volumeprofiler.fragments
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.NotificationManager
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
@@ -48,7 +47,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
 
     private val viewModel: EditProfileViewModel by activityViewModels()
 
-    private var doNotDisturbSwitch: Switch? = null
+    private var interruptionFilterSwitch: Switch? = null
     private var menuEditNameButton: ImageButton? = null
     private var toolbarLayout: CollapsingToolbarLayout? = null
     private var mediaSeekBar: SeekBar? = null
@@ -56,12 +55,12 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
     private var notificationSeekBar: SeekBar? = null
     private var ringerSeekBar: SeekBar? = null
     private var alarmSeekBar: SeekBar? = null
-    private var doNotDisturbLayout: RelativeLayout? = null
-    private var doNotDisturbState: TextView? = null
+    private var interruptionFilterLayout: RelativeLayout? = null
+    private var interruptionFilterPolicy: TextView? = null
     private var phoneRingtoneTitle: TextView? = null
     private var notificationSoundTitle: TextView? = null
     private var alarmSoundTitle: TextView? = null
-    private var doNotDisturbPreferencesLayout: RelativeLayout? = null
+    private var interruptionFilterPreferencesLayout: RelativeLayout? = null
     private var silentModeLayout: RelativeLayout? = null
     private var callbacks: EditProfileActivityCallbacks? = null
     private var profilesAndEvents: List<ProfileAndEvent>? = null
@@ -136,12 +135,12 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         notificationSeekBar = null
         ringerSeekBar = null
         alarmSeekBar = null
-        doNotDisturbLayout = null
-        doNotDisturbState = null
+        interruptionFilterLayout = null
+        interruptionFilterPolicy = null
         phoneRingtoneTitle = null
         notificationSoundTitle = null
         alarmSoundTitle = null
-        doNotDisturbPreferencesLayout = null
+        interruptionFilterPreferencesLayout = null
         silentModeLayout = null
     }
 
@@ -166,7 +165,6 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         val alarmSoundLayout: LinearLayout = view.findViewById(R.id.alarmSoundLayout)
         val silentModeSwitch: Switch = view.findViewById(R.id.silentModeSwitch)
         val vibrateForCallsSwitch: Switch = view.findViewById(R.id.vibrateForCallsSwitch)
-        doNotDisturbSwitch = view.findViewById(R.id.doNotDisturbSwitch)
         val editNameButton: FloatingActionButton = activity.findViewById(R.id.editNameButton)
         val menuSaveChangesButton: ImageButton = activity.findViewById(R.id.menuSaveChangesButton)
         if (menuSaveChangesButton.visibility != View.VISIBLE) {
@@ -174,11 +172,11 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         }
         menuEditNameButton = activity.findViewById(R.id.menuEditNameButton)
         toolbarLayout = activity.findViewById(R.id.toolbar_layout)
-        doNotDisturbLayout = view.findViewById(R.id.doNotDisturbLayout)
+        interruptionFilterLayout = view.findViewById(R.id.doNotDisturbLayout)
         mediaSeekBar = view.findViewById(R.id.mediaSeekBar)
         phoneSeekBar = view.findViewById(R.id.phoneSeekBar)
-        doNotDisturbPreferencesLayout = view.findViewById(R.id.doNotDisturbPreferencesLayout)
-        doNotDisturbState = view.findViewById(R.id.doNotDisturbState)
+        interruptionFilterPreferencesLayout = view.findViewById(R.id.doNotDisturbPreferencesLayout)
+        interruptionFilterPolicy = view.findViewById(R.id.doNotDisturbState)
         notificationSeekBar = view.findViewById(R.id.notificationSeekBar)
         ringerSeekBar = view.findViewById(R.id.ringerSeekBar)
         alarmSeekBar = view.findViewById(R.id.alarmSeekBar)
@@ -186,6 +184,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         alarmSoundTitle = view.findViewById(R.id.currentAlarmSound)
         notificationSoundTitle = view.findViewById(R.id.currentNotificationSound)
         silentModeLayout = view.findViewById(R.id.SilentModeLayout)
+        interruptionFilterSwitch = view.findViewById(R.id.doNotDisturbSwitch)
 
         val appBarLayout: AppBarLayout = activity.findViewById(R.id.app_bar)
         appBarLayout.addOnOffsetChangedListener(object : AppBarLayout.OnOffsetChangedListener {
@@ -229,24 +228,12 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                         viewModel.mutableProfile!!.isVibrateForCallsActive = 1
                     }
                 }
-                R.id.editNameButton, R.id.menuEditNameButton -> {
-                    showTextInputDialog()
-                }
-                R.id.phoneRingtoneLayout -> {
-                    startRingtonePickerActivity(RingtoneManager.TYPE_RINGTONE)
-                }
-                R.id.notificationSoundLayout -> {
-                    startRingtonePickerActivity(RingtoneManager.TYPE_NOTIFICATION)
-                }
-                R.id.alarmSoundLayout -> {
-                    startRingtonePickerActivity(RingtoneManager.TYPE_ALARM)
-                }
-                R.id.doNotDisturbLayout -> {
-                    showPopupMenu(it)
-                }
-                R.id.doNotDisturbPreferencesLayout -> {
-                    callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
-                }
+                R.id.editNameButton, R.id.menuEditNameButton -> showTextInputDialog()
+                R.id.phoneRingtoneLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_RINGTONE)
+                R.id.notificationSoundLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_NOTIFICATION)
+                R.id.alarmSoundLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_ALARM)
+                R.id.doNotDisturbLayout -> showPopupMenu(it)
+                R.id.doNotDisturbPreferencesLayout -> callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
             }
         }
         val onCheckedChangeListener: CompoundButton.OnCheckedChangeListener = CompoundButton.OnCheckedChangeListener {
@@ -255,27 +242,27 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
             if (buttonView.id == R.id.doNotDisturbSwitch) {
                 if (isChecked) {
                     viewModel.mutableProfile!!.isInterruptionFilterActive = 1
-                    changeDndLayout(true)
+                    changeInterruptionFilterLayout(true)
                     when (viewModel.mutableProfile!!.interruptionFilter) {
 
                         INTERRUPTION_FILTER_PRIORITY -> {
-                            changeDndPreferencesLayout(true)
+                            changeInterruptionFilterPrefsLayout(true)
                             changeSeekbarState(INTERRUPTION_FILTER_PRIORITY)
                         }
                         INTERRUPTION_FILTER_ALARMS -> {
-                            changeDndPreferencesLayout(false)
+                            changeInterruptionFilterPrefsLayout(false)
                             changeSeekbarState(INTERRUPTION_FILTER_ALARMS)
                         }
                         INTERRUPTION_FILTER_NONE -> {
-                            changeDndPreferencesLayout(false)
+                            changeInterruptionFilterPrefsLayout(false)
                             changeSeekbarState(INTERRUPTION_FILTER_NONE)
                         }
                     }
                 }
                 else {
                     viewModel.mutableProfile!!.isInterruptionFilterActive = 0
-                    changeDndLayout(false)
-                    changeDndPreferencesLayout(false)
+                    changeInterruptionFilterLayout(false)
+                    changeInterruptionFilterPrefsLayout(false)
                     changeSeekbarState(INTERRUPTION_FILTER_ALL)
                 }
             }
@@ -294,22 +281,11 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                         seekBar.progress = progress
                     }
                     when (seekBar.id) {
-
-                        R.id.mediaSeekBar -> {
-                            viewModel.mutableProfile!!.mediaVolume = progress
-                        }
-                        R.id.phoneSeekBar -> {
-                            viewModel.mutableProfile!!.callVolume = progress
-                        }
-                        R.id.notificationSeekBar -> {
-                            viewModel.mutableProfile!!.notificationVolume = progress
-                        }
-                        R.id.ringerSeekBar -> {
-                            viewModel.mutableProfile!!.ringVolume = progress
-                        }
-                        R.id.alarmSeekBar -> {
-                            viewModel.mutableProfile!!.alarmVolume = progress
-                        }
+                        R.id.mediaSeekBar -> viewModel.mutableProfile!!.mediaVolume = progress
+                        R.id.phoneSeekBar -> viewModel.mutableProfile!!.callVolume = progress
+                        R.id.notificationSeekBar -> viewModel.mutableProfile!!.notificationVolume = progress
+                        R.id.ringerSeekBar -> viewModel.mutableProfile!!.ringVolume = progress
+                        R.id.alarmSeekBar -> viewModel.mutableProfile!!.alarmVolume = progress
                     }
                 }
             }
@@ -325,15 +301,15 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
             }
         }
         silentModeLayout!!.setOnClickListener(onClickListener)
-        menuEditNameButton!!.setOnClickListener(onClickListener)
-        editNameButton.setOnClickListener(onClickListener)
         phoneRingtoneLayout.setOnClickListener(onClickListener)
         notificationSoundLayout.setOnClickListener(onClickListener)
         alarmSoundLayout.setOnClickListener(onClickListener)
-        doNotDisturbLayout?.setOnClickListener(onClickListener)
-        doNotDisturbPreferencesLayout?.setOnClickListener(onClickListener)
+        interruptionFilterLayout?.setOnClickListener(onClickListener)
+        interruptionFilterPreferencesLayout?.setOnClickListener(onClickListener)
 
-        doNotDisturbSwitch!!.setOnCheckedChangeListener(onCheckedChangeListener)
+        interruptionFilterSwitch!!.setOnCheckedChangeListener(onCheckedChangeListener)
+        menuEditNameButton!!.setOnClickListener(onClickListener)
+        editNameButton.setOnClickListener(onClickListener)
 
         mediaSeekBar?.setOnSeekBarChangeListener(seekBarChangeListener)
         phoneSeekBar?.setOnSeekBarChangeListener(seekBarChangeListener)
@@ -365,30 +341,30 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         }
     }
 
-    private fun changeDndLayout(enable: Boolean): Unit {
+    private fun changeInterruptionFilterLayout(enable: Boolean): Unit {
         val doNotDisturbTitle: TextView = requireView().findViewById(R.id.doNotDisturbTitle)
         if (enable) {
-            doNotDisturbLayout?.isEnabled = true
-            doNotDisturbState?.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
+            interruptionFilterLayout?.isEnabled = true
+            interruptionFilterPolicy?.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
             doNotDisturbTitle.setTextColor(Color.BLACK)
         }
         else {
-            doNotDisturbLayout?.isEnabled = false
-            doNotDisturbState?.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
+            interruptionFilterLayout?.isEnabled = false
+            interruptionFilterPolicy?.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
             doNotDisturbTitle.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
         }
     }
 
-    private fun changeDndPreferencesLayout(enable: Boolean): Unit {
+    private fun changeInterruptionFilterPrefsLayout(enable: Boolean): Unit {
         val doNotDisturbRules: TextView = requireView().findViewById(R.id.doNotDisturbRules)
         val doNotDisturbPreferencesTitle: TextView = requireView().findViewById(R.id.doNotDisturbPreferencesTitle)
         if (enable) {
-            doNotDisturbPreferencesLayout?.isEnabled = true
+            interruptionFilterPreferencesLayout?.isEnabled = true
             doNotDisturbPreferencesTitle.setTextColor(Color.BLACK)
             doNotDisturbRules.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
         }
         else {
-            doNotDisturbPreferencesLayout?.isEnabled = false
+            interruptionFilterPreferencesLayout?.isEnabled = false
             doNotDisturbPreferencesTitle.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
             doNotDisturbRules.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
         }
@@ -403,22 +379,22 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                 R.id.priority_only -> {
                     viewModel.mutableProfile!!.interruptionFilter = INTERRUPTION_FILTER_PRIORITY
                     changeSeekbarState(INTERRUPTION_FILTER_PRIORITY)
-                    changeDndPreferencesLayout(true)
-                    doNotDisturbState?.text = "Priority only"
+                    changeInterruptionFilterPrefsLayout(true)
+                    interruptionFilterPolicy?.text = "Priority only"
                     true
                 }
                 R.id.alarms_only -> {
                     viewModel.mutableProfile!!.interruptionFilter = INTERRUPTION_FILTER_ALARMS
                     changeSeekbarState(INTERRUPTION_FILTER_ALARMS)
-                    changeDndPreferencesLayout(false)
-                    doNotDisturbState?.text = "Alarms only"
+                    changeInterruptionFilterPrefsLayout(false)
+                    interruptionFilterPolicy?.text = "Alarms only"
                     true
                 }
                 R.id.total_silence -> {
                     viewModel.mutableProfile!!.interruptionFilter = INTERRUPTION_FILTER_NONE
                     changeSeekbarState(INTERRUPTION_FILTER_NONE)
-                    changeDndPreferencesLayout(false)
-                    doNotDisturbState?.text = "Total silence"
+                    changeInterruptionFilterPrefsLayout(false)
+                    interruptionFilterPolicy?.text = "Total silence"
                     true
                 }
                 else -> {
@@ -427,6 +403,11 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
             }
         }
         popupMenu.show()
+    }
+
+    private fun containsCategory(category: Int): Boolean {
+        val list: List<Int> = toList(viewModel.mutableProfile!!.priorityCategories)
+        return !list.contains(category)
     }
 
     private fun changeSeekbarState(mode: Int) {
@@ -438,11 +419,10 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                 alarmSeekBar?.isEnabled = true
             }
             INTERRUPTION_FILTER_PRIORITY -> {
-                val list: List<Int> = toList(viewModel.mutableProfile!!.priorityCategories)
-                mediaSeekBar?.isEnabled = list.contains(PRIORITY_CATEGORY_MEDIA)
+                mediaSeekBar?.isEnabled = containsCategory(PRIORITY_CATEGORY_MEDIA)
                 notificationSeekBar?.isEnabled = true
                 ringerSeekBar?.isEnabled = true
-                alarmSeekBar?.isEnabled = list.contains(PRIORITY_CATEGORY_ALARMS)
+                alarmSeekBar?.isEnabled = containsCategory(PRIORITY_CATEGORY_ALARMS)
             }
             INTERRUPTION_FILTER_ALARMS -> {
                 notificationSeekBar?.isEnabled = false
@@ -505,27 +485,45 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         })
     }
 
-    private fun updateUI() {
-        setActionBarTitle(viewModel.mutableProfile!!.title)
+    private fun setInterruptionFilterTitle(): String =
+            when (viewModel.mutableProfile!!.interruptionFilter) {
+                INTERRUPTION_FILTER_PRIORITY -> "Priority only"
+                INTERRUPTION_FILTER_ALARMS -> "Alarms only"
+                INTERRUPTION_FILTER_NONE -> "Total silence"
+                else -> "INTERRUPTION_FILTER_UNKNOWN"
+            }
+
+    private fun updateInterruptionFilterViews(): Unit {
+        val interruptionFilter: Int = viewModel.mutableProfile!!.interruptionFilter
+        val isInterruptionFilterActive: Boolean = viewModel.mutableProfile!!.isInterruptionFilterActive == 1
+        interruptionFilterPolicy?.text = setInterruptionFilterTitle()
+        interruptionFilterSwitch?.isChecked = isInterruptionFilterActive
+        if (isInterruptionFilterActive) {
+            changeInterruptionFilterLayout(true)
+            changeSeekbarState(interruptionFilter)
+            if (interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
+                changeInterruptionFilterPrefsLayout(true)
+            }
+        }
+        else {
+            changeInterruptionFilterLayout(false)
+            changeSeekbarState(INTERRUPTION_FILTER_ALL)
+            changeInterruptionFilterPrefsLayout(false)
+        }
+    }
+
+    private fun updateProgressbars(): Unit {
         mediaSeekBar?.progress = viewModel.mutableProfile!!.mediaVolume
         phoneSeekBar?.progress = viewModel.mutableProfile!!.callVolume
         notificationSeekBar?.progress = viewModel.mutableProfile!!.notificationVolume
         ringerSeekBar?.progress = viewModel.mutableProfile!!.ringVolume
         alarmSeekBar?.progress = viewModel.mutableProfile!!.alarmVolume
+    }
 
-        val interruptionFilter: Int = viewModel.mutableProfile!!.interruptionFilter
-        val isInterruptionFilterActive: Boolean = viewModel.mutableProfile!!.interruptionFilter == 1
-        changeDndLayout(isInterruptionFilterActive)
-        if (isInterruptionFilterActive) {
-            changeSeekbarState(interruptionFilter)
-            if (interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
-                changeDndPreferencesLayout(true)
-            }
-        }
-        else {
-            changeSeekbarState(INTERRUPTION_FILTER_ALL)
-            changeDndPreferencesLayout(false)
-        }
+    private fun updateUI(): Unit {
+        setActionBarTitle(viewModel.mutableProfile!!.title)
+        updateProgressbars()
+        updateInterruptionFilterViews()
         if (arguments?.getSerializable(EXTRA_UUID) != null) {
             phoneRingtoneTitle?.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
             notificationSoundTitle?.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)

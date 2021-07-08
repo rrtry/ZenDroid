@@ -23,8 +23,8 @@ data class Profile(var title: String,
                    var notificationSoundUri: Uri = Uri.EMPTY,
                    var alarmSoundUri: Uri = Uri.EMPTY,
 
-                   var interruptionFilter: Int = INTERRUPTION_FILTER_PRIORITY,
-                   var isInterruptionFilterActive: Int = 0,
+                   var interruptionFilter: Int = INTERRUPTION_FILTER_ALARMS,
+                   var isInterruptionFilterActive: Int = 1,
                    var ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
                    var isVibrateForCallsActive: Int = 0,
 
