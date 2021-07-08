@@ -77,7 +77,7 @@ class ProfileUtil private constructor (private val context: Context) {
                     Pair(AudioManager.STREAM_NOTIFICATION, profile.notificationVolume),
                     Pair(AudioManager.STREAM_RING, profile.ringVolume),
                     Pair(AudioManager.STREAM_ALARM, profile.alarmVolume),
-                    Pair(VIBRATE_FOR_CALLS, profile.vibrateForCalls))
+                    Pair(VIBRATE_FOR_CALLS, profile.isVibrateForCallsActive))
 
             val additionalSoundsMap: Map<String, Int> = hashMapOf(
                     Pair(Settings.System.DTMF_TONE_WHEN_DIALING, profile.dialTones),

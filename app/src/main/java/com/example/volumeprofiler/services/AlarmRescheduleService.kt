@@ -91,6 +91,5 @@ class AlarmRescheduleService: Service() {
         private const val NOTIFICATION_CHANNEL_ID: String = "channel_162"
         private const val NOTIFICATION_CHANNEL_NAME: String = "Service's notification"
         private const val SERVICE_ID: Int = 162
-        private const val ACTIVITY_REQUEST_CODE: Int = 0
     }
 }

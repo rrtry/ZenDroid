@@ -82,7 +82,7 @@ class ProfileNameInputDialog: DialogFragment() {
         })
         editText.text = SpannableStringBuilder(arguments?.getString(EXTRA_TITLE))
         positiveButton.setOnClickListener {
-            callbacks?.onApply(editText.text.toString())
+            callbacks?.onTitleChanged(editText.text.toString())
             finish()
         }
         negativeButton.setOnClickListener {

@@ -3,7 +3,9 @@ package com.example.volumeprofiler.util
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.graphics.Color
+import android.util.Log
 import android.view.View
+import android.view.animation.Animation
 import android.view.animation.ScaleAnimation
 import androidx.annotation.ColorInt
 
@@ -19,7 +21,25 @@ class AnimationUtils {
             val animation = ScaleAnimation(fromX, toX, fromY, toY,
                     ScaleAnimation.RELATIVE_TO_SELF, 0.5f,
                     ScaleAnimation.RELATIVE_TO_SELF, 0.5f)
-            animation.duration = 400
+            animation.duration = 300
+            animation.setAnimationListener(object : Animation.AnimationListener {
+                override fun onAnimationRepeat(animation: Animation?) {
+                    Log.i("AnimationUtils", "onAnimationRepeat")
+                }
+
+                override fun onAnimationEnd(animation: Animation?) {
+                    if (up) {
+                        view.visibility = View.VISIBLE
+                    }
+                    else {
+                        view.visibility = View.INVISIBLE
+                    }
+                }
+
+                override fun onAnimationStart(animation: Animation?) {
+                    Log.i("AnimationUtils", "onAnimationStart")
+                }
+            })
             view.startAnimation(animation)
         }
 

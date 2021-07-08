@@ -7,23 +7,41 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.fragments.CustomPolicyFragment
 import com.example.volumeprofiler.fragments.DnDPreferencesFragment
 import com.example.volumeprofiler.fragments.EditProfileFragment
-import com.example.volumeprofiler.interfaces.FragmentTransition
+import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import java.util.*
 
-class EditProfileActivity: AppCompatActivity(), FragmentTransition {
+class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.create_profile_activity)
-
         val currentFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-
         if (currentFragment == null) {
             addRootFragment()
         }
+    }
+
+    /*
+    private fun disallowToolbarExpand() {
+        val appBar: AppBarLayout = this.findViewById(R.id.app_bar)
+        appBar.setExpanded(false, false)
+        val params = appBar.layoutParams as CoordinatorLayout.LayoutParams
+        if (params.behavior == null) {
+            params.behavior = AppBarLayout.Behavior()
+        }
+        val behaviour = params.behavior as AppBarLayout.Behavior
+        behaviour.setDragCallback(object : AppBarLayout.Behavior.DragCallback() {
+            override fun canDrag(appBarLayout: AppBarLayout): Boolean {
+                return false
+            }
+        })
+    }
+     */
+
+    private fun popFromBackStack(): Unit {
+        supportFragmentManager.popBackStackImmediate()
     }
 
     private fun replaceFragment(fragment: Fragment): Unit {
@@ -48,15 +66,15 @@ class EditProfileActivity: AppCompatActivity(), FragmentTransition {
         if (fragment == DND_PREFERENCES_FRAGMENT) {
             replaceFragment(DnDPreferencesFragment())
         }
-        else if (fragment == CUSTOM_RESTRICTIONS_FRAGMENT) {
-            replaceFragment(CustomPolicyFragment())
-        }
     }
-    
+
+    override fun onPopBackStack() {
+        popFromBackStack()
+    }
+
     companion object {
 
         const val EXTRA_UUID = "uuid"
-        const val CUSTOM_RESTRICTIONS_FRAGMENT: Int = 1
         const val DND_PREFERENCES_FRAGMENT: Int = 0
 
         fun newIntent(context: Context, id: UUID?): Intent {

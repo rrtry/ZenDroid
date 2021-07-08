@@ -68,7 +68,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         super.onOptionsItemSelected(item)
         if (item.itemId == R.id.saveChangesButton) {
-            onApply()
+            onApplyChanges()
             return true
         }
         return false
@@ -272,12 +272,12 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         }
     }
 
-    override fun onApply() {
+    override fun onApplyChanges() {
         saveChanges()
         super.onBackPressed()
     }
 
-    override fun onDismiss() {
+    override fun onCancelChanges() {
         super.onBackPressed()
     }
 

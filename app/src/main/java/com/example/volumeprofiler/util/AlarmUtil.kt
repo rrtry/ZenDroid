@@ -38,7 +38,7 @@ class AlarmUtil private constructor (private val context: Context) {
             eventTime: LocalDateTime,
             id: Long, onReschedule: Boolean = false, profileId: UUID, profileTitle: String): Long {
         val pendingIntent: PendingIntent = createIntent(volumeSettingsMapPair, eventOccurrences,
-        eventTime, id, profileId, profileTitle)
+        eventTime, id, profileId, profileTitle, true)
         val now: LocalDateTime = LocalDateTime.now()
         var delay: Long
         if ((eventOccurrences.contains(now.dayOfWeek.value) || eventOccurrences.isEmpty())
@@ -63,11 +63,9 @@ class AlarmUtil private constructor (private val context: Context) {
         }
         val currentTimeInMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Allows to receive alarm while being in doze mode
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
         else {
-            // doze mode was introduced in Android 8 (Api level 26)
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
         return 0
@@ -78,7 +76,7 @@ class AlarmUtil private constructor (private val context: Context) {
                              eventTime: LocalDateTime,
                              id: Long,
                              profileId: UUID,
-                             profileTitle: String): PendingIntent {
+                             profileTitle: String, createFlag: Boolean): PendingIntent {
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             this.action = Application.ACTION_ALARM_TRIGGER
             this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
@@ -89,7 +87,12 @@ class AlarmUtil private constructor (private val context: Context) {
             this.putExtra(AlarmReceiver.EXTRA_ALARM_TRIGGER_TIME, eventTime)
             this.putExtra(AlarmReceiver.EXTRA_PROFILE_TITLE, profileTitle)
         }
-        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
+        return if (createFlag) {
+            PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
+        }
+        else {
+            PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_NO_CREATE)
+        }
     }
 
     fun cancelAlarm(
@@ -98,11 +101,9 @@ class AlarmUtil private constructor (private val context: Context) {
             eventTime: LocalDateTime,
             id: Long,
             profileId: UUID, profileTitle: String): Unit {
-        Log.i(LOG_TAG, "request to cancel alarm with an id of $id")
         val pendingIntent: PendingIntent? = createIntent(volumeSettingsMapPair, eventOccurrences,
-        eventTime, id, profileId, profileTitle)
+        eventTime, id, profileId, profileTitle, false)
         if (pendingIntent != null) {
-            Log.i(LOG_TAG, "pendingIntent exists, cancelling alarm...")
             alarmManager.cancel(pendingIntent)
         }
         else {

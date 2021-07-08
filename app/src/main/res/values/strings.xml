@@ -28,19 +28,20 @@
         <item>Events</item>
     </string-array>
     <string-array name="priorityCategoriesApi28">
-        <item>Alarms</item>
-        <item>Media</item>
-        <item>Touch sounds</item>
-        <item>Reminders</item>
-        <item>Events</item>
+        <item>Allow alarms</item>
+        <item>Allow media playback</item>
+        <item>Allow touch sounds</item>
+        <item>Allow reminders</item>
+        <item>Allow events</item>
     </string-array>
     <string-array name="screenIsOn">
         <item>Hide notification dots on app icons</item>
         <item>Hide status bar icons at top of the screen</item>
         <item>Don\'t pop notifications on screen</item>
-        <item>Hide from pull-down shade</item>
+        <item>Hide from notifications list</item>
     </string-array>
     <string-array name="screenIsOff">
+        <item>Don\'t blink notification light</item>
         <item>Don\'t turn on screen</item>
         <item>Don\'t wake for notifications</item>
     </string-array>

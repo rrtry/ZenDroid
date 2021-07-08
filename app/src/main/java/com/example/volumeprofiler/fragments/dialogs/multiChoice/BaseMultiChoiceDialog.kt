@@ -4,41 +4,69 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.util.Log
 import androidx.annotation.ArrayRes
 import androidx.collection.ArrayMap
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
+import java.util.*
+import kotlin.NumberFormatException
+import kotlin.collections.ArrayList
 
 abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
 
     protected var selectedItems: ArrayList<Int> = arrayListOf()
-    abstract val optionsMap: ArrayMap<Int, T>
-    abstract val title: String
 
     @get:ArrayRes
     abstract val arrayRes: Int
+    abstract val optionsMap: ArrayMap<Int, T>
+    abstract val title: String
 
     abstract fun onApply(string: String): Unit
-    abstract fun constructString(): String
-    abstract fun getKey(value: String): Int?
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    protected open fun constructString(): String {
+        val stringBuilder: StringBuilder = java.lang.StringBuilder()
+        for (i in selectedItems) {
+            stringBuilder.append("${optionsMap[i]},")
+        }
+        return stringBuilder.toString()
+    }
+
+    protected open fun getKey(value: String): Int? {
+        var result: Int? = null
+        try {
+            val num: Int = value.toInt()
+            for ((key, value1) in optionsMap.entries) {
+                if (Objects.equals(num, value1)) {
+                    result = key
+                    break
+                }
+            }
+        }
+        catch (e: NumberFormatException) {
+            Log.d("BaseDialog", "NumberFormatException", e)
+        }
+        return result
+    }
+
+    @SuppressWarnings("unchecked")
+    final override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) {
             selectedItems = savedInstanceState.getSerializable(EXTRA_SELECTED_ITEMS) as ArrayList<Int>
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
+    final override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putSerializable(EXTRA_SELECTED_ITEMS, selectedItems)
     }
 
-    override fun onResume() {
+    final override fun onResume() {
         super.onResume()
         val alertDialog: AlertDialog = dialog as AlertDialog
         if (selectedItems.isEmpty()) {
-            val args: List<String> = (arguments?.getSerializable(ARG_SELECTED_ITEMS) as String).split(",")
+            val args: List<String> = (arguments?.getString(ARG_SELECTED_ITEMS) as String).split(",")
             if (args.isNotEmpty()) {
                 for ((index, value) in args.withIndex()) {
                     val key: Int? = getKey(value)
@@ -56,7 +84,7 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
         }
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+    final override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
             builder.setTitle(title)
@@ -66,7 +94,7 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
                                     selectedItems.add(which)
                                 }
                                 else if (selectedItems.contains(which)) {
-                                    selectedItems.remove(Integer.valueOf(which))
+                                    selectedItems.remove(which)
                                 }
                             })
                     .setPositiveButton(R.string.apply,

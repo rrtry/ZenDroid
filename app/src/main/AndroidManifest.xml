@@ -5,9 +5,11 @@
 
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
     <uses-permission-sdk-23 android:name="android.permission.WRITE_SETTINGS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:name=".Application"
@@ -18,45 +20,68 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VolumeProfiler">
 
-        <receiver android:name=".receivers.NotificationActionReceiver" android:enabled="true" android:directBootAware="true"
+        <receiver
+            android:name=".receivers.NotificationActionReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
             tools:targetApi="n">
             <intent-filter>
-                <action android:name="com.example.volumeprofiler.ACTION_SELECT_PROFILE"/>
+                <action android:name="com.example.volumeprofiler.ACTION_SELECT_PROFILE" />
             </intent-filter>
         </receiver>
-
-        <receiver android:name=".receivers.BootCompletedReceiver" android:enabled="true" android:directBootAware="true" tools:targetApi="n">
+        <receiver
+            android:name=".receivers.BootCompletedReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            tools:targetApi="n">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
-
-        <receiver android:name=".receivers.AlarmReceiver" android:directBootAware="true"
-            android:enabled="true" tools:targetApi="n">
+        <receiver
+            android:name=".receivers.AlarmReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            tools:targetApi="n">
             <intent-filter>
-                <action android:name="com.example.volumeprofiler.ACTION_TRIGGER_ALARM"/>
-                <category android:name="android.intent.category.DEFAULT"/>
+                <action android:name="com.example.volumeprofiler.ACTION_TRIGGER_ALARM" />
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
-
-        <receiver android:name=".receivers.IncomingCallReceiver" android:enabled="true"
-            android:directBootAware="true" tools:targetApi="n">
+        <receiver
+            android:name=".receivers.IncomingCallReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            tools:targetApi="n">
             <intent-filter>
-                <action android:name="android.intent.action.PHONE_STATE"/>
+                <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
 
-        <service android:name=".services.TaskService" android:enabled="true"/>
-        <service android:name=".services.AlarmRescheduleService" android:enabled="true" android:directBootAware="true" tools:targetApi="n"/>
-        <service android:name=".services.NotificationWidgetService" android:enabled="true" android:directBootAware="true" tools:targetApi="n"/>
+        <service
+            android:name=".services.TaskService"
+            android:enabled="true" />
+        <service
+            android:name=".services.AlarmRescheduleService"
+            android:directBootAware="true"
+            android:enabled="true"
+            tools:targetApi="n" />
+        <service
+            android:name=".services.NotificationWidgetService"
+            android:directBootAware="true"
+            android:enabled="true"
+            tools:targetApi="n" />
 
-        <activity android:name=".activities.EditProfileActivity"/>
-        <activity android:name=".activities.EditEventActivity"/>
+        <activity android:name=".activities.EditProfileActivity" android:theme="@style/Theme.VolumeProfiler.NoActionBar"/>
+        <activity android:name=".activities.EditEventActivity" />
         <activity android:name=".activities.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

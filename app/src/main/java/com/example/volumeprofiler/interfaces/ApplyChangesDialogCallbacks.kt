@@ -2,7 +2,7 @@ package com.example.volumeprofiler.interfaces
 
 interface ApplyChangesDialogCallbacks {
 
-    fun onApply(): Unit
+    fun onApplyChanges(): Unit
 
-    fun onDismiss(): Unit
+    fun onCancelChanges(): Unit
 }

@@ -12,16 +12,14 @@ import com.example.volumeprofiler.interfaces.VisualRestrictionsCallback
 import com.example.volumeprofiler.models.Profile
 import java.lang.NumberFormatException
 import java.util.*
-import kotlin.collections.ArrayList
 
-
-class ScreenOnVisualRestrictions: BaseMultiChoiceDialog<List<Int>>() {
+class ScreenOnVisualRestrictionsDialog: BaseMultiChoiceDialog<List<Int>>() {
 
     override val optionsMap: ArrayMap<Int, List<Int>> = arrayMapOf(
             0 to listOf(SUPPRESSED_EFFECT_BADGE),
             1 to listOf(SUPPRESSED_EFFECT_STATUS_BAR),
             2 to listOf(SUPPRESSED_EFFECT_PEEK, SUPPRESSED_EFFECT_SCREEN_ON),
-            3 to listOf(SUPPRESSED_EFFECT_STATUS_BAR, SUPPRESSED_EFFECT_NOTIFICATION_LIST)
+            3 to listOf(SUPPRESSED_EFFECT_NOTIFICATION_LIST)
     )
     override val title: String = "When the screen is on"
     private var callbacks: VisualRestrictionsCallback? = null
@@ -40,7 +38,7 @@ class ScreenOnVisualRestrictions: BaseMultiChoiceDialog<List<Int>>() {
     }
 
     override fun onApply(string: String) {
-        callbacks?.onPolicySelected(string)
+        callbacks?.onEffectsSelected(string, 1)
     }
 
     override fun constructString(): String {
@@ -72,12 +70,12 @@ class ScreenOnVisualRestrictions: BaseMultiChoiceDialog<List<Int>>() {
 
     companion object {
 
-        fun newInstance(profile: Profile): ScreenOnVisualRestrictions {
+        fun newInstance(profile: Profile): ScreenOnVisualRestrictionsDialog {
             val arguments: Bundle = Bundle().apply {
-                val arg: String = profile.suppressedVisualEffects!!
+                val arg: String = profile.screenOnVisualEffects
                 this.putString(ARG_SELECTED_ITEMS, arg)
             }
-            return ScreenOnVisualRestrictions().apply {
+            return ScreenOnVisualRestrictionsDialog().apply {
                 this.arguments = arguments
             }
         }

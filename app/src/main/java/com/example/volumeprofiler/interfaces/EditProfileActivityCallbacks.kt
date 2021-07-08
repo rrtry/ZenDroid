@@ -1,6 +1,8 @@
 package com.example.volumeprofiler.interfaces
 
-interface FragmentTransition {
+interface EditProfileActivityCallbacks {
 
     fun onFragmentReplace(fragment: Int): Unit
+
+    fun onPopBackStack(): Unit
 }

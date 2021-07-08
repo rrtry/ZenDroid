@@ -5,6 +5,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 import android.app.NotificationManager.Policy.*
+import android.media.AudioManager
+import android.app.NotificationManager.Policy.*
+import android.app.NotificationManager.*
+
 @Entity
 data class Profile(var title: String,
                    @PrimaryKey val id: UUID = UUID.randomUUID(),
@@ -19,10 +23,11 @@ data class Profile(var title: String,
                    var notificationSoundUri: Uri = Uri.EMPTY,
                    var alarmSoundUri: Uri = Uri.EMPTY,
 
-                   var dndMode: Int = 6,
-                   var isDndActive: Int = 0,
-                   var silentModeActive: Int = 0,
-                   var vibrateForCalls: Int = 0,
+                   var interruptionFilter: Int = INTERRUPTION_FILTER_PRIORITY,
+                   var isInterruptionFilterActive: Int = 0,
+                   var ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
+                   var isVibrateForCallsActive: Int = 0,
+
 
                    var dialTones: Int = 0,
                    var screenLockingSounds: Int = 0,
@@ -32,7 +37,8 @@ data class Profile(var title: String,
                    var shutterSound: Int = 0,
 
                    var priorityCategories: String = "",
-                   var priorityCallSenders: Int = PRIORITY_SENDERS_CONTACTS,
-                   var priorityMessageSenders: Int = PRIORITY_SENDERS_CONTACTS,
-                   var suppressedVisualEffects: String? = "",
-                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_IMPORTANT)
+                   var priorityCallSenders: Int = PRIORITY_SENDERS_ANY,
+                   var priorityMessageSenders: Int = PRIORITY_SENDERS_ANY,
+                   var screenOnVisualEffects: String = "",
+                   var screenOffVisualEffects: String = "",
+                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE)

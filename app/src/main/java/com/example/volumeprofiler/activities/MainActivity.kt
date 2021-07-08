@@ -3,12 +3,14 @@ package com.example.volumeprofiler.activities
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.getSystemService
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -28,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        getNotificationPolicy()
+        setInterruptionFilter()
         supportActionBar?.title = "Title"
         viewPager = findViewById(R.id.pager)
         val pagerAdapter = ScreenSlidePagerAdapter(this)
@@ -37,21 +39,21 @@ class MainActivity : AppCompatActivity() {
         setupTabLayout()
     }
 
-
-    @RequiresApi(Build.VERSION_CODES.R)
-    private fun getNotificationPolicy(): Unit {
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun setInterruptionFilter(): Unit {
+        val audioManager = this.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager.isNotificationPolicyAccessGranted) {
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
             Log.i("MainActivity", notificationManager.notificationPolicy.toString())
-        }
-        else {
+        } else {
             val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
                 this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(this)
             }
-            startActivity(intent)
         }
-    }
 
+    }
 
     private fun setupTabLayout(): Unit {
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)

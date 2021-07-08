@@ -6,7 +6,7 @@
             android:title="All conversations"/>
         <item
             android:id="@+id/priority_conversations"
-            android:title="Conversations"/>
+            android:title="Important conversations"/>
         <item
             android:id="@+id/none"
             android:title="None">

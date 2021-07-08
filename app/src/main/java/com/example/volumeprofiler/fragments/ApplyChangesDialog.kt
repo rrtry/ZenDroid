@@ -31,11 +31,11 @@ class ApplyChangesDialog: DialogFragment() {
                     .setTitle("You haven't saved changes")
                     .setPositiveButton(R.string.apply,
                             DialogInterface.OnClickListener { dialog, id ->
-                                callbacks?.onApply()
+                                callbacks?.onApplyChanges()
                             })
                     .setNegativeButton(R.string.cancel,
                             DialogInterface.OnClickListener { dialog, id ->
-                                callbacks?.onDismiss()
+                                callbacks?.onCancelChanges()
                             })
 
             builder.create()
