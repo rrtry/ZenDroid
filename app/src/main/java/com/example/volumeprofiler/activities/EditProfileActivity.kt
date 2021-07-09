@@ -23,23 +23,6 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
         }
     }
 
-    /*
-    private fun disallowToolbarExpand() {
-        val appBar: AppBarLayout = this.findViewById(R.id.app_bar)
-        appBar.setExpanded(false, false)
-        val params = appBar.layoutParams as CoordinatorLayout.LayoutParams
-        if (params.behavior == null) {
-            params.behavior = AppBarLayout.Behavior()
-        }
-        val behaviour = params.behavior as AppBarLayout.Behavior
-        behaviour.setDragCallback(object : AppBarLayout.Behavior.DragCallback() {
-            override fun canDrag(appBarLayout: AppBarLayout): Boolean {
-                return false
-            }
-        })
-    }
-     */
-
     private fun popFromBackStack(): Unit {
         supportFragmentManager.popBackStackImmediate()
     }

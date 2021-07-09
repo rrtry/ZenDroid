@@ -291,7 +291,7 @@ class ScheduledEventsListFragment: Fragment() {
             }
         }
 
-        fun bindEvent(profileAndEvent: ProfileAndEvent, position: Int, isSelected: Boolean) {
+        fun bindEvent(profileAndEvent: ProfileAndEvent, isSelected: Boolean) {
             this.event = profileAndEvent.event
             this.profile = profileAndEvent.profile
             AnimationUtils.selectedItemAnimation(itemView, isSelected)
@@ -333,7 +333,7 @@ class ScheduledEventsListFragment: Fragment() {
                 lastPosition = position
             }
             tracker.let {
-                holder.bindEvent(getItem(position), position, it.isSelected(getItem(position).event.id))
+                holder.bindEvent(getItem(position), it.isSelected(getItem(position).event.id))
             }
         }
 

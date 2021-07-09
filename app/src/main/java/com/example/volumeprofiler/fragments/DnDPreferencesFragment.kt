@@ -36,7 +36,7 @@ class DnDPreferencesFragment: Fragment(), OtherInterruptionsCallback, VisualRest
     private var whenScreenIsOffDescription: TextView? = null
     private var whenScreenIsOnDescription: TextView? = null
     private lateinit var repeatCallersSwitch: Switch
-    private lateinit var otherInterruptionsDescription: TextView
+    private var otherInterruptionsDescription: TextView? = null
     private lateinit var exceptionsCallsText: TextView
     private lateinit var exceptionsMessagesText: TextView
     private var exceptionsConversationsText: TextView? = null
@@ -50,7 +50,9 @@ class DnDPreferencesFragment: Fragment(), OtherInterruptionsCallback, VisualRest
     private fun disableNestedScrolling(): Unit {
         val appBar: AppBarLayout = requireActivity().findViewById(R.id.app_bar)
         appBar.setExpanded(false, false)
-        ViewCompat.setNestedScrollingEnabled(requireView().findViewById(R.id.nestedScrollView), false)
+        if (Build.VERSION_CODES.M < Build.VERSION.SDK_INT) {
+            ViewCompat.setNestedScrollingEnabled(requireView().findViewById(R.id.nestedScrollView), false)
+        }
     }
 
     private fun hideMenuOptions(): Unit {
@@ -228,10 +230,10 @@ class DnDPreferencesFragment: Fragment(), OtherInterruptionsCallback, VisualRest
         val priorityCategories: String = viewModel.mutableProfile!!.priorityCategories
         if (priorityCategories.isNotEmpty()) {
             val priorityCategoriesList: List<Int> = toList(priorityCategories)
-            otherInterruptionsDescription.text = updatePriorityCategoriesDescription(priorityCategoriesList)
+            otherInterruptionsDescription?.text = updatePriorityCategoriesDescription(priorityCategoriesList)
         }
         else {
-            otherInterruptionsDescription.text = "Restrict everything"
+            otherInterruptionsDescription?.text = "Restrict everything"
         }
         exceptionsCallsText.text = when (callSenders) {
             PRIORITY_SENDERS_ANY -> {
@@ -482,11 +484,6 @@ class DnDPreferencesFragment: Fragment(), OtherInterruptionsCallback, VisualRest
 
     override fun onDestroyView() {
         callbacks = null
-        //exceptionsCallsText = null
-        //exceptionsMessagesText = null
-        exceptionsConversationsText = null
-        whenScreenIsOffDescription = null
-        whenScreenIsOnDescription = null
         super.onDestroyView()
     }
 

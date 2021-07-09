@@ -8,6 +8,7 @@ import android.app.NotificationManager.Policy.*
 import android.media.AudioManager
 import android.app.NotificationManager.Policy.*
 import android.app.NotificationManager.*
+import android.util.Log
 
 @Entity
 data class Profile(var title: String,
@@ -41,4 +42,10 @@ data class Profile(var title: String,
                    var priorityMessageSenders: Int = PRIORITY_SENDERS_ANY,
                    var screenOnVisualEffects: String = "",
                    var screenOffVisualEffects: String = "",
-                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE)
+                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE) {
+
+    override fun toString(): String {
+        return "interruptionFilter: $interruptionFilter\nisInterruptionFilterActive:$isInterruptionFilterActive\nringerMode: $ringerMode\nisVibrateForCallsActive:$isVibrateForCallsActive\n" +
+        "priorityCategories:$priorityCategories\npriorityCallSenders:$priorityCallSenders\npriorityMessageSenders:$priorityMessageSenders\nscreenOnVisualEffect:$screenOnVisualEffects\nscreenOffVisualEffects:$screenOffVisualEffects"
+    }
+}

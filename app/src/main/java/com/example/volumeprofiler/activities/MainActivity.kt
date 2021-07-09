@@ -10,7 +10,6 @@ import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.getSystemService
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -44,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         val audioManager = this.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager.isNotificationPolicyAccessGranted) {
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
             Log.i("MainActivity", notificationManager.notificationPolicy.toString())
         } else {
             val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
@@ -52,7 +51,6 @@ class MainActivity : AppCompatActivity() {
                 startActivity(this)
             }
         }
-
     }
 
     private fun setupTabLayout(): Unit {

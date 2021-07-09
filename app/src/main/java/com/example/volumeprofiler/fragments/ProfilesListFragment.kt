@@ -118,8 +118,14 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
         val view: View = inflater.inflate(R.layout.profiles, container, false)
         val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
+            /*
             val intent: Intent = EditProfileActivity.newIntent(requireContext(), null)
             startActivity(intent)
+             */
+            lifecycleScope.launch {
+                val repo: Repository = Repository.get()
+                repo.addProfile(Profile("Profile#${Random().nextInt(100)}"))
+            }
         }
         initRecyclerView(view)
         setItemTouchHelper()
@@ -375,7 +381,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
         viewModel.removeProfile(profile)
     }
 
-    inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view),
+    private inner class ProfileHolder(view: View): RecyclerView.ViewHolder(view),
         ViewHolderItemDetailsProvider<String>, CompoundButton.OnCheckedChangeListener {
 
         private val checkBox: CheckBox = itemView.findViewById(R.id.checkBox) as CheckBox
@@ -442,7 +448,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
             }
         }
 
-        fun bindProfile(profile: Profile, position: Int, isSelected: Boolean): Unit {
+        fun bindProfile(profile: Profile, isSelected: Boolean): Unit {
             AnimationUtils.selectedItemAnimation(itemView, isSelected)
             val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
             checkBox.isChecked = isProfileActive
@@ -478,7 +484,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
         profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, profile.id, profile.title)
     }
 
-    inner class ProfileAdapter : androidx.recyclerview.widget.ListAdapter<Profile, ProfileHolder>(
+    private inner class ProfileAdapter : androidx.recyclerview.widget.ListAdapter<Profile, ProfileHolder>(
 
         object : DiffUtil.ItemCallback<Profile>() {
 
@@ -508,7 +514,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
                 AnimationUtils.scaleAnimation(holder.itemView, true)
             }
             tracker.let {
-                holder.bindProfile(profile, position, it.isSelected(getProfile(position).id.toString()))
+                holder.bindProfile(profile, it.isSelected(getProfile(position).id.toString()))
             }
         }
 
