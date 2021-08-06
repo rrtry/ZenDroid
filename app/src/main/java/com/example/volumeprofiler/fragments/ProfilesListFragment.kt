@@ -21,9 +21,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.Observer
-import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
@@ -33,21 +31,19 @@ import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.adapters.DetailsLookup
 import com.example.volumeprofiler.adapters.ItemDetails
 import com.example.volumeprofiler.adapters.KeyProvider
-import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AnimationUtils
+import com.example.volumeprofiler.util.AnimUtils
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
-import com.example.volumeprofiler.viewmodels.SharedViewModel
+import com.example.volumeprofiler.viewmodels.ViewpagerSharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.List
@@ -57,7 +53,7 @@ import kotlin.collections.sortWith
 import kotlin.collections.toList
 import kotlin.collections.withIndex
 
-class ProfilesListFragment: Fragment(), LifecycleObserver {
+class ProfilesListFragment: Fragment() {
 
     private var actionMode: ActionMode? = null
     private var sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
@@ -66,9 +62,9 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
     private lateinit var tracker: SelectionTracker<String>
     private lateinit var recyclerView: RecyclerView
     private val viewModel: ProfileListViewModel by viewModels()
-    private val sharedViewModel: SharedViewModel by activityViewModels()
+    private val viewpagerSharedViewModel: ViewpagerSharedViewModel by activityViewModels()
 
-    private var uiReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private var uiStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Application.ACTION_UPDATE_UI) {
@@ -85,11 +81,12 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
             }
         }
     }
+
     private var processLifecycleReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Application.ACTION_GONE_BACKGROUND) {
-                val isProfileQueryEmpty: Boolean? = sharedViewModel.isProfileQueryEmpty.value
+                val isProfileQueryEmpty: Boolean? = viewpagerSharedViewModel.profileListLiveData.value?.isEmpty()
                 if (isProfileQueryEmpty != null && !isProfileQueryEmpty) {
                     startService()
                 }
@@ -100,7 +97,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-        registerReceiver(uiReceiver, arrayOf(Application.ACTION_UPDATE_UI))
+        registerReceiver(uiStateReceiver, arrayOf(Application.ACTION_UPDATE_UI))
         registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND))
         positionMap = sharedPreferencesUtil.getRecyclerViewPositionsMap() ?: arrayMapOf()
         /*
@@ -114,18 +111,12 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view: View = inflater.inflate(R.layout.profiles, container, false)
+    ): View {
+        val view: View = inflater.inflate(R.layout.profiles_fragment, container, false)
         val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
-            /*
             val intent: Intent = EditProfileActivity.newIntent(requireContext(), null)
             startActivity(intent)
-             */
-            lifecycleScope.launch {
-                val repo: Repository = Repository.get()
-                repo.addProfile(Profile("Profile#${Random().nextInt(100)}"))
-            }
         }
         initRecyclerView(view)
         setItemTouchHelper()
@@ -137,6 +128,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
         recyclerView.adapter = profileAdapter
+        recyclerView.itemAnimator = DefaultItemAnimator()
     }
 
     private fun initSelectionTracker(): Unit {
@@ -201,16 +193,15 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.profileListLiveData.observe(viewLifecycleOwner,
+        viewpagerSharedViewModel.profileListLiveData.observe(viewLifecycleOwner,
                 Observer<List<Profile>> { t ->
                     if (t != null) {
                         var sortedList: List<Profile> = restoreChangedPositions(t)
-                        sharedViewModel.setValue(sortedList.isEmpty())
                         updateUI(sortedList)
                     }
                 })
         viewModel.associatedEventsLiveData.observe(viewLifecycleOwner,
-                Observer<List<ProfileAndEvent>?> { t ->
+                Observer<List<AlarmTrigger>?> { t ->
                     if (t != null && t.isNotEmpty()) {
                         val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
                         alarmUtil.cancelMultipleAlarms(t)
@@ -228,7 +219,7 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
 
     override fun onDestroy(): Unit {
         unregisterReceiver(processLifecycleReceiver)
-        unregisterReceiver(uiReceiver)
+        unregisterReceiver(uiStateReceiver)
         super.onDestroy()
     }
 
@@ -442,14 +433,15 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
                     collapseView()
                 }
             }
-            editTextView.setOnClickListener { startActivity(EditProfileActivity.newIntent(requireContext(), profile.id)) }
+            editTextView.setOnClickListener {
+                startActivity(EditProfileActivity.newIntent(requireContext(), profile)) }
             removeTextView.setOnClickListener {
-                removeProfile(profileAdapter.getProfile(absoluteAdapterPosition), absoluteAdapterPosition)
+                removeProfile(profile, absoluteAdapterPosition)
             }
         }
 
         fun bindProfile(profile: Profile, isSelected: Boolean): Unit {
-            AnimationUtils.selectedItemAnimation(itemView, isSelected)
+            AnimUtils.selectedItemAnimation(itemView, isSelected)
             val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
             checkBox.isChecked = isProfileActive
             if (isProfileActive) {
@@ -478,10 +470,11 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
         }
     }
 
+
+
     private fun applyAudioSettings(profile: Profile): Unit {
         val profileUtil = ProfileUtil.getInstance()
-        val settingsPair = ProfileUtil.getVolumeSettingsMapPair(profile)
-        profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, profile.id, profile.title)
+        profileUtil.applyAudioSettings(profile)
     }
 
     private inner class ProfileAdapter : androidx.recyclerview.widget.ListAdapter<Profile, ProfileHolder>(
@@ -511,7 +504,6 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
             val profile = getItem(position)
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
-                AnimationUtils.scaleAnimation(holder.itemView, true)
             }
             tracker.let {
                 holder.bindProfile(profile, it.isSelected(getProfile(position).id.toString()))
@@ -529,9 +521,10 @@ class ProfilesListFragment: Fragment(), LifecycleObserver {
 
     companion object {
 
+        private const val REQUEST_CODE_PROFILE: Int = 96
         private const val SWIPE_FLAGS: Int = 0
         private const val DRAG_FLAGS: Int = ItemTouchHelper.UP or ItemTouchHelper.DOWN
         private const val LOG_TAG: String = "ProfilesListFragment"
-        private const val PROFILE_LAYOUT = R.layout.item_view
+        private const val PROFILE_LAYOUT = R.layout.profile_item_view
     }
 }

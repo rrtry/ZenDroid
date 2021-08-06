@@ -11,42 +11,31 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
 import com.example.volumeprofiler.Application
-import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.receivers.AlarmReceiver
-import java.io.Serializable
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.*
-
- /*
-   *  Utility class which has useful methods for settings alarms, dealing with date objects and schedules
-  */
+import kotlin.collections.ArrayList
 
 class AlarmUtil private constructor (private val context: Context) {
 
-    /*
-        It's safe to hold on to reference of ApplicationContext
-     */
-
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun setAlarm(
-            volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
-            eventOccurrences: Array<Int>,
-            eventTime: LocalDateTime,
-            id: Long, onReschedule: Boolean = false, profileId: UUID, profileTitle: String): Long {
-        val pendingIntent: PendingIntent = createIntent(volumeSettingsMapPair, eventOccurrences,
-        eventTime, id, profileId, profileTitle, true)
+    fun setAlarm(alarm: Alarm, profile: Profile, onReschedule: Boolean): Long {
+        val alarmId: Long = alarm.id
+        val recurringDays: ArrayList<Int> = alarm.workingsDays
+        val eventTime: LocalDateTime = alarm.localDateTime
+        val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, true)
         val now: LocalDateTime = LocalDateTime.now()
         var delay: Long
-        if ((eventOccurrences.contains(now.dayOfWeek.value) || eventOccurrences.isEmpty())
+        if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
                 && now.toLocalTime() < eventTime.toLocalTime()) {
             delay = diffBetweenHoursInMillis(eventTime.toLocalTime())
         }
         else {
-            var nextDay: DayOfWeek? = getNextDayOnSchedule(eventOccurrences)
+            var nextDay: DayOfWeek? = getNextDayOnSchedule(recurringDays)
             if (nextDay != null) {
                 delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
             }
@@ -56,8 +45,7 @@ class AlarmUtil private constructor (private val context: Context) {
                     delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
                 }
                 else {
-                    cancelAlarm(volumeSettingsMapPair, eventOccurrences, eventTime, id, profileId, profileTitle)
-                    return id
+                    return alarmId
                 }
             }
         }
@@ -68,88 +56,50 @@ class AlarmUtil private constructor (private val context: Context) {
         else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
-        return 0
+        return EXIT_SUCCESS
     }
 
-    private fun createIntent(volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
-                             eventOccurrences: Array<Int>,
-                             eventTime: LocalDateTime,
-                             id: Long,
-                             profileId: UUID,
-                             profileTitle: String, createFlag: Boolean): PendingIntent {
+    private fun getPendingIntent(alarm: Alarm, profile: Profile, shouldCreate: Boolean): PendingIntent? {
+        val id: Int = alarm.id.toInt()
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             this.action = Application.ACTION_ALARM_TRIGGER
-            this.putExtra(AlarmReceiver.EXTRA_PRIMARY_VOLUME_SETTINGS, volumeSettingsMapPair.first as Serializable)
-            this.putExtra(AlarmReceiver.EXTRA_OPTIONAL_VOLUME_SETTINGS, volumeSettingsMapPair.second as Serializable)
-            this.putExtra(AlarmReceiver.EXTRA_EVENT_OCCURRENCES, eventOccurrences)
-            this.putExtra(AlarmReceiver.EXTRA_ALARM_ID, id)
-            this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
-            this.putExtra(AlarmReceiver.EXTRA_ALARM_TRIGGER_TIME, eventTime)
-            this.putExtra(AlarmReceiver.EXTRA_PROFILE_TITLE, profileTitle)
+            this.putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            this.putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
-        return if (createFlag) {
-            PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_CANCEL_CURRENT)
+        return if (shouldCreate) {
+            PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
         else {
-            PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_NO_CREATE)
+            PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_NO_CREATE)
         }
     }
 
-    fun cancelAlarm(
-            volumeSettingsMapPair: Pair<Map<Int, Int>, Map<String, Int>>,
-            eventOccurrences: Array<Int>,
-            eventTime: LocalDateTime,
-            id: Long,
-            profileId: UUID, profileTitle: String): Unit {
-        val pendingIntent: PendingIntent? = createIntent(volumeSettingsMapPair, eventOccurrences,
-        eventTime, id, profileId, profileTitle, false)
+    fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
+        val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, false)
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
         }
         else {
-            Log.i(LOG_TAG, "failed to cancel alarm with an id of $id")
+            Log.i("AlarmUtil", "failed to cancel alarm")
         }
     }
 
-    fun cancelMultipleAlarms(list: List<ProfileAndEvent>): Unit {
+    fun cancelMultipleAlarms(list: List<AlarmTrigger>): Unit {
         for (i in list) {
-            val event: Event = i.event
-            val profile: Profile = i.profile
-            val eventOccurrences: Array<Int>
-            if (event.workingDays.isNotEmpty()) {
-                eventOccurrences = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-            }
-            else {
-                eventOccurrences = arrayOf()
-            }
-            val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
-            cancelAlarm(
-                    volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.id, profile.id, profile.title)
+            cancelAlarm(i.alarm, i.profile)
         }
     }
 
-    fun setMultipleAlarms(list: List<ProfileAndEvent>): Unit {
+    fun setMultipleAlarms(list: List<AlarmTrigger>): Unit {
         for (i in list) {
-            val event: Event = i.event
-            val profile: Profile = i.profile
-            val eventOccurrences: Array<Int>
-            if (event.workingDays.isNotEmpty()) {
-                eventOccurrences = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
-            }
-            else {
-                eventOccurrences = arrayOf()
-            }
-            val volumeSettingsMap = ProfileUtil.getVolumeSettingsMapPair(profile)
-            setAlarm(
-                    volumeSettingsMap, eventOccurrences,
-                    event.localDateTime, event.id, false, profile.id, profile.title)
+            setAlarm(i.alarm, i.profile, false)
         }
     }
 
     companion object {
 
         private const val LOG_TAG: String = "AlarmUtil"
+        const val EXIT_SUCCESS: Long = -1
 
         private var INSTANCE: AlarmUtil? = null
 
@@ -178,7 +128,7 @@ class AlarmUtil private constructor (private val context: Context) {
 
         private fun diffBetweenHoursInMillis(nextHour: LocalTime) = ChronoUnit.MILLIS.between(LocalTime.now(), nextHour)
 
-        private fun getNextDayOnSchedule(eventOccurrences: Array<Int>): DayOfWeek? {
+        private fun getNextDayOnSchedule(eventOccurrences: ArrayList<Int>): DayOfWeek? {
             if (eventOccurrences.isEmpty()) {
                 return null
             }

@@ -5,48 +5,58 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import java.time.LocalDateTime
-import android.util.Log
 import com.example.volumeprofiler.Application
-import com.example.volumeprofiler.database.Repository
+import com.example.volumeprofiler.models.Alarm
+import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.ParcelableUtil
 import com.example.volumeprofiler.util.ProfileUtil
 import kotlinx.coroutines.*
 import java.util.*
-import kotlin.collections.HashMap
 
 class AlarmReceiver: BroadcastReceiver() {
 
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.i("AlarmReceiver", "onReceive")
+
         if (context != null && intent?.action == Application.ACTION_ALARM_TRIGGER) {
-
-            val profileUtil: ProfileUtil = ProfileUtil.getInstance()
-            val alarmUtil = AlarmUtil.getInstance()
-
-            val profileTitle: String = intent.getStringExtra(EXTRA_PROFILE_TITLE) as String
-            val primaryVolumeSettings: Map<Int, Int> = intent.getSerializableExtra(EXTRA_PRIMARY_VOLUME_SETTINGS) as HashMap<Int, Int>
-            val optionalVolumeSettings: Map<String, Int> = intent.getSerializableExtra(EXTRA_OPTIONAL_VOLUME_SETTINGS) as HashMap<String, Int>
-            val eventOccurrences: Array<Int> = intent.extras?.get(EXTRA_EVENT_OCCURRENCES) as Array<Int>
-            val eventId: Long = intent.extras?.getLong(EXTRA_ALARM_ID) as Long
-            val profileId: UUID = intent.extras?.getSerializable(EXTRA_PROFILE_ID) as UUID
-            val eventTime: LocalDateTime = intent.extras?.getSerializable(EXTRA_ALARM_TRIGGER_TIME) as LocalDateTime
-
-            val result: Long = alarmUtil.setAlarm(Pair(primaryVolumeSettings, optionalVolumeSettings), eventOccurrences,
-                    eventTime, eventId, true, profileId, profileTitle)
-            if (result > 0) {
-                goAsync(GlobalScope, Dispatchers.IO) {
-                    Repository.get().updateTriggeredEvent(result)
-                }
+            val alarm: Alarm = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_ALARM)!!, ParcelableUtil.getParcelableCreator<Alarm>())
+            val profile: Profile = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_PROFILE)!!, ParcelableUtil.getParcelableCreator<Profile>())
+            val result: Long = setAlarm(alarm, profile)
+            if (result != (-1).toLong()) {
+                cancelAlarm(alarm, profile)
+                // Repository.get().updateTriggeredAlarm(alarm) start service
             }
-            profileUtil.applyAudioSettings(primaryVolumeSettings, optionalVolumeSettings, profileId, profileTitle)
-            profileUtil.sendLocalBroadcast(profileId)
+            else {
+                setAlarm(alarm, profile)
+            }
+            applyAudioSettings(profile)
+            sendLocalBroadcast(profile.id)
             if (isServiceRunning(context)) {
                 updateNotification(context)
             }
         }
+    }
+
+    private fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
+        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
+        alarmUtil.cancelAlarm(alarm, profile)
+    }
+
+    private fun setAlarm(alarm: Alarm, profile: Profile): Long {
+        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
+        return alarmUtil.setAlarm(alarm, profile, true)
+    }
+
+    private fun sendLocalBroadcast(id: UUID): Unit {
+        val profileUtil: ProfileUtil = ProfileUtil.getInstance()
+        profileUtil.sendLocalBroadcast(id)
+    }
+
+    private fun applyAudioSettings(profile: Profile): Unit {
+        val profileUtil: ProfileUtil = ProfileUtil.getInstance()
+        profileUtil.applyAudioSettings(profile)
     }
 
     private fun updateNotification(context: Context): Unit {
@@ -89,19 +99,12 @@ class AlarmReceiver: BroadcastReceiver() {
     companion object {
 
         private const val LOG_TAG: String = "AlarmReceiver"
-        const val PREFS_PROFILE_ID = "prefs_profile_id"
-        const val PREFS_PROFILE_STREAM_ALARM = "prefs_profile_stream_alarm"
-        const val PREFS_PROFILE_STREAM_VOICE_CALL = "prefs_profile_voice_call"
-        const val PREFS_PROFILE_STREAM_MUSIC = "prefs_profile_stream_music"
-        const val PREFS_PROFILE_STREAM_NOTIFICATION = "prefs_profile_stream_notification"
-        const val PREFS_PROFILE_STREAM_RING = "prefs_profile_streams_ring"
-        const val PREFS_PROFILE_TITLE = "prefs_profile_title"
-        const val EXTRA_PROFILE_TITLE = "extra_profile_title"
-        const val EXTRA_ALARM_TRIGGER_TIME = "alarm_trigger_time"
-        const val EXTRA_PRIMARY_VOLUME_SETTINGS = "primary_volume_settings"
-        const val EXTRA_OPTIONAL_VOLUME_SETTINGS = "optional_volume_settings"
-        const val EXTRA_ALARM_ID = "alarm_id"
-        const val EXTRA_PROFILE_ID = "profile_id"
-        const val EXTRA_EVENT_OCCURRENCES = "event_occurrences"
+        const val PREFS_PROFILE_ID: String = "prefs_profile_id"
+        const val PREFS_PROFILE_STREAM_NOTIFICATION: String = "prefs_profile_stream_notification"
+        const val PREFS_PROFILE_STREAM_RING: String = "prefs_profile_streams_ring"
+        const val PREFS_PROFILE_TITLE: String = "prefs_profile_title"
+        const val EXTRA_PROFILE_ID: String = "profile_id"
+        const val EXTRA_ALARM: String = "extra_alarm"
+        const val EXTRA_PROFILE: String = "extra_profile"
     }
 }

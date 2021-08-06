@@ -33,16 +33,16 @@ class ScreenOffVisualRestrictionsDialog : BaseMultiChoiceDialog<Int>() {
         super.onDetach()
     }
 
-    override fun onApply(string: String) {
-        callbacks?.onEffectsSelected(string, 0)
+    override fun onApply(arrayList: ArrayList<Int>) {
+        callbacks?.onEffectsSelected(arrayList, 0)
     }
 
     companion object {
 
         fun newInstance(profile: Profile): ScreenOffVisualRestrictionsDialog {
             val arguments: Bundle = Bundle().apply {
-                val arg: String = profile.screenOffVisualEffects
-                this.putString(ARG_SELECTED_ITEMS, arg)
+                val arg: ArrayList<Int> = profile.screenOffVisualEffects
+                this.putSerializable(ARG_SELECTED_ITEMS, arg)
             }
             return ScreenOffVisualRestrictionsDialog().apply {
                 this.arguments = arguments

@@ -3,7 +3,7 @@ package com.example.volumeprofiler.database
 import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.models.AlarmTrigger
 import java.util.*
 
 @Dao
@@ -27,12 +27,15 @@ interface ProfileDao {
     @Delete
     suspend fun removeProfile(profile: Profile)
 
-    @Query("SELECT * FROM Profile INNER JOIN Event ON profile.id = Event.profileUUID")
-    fun observeProfilesWithEvents(): LiveData<List<ProfileAndEvent>>
+    @Transaction
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID")
+    fun observeProfilesWithAlarms(): LiveData<List<AlarmTrigger>>
 
-    @Query("SELECT * FROM Profile INNER JOIN Event ON profile.id = Event.profileUUID WHERE profile.id = (:id) AND event.isScheduled = 1")
-    fun observeProfileWithScheduledEvents(id: UUID): LiveData<List<ProfileAndEvent>?>
+    @Transaction
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
+    fun observeProfileWithScheduledAlarms(id: UUID): LiveData<List<AlarmTrigger>?>
 
-    @Query("SELECT * FROM Profile INNER JOIN Event ON profile.id = Event.profileUUID WHERE event.isScheduled = 1")
-    suspend fun getProfilesWithScheduledEvents(): List<ProfileAndEvent>?
+    @Transaction
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE Alarm.isScheduled = 1")
+    suspend fun getProfilesWithScheduledAlarms(): List<AlarmTrigger>?
 }

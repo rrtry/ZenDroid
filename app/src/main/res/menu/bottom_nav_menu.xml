@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/location_tab"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_mylocation"
+        android:title="Edit coordinates"/>
+    <item
+        android:id="@+id/profile_tab"
+        android:enabled="true"
+        android:icon="@drawable/baseline_music_note_deep_purple_300_24dp"
+        android:title="Edit profile"/>
+</menu>

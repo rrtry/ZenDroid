@@ -2,6 +2,9 @@
     <string name="app_name">VolumeProfiler</string>
     <string name="tab_scheduler">Scheduler</string>
     <string name="tab_profiles">Profiles</string>
+    <string name="tab_locations">Locations</string>
+    <string name="tab_location_edit">Location</string>
+    <string name="tab_profile_edit">Profile</string>
     <string name="workingDaysTitle">Select the days on which the profile activates</string>
     <string name="customRestrictions">Custom restrictions</string>
     <string name="cancel">Cancel</string>
@@ -45,4 +48,5 @@
         <item>Don\'t turn on screen</item>
         <item>Don\'t wake for notifications</item>
     </string-array>
+    <string name="title_activity_maps">Map</string>
 </resources>

@@ -7,7 +7,7 @@ import android.content.DialogInterface
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
 import android.util.Log
-import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.interfaces.DaysPickerDialogCallback
 import kotlin.collections.ArrayList
@@ -44,7 +44,7 @@ class WorkingDaysPickerDialog: DialogFragment() {
         super.onResume()
         val alertDialog: AlertDialog = dialog as AlertDialog
         if (selectedItems.isEmpty()) {
-            val workingDays: Array<Int> = arguments?.get(ARG_WORKING_DAYS) as Array<Int>
+            val workingDays: ArrayList<Int> = arguments?.get(ARG_WORKING_DAYS) as ArrayList<Int>
             if (workingDays.isNotEmpty()) {
                 for (value in workingDays) {
                     val index: Int = value - 1
@@ -93,9 +93,9 @@ class WorkingDaysPickerDialog: DialogFragment() {
 
     companion object {
 
-        fun newInstance(event: Event): WorkingDaysPickerDialog {
+        fun newInstance(alarm: Alarm): WorkingDaysPickerDialog {
             val arguments: Bundle = Bundle().apply {
-                val workingDays: Array<Int> = event.workingDays.split("").slice(1..event.workingDays.length).map { it.toInt() }.toTypedArray()
+                val workingDays: ArrayList<Int> = alarm.workingsDays
                 this.putSerializable(ARG_WORKING_DAYS, workingDays)
             }
             return WorkingDaysPickerDialog().apply {

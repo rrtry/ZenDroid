@@ -3,16 +3,29 @@ package com.example.volumeprofiler.activities
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.fragments.DnDPreferencesFragment
+import com.example.volumeprofiler.fragments.ZenModePreferencesFragment
 import com.example.volumeprofiler.fragments.EditProfileFragment
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import java.util.*
+import com.example.volumeprofiler.models.Profile
 
 class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
+
+    private var elapsedTime: Long = 0
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(KEY_ELAPSED_TIME, elapsedTime)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        elapsedTime = savedInstanceState.getLong(KEY_ELAPSED_TIME, 0)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,8 +50,8 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
     }
 
     private fun addRootFragment(): Unit {
-        val fragment: EditProfileFragment = EditProfileFragment.newInstance(
-                intent.extras?.getSerializable(EXTRA_UUID) as? UUID)
+        val extras: Profile? = intent.extras?.getParcelable(EXTRA_PROFILE) as? Profile
+        val fragment: EditProfileFragment = EditProfileFragment.newInstance(extras)
         supportFragmentManager
                 .beginTransaction()
                 .add(R.id.fragmentContainer, fragment)
@@ -47,7 +60,21 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     override fun onFragmentReplace(fragment: Int): Unit {
         if (fragment == DND_PREFERENCES_FRAGMENT) {
-            replaceFragment(DnDPreferencesFragment())
+            replaceFragment(ZenModePreferencesFragment())
+        }
+    }
+
+    override fun onBackPressed() {
+        if (supportFragmentManager.backStackEntryCount < 1) {
+            if (elapsedTime + TIME_INTERVAL > System.currentTimeMillis()) {
+                super.onBackPressed()
+            } else {
+                Toast.makeText(this, "Press back button again to exit", Toast.LENGTH_SHORT).show()
+            }
+            elapsedTime = System.currentTimeMillis()
+        }
+        else {
+            super.onBackPressed()
         }
     }
 
@@ -57,13 +84,15 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     companion object {
 
-        const val EXTRA_UUID = "uuid"
+        private const val KEY_ELAPSED_TIME: String = "key_elapsed_time"
+        const val EXTRA_PROFILE = "extra_profile"
         const val DND_PREFERENCES_FRAGMENT: Int = 0
+        private const val TIME_INTERVAL: Int = 2000
 
-        fun newIntent(context: Context, id: UUID?): Intent {
+        fun newIntent(context: Context, profile: Profile?): Intent {
             val intent = Intent(context, EditProfileActivity::class.java)
-            if (id != null) {
-                intent.putExtra(EXTRA_UUID, id)
+            if (profile != null) {
+                intent.putExtra(EXTRA_PROFILE, profile)
             }
             return intent
         }

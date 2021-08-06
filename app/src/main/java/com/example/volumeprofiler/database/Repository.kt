@@ -1,79 +1,58 @@
 package com.example.volumeprofiler.database
 
 import android.content.Context
-import android.os.Build
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.room.Room
-import com.example.volumeprofiler.models.Event
+import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.models.AlarmTrigger
 import kotlinx.coroutines.*
 import java.util.UUID
 
-class Repository private constructor(private val context: Context) {
+class Repository private constructor(context: Context) {
 
-    private val database: VolumeProfilerDatabase = Room.databaseBuilder(
+    private val database: ApplicationDatabase = Room.databaseBuilder(
         context,
-        VolumeProfilerDatabase::class.java,
+        ApplicationDatabase::class.java,
             DATABASE_NAME
     ).fallbackToDestructiveMigration().build()
 
     private val profileDao: ProfileDao = database.profileDao()
-    private val schedulerDao: SchedulerDao = database.schedulerDao()
+    private val alarmDao: AlarmDao = database.alarmDao()
 
-    fun observeEvent(id: Long): LiveData<Event> = schedulerDao.observeEvent(id)
-
-    suspend fun updateTriggeredEvent(id: Long): Unit {
-        Log.i(LOG_TAG, "updateTriggeredEvent")
-        val event: Event = getEvent(id)
-        event.isScheduled = 0
-        updateEvent(event)
-    }
-
-    private suspend fun getEvent(id: Long): Event {
-        return withContext(Dispatchers.IO) {
-            schedulerDao.getEvent(id)
-        }
-    }
-
-    suspend fun addEvent(event: Event) {
+    suspend fun addAlarm(alarm: Alarm) {
         withContext(Dispatchers.IO) {
-            schedulerDao.addEvent(event)
+            alarmDao.addAlarm(alarm)
         }
     }
 
-    suspend fun updateEvent(event: Event) {
+    suspend fun updateAlarm(alarm: Alarm) {
         withContext(Dispatchers.IO) {
-            schedulerDao.updateEvent(event)
+            alarmDao.updateAlarm(alarm)
         }
     }
 
-    suspend fun removeEvent(event: Event) {
+    suspend fun removeAlarm(alarm: Alarm) {
         withContext(Dispatchers.IO) {
-            schedulerDao.removeEvent(event)
+            alarmDao.removeAlarm(alarm)
         }
     }
 
-    suspend fun getProfilesWithScheduledEvents(): List<ProfileAndEvent>? {
+    suspend fun getProfilesWithScheduledAlarms(): List<AlarmTrigger>? {
         return withContext(Dispatchers.IO) {
-            profileDao.getProfilesWithScheduledEvents()
+            profileDao.getProfilesWithScheduledAlarms()
         }
     }
 
-    suspend fun getEventsByProfileId(id: UUID): List<ProfileAndEvent>? {
+    suspend fun getAlarmsByProfileId(id: UUID): List<AlarmTrigger>? {
         return withContext(Dispatchers.IO) {
-            schedulerDao.getEventsByProfileId(id)
+            alarmDao.getAlarmsByProfileId(id)
         }
     }
 
-    fun observeScheduledEventWithProfile(id: Long): LiveData<ProfileAndEvent?> {
-        return schedulerDao.observeScheduledEventWithProfile(id)
-    }
+    fun observeProfilesWithAlarms(): LiveData<List<AlarmTrigger>> = profileDao.observeProfilesWithAlarms()
 
-    fun observeProfilesWithEvents(): LiveData<List<ProfileAndEvent>> = profileDao.observeProfilesWithEvents()
-
-    fun observeProfileWithScheduledEvents(id: UUID): LiveData<List<ProfileAndEvent>?> = profileDao.observeProfileWithScheduledEvents(id)
+    fun observeProfileWithScheduledAlarms(id: UUID): LiveData<List<AlarmTrigger>?> = profileDao.observeProfileWithScheduledAlarms(id)
 
     suspend fun updateProfile(profile: Profile) {
         withContext(Dispatchers.IO) {
@@ -92,8 +71,6 @@ class Repository private constructor(private val context: Context) {
             profileDao.removeProfile(profile)
         }
     }
-
-    fun observeProfile(uuid: UUID): LiveData<Profile?> = profileDao.observeProfile(uuid)
 
     suspend fun getProfiles(): List<Profile> {
         return withContext(Dispatchers.IO) {

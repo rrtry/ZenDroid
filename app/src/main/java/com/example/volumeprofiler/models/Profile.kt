@@ -6,10 +6,12 @@ import androidx.room.PrimaryKey
 import java.util.UUID
 import android.app.NotificationManager.Policy.*
 import android.media.AudioManager
-import android.app.NotificationManager.Policy.*
 import android.app.NotificationManager.*
-import android.util.Log
+import android.os.Parcelable
+import androidx.room.Ignore
+import kotlinx.parcelize.*
 
+@Parcelize
 @Entity
 data class Profile(var title: String,
                    @PrimaryKey val id: UUID = UUID.randomUUID(),
@@ -24,28 +26,20 @@ data class Profile(var title: String,
                    var notificationSoundUri: Uri = Uri.EMPTY,
                    var alarmSoundUri: Uri = Uri.EMPTY,
 
-                   var interruptionFilter: Int = INTERRUPTION_FILTER_ALARMS,
+                   var interruptionFilter: Int = INTERRUPTION_FILTER_PRIORITY,
                    var isInterruptionFilterActive: Int = 1,
-                   var ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
+                   var ringerMode: Int = AudioManager.RINGER_MODE_VIBRATE,
                    var isVibrateForCallsActive: Int = 0,
 
-
-                   var dialTones: Int = 0,
-                   var screenLockingSounds: Int = 0,
-                   var chargingSoundsAndVibration: Int = 0,
-                   var touchSounds: Int = 0,
-                   var touchVibration: Int = 0,
-                   var shutterSound: Int = 0,
-
-                   var priorityCategories: String = "",
+                   var priorityCategories: ArrayList<Int> = arrayListOf(PRIORITY_CATEGORY_CALLS, PRIORITY_CATEGORY_MESSAGES),
                    var priorityCallSenders: Int = PRIORITY_SENDERS_ANY,
                    var priorityMessageSenders: Int = PRIORITY_SENDERS_ANY,
-                   var screenOnVisualEffects: String = "",
-                   var screenOffVisualEffects: String = "",
-                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE) {
+                   var screenOnVisualEffects: ArrayList<Int> = arrayListOf(),
+                   var screenOffVisualEffects: ArrayList<Int> = arrayListOf(),
+                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE) : Parcelable {
 
+    @Ignore
     override fun toString(): String {
-        return "interruptionFilter: $interruptionFilter\nisInterruptionFilterActive:$isInterruptionFilterActive\nringerMode: $ringerMode\nisVibrateForCallsActive:$isVibrateForCallsActive\n" +
-        "priorityCategories:$priorityCategories\npriorityCallSenders:$priorityCallSenders\npriorityMessageSenders:$priorityMessageSenders\nscreenOnVisualEffect:$screenOnVisualEffects\nscreenOffVisualEffects:$screenOffVisualEffects"
+        return title
     }
 }

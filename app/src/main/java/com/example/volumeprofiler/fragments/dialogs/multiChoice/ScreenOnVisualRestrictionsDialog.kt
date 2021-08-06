@@ -3,15 +3,14 @@ package com.example.volumeprofiler.fragments.dialogs.multiChoice
 import android.app.NotificationManager.Policy.*
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.annotation.ArrayRes
 import androidx.collection.ArrayMap
 import androidx.collection.arrayMapOf
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.interfaces.VisualRestrictionsCallback
 import com.example.volumeprofiler.models.Profile
-import java.lang.NumberFormatException
 import java.util.*
+import kotlin.collections.ArrayList
 
 class ScreenOnVisualRestrictionsDialog: BaseMultiChoiceDialog<List<Int>>() {
 
@@ -37,33 +36,27 @@ class ScreenOnVisualRestrictionsDialog: BaseMultiChoiceDialog<List<Int>>() {
         super.onDetach()
     }
 
-    override fun onApply(string: String) {
-        callbacks?.onEffectsSelected(string, 1)
+    override fun onApply(arrayList: ArrayList<Int>) {
+        callbacks?.onEffectsSelected(arrayList, 1)
     }
 
-    override fun constructString(): String {
-        val stringBuilder: StringBuilder = StringBuilder()
+    override fun getArrayList(): ArrayList<Int> {
+        val arrayList: ArrayList<Int> = arrayListOf()
         for (i in selectedItems) {
             for (j in optionsMap[i]!!) {
-                stringBuilder.append("$j,")
+                arrayList.add(j)
             }
         }
-        return stringBuilder.toString()
+        return arrayList
     }
 
-    override fun getKey(value: String): Int? {
+    override fun getKey(value: Int): Int? {
         var result: Int? = null
-        try {
-            val num: Int = value.toInt()
-            for ((key, value1) in optionsMap.entries) {
-                if (Objects.equals(num, value1[0])) {
-                    result = key
-                    break
-                }
+        for ((key, value1) in optionsMap.entries) {
+            if (Objects.equals(value, value1[0])) {
+                result = key
+                break
             }
-        }
-        catch (e: NumberFormatException) {
-            Log.d("Dialog", "NumberFormatException", e)
         }
         return result
     }
@@ -72,8 +65,8 @@ class ScreenOnVisualRestrictionsDialog: BaseMultiChoiceDialog<List<Int>>() {
 
         fun newInstance(profile: Profile): ScreenOnVisualRestrictionsDialog {
             val arguments: Bundle = Bundle().apply {
-                val arg: String = profile.screenOnVisualEffects
-                this.putString(ARG_SELECTED_ITEMS, arg)
+                val arg: ArrayList<Int> = profile.screenOnVisualEffects
+                this.putSerializable(ARG_SELECTED_ITEMS, arg)
             }
             return ScreenOnVisualRestrictionsDialog().apply {
                 this.arguments = arguments

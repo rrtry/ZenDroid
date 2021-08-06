@@ -2,5 +2,5 @@ package com.example.volumeprofiler.interfaces
 
 interface VisualRestrictionsCallback {
 
-    fun onEffectsSelected(effects: String, type: Int): Unit
+    fun onEffectsSelected(effects: ArrayList<Int>, type: Int): Unit
 }

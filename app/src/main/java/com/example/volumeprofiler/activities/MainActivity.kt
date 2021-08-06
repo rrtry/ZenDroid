@@ -3,21 +3,16 @@ package com.example.volumeprofiler.activities
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
-import androidx.fragment.app.Fragment
-import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.example.volumeprofiler.fragments.ProfilesListFragment
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.fragments.ScheduledEventsListFragment
-import com.example.volumeprofiler.fragments.ZoomOutPageTransformer
+import com.example.volumeprofiler.adapters.viewPager.MainActivityPagerAdapter
+import com.example.volumeprofiler.adapters.viewPager.pageTransformer.ZoomOutPageTransformer
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 
@@ -29,40 +24,41 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setInterruptionFilter()
         supportActionBar?.title = "Title"
+        accessNotificationPolicy()
         viewPager = findViewById(R.id.pager)
-        val pagerAdapter = ScreenSlidePagerAdapter(this)
+        val pagerAdapter = MainActivityPagerAdapter(this)
         viewPager.adapter = pagerAdapter
         viewPager.setPageTransformer(ZoomOutPageTransformer())
         setupTabLayout()
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun setInterruptionFilter(): Unit {
-        val audioManager = this.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (notificationManager.isNotificationPolicyAccessGranted) {
-            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
-            Log.i("MainActivity", notificationManager.notificationPolicy.toString())
-        } else {
+    private fun accessNotificationPolicy(): Unit {
+        val notificationManager: NotificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
             val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
                 this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                startActivity(this)
             }
+            startActivity(intent)
         }
     }
 
     private fun setupTabLayout(): Unit {
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            if (position == 0) {
-                tab.text = resources.getString(R.string.tab_profiles)
-                tab.icon = ResourcesCompat.getDrawable(resources, drawables[2], theme)
-            }
-            else {
-                tab.text = resources.getString(R.string.tab_scheduler)
-                tab.icon = ResourcesCompat.getDrawable(resources, drawables[0], theme)
+            when (position) {
+                0 -> {
+                    tab.text = resources.getString(R.string.tab_profiles)
+                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[2], theme)
+                }
+                1 -> {
+                    tab.text = resources.getString(R.string.tab_scheduler)
+                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[0], theme)
+                }
+                2 -> {
+                    tab.text = resources.getString(R.string.tab_locations)
+                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[3], theme)
+                }
             }
         }.attach()
     }
@@ -76,25 +72,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private inner class ScreenSlidePagerAdapter(fa: AppCompatActivity) : FragmentStateAdapter(fa) {
-
-        override fun getItemCount(): Int = NUM_PAGES
-
-        override fun createFragment(position: Int): Fragment {
-
-            if (position == 0) {
-                return ProfilesListFragment()
-            }
-            return ScheduledEventsListFragment()
-        }
-    }
-
     companion object {
 
-        private const val REQUEST_CODE_NOTIFICATION_POLICY: Int = 0
-        private val drawables: Array<Int> = arrayOf(android.R.drawable.ic_menu_recent_history,
+        private val drawables: List<Int> = listOf(android.R.drawable.ic_menu_recent_history,
                 android.R.drawable.ic_menu_sort_by_size,
-            android.R.drawable.ic_lock_silent_mode)
-        private const val NUM_PAGES = 2
+            android.R.drawable.ic_lock_silent_mode, android.R.drawable.ic_menu_mylocation)
     }
 }

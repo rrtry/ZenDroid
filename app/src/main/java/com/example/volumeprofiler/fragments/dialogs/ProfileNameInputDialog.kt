@@ -8,7 +8,6 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
@@ -16,10 +15,10 @@ import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.interfaces.ProfileNameInputDialogCallback
 
-
 class ProfileNameInputDialog: DialogFragment() {
 
     private var callbacks: ProfileNameInputDialogCallback? = null
+    private var editText: EditText? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -31,13 +30,18 @@ class ProfileNameInputDialog: DialogFragment() {
         callbacks = null
     }
 
+    override fun onDestroyView() {
+        editText = null
+        super.onDestroyView()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         super.onCreateView(inflater, container, savedInstanceState)
-        return inflater.inflate(R.layout.custom_dialog_layout, container, false)
+        return inflater.inflate(R.layout.text_input_dialog, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -52,42 +56,36 @@ class ProfileNameInputDialog: DialogFragment() {
         return builder.show()
     }
 
-    private fun hideSoftInputFromWindow(editText: EditText): Unit {
-        val context: Context = requireContext()
-        val inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        inputMethodManager.hideSoftInputFromWindow(editText.windowToken, 0)
-        editText.clearFocus()
-    }
-
     private fun setCallbacks(view: View): Unit {
         val positiveButton: Button = view.findViewById(R.id.positiveButton)
         val negativeButton: Button = view.findViewById(R.id.negativeButton)
-        val editText: EditText = view.findViewById(R.id.textInputEditText)
-        editText.onFocusChangeListener = object : View.OnFocusChangeListener {
-
-            override fun onFocusChange(v: View?, hasFocus: Boolean) {
-                val editText: EditText = v as EditText
-                editText.isCursorVisible = hasFocus
-            }
-        }
-        editText.setOnKeyListener(object : View.OnKeyListener {
+        editText = view.findViewById(R.id.textInputEditText)
+        editText?.setOnKeyListener(object : View.OnKeyListener {
 
             override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {
                 if (keyCode == KeyEvent.KEYCODE_ENTER) {
-                    hideSoftInputFromWindow(editText)
+                    if (editText!!.text!!.isNotEmpty()) {
+                        commitChanges()
+                    }
                     return true
                 }
                 return false
             }
         })
-        editText.text = SpannableStringBuilder(arguments?.getString(EXTRA_TITLE))
+        editText?.text = SpannableStringBuilder(arguments?.getString(EXTRA_TITLE))
         positiveButton.setOnClickListener {
-            callbacks?.onTitleChanged(editText.text.toString())
-            finish()
+            if (editText!!.text!!.isNotEmpty()) {
+                commitChanges()
+            }
         }
         negativeButton.setOnClickListener {
             finish()
         }
+    }
+
+    private fun commitChanges(): Unit {
+        callbacks?.onTitleChanged(editText?.text.toString())
+        finish()
     }
 
     private fun finish(): Unit {
@@ -96,7 +94,7 @@ class ProfileNameInputDialog: DialogFragment() {
 
     private fun inflateLayout(builder: AlertDialog.Builder): Unit {
         val layoutInflater: LayoutInflater = layoutInflater
-        val view: View = layoutInflater.inflate(R.layout.custom_dialog_layout, null)
+        val view: View = layoutInflater.inflate(R.layout.text_input_dialog, null)
         builder.setView(view)
     }
 

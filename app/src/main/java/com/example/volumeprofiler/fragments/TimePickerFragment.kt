@@ -5,28 +5,26 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Bundle
 import android.text.format.DateFormat
-import android.util.Log
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
-import com.example.volumeprofiler.interfaces.TimePickerFragmentCallbacks
+import com.example.volumeprofiler.interfaces.TimePickerFragmentCallback
 import java.time.LocalDateTime
 
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
-    private var callbacks: TimePickerFragmentCallbacks? = null
+    private var callback: TimePickerFragmentCallback? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callbacks = activity as TimePickerFragmentCallbacks
+        callback = activity as TimePickerFragmentCallback
     }
 
     override fun onDetach() {
         super.onDetach()
-        callbacks = null
+        callback = null
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        Log.i("TimePickerDialog", "onCreateDialog()")
         val context: Context = requireContext()
         val args = arguments?.getSerializable(ARG_DATE)
         val localDateTime = if (arguments != null) {
@@ -39,10 +37,9 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
     }
 
     override fun onTimeSet(view: TimePicker, hourOfDay: Int, minute: Int) {
-        Log.i("TimePickerDialog", "onTimeSet(), hourOfDay: $hourOfDay, minute: $minute")
         val localDateTime: LocalDateTime = LocalDateTime.now()
         val adjusted: LocalDateTime = localDateTime.withHour(hourOfDay).withMinute(minute).withSecond(0)
-        callbacks?.onTimeSelected(adjusted)
+        callback?.onTimeSelected(adjusted)
     }
 
     companion object {

@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
-import android.content.Intent
 import android.database.Cursor
 import android.graphics.Color
 import android.media.AudioManager
@@ -24,12 +23,10 @@ import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
-import com.example.volumeprofiler.interfaces.ApplyChangesDialogCallbacks
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.interfaces.ProfileNameInputDialogCallback
-import com.example.volumeprofiler.models.Event
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
@@ -37,18 +34,22 @@ import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.*
-import com.example.volumeprofiler.util.AnimationUtils.Companion.scaleAnimation
+import com.example.volumeprofiler.util.AnimUtils.Companion.scaleAnimation
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import android.os.Build
+import androidx.activity.result.ActivityResultLauncher
+import androidx.core.content.res.ResourcesCompat
+import com.example.volumeprofiler.activities.contract.RingtonePickerContract
+import com.example.volumeprofiler.models.Alarm
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
-class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameInputDialogCallback {
+class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
 
     private val viewModel: EditProfileViewModel by activityViewModels()
     private var callbacks: EditProfileActivityCallbacks? = null
-    private var profilesAndEvents: List<ProfileAndEvent>? = null
+    private var alarmTriggers: List<AlarmTrigger>? = null
     private lateinit var interruptionFilterSwitch: Switch
     private lateinit var menuEditNameButton: ImageButton
     private lateinit var toolbarLayout: CollapsingToolbarLayout
@@ -64,23 +65,28 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
     private lateinit var alarmSoundTitle: TextView
     private lateinit var interruptionFilterPreferencesLayout: RelativeLayout
     private lateinit var silentModeLayout: RelativeLayout
+    private lateinit var ringtoneActivityCallback: ActivityResultLauncher<Int>
+    private var profileExists: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (arguments?.getSerializable(EXTRA_UUID) != null) {
-            viewModel.setProfile(arguments?.get(EXTRA_UUID) as UUID)
+        val args = arguments
+        val profile: Profile? = args?.getParcelable(EXTRA_PROFILE)
+        if (profile != null) {
+            profileExists = true
+            viewModel.mutableProfile = profile
+            val id: UUID = profile.id
+            viewModel.setProfileID(id)
         } else {
             if (viewModel.mutableProfile == null) {
                 viewModel.mutableProfile = Profile("Profile")
-                viewModel.changesMade = true
             }
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view: View = inflater.inflate(R.layout.create_profile_fragment, container, false)
         initializeViews(view)
-        Log.i("EditProfileFragment", interruptionFilterPreferencesLayout.isEnabled.toString())
         return view
     }
 
@@ -94,6 +100,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callbacks = requireActivity() as EditProfileActivityCallbacks
+        registerForActivityResult()
     }
 
     private fun setActionBar(): Unit {
@@ -122,16 +129,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
 
     override fun onDetach() {
         callbacks = null
-        Log.i("EditProfileFragment", viewModel.mutableProfile!!.toString())
         super.onDetach()
-    }
-
-    override fun onApplyChanges() {
-
-    }
-
-    override fun onCancelChanges() {
-
     }
 
     override fun onTitleChanged(str: String) {
@@ -150,8 +148,11 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         val vibrateForCallsSwitch: Switch = view.findViewById(R.id.vibrateForCallsSwitch)
         val editNameButton: FloatingActionButton = activity.findViewById(R.id.editNameButton)
         val menuSaveChangesButton: ImageButton = activity.findViewById(R.id.menuSaveChangesButton)
-        if (menuSaveChangesButton.visibility != View.VISIBLE) {
-            changeMenuOptionVisibility(menuSaveChangesButton, true)
+        if (profileExists) {
+            menuSaveChangesButton.setImageDrawable(ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null))
+        }
+        else {
+            menuSaveChangesButton.setImageDrawable(ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_add, null))
         }
         menuEditNameButton = activity.findViewById(R.id.menuEditNameButton)
         toolbarLayout = activity.findViewById(R.id.toolbar_layout)
@@ -211,6 +212,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                         viewModel.mutableProfile!!.isVibrateForCallsActive = 1
                     }
                 }
+                R.id.menuSaveChangesButton -> commitChanges()
                 R.id.editNameButton, R.id.menuEditNameButton -> showTextInputDialog()
                 R.id.phoneRingtoneLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_RINGTONE)
                 R.id.notificationSoundLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_NOTIFICATION)
@@ -259,7 +261,6 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
 
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (seekBar != null && fromUser) {
-                    viewModel.changesMade = true
                     if (progress < 1) {
                         if (seekBar.id == R.id.phoneSeekBar || seekBar.id == R.id.alarmSeekBar) {
                             seekBar.progress = 1
@@ -288,6 +289,10 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
                 }
             }
         }
+        if (menuSaveChangesButton.visibility != View.VISIBLE) {
+            changeMenuOptionVisibility(menuSaveChangesButton, true)
+        }
+        menuSaveChangesButton.setOnClickListener(onClickListener)
         vibrateForCallsLayout.setOnClickListener(onClickListener)
         silentModeLayout.setOnClickListener(onClickListener)
         phoneRingtoneLayout.setOnClickListener(onClickListener)
@@ -400,11 +405,14 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
     }
 
     private fun containsCategory(category: Int): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val list: List<Int> = toList(viewModel.mutableProfile!!.priorityCategories)
-            return list.contains(category)
+        val list: List<Int> = viewModel.mutableProfile!!.priorityCategories
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+                (category == PRIORITY_CATEGORY_ALARMS || category == PRIORITY_CATEGORY_MEDIA || category == PRIORITY_CATEGORY_SYSTEM)) {
+            list.contains(category)
         }
-        return true
+        else {
+            list.contains(category)
+        }
     }
 
     private fun changeSeekbarState(mode: Int) {
@@ -440,48 +448,37 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         }
     }
 
-    private fun startRingtonePickerActivity(type: Int): Unit {
-        val intent: Intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-            this.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, type)
-        }
-        startActivityForResult(intent, type)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (data != null) {
-            val uri: Uri = data.extras?.getParcelable(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)!!
-            val title: String? = getRingtoneTitle(uri)
-            when (requestCode) {
-
-                RingtoneManager.TYPE_RINGTONE -> {
-                    viewModel.mutableProfile!!.phoneRingtoneUri = uri
-                    phoneRingtoneTitle.text = title
-                }
-                RingtoneManager.TYPE_NOTIFICATION -> {
-                    viewModel.mutableProfile!!.notificationSoundUri = uri
-                    notificationSoundTitle.text = title
-                }
-                RingtoneManager.TYPE_ALARM -> {
-                    viewModel.mutableProfile!!.alarmSoundUri = uri
-                    alarmSoundTitle.text = title
+    private fun registerForActivityResult() {
+        val contract: RingtonePickerContract = RingtonePickerContract()
+        ringtoneActivityCallback = registerForActivityResult(contract) {
+            if (it != null) {
+                when (contract.ringtoneType) {
+                    RingtoneManager.TYPE_RINGTONE -> {
+                        viewModel.mutableProfile!!.phoneRingtoneUri = it
+                        phoneRingtoneTitle.text = getRingtoneTitle(it)
+                    }
+                    RingtoneManager.TYPE_NOTIFICATION -> {
+                        viewModel.mutableProfile!!.notificationSoundUri = it
+                        notificationSoundTitle.text = getRingtoneTitle(it)
+                    }
+                    RingtoneManager.TYPE_ALARM -> {
+                        viewModel.mutableProfile!!.alarmSoundUri = it
+                        alarmSoundTitle.text = getRingtoneTitle(it)
+                    }
+                    else -> Log.i("EditProfileFragment", "unknown ringtone type")
                 }
             }
         }
+    }
+
+    private fun startRingtonePickerActivity(type: Int): Unit {
+        ringtoneActivityCallback.launch(type)
     }
 
     private fun setLiveDataObservers(): Unit {
-        viewModel.profileLiveData.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.alarmTriggerLiveData.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
             if (it != null) {
-                if (viewModel.mutableProfile == null) {
-                    viewModel.mutableProfile = it
-                }
-                updateUI()
-            }
-        })
-        viewModel.profileAndEventLiveData.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
-            if (it != null) {
-                profilesAndEvents = it
+                alarmTriggers = it
             }
         })
     }
@@ -525,7 +522,7 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         setActionBarTitle(viewModel.mutableProfile!!.title)
         updateProgressbars()
         updateInterruptionFilterViews()
-        if (arguments?.getSerializable(EXTRA_UUID) != null) {
+        if (arguments?.getParcelable<Profile>(EXTRA_PROFILE) != null) {
             phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
             notificationSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
             alarmSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
@@ -535,17 +532,6 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
             phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
             alarmSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
             notificationSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
-        }
-    }
-
-    private fun toList(string: String): List<Int> {
-        return string.split(",").mapNotNull {
-            try {
-                it.toInt()
-            }
-            catch (e: NumberFormatException) {
-                null
-            }
         }
     }
 
@@ -568,42 +554,34 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         if (sharedPreferencesUtil.getActiveProfileId()
                 == viewModel.mutableProfile!!.id.toString()) {
             val profileUtil: ProfileUtil = ProfileUtil.getInstance()
-            val settingsPair = ProfileUtil.getVolumeSettingsMapPair(viewModel.mutableProfile!!)
-            profileUtil.applyAudioSettings(settingsPair.first, settingsPair.second, viewModel.mutableProfile!!.id, viewModel.mutableProfile!!.title)
+            profileUtil.applyAudioSettings(viewModel.mutableProfile!!)
         }
     }
 
-    private fun saveChanges(): Unit {
+    private fun commitChanges(): Unit {
         val profile: Profile = viewModel.mutableProfile!!
-        profile.title = requireActivity().actionBar?.title.toString()
-        if (profilesAndEvents != null) {
+        if (!alarmTriggers.isNullOrEmpty()) {
             scheduleAlarms()
         }
         applyAudioSettings()
-        if (arguments?.getSerializable(EXTRA_UUID) == null) {
+        if (!profileExists) {
             viewModel.addProfile(profile)
         }
         else {
             viewModel.updateProfile(profile)
         }
+        requireActivity().finish()
     }
 
-    private fun setAlarm(event: Event, profile: Profile): Unit {
-        val eventOccurrences: Array<Int> = event.workingDays
-                .split("")
-                .slice(1..event.workingDays.length)
-                .map { it.toInt() }.toTypedArray()
-        val volumeSettingsMap: Pair<Map<Int, Int>, Map<String, Int>> = ProfileUtil.getVolumeSettingsMapPair(profile)
+    private fun setAlarm(alarmTrigger: AlarmTrigger): Unit {
+        val alarm: Alarm = alarmTrigger.alarm
         val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-        alarmUtil.setAlarm(volumeSettingsMap, eventOccurrences,
-                event.localDateTime, event.id, false, profile.id, profile.title)
+        alarmUtil.setAlarm(alarm, viewModel.mutableProfile!!, false)
     }
 
     private fun scheduleAlarms(): Unit {
-        val profilesAndEvents = profilesAndEvents as List<ProfileAndEvent>
-        for (i in profilesAndEvents) {
-            val event: Event = i.event
-            setAlarm(event, viewModel.mutableProfile!!)
+        for (i in alarmTriggers!!) {
+            setAlarm(i)
         }
     }
 
@@ -611,22 +589,21 @@ class EditProfileFragment: Fragment(), ApplyChangesDialogCallbacks, ProfileNameI
         TransitionManager.beginDelayedTransition(view?.findViewById(R.id.root), AutoTransition())
         if (visible) silentModeLayout.visibility = View.VISIBLE else silentModeLayout.visibility = View.GONE
     }
-    
 
     companion object {
 
         private const val DEFAULT_TEXT_COLOR: String = "#757575"
         private const val DISABLED_STATE_COLOR: String = "#bababa"
-        private const val EXTRA_UUID = "uuid"
+        private const val EXTRA_PROFILE = "profile"
         private const val LOG_TAG = "EditProfileFragment"
         private const val MIN_ALARM_STREAM_VALUE: Int = 1
         private const val MIN_CALL_STREAM_VALUE: Int = 1
 
-        fun newInstance(profileId: UUID?): EditProfileFragment {
+        fun newInstance(profile: Profile?): EditProfileFragment {
             val args: Bundle = Bundle()
-            args.putSerializable(EXTRA_UUID, profileId)
+            args.putParcelable(EXTRA_PROFILE, profile)
             return EditProfileFragment().apply {
-                if (profileId != null) {
+                if (profile != null) {
                     this.arguments = args
                 }
             }

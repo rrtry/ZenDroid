@@ -10,7 +10,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.database.Repository
-import com.example.volumeprofiler.models.ProfileAndEvent
+import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.AlarmUtil
 import kotlinx.coroutines.*
 
@@ -27,7 +27,7 @@ class AlarmRescheduleService: Service() {
 
     private suspend fun doWork(): Unit {
         val repository: Repository = Repository.get()
-        val toSchedule: List<ProfileAndEvent>? = repository.getProfilesWithScheduledEvents()
+        val toSchedule: List<AlarmTrigger>? = repository.getProfilesWithScheduledAlarms()
         if (toSchedule != null && toSchedule.isNotEmpty()) {
             Log.i(LOG_TAG, "setting the alarms again")
             val alarmUtil = AlarmUtil.getInstance()
@@ -43,7 +43,7 @@ class AlarmRescheduleService: Service() {
                 .setContentTitle("Rescheduling alarms")
                 .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
                 .setOngoing(true)
-                .setNotificationSilent()
+                .setSound(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel().also {
                 builder.setChannelId(it.id)
@@ -89,7 +89,7 @@ class AlarmRescheduleService: Service() {
 
         private const val LOG_TAG: String = "AlarmRescheduleService"
         private const val NOTIFICATION_CHANNEL_ID: String = "channel_162"
-        private const val NOTIFICATION_CHANNEL_NAME: String = "Service's notification"
+        private const val NOTIFICATION_CHANNEL_NAME: String = "Background Processing"
         private const val SERVICE_ID: Int = 162
     }
 }

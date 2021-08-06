@@ -6,17 +6,17 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import androidx.collection.ArrayMap
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.MainActivity
-import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.models.Profile
-import kotlinx.coroutines.*
-import androidx.collection.ArrayMap
 import com.example.volumeprofiler.Application.Companion.ACTION_WIDGET_PROFILE_SELECTED
+import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.receivers.NotificationActionReceiver
-import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.restoreChangedPosition
 import com.example.volumeprofiler.util.SharedPreferencesUtil
+import kotlinx.coroutines.*
 import java.util.*
 import kotlin.Comparator
 import kotlin.collections.ArrayList
@@ -59,9 +59,7 @@ class NotificationWidgetService: Service() {
                 prevPos -= 1
             }
             val profile: Profile = profilesArray[prevPos]
-            this.putExtra(EXTRA_PROFILE_SETTINGS, ProfileUtil.getVolumeSettingsMapPair(profile))
-            this.putExtra(EXTRA_PROFILE_ID, profile.id)
-            this.putExtra(EXTRA_PROFILE_TITLE, profile.title)
+            this.putExtra(EXTRA_PROFILE, profile)
         }.let {
             PendingIntent.getBroadcast(this, BROADCAST_REQUEST_CODE_PREVIOUS_PROFILE, it, PendingIntent.FLAG_UPDATE_CURRENT)
         }
@@ -78,9 +76,7 @@ class NotificationWidgetService: Service() {
                 nextPos += 1
             }
             val profile: Profile = profilesArray[nextPos]
-            this.putExtra(EXTRA_PROFILE_SETTINGS, ProfileUtil.getVolumeSettingsMapPair(profile))
-            this.putExtra(EXTRA_PROFILE_ID, profile.id)
-            this.putExtra(EXTRA_PROFILE_TITLE, profile.title)
+            this.putExtra(EXTRA_PROFILE, profile)
         }.let {
             PendingIntent.getBroadcast(this, BROADCAST_REQUEST_CODE_NEXT_PROFILE, it, PendingIntent.FLAG_UPDATE_CURRENT)
         }
@@ -108,26 +104,6 @@ class NotificationWidgetService: Service() {
         return notification
     }
 
-    private fun restoreChangedPosition(list: List<Profile>, positionMap: ArrayMap<UUID, Int>): List<Profile> {
-        if (positionMap.isNotEmpty()) {
-            val arrayList: ArrayList<Profile> = list as ArrayList<Profile>
-            arrayList.sortWith(object : Comparator<Profile> {
-
-                override fun compare(o1: Profile?, o2: Profile?): Int {
-                    if (o1 != null && o2 != null) {
-                        if (positionMap.containsKey(o1.id) && positionMap.containsKey(o2.id)) {
-                            return positionMap[o1.id]!! - positionMap[o2.id]!!
-                        }
-                        return 0
-                    }
-                    return 0
-                }
-            })
-            return arrayList.toList()
-        }
-        return list
-    }
-
     @SuppressWarnings("unchecked")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.extras == null) {
@@ -152,11 +128,6 @@ class NotificationWidgetService: Service() {
         return START_STICKY
     }
 
-    override fun onDestroy() {
-        job.cancel()
-        super.onDestroy()
-    }
-
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -169,10 +140,8 @@ class NotificationWidgetService: Service() {
         private const val ACTIVITY_REQUEST_CODE: Int = 0
         private const val BROADCAST_REQUEST_CODE_NEXT_PROFILE: Int = 1
         private const val BROADCAST_REQUEST_CODE_PREVIOUS_PROFILE: Int = 2
-        const val EXTRA_PROFILE_SETTINGS: String = "extra_profile_settings"
+        const val EXTRA_PROFILE: String = "extra_profile_settings"
         const val EXTRA_UPDATE_NOTIFICATION: String = "extra_update_notification"
-        const val EXTRA_PROFILE_ID: String = "extra_profile_id"
         const val SERVICE_ID: Int = 172
-        const val EXTRA_PROFILE_TITLE: String = "extra_profile_title"
     }
 }

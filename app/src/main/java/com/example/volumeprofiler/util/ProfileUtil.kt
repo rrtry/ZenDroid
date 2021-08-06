@@ -1,42 +1,94 @@
 package com.example.volumeprofiler.util
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
-import android.provider.Settings
-import android.util.Log
+import android.app.NotificationManager.Policy.*
+import android.app.NotificationManager.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.receivers.AlarmReceiver
 import java.util.*
+import android.os.Build
+import android.util.Log
 
-/*
-   * Utility class which simplifies work with audio-related values
- */
 class ProfileUtil private constructor (private val context: Context) {
 
-    fun applyAudioSettings(primarySettings: Map<Int, Int>, optionalSettings: Map<String, Int>, id: UUID, title: String) {
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        for ((key, value) in primarySettings) {
-            if (key != VIBRATE_FOR_CALLS) {
-                audioManager.setStreamVolume(key, value, AudioManager.FLAG_SHOW_UI)
-            }
-            else {
-                if (value == AudioManager.RINGER_MODE_VIBRATE) {
-                    audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+    fun applyAudioSettings(profile: Profile) {
+        val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        //Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, profile.isVibrateForCallsActive)
+        if (profile.isInterruptionFilterActive == 1) {
+            if (profile.interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
+                lateinit var policy: Policy
+                if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
+                    policy = Policy (
+                        bitmaskOfListContents(profile.priorityCategories),
+                        profile.priorityCallSenders,
+                        profile.priorityMessageSenders
+                    )
                 }
-                else {
-                    audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                else if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT && Build.VERSION_CODES.R > Build.VERSION.SDK_INT) {
+                    policy = Policy (
+                        bitmaskOfListContents(profile.priorityCategories),
+                        profile.priorityCallSenders,
+                        profile.priorityMessageSenders,
+                        bitmaskOfListContents(profile.screenOnVisualEffects + profile.screenOffVisualEffects)
+                    )
+                }
+                else if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
+                    policy = Policy (
+                        bitmaskOfListContents(profile.priorityCategories),
+                        profile.priorityCallSenders,
+                        profile.priorityMessageSenders,
+                        bitmaskOfListContents(profile.screenOnVisualEffects + profile.screenOffVisualEffects)
+                    )
+                }
+                notificationManager.notificationPolicy = policy
+            }
+            notificationManager.setInterruptionFilter(profile.interruptionFilter)
+        }
+        else {
+            notificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL)
+        }
+        setStreamValues(profile)
+        //audioManager.ringerMode = profile.ringerMode
+        SharedPreferencesUtil.getInstance().saveCurrentProfile(profile)
+    }
+
+    private fun setStreamValues(profile: Profile) {
+        val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (profile.isInterruptionFilterActive == 1) {
+            when (profile.interruptionFilter) {
+                INTERRUPTION_FILTER_PRIORITY -> {
+                    if (profile.priorityCategories.contains(PRIORITY_CATEGORY_ALARMS)) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, profile.alarmVolume, AudioManager.FLAG_SHOW_UI)
+                    }
+                    if (profile.priorityCategories.contains(PRIORITY_CATEGORY_MEDIA)) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, profile.mediaVolume, AudioManager.FLAG_SHOW_UI)
+                    }
+                    audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, profile.callVolume, AudioManager.FLAG_SHOW_UI)
+                    audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, profile.notificationVolume, AudioManager.FLAG_SHOW_UI)
+                    audioManager.setStreamVolume(AudioManager.STREAM_RING, profile.ringVolume, AudioManager.FLAG_SHOW_UI)
+                }
+                INTERRUPTION_FILTER_ALARMS -> {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, profile.mediaVolume, AudioManager.FLAG_SHOW_UI)
+                    audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, profile.callVolume, AudioManager.FLAG_SHOW_UI)
+                    audioManager.setStreamVolume(AudioManager.STREAM_ALARM, profile.alarmVolume, AudioManager.FLAG_SHOW_UI)
+                }
+                INTERRUPTION_FILTER_NONE -> {
+                    Log.i("ProfileUtil", "interruption filter none")
                 }
             }
         }
-        /*
-        for ((key, value) in optionalSettings) {
-            Settings.System.putInt(context.contentResolver, key, value)
+        else {
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, profile.mediaVolume, AudioManager.FLAG_SHOW_UI)
+            audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, profile.callVolume, AudioManager.FLAG_SHOW_UI)
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, profile.alarmVolume, AudioManager.FLAG_SHOW_UI)
+            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, profile.notificationVolume, AudioManager.FLAG_SHOW_UI)
+            audioManager.setStreamVolume(AudioManager.STREAM_RING, profile.ringVolume, AudioManager.FLAG_SHOW_UI)
         }
-         */
-        SharedPreferencesUtil.getInstance().saveProfileToSharedPrefs(id, primarySettings, optionalSettings, title)
     }
 
     fun sendLocalBroadcast(profileId: UUID): Unit {
@@ -49,8 +101,15 @@ class ProfileUtil private constructor (private val context: Context) {
 
     companion object {
 
-        const val VIBRATE_FOR_CALLS: Int = 1
         private var INSTANCE: ProfileUtil? = null
+
+        private fun bitmaskOfListContents(list: List<Int>): Int {
+            var temp: Int = 0
+            for (i in list) {
+                temp = temp or i
+            }
+            return temp
+        }
 
         fun getInstance(): ProfileUtil {
 
@@ -67,76 +126,6 @@ class ProfileUtil private constructor (private val context: Context) {
             if (INSTANCE == null) {
                 INSTANCE = ProfileUtil(context)
             }
-        }
-
-        fun getVolumeSettingsMapPair(profile: Profile): Pair<Map<Int, Int>, Map<String, Int>> {
-
-            val streamVolumeMap: Map<Int, Int> = hashMapOf(
-                    Pair(AudioManager.STREAM_MUSIC, profile.mediaVolume),
-                    Pair(AudioManager.STREAM_VOICE_CALL, profile.callVolume),
-                    Pair(AudioManager.STREAM_NOTIFICATION, profile.notificationVolume),
-                    Pair(AudioManager.STREAM_RING, profile.ringVolume),
-                    Pair(AudioManager.STREAM_ALARM, profile.alarmVolume),
-                    Pair(VIBRATE_FOR_CALLS, profile.isVibrateForCallsActive))
-
-            val additionalSoundsMap: Map<String, Int> = hashMapOf(
-                    Pair(Settings.System.DTMF_TONE_WHEN_DIALING, profile.dialTones),
-                    Pair(Settings.System.SOUND_EFFECTS_ENABLED, profile.touchSounds),
-                    Pair(Settings.System.HAPTIC_FEEDBACK_ENABLED, profile.touchVibration))
-
-            return Pair(streamVolumeMap, additionalSoundsMap)
-        }
-
-        fun updatePolicy(initialString: String, value: Int, append: Boolean): String {
-            val strInt: String = value.toString()
-            var result: String = initialString
-            Log.i("ProfileUtil", "initialString: $initialString")
-            if (append) {
-                val stringBuilder: StringBuilder = StringBuilder(initialString)
-                stringBuilder.append("$value,")
-                result = stringBuilder.toString()
-            }
-            else {
-                if (initialString.isNotEmpty()) {
-                    val list: ArrayList<String> = initialString.split(",") as ArrayList<String>
-                    for (i in list) {
-                        if (i == strInt) {
-                            list.remove(i)
-                            break
-                        }
-                    }
-                    result = list.joinToString(",")
-                }
-            }
-            Log.i("ProfileUtil", "result: $result")
-            return result
-        }
-
-        fun updatePolicy(initialString: String, values: List<Int>, append: Boolean): String {
-            Log.i("ProfileUtil", "initialString: $initialString")
-            var result: String = initialString
-            if (append) {
-                val stringBuilder: StringBuilder = java.lang.StringBuilder(initialString)
-                for (i in values) {
-                    stringBuilder.append("$i,")
-                }
-                result = stringBuilder.toString()
-            }
-            else {
-                if (initialString.isNotEmpty()) {
-                    val list: ArrayList<String> = initialString.split(",") as ArrayList<String>
-                    for (i in list) {
-                        for (j in values) {
-                            if (i == j.toString()) {
-                                list.remove(i)
-                            }
-                        }
-                    }
-                    result = list.joinToString(",")
-                }
-            }
-            Log.i("ProfileUtil", "result: $result")
-            return result
         }
     }
 }

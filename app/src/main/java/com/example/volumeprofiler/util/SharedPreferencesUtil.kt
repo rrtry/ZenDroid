@@ -2,7 +2,6 @@ package com.example.volumeprofiler.util
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.media.AudioManager
 import androidx.collection.ArrayMap
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.receivers.AlarmReceiver
@@ -32,27 +31,12 @@ class SharedPreferencesUtil private constructor (context: Context) {
         editor.apply()
     }
 
-    fun saveProfileToSharedPrefs(id: UUID, primarySettings: Map<Int, Int>, optionalSettings: Map<String, Int>, title: String): Unit {
+    fun saveCurrentProfile(profile: Profile): Unit {
+        val title: String = profile.title
+        val id: UUID = profile.id
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
-        for ((key, value) in primarySettings) {
-            when (key) {
-                AudioManager.STREAM_MUSIC -> {
-                    editor.putInt(PREFS_PROFILE_STREAM_MUSIC, value)
-                }
-                AudioManager.STREAM_VOICE_CALL -> {
-                    editor.putInt(PREFS_PROFILE_STREAM_VOICE_CALL, value)
-                }
-                AudioManager.STREAM_RING -> {
-                    editor.putInt(PREFS_PROFILE_STREAM_RING, value)
-                }
-                AudioManager.STREAM_NOTIFICATION -> {
-                    editor.putInt(PREFS_PROFILE_STREAM_NOTIFICATION, value)
-                }
-                AudioManager.STREAM_ALARM -> {
-                    editor.putInt(PREFS_PROFILE_STREAM_ALARM, value)
-                }
-            }
-        }
+        editor.putString(PREFS_PROFILE_STREAM_NOTIFICATION, profile.notificationVolume.toString())
+        editor.putString(PREFS_PROFILE_STREAM_RING, profile.ringVolume.toString())
         editor.putString(PREFS_PROFILE_TITLE, title)
         editor.putString(PREFS_PROFILE_ID, id.toString())
         editor.apply()
@@ -76,9 +60,6 @@ class SharedPreferencesUtil private constructor (context: Context) {
         private const val PREFS_POSITIONS_MAP: String = "prefs_positions_map"
         const val SHARED_PREFS: String = "volumeprofiler_shared_prefs"
         const val PREFS_PROFILE_ID = "prefs_profile_id"
-        const val PREFS_PROFILE_STREAM_ALARM = "prefs_profile_stream_alarm"
-        const val PREFS_PROFILE_STREAM_VOICE_CALL = "prefs_profile_voice_call"
-        const val PREFS_PROFILE_STREAM_MUSIC = "prefs_profile_stream_music"
         const val PREFS_PROFILE_STREAM_NOTIFICATION = "prefs_profile_stream_notification"
         const val PREFS_PROFILE_STREAM_RING = "prefs_profile_streams_ring"
         const val PREFS_PROFILE_TITLE = "prefs_profile_title"

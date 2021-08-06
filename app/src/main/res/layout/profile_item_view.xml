@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    android:id="@+id/cardView"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="7dp"
+    android:layout_marginStart="7dp"
+    android:layout_marginEnd="7dp"
+    android:layout_marginTop="7dp"
+    app:cardCornerRadius="4dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_height="wrap_content"
+        android:id="@+id/rootView"
+        android:layout_width="match_parent">
+
+        <CheckBox
+            android:id="@+id/checkBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="CheckBox"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/expandableView"
+            android:animateLayoutChanges="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            app:layout_constraintTop_toBottomOf="@+id/checkBox">
+
+            <View
+                android:id="@+id/view"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="3dp"
+                android:layout_marginEnd="10dp"
+                android:background="#FF6B13EA"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:layout_editor_absoluteX="0dp" />
+
+            <ImageView
+                android:id="@+id/mediaVolView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/view"
+                app:srcCompat="@drawable/baseline_music_note_deep_purple_300_24dp" />
+
+            <TextView
+                android:id="@+id/mediaVolValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="5/11"
+                app:layout_constraintStart_toEndOf="@+id/mediaVolView"
+                app:layout_constraintTop_toBottomOf="@+id/view" />
+
+            <ImageView
+                android:id="@+id/callVolView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toEndOf="@+id/mediaVolValue"
+                app:layout_constraintTop_toBottomOf="@+id/view"
+                app:srcCompat="@drawable/baseline_call_deep_purple_300_24dp" />
+
+            <TextView
+                android:id="@+id/callVolValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="4/7"
+                app:layout_constraintStart_toEndOf="@+id/callVolView"
+                app:layout_constraintTop_toBottomOf="@+id/view" />
+
+            <ImageView
+                android:id="@+id/alarmVolView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toEndOf="@+id/callVolValue"
+                app:layout_constraintTop_toBottomOf="@+id/view"
+                app:srcCompat="@drawable/baseline_alarm_deep_purple_300_24dp" />
+
+            <TextView
+                android:id="@+id/alarmVolValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="7/7"
+                app:layout_constraintStart_toEndOf="@+id/alarmVolView"
+                app:layout_constraintTop_toBottomOf="@+id/view" />
+
+            <ImageView
+                android:id="@+id/notificationVolView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toEndOf="@+id/alarmVolValue"
+                app:layout_constraintTop_toBottomOf="@+id/view"
+                app:srcCompat="@drawable/baseline_circle_notifications_deep_purple_300_24dp" />
+
+            <TextView
+                android:id="@+id/notificationVolValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="4/11"
+                app:layout_constraintStart_toEndOf="@+id/notificationVolView"
+                app:layout_constraintTop_toBottomOf="@+id/view" />
+
+            <ImageView
+                android:id="@+id/ringerVolView"
+                android:layout_width="22dp"
+                android:layout_height="23dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toEndOf="@+id/notificationVolValue"
+                app:layout_constraintTop_toBottomOf="@+id/view"
+                app:srcCompat="@drawable/baseline_notifications_active_black_24dp" />
+
+            <TextView
+                android:id="@+id/ringerVolValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="4/11"
+                app:layout_constraintStart_toEndOf="@+id/ringerVolView"
+                app:layout_constraintTop_toBottomOf="@+id/view" />
+
+            <TextView
+                android:id="@+id/removeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="Remove"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/mediaVolView"
+                app:layout_constraintVertical_bias="0.0" />
+
+            <TextView
+                android:id="@+id/editTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="Edit"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/removeTextView"
+                app:layout_constraintTop_toBottomOf="@+id/callVolView"
+                app:layout_constraintVertical_bias="0.0" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <ImageView
+            android:id="@+id/expandButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="13dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/baseline_expand_more_grey_500_24dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

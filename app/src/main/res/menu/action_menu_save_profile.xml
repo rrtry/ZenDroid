@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/saveChangesButton"
+        app:showAsAction="always"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title=""/>
+    <item
+        android:id="@+id/menuEditNameButton"
+        app:showAsAction="always"
+        android:icon="@drawable/baseline_drive_file_rename_outline_black_24dp"
+        android:title=""/>
+</menu>
