@@ -16,7 +16,6 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.animation.BounceInterpolator
-import android.view.animation.LinearInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,11 +27,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
+import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.*
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.OnTokenCanceledListener
@@ -45,7 +48,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerDragListener, GoogleMap.OnMapClickListener, GoogleMap.OnCameraMoveStartedListener, BottomSheetFragment.Callbacks {
+class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMapReadyCallback, GoogleMap.OnMarkerDragListener, GoogleMap.OnMapClickListener, GoogleMap.OnCameraMoveStartedListener, BottomSheetFragment.Callbacks {
 
     private val sharedViewModel: MapsSharedViewModel by viewModels()
     private lateinit var mMap: GoogleMap
@@ -83,17 +86,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun validateGesture(it: MotionEvent): Boolean {
-        val point: Point = mMap.projection.toScreenLocation(marker!!.position)
-        return (it.x - point.x).pow(2) + (it.y - point.y).pow(2) < circle!!.radius.pow(2)
+        val center: Point = mMap.projection.toScreenLocation(marker!!.position)
+        return (it.x - center.x).pow(2) + (it.y - center.y).pow(2) < circle!!.radius.pow(2)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_maps)
+        setContentView(R.layout.google_maps_activity)
         mScaleDetector = ScaleGestureDetector(this, scaleListener)
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.containerBottomSheet))
-        bottomSheetBehavior.halfExpandedRatio = 0.32f
         setBottomSheetBehaviour()
         addBottomSheetFragment()
         getMap()
@@ -107,26 +109,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun requestLocationPermission(): Unit {
         requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-
-    private fun circleAppearAnimation(): Unit {
-        val handler = Handler(Looper.getMainLooper())
-        val start = SystemClock.uptimeMillis()
-        val duration: Long = 2000
-
-        val interpolator: LinearInterpolator = LinearInterpolator()
-
-        handler.post(object : Runnable {
-
-            override fun run() {
-                val elapsed = SystemClock.uptimeMillis() - start
-                val remainingTime: Float = elapsed.toFloat() / duration
-                circle!!.radius += 10
-                if (remainingTime < 1.0 && circle!!.radius < 90.0) {
-                    handler.postDelayed(this, 16)
-                }
-            }
-        })
     }
 
     private fun bounceInterpolatorAnimation(): Unit {
@@ -148,7 +130,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         })
     }
 
-    private fun updateLocationData(latLng: LatLng, animateCameraMovement: Boolean): Unit {
+    private fun updateCoordinates(latLng: LatLng, animateCameraMovement: Boolean): Unit {
         sharedViewModel.animateCameraMovement = animateCameraMovement
         sharedViewModel.latLng.value = latLng
     }
@@ -172,16 +154,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             marker!!.remove()
             circle!!.remove()
         }
+        addMarker()
         addCircle()
         val animateCameraMovement: Boolean = sharedViewModel.animateCameraMovement
         val currentZoomLevel: Float = mMap.cameraPosition.zoom
-        val zoomLevel: Float = if (currentZoomLevel > 15f) currentZoomLevel else 15f
+        val zoomLevel: Float = getZoomLevel()
         if (animateCameraMovement) {
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
         } else {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
         }
-        addMarker()
         lifecycleScope.launch {
             val result: String? = getAddressThoroughfare(latLng)
             sharedViewModel.addressLine.value = result!!
@@ -189,13 +171,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
         marker!!.isDraggable = true
         bounceInterpolatorAnimation()
-        circleAppearAnimation()
+    }
+
+    private fun getZoomLevel(): Float {
+        var zoomLevel: Float = 11f
+        if (circle != null) {
+            val radius = circle!!.radius + circle!!.radius / 2
+            val scale = radius / 500
+            zoomLevel = (16 - Math.log(scale) / Math.log(2.0)).toFloat()
+        }
+        return zoomLevel
     }
 
     private fun addCircle(): Unit {
         circle = mMap.addCircle(CircleOptions()
                 .center(sharedViewModel.latLng.value)
-                .radius(0.0)
+                .radius(10000.0)
                 .strokeColor(Color.TRANSPARENT)
                 .fillColor(R.color.geofence_fill_color))
     }
@@ -209,7 +200,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         fusedLocationProvider.lastLocation.addOnSuccessListener {
             if (it != null && TimeUnit.MILLISECONDS.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT) {
                 Log.i("MapsActivity", "using cached location")
-                updateLocationData(LatLng(it.latitude, it.longitude), false)
+                updateCoordinates(LatLng(it.latitude, it.longitude), false)
             } else {
                 obtainCurrentLocation()
             }
@@ -229,7 +220,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         }).addOnSuccessListener {
             if (it != null) {
-                updateLocationData(LatLng(it.latitude, it.longitude), false)
+                updateCoordinates(LatLng(it.latitude, it.longitude), false)
             } else {
                 Log.i("MapsActivity", "current location is null")
             }
@@ -297,13 +288,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onMapClick(p0: LatLng) {
-        updateLocationData(p0, true)
+        updateCoordinates(p0, true)
     }
 
-    override fun expandBottomSheet() {
-        if (bottomSheetBehavior.state != BottomSheetBehavior.STATE_HALF_EXPANDED) {
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-        }
+    override fun setState(state: Int) {
+        bottomSheetBehavior.state = state
     }
 
     override fun collapseBottomSheet() {
@@ -342,6 +331,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     override fun onMarkerDragEnd(p0: Marker) {
-        updateLocationData(LatLng(p0.position.latitude, p0.position.longitude), true)
+        updateCoordinates(LatLng(p0.position.latitude, p0.position.longitude), true)
+    }
+
+    override fun setHalfExpandedRatio(ratio: Float) {
+        bottomSheetBehavior.halfExpandedRatio = ratio
+    }
+
+    override fun getPeekHeight(): Int {
+        return bottomSheetBehavior.peekHeight
     }
 }

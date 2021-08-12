@@ -33,7 +33,7 @@ import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AnimUtils
+import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.AlarmsListViewModel
 import com.example.volumeprofiler.viewmodels.ViewpagerSharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -284,7 +284,7 @@ class AlarmsListFragment: Fragment() {
         fun bindEvent(alarmTrigger: AlarmTrigger, isSelected: Boolean) {
             this.alarm = alarmTrigger.alarm
             this.profile = alarmTrigger.profile
-            AnimUtils.selectedItemAnimation(itemView, isSelected)
+            AnimUtil.selectedItemAnimation(itemView, isSelected)
             enableSwitch.isChecked = alarm.isScheduled == 1
             setCallbacks()
             updateTextViews()

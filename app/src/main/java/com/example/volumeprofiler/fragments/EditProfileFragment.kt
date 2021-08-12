@@ -34,14 +34,14 @@ import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.*
-import com.example.volumeprofiler.util.AnimUtils.Companion.scaleAnimation
+import com.example.volumeprofiler.util.animations.AnimUtil.Companion.scaleAnimation
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import android.os.Build
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.content.res.ResourcesCompat
-import com.example.volumeprofiler.activities.contract.RingtonePickerContract
+import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
 import com.example.volumeprofiler.models.Alarm
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")

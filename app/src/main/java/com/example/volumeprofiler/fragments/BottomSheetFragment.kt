@@ -13,10 +13,11 @@ import com.google.android.material.navigation.NavigationBarView
 class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener {
 
     private var callbacks: Callbacks? = null
+    private lateinit var bottomNavBar: BottomNavigationView
 
     interface Callbacks {
 
-        fun expandBottomSheet(): Unit
+        fun setState(state: Int): Unit
 
         fun collapseBottomSheet(): Unit
 
@@ -38,7 +39,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener 
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val view: View = inflater.inflate(R.layout.fragment_bottom_sheet, container, false)
+        val view: View = inflater.inflate(R.layout.bottom_sheet_fragment, container, false)
         view.setOnTouchListener(object : View.OnTouchListener {
 
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
@@ -50,7 +51,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val bottomNavBar: BottomNavigationView = view.findViewById(R.id.bottom_navigation)
+        bottomNavBar = view.findViewById(R.id.bottom_navigation)
         bottomNavBar.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
 
             override fun onGlobalLayout() {
@@ -59,41 +60,37 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener 
             }
         })
         bottomNavBar.setOnItemSelectedListener(this)
-        addFragment()
+        replaceFragment(MapsCoordinatesFragment(), TAG_COORDINATES_FRAGMENT)
     }
 
-    private fun replaceFragment(fragment: Fragment, tag: String): Unit {
-        if (tag == TAG_PROFILES_FRAGMENT && childFragmentManager.backStackEntryCount < 1) {
-            childFragmentManager
-                    .beginTransaction()
-                    .replace(R.id.fragmentContainer, fragment)
-                    .addToBackStack(null)
-                    .commit()
-        } else if (childFragmentManager.backStackEntryCount > 0) {
-            childFragmentManager.popBackStackImmediate()
-        }
-    }
-
-    private fun addFragment(): Unit {
-        val fragment: Fragment? = childFragmentManager.findFragmentById(R.id.fragmentContainer)
-        if (fragment == null) {
-            Log.i("BottomSheetFragment", "adding fragment")
-            childFragmentManager
-                    .beginTransaction()
-                    .add(R.id.fragmentContainer, MapsCoordinatesFragment(), TAG_COORDINATES_FRAGMENT)
-                    .commit()
+    private fun replaceFragment(fragment: Fragment, tag: String?): Unit {
+        val currentFragment: Fragment? = childFragmentManager.findFragmentById(R.id.fragmentContainer)
+        if (currentFragment?.tag != tag) {
+            childFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, fragment, tag)
+                .commit()
         }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.profile_tab -> replaceFragment(MapsProfileSelectionFragment(), TAG_PROFILES_FRAGMENT)
-            R.id.location_tab -> replaceFragment(MapsCoordinatesFragment(), TAG_COORDINATES_FRAGMENT)
+        if (item.itemId == bottomNavBar.selectedItemId) {
+            when (callbacks!!.getBottomSheetState()) {
+                BottomSheetBehavior.STATE_COLLAPSED -> callbacks?.setState(BottomSheetBehavior.STATE_HALF_EXPANDED)
+                BottomSheetBehavior.STATE_HALF_EXPANDED -> callbacks?.setState(BottomSheetBehavior.STATE_EXPANDED)
+                BottomSheetBehavior.STATE_EXPANDED -> callbacks?.setState(BottomSheetBehavior.STATE_COLLAPSED)
+            }
+        } else if (callbacks!!.getBottomSheetState() == BottomSheetBehavior.STATE_COLLAPSED) {
+            callbacks?.setState(BottomSheetBehavior.STATE_HALF_EXPANDED)
         }
-        val currentState: Int = callbacks?.getBottomSheetState()!!
-        if (currentState == BottomSheetBehavior.STATE_COLLAPSED
-                || currentState == BottomSheetBehavior.STATE_HALF_EXPANDED) {
-            callbacks?.expandBottomSheet()
+        when (item.itemId) {
+            R.id.profile_tab -> {
+                replaceFragment(MapsProfileSelectionFragment(), TAG_PROFILES_FRAGMENT)
+
+            }
+            R.id.location_tab -> {
+                replaceFragment(MapsCoordinatesFragment(), TAG_COORDINATES_FRAGMENT)
+
+            }
         }
         return true
     }

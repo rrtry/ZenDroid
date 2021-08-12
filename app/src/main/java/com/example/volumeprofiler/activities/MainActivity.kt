@@ -6,6 +6,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
+import android.util.DisplayMetrics
+import android.view.Display
+import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
@@ -15,6 +18,7 @@ import com.example.volumeprofiler.adapters.viewPager.MainActivityPagerAdapter
 import com.example.volumeprofiler.adapters.viewPager.pageTransformer.ZoomOutPageTransformer
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import android.util.Log
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,9 +27,9 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.main_activity)
         supportActionBar?.title = "Title"
-        accessNotificationPolicy()
+        getScreenDimensions()
         viewPager = findViewById(R.id.pager)
         val pagerAdapter = MainActivityPagerAdapter(this)
         viewPager.adapter = pagerAdapter
@@ -41,6 +45,14 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+    }
+
+    private fun getScreenDimensions(): Unit {
+        val windowManager: WindowManager = this.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val defaultDisplay: Display = windowManager.defaultDisplay
+        val displayMetrics: DisplayMetrics = DisplayMetrics()
+        defaultDisplay.getMetrics(displayMetrics)
+        Log.i("MainActivity", "width: ${displayMetrics.widthPixels}, height: ${displayMetrics.heightPixels}")
     }
 
     private fun setupTabLayout(): Unit {

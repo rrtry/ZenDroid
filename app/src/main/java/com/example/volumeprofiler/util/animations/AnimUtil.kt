@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.util
+package com.example.volumeprofiler.util.animations
 
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
@@ -11,7 +11,7 @@ import android.view.animation.ScaleAnimation
 import android.view.animation.TranslateAnimation
 import androidx.annotation.ColorInt
 
-class AnimUtils {
+class AnimUtil {
 
     companion object {
 

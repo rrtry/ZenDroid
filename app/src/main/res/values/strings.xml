@@ -9,6 +9,10 @@
     <string name="customRestrictions">Custom restrictions</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
+    <string-array name="metrics">
+        <item>M</item>
+        <item>KM</item>
+    </string-array>
     <string-array name="restrictions">
         <item>Don\'t turn on screen</item>
         <item>Don\'t wake for notifications</item>

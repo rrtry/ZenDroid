@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.activities.contract
+package com.example.volumeprofiler.activities.customContract
 
 import android.app.Activity
 import android.content.Context

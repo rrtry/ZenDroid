@@ -27,7 +27,7 @@ import com.example.volumeprofiler.interfaces.VisualRestrictionsCallback
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.CollapsingToolbarLayout
-import com.example.volumeprofiler.util.AnimUtils.Companion.scaleAnimation
+import com.example.volumeprofiler.util.animations.AnimUtil.Companion.scaleAnimation
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, VisualRestrictionsCallback {
@@ -106,18 +106,18 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
         super.onCreateView(inflater, container, savedInstanceState)
         callbacks = requireActivity() as EditProfileActivityCallbacks
         return if (Build.VERSION_CODES.M == Build.VERSION.SDK_INT) {
-            inflater.inflate(R.layout.dnd_preferences_api_24, container, false)
+            inflater.inflate(R.layout.zen_preferences_api_24, container, false)
         }
         else if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT
             && Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            inflater.inflate(R.layout.dnd_preferences_api_24, container, false)
+            inflater.inflate(R.layout.zen_preferences_api_24, container, false)
         }
         else if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT &&
             Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            inflater.inflate(R.layout.dnd_preferences_api_28, container, false)
+            inflater.inflate(R.layout.zen_preferences_api_28, container, false)
         }
         else {
-            inflater.inflate(R.layout.dnd_preferences_api_30, container, false)
+            inflater.inflate(R.layout.zen_preferences_api_30, container, false)
         }
     }
 

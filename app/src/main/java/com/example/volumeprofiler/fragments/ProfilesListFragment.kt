@@ -38,7 +38,7 @@ import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.services.NotificationWidgetService
 import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.AnimUtils
+import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
@@ -112,7 +112,7 @@ class ProfilesListFragment: Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view: View = inflater.inflate(R.layout.profiles_fragment, container, false)
+        val view: View = inflater.inflate(R.layout.profiles_list_fragment, container, false)
         val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
             val intent: Intent = EditProfileActivity.newIntent(requireContext(), null)
@@ -441,7 +441,7 @@ class ProfilesListFragment: Fragment() {
         }
 
         fun bindProfile(profile: Profile, isSelected: Boolean): Unit {
-            AnimUtils.selectedItemAnimation(itemView, isSelected)
+            AnimUtil.selectedItemAnimation(itemView, isSelected)
             val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
             checkBox.isChecked = isProfileActive
             if (isProfileActive) {
