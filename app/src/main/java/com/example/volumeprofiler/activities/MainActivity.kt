@@ -19,6 +19,7 @@ import com.example.volumeprofiler.adapters.viewPager.pageTransformer.ZoomOutPage
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import android.util.Log
+import java.time.DayOfWeek
 
 class MainActivity : AppCompatActivity() {
 

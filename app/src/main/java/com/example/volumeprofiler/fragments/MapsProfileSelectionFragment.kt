@@ -25,7 +25,7 @@ class MapsProfileSelectionFragment: Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         return inflater.inflate(R.layout.maps_select_profiles_fragment, container, false)
     }
 }

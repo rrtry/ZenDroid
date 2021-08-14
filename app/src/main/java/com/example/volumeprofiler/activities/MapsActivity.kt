@@ -12,9 +12,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.WindowManager
 import android.view.animation.BounceInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
@@ -29,6 +28,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
+import com.example.volumeprofiler.views.LayoutWrapper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -47,6 +47,7 @@ import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMapReadyCallback, GoogleMap.OnMarkerDragListener, GoogleMap.OnMapClickListener, GoogleMap.OnCameraMoveStartedListener, BottomSheetFragment.Callbacks {
 
@@ -54,21 +55,9 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     private lateinit var mMap: GoogleMap
     private var marker: Marker? = null
     private var circle: Circle? = null
+    private var center: Point = Point()
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
-
-    private var mScaleFactor: Float = 1f
-    private val scaleListener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-
-        override fun onScale(detector: ScaleGestureDetector): Boolean {
-            Log.i("MapsActivity", "onScale()")
-            mScaleFactor *= detector.scaleFactor
-            mScaleFactor = 0.1f.coerceAtLeast(mScaleFactor.coerceAtMost(5.0f))
-            circle!!.radius *= mScaleFactor
-            return true
-        }
-    }
-    private lateinit var mScaleDetector: ScaleGestureDetector
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -85,15 +74,9 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         Log.i("MapsActivity", "onConfigurationChanged")
     }
 
-    private fun validateGesture(it: MotionEvent): Boolean {
-        val center: Point = mMap.projection.toScreenLocation(marker!!.position)
-        return (it.x - center.x).pow(2) + (it.y - center.y).pow(2) < circle!!.radius.pow(2)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.google_maps_activity)
-        mScaleDetector = ScaleGestureDetector(this, scaleListener)
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.containerBottomSheet))
         setBottomSheetBehaviour()
@@ -186,7 +169,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     private fun addCircle(): Unit {
         circle = mMap.addCircle(CircleOptions()
                 .center(sharedViewModel.latLng.value)
-                .radius(10000.0)
+                .radius(sharedViewModel.radius.value!!.toDouble())
                 .strokeColor(Color.TRANSPARENT)
                 .fillColor(R.color.geofence_fill_color))
     }
@@ -248,18 +231,22 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
                 }
                 sharedViewModel.bottomSheetState.value = newState
             }
-
             override fun onSlide(bottomSheet: View, slideOffset: Float) {}
         })
-        bottomSheetBehavior.state = sharedViewModel.bottomSheetState.value!!
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         sharedViewModel.latLng.observe(this, androidx.lifecycle.Observer {
             if (it != null) {
-                Log.i("MapsActivity", "observing data")
                 setLocation(it)
+            }
+        })
+        sharedViewModel.radius.observe(this, androidx.lifecycle.Observer {
+            circle?.radius = it.toDouble()
+            if (circle != null && marker != null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
             }
         })
         mMap.setOnMapClickListener(this)
@@ -296,7 +283,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     override fun collapseBottomSheet() {
-        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
     }
 
     private fun hideSoftInput(): Unit {
@@ -317,17 +304,19 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     override fun onCameraMoveStarted(p0: Int) {
-        hideSoftInput()
-        collapseBottomSheet()
+        if (p0 == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+            hideSoftInput()
+            collapseBottomSheet()
+        }
     }
 
     override fun onMarkerDragStart(p0: Marker) {
+        center = mMap.projection.toScreenLocation(p0.position)
         hideSoftInput()
         collapseBottomSheet()
     }
 
     override fun onMarkerDrag(p0: Marker) {
-        Log.i("MapsActivity", "onMarkerDrag(), ${p0.position}")
     }
 
     override fun onMarkerDragEnd(p0: Marker) {

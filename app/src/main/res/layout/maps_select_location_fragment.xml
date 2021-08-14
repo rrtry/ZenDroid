@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
@@ -9,6 +8,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
+        android:focusableInTouchMode="true"
+        android:focusable="true"
         android:layout_height="wrap_content">
 
         <ImageView
@@ -49,6 +50,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Latitude"
+                android:imeOptions="actionDone"
                 android:singleLine="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -67,9 +69,10 @@
             app:layout_constraintTop_toBottomOf="@+id/latitudeTextInputLayout">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/radiusTextInput"
+                android:id="@+id/longitudeEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
                 android:singleLine="true" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -117,8 +120,9 @@
             app:layout_constraintTop_toBottomOf="@+id/addressTitle">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/addressTextInput"
+                android:id="@+id/addressEditText"
                 android:layout_width="match_parent"
+                android:imeOptions="actionDone"
                 android:layout_height="wrap_content"
                 android:singleLine="true" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -136,11 +140,11 @@
         <RelativeLayout
             android:id="@+id/scene_root"
             android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_marginTop="8dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/radiusTitle"
-            android:layout_marginEnd="0dp"
+            android:layout_marginEnd="8dp"
             app:layout_constraintEnd_toStartOf="@+id/metricsSpinner">
 
             <include layout="@layout/seekbar_scene" />
@@ -155,7 +159,7 @@
             app:layout_constraintBottom_toBottomOf="@+id/radiusTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/radiusTitle"
-            app:srcCompat="@drawable/baseline_location_on_black_24dp" />
+            app:srcCompat="@drawable/baseline_360_black_24dp" />
 
         <TextView
             android:id="@+id/radiusTitle"
@@ -170,9 +174,8 @@
 
         <Spinner
             android:id="@+id/metricsSpinner"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
             android:drawSelectorOnTop="true"
             app:layout_constraintBottom_toBottomOf="@+id/scene_root"
             app:layout_constraintEnd_toEndOf="parent"
@@ -183,6 +186,8 @@
             android:layout_width="39dp"
             android:layout_height="39dp"
             android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:background="@null"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/scene_root"
             app:srcCompat="@drawable/baseline_navigate_before_black_24dp" />
@@ -192,9 +197,10 @@
             android:layout_width="39dp"
             android:layout_height="39dp"
             android:layout_marginEnd="16dp"
+            android:background="@null"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/toSeekbarScene"
             app:srcCompat="@drawable/baseline_navigate_next_black_24dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

@@ -42,8 +42,8 @@ class Scale: Visibility() {
                 view!!,
                 if (startScaleX == 0f) 1f else startScaleX,
                 if (startScaleY == 0f) 1f else startScaleY,
-                0.0f,
-                0.0f
+                0.1f,
+                0.1f
         )
     }
 
