@@ -2,9 +2,7 @@ package com.example.volumeprofiler.activities
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.Color
-import android.graphics.Point
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
@@ -13,7 +11,6 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.view.View
-import android.view.WindowManager
 import android.view.animation.BounceInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
@@ -28,7 +25,6 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
-import com.example.volumeprofiler.views.LayoutWrapper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -46,18 +42,17 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMapReadyCallback, GoogleMap.OnMarkerDragListener, GoogleMap.OnMapClickListener, GoogleMap.OnCameraMoveStartedListener, BottomSheetFragment.Callbacks {
 
     private val sharedViewModel: MapsSharedViewModel by viewModels()
-    private lateinit var mMap: GoogleMap
+
     private var marker: Marker? = null
     private var circle: Circle? = null
-    private var center: Point = Point()
+
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
+    private lateinit var mMap: GoogleMap
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -67,11 +62,6 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         else {
             Log.i("MapsActivity", "ACCESS_FINE_LOCATION denied")
         }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        Log.i("MapsActivity", "onConfigurationChanged")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,7 +105,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
 
     private fun updateCoordinates(latLng: LatLng, animateCameraMovement: Boolean): Unit {
         sharedViewModel.animateCameraMovement = animateCameraMovement
-        sharedViewModel.latLng.value = latLng
+        sharedViewModel.setLatLng(latLng)
     }
 
     private suspend fun getAddressThoroughfare(latLng: LatLng): String? {
@@ -149,7 +139,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         }
         lifecycleScope.launch {
             val result: String? = getAddressThoroughfare(latLng)
-            sharedViewModel.addressLine.value = result!!
+            sharedViewModel.setAddressLine(result!!)
             marker!!.title = result
         }
         marker!!.isDraggable = true
@@ -168,21 +158,20 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
 
     private fun addCircle(): Unit {
         circle = mMap.addCircle(CircleOptions()
-                .center(sharedViewModel.latLng.value)
-                .radius(sharedViewModel.radius.value!!.toDouble())
+                .center(sharedViewModel.getLatLng())
+                .radius(sharedViewModel.getRadius()!!.toDouble())
                 .strokeColor(Color.TRANSPARENT)
                 .fillColor(R.color.geofence_fill_color))
     }
 
     private fun addMarker(): Unit {
-        marker = mMap.addMarker(MarkerOptions().position(sharedViewModel.latLng.value).title(sharedViewModel.addressLine.value))
+        marker = mMap.addMarker(MarkerOptions().position(sharedViewModel.getLatLng()).title(sharedViewModel.getAddressLine()))
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     private fun obtainLocation(): Unit {
         fusedLocationProvider.lastLocation.addOnSuccessListener {
             if (it != null && TimeUnit.MILLISECONDS.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT) {
-                Log.i("MapsActivity", "using cached location")
                 updateCoordinates(LatLng(it.latitude, it.longitude), false)
             } else {
                 obtainCurrentLocation()
@@ -229,7 +218,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
                     bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
                 }
-                sharedViewModel.bottomSheetState.value = newState
+                sharedViewModel.setBottomSheetState(newState)
             }
             override fun onSlide(bottomSheet: View, slideOffset: Float) {}
         })
@@ -239,21 +228,21 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         sharedViewModel.latLng.observe(this, androidx.lifecycle.Observer {
-            if (it != null) {
-                setLocation(it)
-            }
+            setLocation(it.peekContent())
         })
         sharedViewModel.radius.observe(this, androidx.lifecycle.Observer {
-            circle?.radius = it.toDouble()
-            if (circle != null && marker != null) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
+            it.peekContent().let {
+                circle?.radius = it.toDouble()
+                if (circle != null && marker != null) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
+                }
             }
         })
         mMap.setOnMapClickListener(this)
         mMap.setOnCameraMoveStartedListener(this)
         mMap.setOnMarkerDragListener(this)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            if (sharedViewModel.latLng.value == null) {
+            if (sharedViewModel.getLatLng() == null) {
                 obtainLocation()
             }
         } else {
@@ -269,12 +258,8 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         }
     }
 
-    companion object {
-
-        private const val DWELL_LIMIT: Byte = 60
-    }
-
     override fun onMapClick(p0: LatLng) {
+        Log.i("MapsActivity", "onMapClick")
         updateCoordinates(p0, true)
     }
 
@@ -311,7 +296,6 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     override fun onMarkerDragStart(p0: Marker) {
-        center = mMap.projection.toScreenLocation(p0.position)
         hideSoftInput()
         collapseBottomSheet()
     }
@@ -329,5 +313,11 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
 
     override fun getPeekHeight(): Int {
         return bottomSheetBehavior.peekHeight
+    }
+
+    companion object {
+        private const val KEY_RADIUS: String = "key_radius"
+        private const val KEY_LATLNG: String = "key_latlng"
+        private const val DWELL_LIMIT: Byte = 15
     }
 }

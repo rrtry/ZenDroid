@@ -34,7 +34,6 @@ import com.example.volumeprofiler.util.animations.Scale
 import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.slider.Slider
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
@@ -110,17 +109,16 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             savedInstanceState: Bundle?
     ): View {
         sharedViewModel.addressLine.observe(viewLifecycleOwner, Observer {
-            Log.i(LOG_TAG, "observing address")
-            addressEditText.setText(it)
+            it.getContentIfNotHandled()?.let {
+                Log.i(LOG_TAG, "observing address line")
+                addressEditText.setText(it)
+            }
         })
-        sharedViewModel.latLng.observe(viewLifecycleOwner, object : Observer<LatLng> {
-            override fun onChanged(t: LatLng?) {
-                if (t != null) {
-                    Log.i(LOG_TAG, "observing latLng")
-                    latitudeEditText.setText(t.latitude.toString())
-                    longitudeEditText.setText(t.longitude.toString())
-                }
-                sharedViewModel.latLng.removeObserver(this)
+        sharedViewModel.latLng.observe(viewLifecycleOwner, Observer {
+            it.getContentIfNotHandled()?.let {
+                Log.i(LOG_TAG, "observing latlng")
+                latitudeEditText.setText(it.latitude.toString())
+                longitudeEditText.setText(it.longitude.toString())
             }
         })
         return inflater.inflate(R.layout.maps_select_location_fragment, container, false)
@@ -226,7 +224,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                 hideSoftInputFromWindow()
                 (parentActivity as? BottomSheetFragment.Callbacks)?.collapseBottomSheet()
                 sharedViewModel.animateCameraMovement = false
-                sharedViewModel.latLng.value = latLng
+                sharedViewModel.setLatLng(latLng)
             } else {
                 addressTextInputLayout.error = "Could not reverse specified address"
                 AnimUtil.shakeAnimation(addressTextInputLayout)
@@ -348,7 +346,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                         val latLng: LatLng = LatLng(latitudeEditText.text.toString().toDouble(),
                                 longitudeEditText.text.toString().toDouble())
                         sharedViewModel.animateCameraMovement = false
-                        sharedViewModel.latLng.value = latLng
+                        sharedViewModel.setLatLng(latLng)
                     }
                 }
                 toFirstScene.id -> {
@@ -372,7 +370,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     private fun updateMetrics(): Unit {
         if (localViewModel.metrics == Metrics.KILOMETERS) {
-            val value = sharedViewModel.radius.value!! / 1000
+            val value = sharedViewModel.getRadius()!! / 1000
             if (slider != null) {
                 slider!!.valueTo = Metrics.KILOMETERS.sliderMaxValue
                 slider!!.valueFrom = Metrics.KILOMETERS.sliderMinValue
@@ -381,18 +379,11 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             }
             radiusEditText?.text = SpannableStringBuilder(("%.3f".format(value)))
         } else {
-            val value: Float = if (100f > Metrics.METERS.sliderMaxValue) {
+            val value: Float = if (sharedViewModel.getRadius()!! > Metrics.METERS.sliderMaxValue) {
                 Metrics.METERS.sliderMaxValue
             } else {
-                100f
+                sharedViewModel.getRadius()!!
             }
-            /*
-            val value: Float = if (sharedViewModel.radius.value!! > Metrics.METERS.sliderMaxValue) {
-                Metrics.METERS.sliderMaxValue
-            } else {
-                sharedViewModel.radius.value!!.toFloat()
-            }
-             */
             if (slider != null) {
                 slider!!.valueTo = Metrics.METERS.sliderMaxValue
                 slider!!.valueFrom = Metrics.METERS.sliderMinValue
@@ -406,10 +397,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     private fun onSliderProgressChanged(progress: Float): Unit {
         progressTextView?.text = "%.3f".format(progress)
         if (localViewModel.metrics == Metrics.METERS) {
-            sharedViewModel.radius.value = progress
+            sharedViewModel.setRadius(progress)
         }
         else {
-            sharedViewModel.radius.value = (progress * 1000)
+            sharedViewModel.setRadius(progress * 1000)
         }
     }
 
@@ -424,9 +415,9 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             if (validateRadiusInput(radiusEditText?.text, localViewModel.metrics)) {
                 val value: Float = radiusEditText?.text.toString().toFloat()
                 if (localViewModel.metrics == Metrics.KILOMETERS) {
-                    sharedViewModel.radius.value = value * 1000
+                    sharedViewModel.setRadius(value * 1000)
                 } else {
-                    sharedViewModel.radius.value = value
+                    sharedViewModel.setRadius(value)
                 }
             } else {
                 Log.i(LOG_TAG, "input invalid")
