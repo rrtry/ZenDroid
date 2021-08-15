@@ -24,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
+import com.example.volumeprofiler.viewmodels.EventWrapper
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
@@ -122,7 +123,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         }
     }
 
-    private fun setLocation(latLng: LatLng): Unit {
+    private fun setLocation(latLng: LatLng, shouldUpdateModel: Boolean): Unit {
         if (marker != null) {
             marker!!.remove()
             circle!!.remove()
@@ -137,10 +138,14 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         } else {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
         }
-        lifecycleScope.launch {
-            val result: String? = getAddressThoroughfare(latLng)
-            sharedViewModel.setAddressLine(result!!)
-            marker!!.title = result
+        if (shouldUpdateModel) {
+            lifecycleScope.launch {
+                val result: String? = getAddressThoroughfare(latLng)
+                sharedViewModel.setAddressLine(result!!)
+                marker!!.title = result
+            }
+        } else {
+            marker!!.title = sharedViewModel.getAddressLine()
         }
         marker!!.isDraggable = true
         bounceInterpolatorAnimation()
@@ -228,9 +233,29 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         sharedViewModel.latLng.observe(this, androidx.lifecycle.Observer {
+            val content: LatLng? = it.getContentIfNotHandled()
+            if (content != null) {
+                setLocation(content, true)
+            } else {
+                val event: EventWrapper<LatLng> = sharedViewModel.latLng.value!!
+                setLocation(event.peekContent(), false)
+            }
+            /*
+            it.getContentIfNotHandled()?.let {
+                setLocation(it)
+            }
             setLocation(it.peekContent())
+             */
         })
         sharedViewModel.radius.observe(this, androidx.lifecycle.Observer {
+            /*
+            it.getContentIfNotHandled()?.let {
+                circle?.radius = it.toDouble()
+                if (circle != null && marker != null) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
+                }
+            }
+           */
             it.peekContent().let {
                 circle?.radius = it.toDouble()
                 if (circle != null && marker != null) {
@@ -259,7 +284,6 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     override fun onMapClick(p0: LatLng) {
-        Log.i("MapsActivity", "onMapClick")
         updateCoordinates(p0, true)
     }
 

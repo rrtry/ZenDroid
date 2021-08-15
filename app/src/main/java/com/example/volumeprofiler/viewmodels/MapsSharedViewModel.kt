@@ -9,10 +9,10 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 class MapsSharedViewModel: ViewModel() {
 
     val repository: Repository = Repository.get()
-    val latLng: MutableLiveData<Event<LatLng>> = MutableLiveData()
-    val addressLine: MutableLiveData<Event<String>> = MutableLiveData()
-    val bottomSheetState: MutableLiveData<Event<Int>> = MutableLiveData(Event(BottomSheetBehavior.STATE_COLLAPSED))
-    val radius: MutableLiveData<Event<Float>> = MutableLiveData(Event(100f))
+    val latLng: MutableLiveData<EventWrapper<LatLng>> = MutableLiveData()
+    val addressLine: MutableLiveData<EventWrapper<String>> = MutableLiveData()
+    val bottomSheetState: MutableLiveData<EventWrapper<Int>> = MutableLiveData(EventWrapper(BottomSheetBehavior.STATE_COLLAPSED))
+    val radius: MutableLiveData<EventWrapper<Float>> = MutableLiveData(EventWrapper(100f))
     var animateCameraMovement: Boolean = false
 
     fun getLatLng(): LatLng? = latLng.value?.peekContent()
@@ -24,19 +24,19 @@ class MapsSharedViewModel: ViewModel() {
     fun getRadius(): Float? = this.radius.value?.peekContent()
 
     fun setLatLng(latLng: LatLng): Unit {
-        this.latLng.value = Event(latLng)
+        this.latLng.value = EventWrapper(latLng)
     }
 
     fun setAddressLine(addressLine: String): Unit {
-        this.addressLine.value = Event(addressLine)
+        this.addressLine.value = EventWrapper(addressLine)
     }
 
     fun setBottomSheetState(state: Int): Unit {
-        this.bottomSheetState.value = Event(state)
+        this.bottomSheetState.value = EventWrapper(state)
     }
 
     fun setRadius(radius: Float): Unit {
-        this.radius.value = Event(radius)
+        this.radius.value = EventWrapper(radius)
     }
 
     companion object {
