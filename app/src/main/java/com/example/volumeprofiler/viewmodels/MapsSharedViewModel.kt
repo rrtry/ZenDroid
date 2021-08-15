@@ -28,7 +28,7 @@ class MapsSharedViewModel: ViewModel() {
     }
 
     fun setAddressLine(addressLine: String): Unit {
-        this.addressLine.value = EventWrapper(addressLine)
+        this.addressLine.value = EventWrapper(addressLine, 1)
     }
 
     fun setBottomSheetState(state: Int): Unit {

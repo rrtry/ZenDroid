@@ -238,7 +238,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
                 setLocation(content, true)
             } else {
                 val event: EventWrapper<LatLng> = sharedViewModel.latLng.value!!
-                setLocation(event.peekContent(), false)
+                setLocation(event.peekContent()!!, false)
             }
             /*
             it.getContentIfNotHandled()?.let {
@@ -257,7 +257,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
             }
            */
             it.peekContent().let {
-                circle?.radius = it.toDouble()
+                circle?.radius = it!!.toDouble()
                 if (circle != null && marker != null) {
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
                 }

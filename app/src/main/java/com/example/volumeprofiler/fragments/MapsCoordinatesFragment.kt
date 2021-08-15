@@ -8,6 +8,7 @@ import android.location.Geocoder
 import android.os.Bundle
 import android.text.*
 import android.util.DisplayMetrics
+import android.util.EventLog
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
@@ -32,6 +33,7 @@ import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.animations.Scale
 import com.example.volumeprofiler.viewmodels.EventObserver
+import com.example.volumeprofiler.viewmodels.EventWrapper
 import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
@@ -118,12 +120,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View {
-        sharedViewModel.addressLine.observe(viewLifecycleOwner, EventObserver<String> {
-            Log.i(LOG_TAG, "observing address line")
+        sharedViewModel.addressLine.observe(viewLifecycleOwner, EventObserver<String>{
             addressEditText.setText(it)
         })
         sharedViewModel.latLng.observe(viewLifecycleOwner, EventObserver<LatLng> {
-            Log.i(LOG_TAG, "observing latitude and longitude")
             latitudeEditText.setText(it.latitude.toString())
             longitudeEditText.setText(it.longitude.toString())
         })

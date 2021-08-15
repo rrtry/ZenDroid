@@ -1,6 +1,8 @@
 package com.example.volumeprofiler.viewmodels
 
-open class EventWrapper<out T>(private val content: T, private val numberOfObservers: Byte = 2) {
+import android.util.Log
+
+open class EventWrapper<out T>(private val content: T?, private val numberOfObservers: Byte = 2) {
 
     var hasBeenHandled = false
         private set
@@ -20,5 +22,5 @@ open class EventWrapper<out T>(private val content: T, private val numberOfObser
         }
     }
 
-    fun peekContent(): T = content
+    fun peekContent(): T? = content
 }
