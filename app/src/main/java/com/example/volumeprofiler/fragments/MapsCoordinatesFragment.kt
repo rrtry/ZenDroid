@@ -31,6 +31,7 @@ import com.example.volumeprofiler.util.TextUtil.Companion.validateRadiusInput
 import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.animations.Scale
+import com.example.volumeprofiler.viewmodels.EventObserver
 import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
@@ -65,7 +66,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     private var setRadiusButton: ImageButton? = null
 
     private val sharedViewModel: MapsSharedViewModel by activityViewModels()
-    private val localViewModel: MapsCoordinatesViewModel by viewModels()
+    private val viewModel: MapsCoordinatesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,23 +104,28 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         enterTransition = inflater.inflateTransition(R.transition.slide_from_left)
     }
 
+    private fun toSeekBarScene(sceneRoot: ViewGroup, listener: TransitionListenerAdapter): Unit {
+        val transitionSet: TransitionSet = TransitionSet().addListener(listener)
+        val firstScene = Scene.getSceneForLayout(sceneRoot, R.layout.seekbar_scene, requireContext())
+        transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
+        transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
+        transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
+        TransitionManager.go(firstScene, transitionSet)
+    }
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View {
-        sharedViewModel.addressLine.observe(viewLifecycleOwner, Observer {
-            it.getContentIfNotHandled()?.let {
-                Log.i(LOG_TAG, "observing address line")
-                addressEditText.setText(it)
-            }
+        sharedViewModel.addressLine.observe(viewLifecycleOwner, EventObserver<String> {
+            Log.i(LOG_TAG, "observing address line")
+            addressEditText.setText(it)
         })
-        sharedViewModel.latLng.observe(viewLifecycleOwner, Observer {
-            it.getContentIfNotHandled()?.let {
-                Log.i(LOG_TAG, "observing latlng")
-                latitudeEditText.setText(it.latitude.toString())
-                longitudeEditText.setText(it.longitude.toString())
-            }
+        sharedViewModel.latLng.observe(viewLifecycleOwner, EventObserver<LatLng> {
+            Log.i(LOG_TAG, "observing latitude and longitude")
+            latitudeEditText.setText(it.latitude.toString())
+            longitudeEditText.setText(it.longitude.toString())
         })
         return inflater.inflate(R.layout.maps_select_location_fragment, container, false)
     }
@@ -128,6 +134,15 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         latitudeEditText.addTextChangedListener(getTextWatcher(latitudeTextInputLayout))
         longitudeEditText.addTextChangedListener(getTextWatcher(longitudeTextInputLayout))
         addressEditText.addTextChangedListener(getTextWatcher(addressTextInputLayout))
+    }
+
+    private fun toEditTextScene(sceneRoot: ViewGroup, listener: TransitionListenerAdapter): Unit {
+        val transitionSet: TransitionSet = TransitionSet().addListener(listener)
+        val secondScene = Scene.getSceneForLayout(sceneRoot, R.layout.edit_text_scene, requireContext())
+        transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
+        transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
+        transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
+        TransitionManager.go(secondScene, transitionSet)
     }
 
     private fun setTextFilters(): Unit {
@@ -146,17 +161,17 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 if (editTextLayout?.id == R.id.addressTextInputLayout) {
-                    localViewModel.address = s.toString()
+                    viewModel.address = s.toString()
                     editTextLayout.error = null
                 }
             }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 when (editTextLayout?.id) {
-                    R.id.addressTextInputLayout -> localViewModel.address = s.toString()
+                    R.id.addressTextInputLayout -> viewModel.address = s.toString()
 
                     R.id.longitudeTextInputLayout -> {
-                        localViewModel.longitude = s.toString()
+                        viewModel.longitude = s.toString()
                         if (validateCoordinatesInput(s)) {
                             editTextLayout.error = null
                         } else {
@@ -164,7 +179,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                         }
                     }
                     R.id.latitudeTextInputLayout -> {
-                        localViewModel.latitude = s.toString()
+                        viewModel.latitude = s.toString()
                         if (validateCoordinatesInput(s)) {
                             editTextLayout.error = null
                         } else {
@@ -172,15 +187,15 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                         }
                     }
                     R.id.radiusTextInputLayout -> {
-                        localViewModel.radius = s.toString()
-                        if (validateRadiusInput(s, localViewModel.metrics)) {
+                        viewModel.radius = s.toString()
+                        if (validateRadiusInput(s, viewModel.metrics)) {
                             editTextLayout.error = null
                         } else {
                             editTextLayout.error = RADIUS_EDIT_TEXT_ERROR
                         }
                     }
                     else -> {
-                        if (validateRadiusInput(s, localViewModel.metrics)) {
+                        if (validateRadiusInput(s, viewModel.metrics)) {
                             radiusEditText?.error = null
                         } else {
                             radiusEditText?.error = "Specify value within range from 100m to 100km"
@@ -232,24 +247,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         }
     }
 
-    private fun toEditTextScene(sceneRoot: ViewGroup, listener: TransitionListenerAdapter): Unit {
-        val transitionSet: TransitionSet = TransitionSet().addListener(listener)
-        val secondScene = Scene.getSceneForLayout(sceneRoot, R.layout.edit_text_scene, requireContext())
-        transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
-        transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
-        transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
-        TransitionManager.go(secondScene, transitionSet)
-    }
-
-    private fun toSeekBarScene(sceneRoot: ViewGroup, listener: TransitionListenerAdapter): Unit {
-        val transitionSet: TransitionSet = TransitionSet().addListener(listener)
-        val firstScene = Scene.getSceneForLayout(sceneRoot, R.layout.seekbar_scene, requireContext())
-        transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
-        transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
-        transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
-        TransitionManager.go(firstScene, transitionSet)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val sceneRoot: ViewGroup = view.findViewById(R.id.scene_root)
@@ -293,7 +290,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                 position: Int,
                 id: Long
             ) {
-                localViewModel.metrics = parent?.selectedItem as Metrics
+                viewModel.metrics = parent?.selectedItem as Metrics
                 updateMetrics()
             }
 
@@ -369,7 +366,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     private fun updateMetrics(): Unit {
-        if (localViewModel.metrics == Metrics.KILOMETERS) {
+        if (viewModel.metrics == Metrics.KILOMETERS) {
             val value = sharedViewModel.getRadius()!! / 1000
             if (slider != null) {
                 slider!!.valueTo = Metrics.KILOMETERS.sliderMaxValue
@@ -396,7 +393,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     private fun onSliderProgressChanged(progress: Float): Unit {
         progressTextView?.text = "%.3f".format(progress)
-        if (localViewModel.metrics == Metrics.METERS) {
+        if (viewModel.metrics == Metrics.METERS) {
             sharedViewModel.setRadius(progress)
         }
         else {
@@ -412,9 +409,9 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     private fun setRadiusButtonClickListener(): Unit {
         setRadiusButton?.setOnClickListener {
-            if (validateRadiusInput(radiusEditText?.text, localViewModel.metrics)) {
+            if (validateRadiusInput(radiusEditText?.text, viewModel.metrics)) {
                 val value: Float = radiusEditText?.text.toString().toFloat()
-                if (localViewModel.metrics == Metrics.KILOMETERS) {
+                if (viewModel.metrics == Metrics.KILOMETERS) {
                     sharedViewModel.setRadius(value * 1000)
                 } else {
                     sharedViewModel.setRadius(value)

@@ -124,6 +124,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     private fun setLocation(latLng: LatLng, shouldUpdateModel: Boolean): Unit {
+        Log.i("MapsActivity", shouldUpdateModel.toString())
         if (marker != null) {
             marker!!.remove()
             circle!!.remove()
@@ -131,7 +132,6 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         addMarker()
         addCircle()
         val animateCameraMovement: Boolean = sharedViewModel.animateCameraMovement
-        val currentZoomLevel: Float = mMap.cameraPosition.zoom
         val zoomLevel: Float = getZoomLevel()
         if (animateCameraMovement) {
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
@@ -292,7 +292,9 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     override fun collapseBottomSheet() {
-        bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+        if (bottomSheetBehavior.state != BottomSheetBehavior.STATE_COLLAPSED) {
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
     }
 
     private fun hideSoftInput(): Unit {

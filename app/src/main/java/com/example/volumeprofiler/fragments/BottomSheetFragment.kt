@@ -71,6 +71,15 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener 
         }
     }
 
+    private fun addFragment(): Unit {
+        val currentFragment: Fragment? = childFragmentManager.findFragmentById(R.id.fragmentContainer)
+        if (currentFragment == null) {
+            childFragmentManager
+                    .beginTransaction()
+                    .add(R.id.fragmentContainer, MapsCoordinatesFragment())
+        }
+    }
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         if (item.itemId == bottomNavBar.selectedItemId) {
             when (callbacks!!.getBottomSheetState()) {
