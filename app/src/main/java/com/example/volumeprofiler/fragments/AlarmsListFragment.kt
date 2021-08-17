@@ -2,16 +2,14 @@ package com.example.volumeprofiler.fragments
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.util.Log
+import androidx.recyclerview.widget.ListAdapter
 import android.view.*
 import android.widget.Button
 import android.widget.Switch
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -25,8 +23,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.activities.EditEventActivity
-import com.example.volumeprofiler.adapters.*
+import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelectionObserver
+import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
+import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
+import com.example.volumeprofiler.adapters.recyclerview.multiSelection.KeyProvider
 import com.example.volumeprofiler.fragments.dialogs.WarningDialog
+import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Alarm
@@ -38,6 +40,7 @@ import com.example.volumeprofiler.viewmodels.AlarmsListViewModel
 import com.example.volumeprofiler.viewmodels.ViewpagerSharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.lang.StringBuilder
+import java.lang.ref.WeakReference
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -46,16 +49,14 @@ import java.time.format.TextStyle
 import java.util.*
 import kotlin.collections.ArrayList
 
-class AlarmsListFragment: Fragment() {
+class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
     private var showDialog: Boolean = false
-    private lateinit var floatingActionButton: FloatingActionButton
     private lateinit var recyclerView: RecyclerView
     private lateinit var tracker: SelectionTracker<Long>
-    private val model: AlarmsListViewModel by viewModels()
-    private val viewpagerSharedModel: ViewpagerSharedViewModel by activityViewModels()
-    private val eventAdapter: EventAdapter = EventAdapter()
-    private var actionMode: ActionMode? = null
+    private val viewModel: AlarmsListViewModel by viewModels()
+    private val sharedViewModel: ViewpagerSharedViewModel by activityViewModels()
+    private val alarmAdapter: AlarmAdapter = AlarmAdapter()
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -63,37 +64,16 @@ class AlarmsListFragment: Fragment() {
             savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.alarms_fragment, container, false)
-        floatingActionButton = view.findViewById(R.id.fab)
+        val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (Settings.System.canWrite(context)) {
-                    if (!showDialog) {
-                        val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
-                        startActivity(intent)
-                    }
-                    else {
-                        val fragment: WarningDialog = WarningDialog()
-                        val fragmentManager = requireActivity().supportFragmentManager
-                        fragment.show(fragmentManager, null)
-                    }
-                }
-                else {
-                    val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
-                    intent.data = Uri.parse("package:" + requireActivity().packageName)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(intent)
-                }
+            if (!showDialog) {
+                val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
+                startActivity(intent)
             }
             else {
-                if (!showDialog) {
-                    val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
-                    startActivity(intent)
-                }
-                else {
-                    val fragment: WarningDialog = WarningDialog()
-                    val fragmentManager = requireActivity().supportFragmentManager
-                    fragment.show(fragmentManager, null)
-                }
+                val fragment: WarningDialog = WarningDialog()
+                val fragmentManager = requireActivity().supportFragmentManager
+                fragment.show(fragmentManager, null)
             }
         }
         return view
@@ -102,81 +82,33 @@ class AlarmsListFragment: Fragment() {
     private fun initRecyclerView(view: View): Unit {
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = eventAdapter
+        recyclerView.adapter = alarmAdapter
         recyclerView.itemAnimator = DefaultItemAnimator()
     }
 
     private fun initSelectionTracker(): Unit {
-        tracker = SelectionTracker.Builder<Long>(
-                "SelectionId2",
+        tracker = SelectionTracker.Builder(
+                SELECTION_ID,
                 recyclerView,
-                KeyProvider(eventAdapter),
+                KeyProvider(alarmAdapter),
                 DetailsLookup(recyclerView),
                 StorageStrategy.createLongStorage()
         ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
                 .build()
-        tracker.addObserver(object : SelectionTracker.SelectionObserver<Long>() {
-            override fun onSelectionChanged() {
-                super.onSelectionChanged()
-                if (tracker.hasSelection() && actionMode == null) {
-                    actionMode = requireActivity().startActionMode(object : ActionMode.Callback {
-
-                        override fun onActionItemClicked(
-                                mode: ActionMode?,
-                                item: MenuItem?
-                        ): Boolean {
-                            if (item?.itemId == R.id.deleteProfileButton) {
-                                for (i in tracker.selection) {
-                                    for ((index, j) in eventAdapter.currentList.withIndex()) {
-                                        if (j.alarm.id == i) {
-                                            removeAlarm(index)
-                                        }
-                                    }
-                                }
-                                mode?.finish()
-                                return true
-                            }
-                            return false
-                        }
-
-                        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-                            mode?.menuInflater?.inflate(R.menu.action_menu_selected, menu)
-                            return true
-                        }
-
-                        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean = true
-
-                        override fun onDestroyActionMode(mode: ActionMode?) {
-                            tracker.clearSelection()
-                        }
-                    })
-                    setSelectedTitle(tracker.selection.size())
-                } else if (!tracker.hasSelection()) {
-                    actionMode?.finish()
-                    actionMode = null
-                } else {
-                    setSelectedTitle(tracker.selection.size())
-                }
-            }
-        })
-    }
-
-    private fun setSelectedTitle(selected: Int) {
-        actionMode?.title = "Selected: $selected"
+        tracker.addObserver(BaseSelectionObserver<Long>(WeakReference(this)))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRecyclerView(view)
         initSelectionTracker()
-        model.eventListLiveData.observe(viewLifecycleOwner,
+        viewModel.eventListLiveData.observe(viewLifecycleOwner,
                 Observer<List<AlarmTrigger>> { t ->
                     if (t != null) {
-                        Log.i("ScheduledEventsFragment", "observing data: ${t.size}")
                         updateUI(t)
                     }
                 })
-        viewpagerSharedModel.profileListLiveData.observe(viewLifecycleOwner,
+        sharedViewModel.profileListLiveData.observe(viewLifecycleOwner,
             Observer<List<Profile>> { t ->
                 if (t != null) {
                     showDialog = t.isEmpty()
@@ -191,13 +123,13 @@ class AlarmsListFragment: Fragment() {
         else {
             view?.findViewById<TextView>(R.id.hint_scheduler)?.visibility = View.GONE
         }
-        eventAdapter.submitList(events)
+        alarmAdapter.submitList(events)
     }
 
     private fun removeAlarm(adapterPosition: Int): Unit {
-        val alarmTrigger: AlarmTrigger = eventAdapter.getAlarm(adapterPosition)
+        val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(adapterPosition)
         val alarm: Alarm = alarmTrigger.alarm
-        model.removeAlarm(alarm)
+        viewModel.removeAlarm(alarm)
         if (alarm.isScheduled == 1) {
             val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
             alarmUtil.cancelAlarm(alarmTrigger.alarm, alarmTrigger.profile)
@@ -211,7 +143,7 @@ class AlarmsListFragment: Fragment() {
         private val enableSwitch: Switch = itemView.findViewById(R.id.scheduleSwitch)
         private val daysTextView: TextView = itemView.findViewById(R.id.occurrencesTextView)
         private val profileTextView: TextView = itemView.findViewById(R.id.profileName)
-        private val deleteEventButton: Button = itemView.findViewById(R.id.deleteEventButton)
+        private val removeAlarmButton: Button = itemView.findViewById(R.id.deleteEventButton)
         private lateinit var alarm: Alarm
         private lateinit var profile: Profile
 
@@ -220,26 +152,26 @@ class AlarmsListFragment: Fragment() {
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Long> {
-            return ItemDetails(absoluteAdapterPosition, eventAdapter.getAlarm(absoluteAdapterPosition).alarm.id)
+            return ItemDetails(absoluteAdapterPosition, alarmAdapter.getItemAtPosition(absoluteAdapterPosition).alarm.id)
         }
 
         private fun setCallbacks(): Unit {
             enableSwitch.setOnCheckedChangeListener { _, isChecked ->
-                val alarmTrigger: AlarmTrigger = eventAdapter.getAlarm(absoluteAdapterPosition)
+                val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(absoluteAdapterPosition)
                 val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
 
                 if (isChecked && enableSwitch.isPressed) {
                     alarm.isScheduled = 1
-                    model.updateAlarm(alarm)
+                    viewModel.updateAlarm(alarm)
                     alarmUtil.setAlarm(alarmTrigger.alarm, alarmTrigger.profile,false)
                 }
                 else if (!isChecked && enableSwitch.isPressed) {
                     alarm.isScheduled = 0
-                    model.updateAlarm(alarm)
+                    viewModel.updateAlarm(alarm)
                     alarmUtil.cancelAlarm(alarmTrigger.alarm, alarmTrigger.profile)
                 }
             }
-            deleteEventButton.setOnClickListener {
+            removeAlarmButton.setOnClickListener {
                 removeAlarm(absoluteAdapterPosition)
             }
         }
@@ -281,7 +213,7 @@ class AlarmsListFragment: Fragment() {
             }
         }
 
-        fun bindEvent(alarmTrigger: AlarmTrigger, isSelected: Boolean) {
+        fun bind(alarmTrigger: AlarmTrigger, isSelected: Boolean) {
             this.alarm = alarmTrigger.alarm
             this.profile = alarmTrigger.profile
             AnimUtil.selectedItemAnimation(itemView, isSelected)
@@ -291,7 +223,7 @@ class AlarmsListFragment: Fragment() {
         }
 
         override fun onClick(v: View?) {
-            val alarmTrigger: AlarmTrigger = eventAdapter.getAlarm(absoluteAdapterPosition)
+            val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(absoluteAdapterPosition)
             val intent: Intent = Intent(requireContext(), EditEventActivity::class.java).apply {
                 this.putExtra(EditEventActivity.EXTRA_TRIGGER, alarmTrigger)
             }
@@ -299,10 +231,10 @@ class AlarmsListFragment: Fragment() {
         }
     }
 
-    private inner class EventAdapter : androidx.recyclerview.widget.ListAdapter<AlarmTrigger, EventHolder>(object : DiffUtil.ItemCallback<AlarmTrigger>() {
+    private inner class AlarmAdapter : ListAdapter<AlarmTrigger, EventHolder>(object : DiffUtil.ItemCallback<AlarmTrigger>() {
 
         override fun areItemsTheSame(oldItem: AlarmTrigger, newItem: AlarmTrigger): Boolean {
-            return oldItem == newItem
+            return oldItem.alarm.id == newItem.alarm.id
         }
 
         override fun areContentsTheSame(oldItem: AlarmTrigger, newItem: AlarmTrigger): Boolean {
@@ -313,17 +245,18 @@ class AlarmsListFragment: Fragment() {
 
         private var lastPosition: Int = -1
 
-        fun getAlarm(position: Int): AlarmTrigger = getItem(position)
+        fun getItemAtPosition(position: Int): AlarmTrigger = getItem(position)
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventHolder =
-                EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventHolder {
+            return EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
+        }
 
         override fun onBindViewHolder(holder: EventHolder, position: Int) {
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
             }
             tracker.let {
-                holder.bindEvent(getItem(position), it.isSelected(getItem(position).alarm.id))
+                holder.bind(getItem(position), it.isSelected(getItem(position).alarm.id))
             }
         }
 
@@ -339,5 +272,24 @@ class AlarmsListFragment: Fragment() {
     companion object {
 
         private const val EVENT_LAYOUT: Int = R.layout.alarm_item_view
+        private const val SELECTION_ID: String = "ALARM"
+    }
+
+    override fun onActionItemRemove() {
+        for (i in tracker.selection) {
+            for ((index, j) in alarmAdapter.currentList.withIndex()) {
+                if (j.alarm.id == i) {
+                    removeAlarm(index)
+                }
+            }
+        }
+    }
+
+    override fun getTracker(): SelectionTracker<Long> {
+        return tracker
+    }
+
+    override fun getFragmentActivity(): FragmentActivity {
+        return requireActivity()
     }
 }

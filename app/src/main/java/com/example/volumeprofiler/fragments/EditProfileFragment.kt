@@ -510,7 +510,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         }
     }
 
-    private fun updateProgressbars(): Unit {
+    private fun updateSeekBars(): Unit {
         mediaSeekBar.progress = viewModel.mutableProfile!!.mediaVolume
         phoneSeekBar.progress = viewModel.mutableProfile!!.callVolume
         notificationSeekBar.progress = viewModel.mutableProfile!!.notificationVolume
@@ -520,7 +520,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
 
     private fun updateUI(): Unit {
         setActionBarTitle(viewModel.mutableProfile!!.title)
-        updateProgressbars()
+        updateSeekBars()
         updateInterruptionFilterViews()
         if (arguments?.getParcelable<Profile>(EXTRA_PROFILE) != null) {
             phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)

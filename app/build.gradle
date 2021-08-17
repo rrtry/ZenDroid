@@ -46,6 +46,7 @@ dependencies {
     def nav_version = "2.3.5"
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
     implementation 'androidx.core:core-ktx:1.6.0'
+    implementation "android.arch.navigation:navigation-ui-ktx:2.3.5"
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0-alpha03"

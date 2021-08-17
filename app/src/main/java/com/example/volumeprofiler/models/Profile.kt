@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.models
 
 import android.net.Uri
-import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 import android.app.NotificationManager.Policy.*
@@ -12,7 +11,7 @@ import androidx.room.Ignore
 import kotlinx.parcelize.*
 
 @Parcelize
-@Entity
+@androidx.room.Entity
 data class Profile(var title: String,
                    @PrimaryKey val id: UUID = UUID.randomUUID(),
 

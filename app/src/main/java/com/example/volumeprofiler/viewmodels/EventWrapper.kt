@@ -1,7 +1,5 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.util.Log
-
 open class EventWrapper<out T>(private val content: T?, private val numberOfObservers: Byte = 2) {
 
     var hasBeenHandled = false

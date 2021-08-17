@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters
+package com.example.volumeprofiler.adapters.recyclerview.multiSelection
 
 import androidx.recyclerview.selection.ItemDetailsLookup
 

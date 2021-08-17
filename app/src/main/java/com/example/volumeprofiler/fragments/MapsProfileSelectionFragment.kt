@@ -17,8 +17,8 @@ class MapsProfileSelectionFragment: Fragment() {
 
     private fun setTransitions(): Unit {
         val inflater = TransitionInflater.from(requireContext())
-        enterTransition = inflater.inflateTransition(R.transition.slide_from_right)
-        exitTransition = inflater.inflateTransition(R.transition.fade)
+        enterTransition = inflater.inflateTransition(R.transition.slide_right)
+        exitTransition = inflater.inflateTransition(R.transition.slide_right)
     }
 
     override fun onCreateView(

@@ -8,7 +8,6 @@ import android.location.Geocoder
 import android.os.Bundle
 import android.text.*
 import android.util.DisplayMetrics
-import android.util.EventLog
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
@@ -18,7 +17,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.transition.*
 import com.example.volumeprofiler.R
@@ -33,7 +31,6 @@ import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.animations.Scale
 import com.example.volumeprofiler.viewmodels.EventObserver
-import com.example.volumeprofiler.viewmodels.EventWrapper
 import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
@@ -62,6 +59,9 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     private lateinit var addressEditText: EditText
     private lateinit var addressTextInputLayout: TextInputLayout
     private lateinit var toSecondSceneButton: ImageView
+    private lateinit var seekBarScene: Scene
+    private lateinit var editTextScene: Scene
+    private var currentScene: Byte = 0
     private var radiusEditText: EditText? = null
     private var progressTextView: TextView? = null
     private var slider: Slider? = null
@@ -72,7 +72,15 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            this.currentScene = savedInstanceState.getByte(KEY_CURRENT_SCENE, 0)
+        }
         setTransitions()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putByte(KEY_CURRENT_SCENE, currentScene)
     }
 
     override fun onAttach(context: Context) {
@@ -85,10 +93,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         super.onDetach()
     }
 
-    /**
-         * Calculates Y offset of target view relative to parent and converts it to value between 0.0F and 1.0F
-         * @param targetView view, which Y offset will be calculated
-     */
     private fun calculateHalfExpandedRatio(targetView: View): Float {
         val windowManager: WindowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val defaultDisplay: Display = windowManager.defaultDisplay
@@ -102,17 +106,17 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     private fun setTransitions(): Unit {
         val inflater = TransitionInflater.from(requireContext())
-        exitTransition = inflater.inflateTransition(R.transition.fade)
-        enterTransition = inflater.inflateTransition(R.transition.slide_from_left)
+        this.exitTransition = inflater.inflateTransition(R.transition.slide_left)
+        this.enterTransition = inflater.inflateTransition(R.transition.slide_left)
     }
 
-    private fun toSeekBarScene(sceneRoot: ViewGroup, listener: TransitionListenerAdapter): Unit {
+    private fun toSeekBarScene(listener: TransitionListenerAdapter): Unit {
+        currentScene = 0
         val transitionSet: TransitionSet = TransitionSet().addListener(listener)
-        val firstScene = Scene.getSceneForLayout(sceneRoot, R.layout.seekbar_scene, requireContext())
         transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
         transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
         transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
-        TransitionManager.go(firstScene, transitionSet)
+        TransitionManager.go(seekBarScene, transitionSet)
     }
 
     override fun onCreateView(
@@ -136,13 +140,13 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         addressEditText.addTextChangedListener(getTextWatcher(addressTextInputLayout))
     }
 
-    private fun toEditTextScene(sceneRoot: ViewGroup, listener: TransitionListenerAdapter): Unit {
+    private fun toEditTextScene(listener: TransitionListenerAdapter): Unit {
+        currentScene = 1
         val transitionSet: TransitionSet = TransitionSet().addListener(listener)
-        val secondScene = Scene.getSceneForLayout(sceneRoot, R.layout.edit_text_scene, requireContext())
         transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
         transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
         transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
-        TransitionManager.go(secondScene, transitionSet)
+        TransitionManager.go(editTextScene, transitionSet)
     }
 
     private fun setTextFilters(): Unit {
@@ -250,12 +254,14 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val sceneRoot: ViewGroup = view.findViewById(R.id.scene_root)
+        seekBarScene = Scene.getSceneForLayout(sceneRoot, R.layout.seekbar_scene, requireContext())
+        editTextScene = Scene.getSceneForLayout(sceneRoot, R.layout.edit_text_scene, requireContext())
 
         val setLocationButton: Button = view.findViewById(R.id.setLocationButton)
         val setAddressButton: Button = view.findViewById(R.id.setAddressButton)
         setRadiusButton = view.findViewById(R.id.setRadiusButton)
-        val toFirstScene: ImageButton = view.findViewById(R.id.toSeekbarScene)
 
+        val toFirstScene: ImageButton = view.findViewById(R.id.toSeekbarScene)
         toSecondSceneButton = view.findViewById(R.id.toEditTextScene)
         toSecondSceneButton.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
 
@@ -347,10 +353,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                     }
                 }
                 toFirstScene.id -> {
-                    toSeekBarScene(sceneRoot, toSeekBarSceneListener)
+                    toSeekBarScene(toSeekBarSceneListener)
                 }
                 toSecondSceneButton.id -> {
-                    toEditTextScene(sceneRoot, toEditTextSceneListener)
+                    toEditTextScene(toEditTextSceneListener)
                 }
                 setAddressButton.id -> {
                     reverseAddress()
@@ -368,12 +374,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     private fun updateMetrics(): Unit {
         if (viewModel.metrics == Metrics.KILOMETERS) {
             val value = sharedViewModel.getRadius()!! / 1000
-            if (slider != null) {
-                slider!!.valueTo = Metrics.KILOMETERS.sliderMaxValue
-                slider!!.valueFrom = Metrics.KILOMETERS.sliderMinValue
-                slider!!.value = value
-                progressTextView!!.text = "%.3f".format(value)
-            }
+            slider?.valueTo = Metrics.KILOMETERS.sliderMaxValue
+            slider?.valueFrom = Metrics.KILOMETERS.sliderMinValue
+            slider?.value = value
+            progressTextView?.text = "%.3f".format(value)
             radiusEditText?.text = SpannableStringBuilder(("%.3f".format(value)))
         } else {
             val value: Float = if (sharedViewModel.getRadius()!! > Metrics.METERS.sliderMaxValue) {
@@ -381,12 +385,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             } else {
                 sharedViewModel.getRadius()!!
             }
-            if (slider != null) {
-                slider!!.valueTo = Metrics.METERS.sliderMaxValue
-                slider!!.valueFrom = Metrics.METERS.sliderMinValue
-                slider!!.value = value
-                progressTextView!!.text = "%.3f".format(value)
-            }
+            slider?.valueTo = Metrics.METERS.sliderMaxValue
+            slider?.valueFrom = Metrics.METERS.sliderMinValue
+            slider?.value = value
+            progressTextView?.text = "%.3f".format(value)
             radiusEditText?.text = SpannableStringBuilder(("%.3f".format(value)))
         }
     }
@@ -423,6 +425,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     companion object {
+        private const val KEY_CURRENT_SCENE: String = "key_current_scene"
         private const val COORDINATES_EDIT_TEXT_ERROR: String = "Enter a correct value"
         private const val RADIUS_EDIT_TEXT_ERROR: String = "Enter a value within range from 100m to 100km"
         private const val LOG_TAG: String = "MapsCoordinatesFragment"
