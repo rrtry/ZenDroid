@@ -88,7 +88,7 @@
         <activity
             android:name=".activities.EditProfileActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
-        <activity android:name=".activities.EditEventActivity" />
+        <activity android:name=".activities.EditAlarmActivity" />
         <activity android:name=".activities.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

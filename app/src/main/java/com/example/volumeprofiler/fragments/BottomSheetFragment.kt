@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.R
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
+import java.util.*
 
 class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
 
@@ -72,8 +73,8 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
     }
 
     private fun addFragments(): Unit {
-        val coordinatesFragment: MapsCoordinatesFragment = MapsCoordinatesFragment()
-        val profileSelectionFragment: MapsProfileSelectionFragment = MapsProfileSelectionFragment()
+        val coordinatesFragment: Fragment = MapsCoordinatesFragment()
+        val profileSelectionFragment: Fragment = MapsProfileSelectionFragment.buildArgs(arguments?.getSerializable(MapsProfileSelectionFragment.ID_PAIR) as? Pair<UUID, UUID>)
         childFragmentManager
                 .beginTransaction()
                 .add(R.id.fragmentContainer, coordinatesFragment, TAG_COORDINATES_FRAGMENT)
@@ -107,8 +108,20 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
     }
 
     companion object {
+
         private const val TAG_COORDINATES_FRAGMENT: String = "coordinates"
         private const val TAG_PROFILES_FRAGMENT: String = "profiles"
         private const val KEY_CURRENT_FRAGMENT: String = "key_current_fragment"
+
+        fun buildArgs(ids: Pair<UUID, UUID>?): Fragment {
+            val bundle: Bundle = Bundle().apply {
+                if (ids != null) {
+                    this.putSerializable(MapsProfileSelectionFragment.ID_PAIR, ids)
+                }
+            }
+            return BottomSheetFragment().apply {
+                this.arguments = bundle
+            }
+        }
     }
 }

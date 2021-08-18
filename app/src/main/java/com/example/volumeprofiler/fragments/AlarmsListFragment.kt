@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.*
-import com.example.volumeprofiler.activities.EditEventActivity
+import com.example.volumeprofiler.activities.EditAlarmActivity
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelectionObserver
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
@@ -67,7 +67,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
         floatingActionButton.setOnClickListener {
             if (!showDialog) {
-                val intent: Intent = Intent(requireContext(), EditEventActivity::class.java)
+                val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java)
                 startActivity(intent)
             }
             else {
@@ -143,7 +143,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         private val enableSwitch: Switch = itemView.findViewById(R.id.scheduleSwitch)
         private val daysTextView: TextView = itemView.findViewById(R.id.occurrencesTextView)
         private val profileTextView: TextView = itemView.findViewById(R.id.profileName)
-        private val removeAlarmButton: Button = itemView.findViewById(R.id.deleteEventButton)
+        private val removeAlarmButton: Button = itemView.findViewById(R.id.deleteGeofenceButton)
         private lateinit var alarm: Alarm
         private lateinit var profile: Profile
 
@@ -224,8 +224,8 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
         override fun onClick(v: View?) {
             val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(absoluteAdapterPosition)
-            val intent: Intent = Intent(requireContext(), EditEventActivity::class.java).apply {
-                this.putExtra(EditEventActivity.EXTRA_TRIGGER, alarmTrigger)
+            val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java).apply {
+                this.putExtra(EditAlarmActivity.EXTRA_TRIGGER, alarmTrigger)
             }
             startActivity(intent)
         }

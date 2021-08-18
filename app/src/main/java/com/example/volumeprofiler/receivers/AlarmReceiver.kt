@@ -36,6 +36,7 @@ class AlarmReceiver: BroadcastReceiver() {
             if (isServiceRunning(context)) {
                 updateNotification(context)
             }
+
         }
     }
 
@@ -70,6 +71,7 @@ class AlarmReceiver: BroadcastReceiver() {
             context.startService(intent)
         }
     }
+
 
     @SuppressWarnings("deprecation")
     private fun isServiceRunning(context: Context?): Boolean {

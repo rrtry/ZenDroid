@@ -7,7 +7,6 @@ import android.os.Build
 import com.example.volumeprofiler.services.AlarmRescheduleService
 import com.example.volumeprofiler.services.NotificationWidgetService
 
-
 class BootCompletedReceiver: BroadcastReceiver() {
 
     private fun startService(context: Context, service: Class<*>): Unit {

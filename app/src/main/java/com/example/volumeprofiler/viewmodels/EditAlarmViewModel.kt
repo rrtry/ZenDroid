@@ -26,7 +26,6 @@ class EditAlarmViewModel: ViewModel() {
     }
 
     fun addAlarm(alarm: Alarm) {
-        Log.i("EditEventViewModel", "addEvent")
         viewModelScope.launch {
             repository.addAlarm(alarm)
         }

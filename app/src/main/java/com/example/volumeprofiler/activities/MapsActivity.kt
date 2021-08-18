@@ -1,6 +1,8 @@
 package com.example.volumeprofiler.activities
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Address
@@ -26,6 +28,7 @@ import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
 import com.example.volumeprofiler.viewmodels.EventWrapper
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
+import com.example.volumeprofiler.viewmodels.extension.combineAndCompute
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -240,22 +243,8 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
                 val event: EventWrapper<LatLng> = sharedViewModel.latLng.value!!
                 setLocation(event.peekContent()!!, false)
             }
-            /*
-            it.getContentIfNotHandled()?.let {
-                setLocation(it)
-            }
-            setLocation(it.peekContent())
-             */
         })
         sharedViewModel.radius.observe(this, androidx.lifecycle.Observer {
-            /*
-            it.getContentIfNotHandled()?.let {
-                circle?.radius = it.toDouble()
-                if (circle != null && marker != null) {
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
-                }
-            }
-           */
             it.peekContent().let {
                 circle?.radius = it!!.toDouble()
                 if (circle != null && marker != null) {
@@ -342,8 +331,16 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     companion object {
-        private const val KEY_RADIUS: String = "key_radius"
-        private const val KEY_LATLNG: String = "key_latlng"
+
         private const val DWELL_LIMIT: Byte = 15
+        const val EXTRA_TRANSITION_ENTER_PROFILE: String = "enter"
+        const val EXTRA_TRANSITION_EXIT_PROFILE: String = "exit"
+
+        fun newIntent(context: Context, onEnterProfileId: UUID?, onExitProfileId: UUID?): Intent {
+            return Intent(context, MapsActivity::class.java).apply {
+                if (onEnterProfileId != null) putExtra(EXTRA_TRANSITION_ENTER_PROFILE, onEnterProfileId)
+                if (onExitProfileId != null) putExtra(EXTRA_TRANSITION_EXIT_PROFILE, onExitProfileId)
+            }
+        }
     }
 }

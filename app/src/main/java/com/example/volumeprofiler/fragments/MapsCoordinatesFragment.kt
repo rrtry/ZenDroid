@@ -2,12 +2,10 @@ package com.example.volumeprofiler.fragments
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.Rect
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
 import android.text.*
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
@@ -91,17 +89,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     override fun onDetach() {
         parentActivity = null
         super.onDetach()
-    }
-
-    private fun calculateHalfExpandedRatio(targetView: View): Float {
-        val windowManager: WindowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val defaultDisplay: Display = windowManager.defaultDisplay
-        val displayMetrics: DisplayMetrics = DisplayMetrics()
-        defaultDisplay.getMetrics(displayMetrics)
-        val rect: Rect = Rect()
-        val rootViewGroup: ViewGroup = requireParentFragment().requireView().findViewById(R.id.coordinatorLayout)
-        rootViewGroup.offsetDescendantRectToMyCoords(targetView, rect)
-        return (rect.top * 100F / rootViewGroup.height) / 100
     }
 
     private fun setTransitions(): Unit {

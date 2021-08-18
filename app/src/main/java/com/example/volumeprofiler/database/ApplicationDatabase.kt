@@ -13,4 +13,10 @@ abstract class ApplicationDatabase: RoomDatabase() {
     abstract fun profileDao(): ProfileDao
 
     abstract fun alarmDao(): AlarmDao
+
+    abstract fun alarmTriggerDao(): AlarmTriggerDao
+
+    abstract fun locationDao(): LocationDao
+
+    abstract fun locationTriggerDao(): LocationTriggerDao
 }

@@ -42,7 +42,7 @@ class NotificationWidgetService: Service() {
     private fun createNotificationChannel(context: Context): NotificationChannel {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         return NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT
+                NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
         ).also { channel ->
             notificationManager.createNotificationChannel(channel)
         }
@@ -87,10 +87,8 @@ class NotificationWidgetService: Service() {
             PendingIntent.getActivity(this, ACTIVITY_REQUEST_CODE, it, 0)
         }
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(sharedPreferencesUtil.getActiveProfileTitle())
                 .setSmallIcon(R.drawable.baseline_volume_down_deep_purple_300_24dp)
-                .setOngoing(true)
-                .setNotificationSilent()
+                .setContentTitle(sharedPreferencesUtil.getActiveProfileTitle())
                 .addAction(R.drawable.baseline_navigate_before_black_24dp, "Previous", createPreviousSelectionIntent(currentPosition))
                 .addAction(R.drawable.baseline_navigate_next_black_24dp, "Next", createNextSelectionIntent(currentPosition))
                 .setContentIntent(contentIntent)
@@ -125,7 +123,7 @@ class NotificationWidgetService: Service() {
             val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(SERVICE_ID, createNotification())
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? {

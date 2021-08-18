@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.interfaces
 
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.selection.SelectionTracker
 

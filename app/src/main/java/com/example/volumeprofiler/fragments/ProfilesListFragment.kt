@@ -5,9 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.transition.AutoTransition
 import android.transition.TransitionManager
+import android.util.Log
 import android.view.*
 import android.widget.CheckBox
 import android.widget.CompoundButton
@@ -24,6 +26,7 @@ import androidx.lifecycle.Observer
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
+import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelectionObserver
@@ -35,6 +38,7 @@ import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.receivers.AlarmReceiver
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.ProfileUtil
@@ -51,6 +55,7 @@ import kotlin.collections.set
 import kotlin.collections.toList
 import kotlin.collections.withIndex
 import com.example.volumeprofiler.restoreChangedPosition
+import com.example.volumeprofiler.services.NotificationWidgetService
 
 class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
@@ -62,14 +67,11 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private val viewModel: ProfileListViewModel by viewModels()
     private val viewpagerSharedViewModel: ViewpagerSharedViewModel by activityViewModels()
 
-    /*
     private var uiStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Application.ACTION_UPDATE_UI) {
-                Log.i(LOG_TAG, "onReceive()")
-                val id: UUID? =
-                    intent.extras?.getSerializable(AlarmReceiver.EXTRA_PROFILE_ID) as UUID?
+                val id: UUID? = intent.extras?.getSerializable(AlarmReceiver.EXTRA_PROFILE_ID) as UUID?
                 if (id != null) {
                     for ((index, item) in profileAdapter.currentList.withIndex()) {
                         if (item.id == id) {
@@ -86,19 +88,19 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Application.ACTION_GONE_BACKGROUND) {
                 val isProfileQueryEmpty: Boolean? = viewpagerSharedViewModel.profileListLiveData.value?.isEmpty()
+                Log.i("ProfilesListFragment", "onReceive(), $isProfileQueryEmpty")
                 if (isProfileQueryEmpty != null && !isProfileQueryEmpty) {
                     startService()
                 }
             }
         }
     }
-     */
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-        //registerReceiver(uiStateReceiver, arrayOf(Application.ACTION_UPDATE_UI))
-        //registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND))
+        registerReceiver(uiStateReceiver, arrayOf(Application.ACTION_UPDATE_UI))
+        registerReceiver(processLifecycleReceiver, arrayOf(Application.ACTION_GONE_BACKGROUND))
         positionMap = sharedPreferencesUtil.getRecyclerViewPositionsMap() ?: arrayMapOf()
         /*
         if (savedInstanceState != null) {
@@ -152,7 +154,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                         updateUI(sortedList)
                     }
                 })
-        viewModel.associatedEventsLiveData.observe(viewLifecycleOwner,
+        viewModel.alarmsToRemoveLiveData.observe(viewLifecycleOwner,
                 Observer<List<AlarmTrigger>?> { t ->
                     if (t != null && t.isNotEmpty()) {
                         val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
@@ -170,8 +172,8 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     }
 
     override fun onDestroy(): Unit {
-        //unregisterReceiver(processLifecycleReceiver)
-        //unregisterReceiver(uiStateReceiver)
+        unregisterReceiver(processLifecycleReceiver)
+        unregisterReceiver(uiStateReceiver)
         super.onDestroy()
     }
 
@@ -185,7 +187,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         broadcastManager.registerReceiver(receiver, filter)
     }
 
-    /*
     private fun unregisterReceiver(receiver: BroadcastReceiver): Unit {
         val broadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(requireContext().applicationContext)
         broadcastManager.unregisterReceiver(receiver)
@@ -201,7 +202,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             context.startService(intent)
         }
     }
-     */
 
     private fun checkProfileView(isPressed: Boolean, currentPosition: Int): Unit {
         val lastIndex: Int = viewModel.lastActiveProfileIndex

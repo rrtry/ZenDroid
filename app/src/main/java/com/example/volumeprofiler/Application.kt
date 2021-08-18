@@ -27,13 +27,11 @@ class Application: Application(), LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onStop(): Unit {
-        Log.i(LOG_TAG, "onApplicationInBackground")
         sendGoneBackgroundBroadcast()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private fun onResume(): Unit {
-        Log.i(LOG_TAG, "onApplicationForeground")
         stopNotificationService()
     }
 

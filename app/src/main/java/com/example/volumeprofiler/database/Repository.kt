@@ -6,6 +6,7 @@ import androidx.room.Room
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.Location
 import kotlinx.coroutines.*
 import java.util.UUID
 
@@ -19,6 +20,41 @@ class Repository private constructor(context: Context) {
 
     private val profileDao: ProfileDao = database.profileDao()
     private val alarmDao: AlarmDao = database.alarmDao()
+    private val alarmTriggerDao: AlarmTriggerDao = database.alarmTriggerDao()
+    private val locationDao: LocationDao = database.locationDao()
+    private val locationTriggerDao: LocationTriggerDao = database.locationTriggerDao()
+
+    /*
+    suspend fun updateLocation(location: Location): Unit {
+        withContext(Dispatchers.IO) {
+            locationDao.updateLocation(location)
+        }
+    }
+
+    suspend fun addLocation(location: Location): Unit {
+        withContext(Dispatchers.IO) {
+            locationDao.insertLocation(location)
+        }
+    }
+
+    suspend fun removeLocation(location: Location): Unit {
+        withContext(Dispatchers.IO) {
+            locationDao.deleteLocation(location)
+        }
+    }
+
+    suspend fun observeLocations(): LiveData<List<Location>> {
+        return withContext(Dispatchers.IO) {
+            locationDao.observeLocations()
+        }
+    }
+
+    suspend fun observeLocation(id: UUID): LiveData<Location> {
+        return withContext(Dispatchers.IO) {
+            locationDao.observeLocation(id)
+        }
+    }
+     */
 
     suspend fun addAlarm(alarm: Alarm) {
         withContext(Dispatchers.IO) {
@@ -40,19 +76,19 @@ class Repository private constructor(context: Context) {
 
     suspend fun getProfilesWithScheduledAlarms(): List<AlarmTrigger>? {
         return withContext(Dispatchers.IO) {
-            profileDao.getProfilesWithScheduledAlarms()
+            alarmTriggerDao.getProfilesWithScheduledAlarms()
         }
     }
 
     suspend fun getAlarmsByProfileId(id: UUID): List<AlarmTrigger>? {
         return withContext(Dispatchers.IO) {
-            alarmDao.getAlarmsByProfileId(id)
+            alarmTriggerDao.getAlarmsByProfileId(id)
         }
     }
 
-    fun observeProfilesWithAlarms(): LiveData<List<AlarmTrigger>> = profileDao.observeProfilesWithAlarms()
+    fun observeProfilesWithAlarms(): LiveData<List<AlarmTrigger>> = alarmTriggerDao.observeProfilesWithAlarms()
 
-    fun observeProfileWithScheduledAlarms(id: UUID): LiveData<List<AlarmTrigger>?> = profileDao.observeProfileWithScheduledAlarms(id)
+    fun observeProfileWithScheduledAlarms(id: UUID): LiveData<List<AlarmTrigger>?> = alarmTriggerDao.observeProfileWithScheduledAlarms(id)
 
     suspend fun updateProfile(profile: Profile) {
         withContext(Dispatchers.IO) {
@@ -83,14 +119,18 @@ class Repository private constructor(context: Context) {
     companion object {
 
         const val DATABASE_NAME = "volumeprofiler-database"
-        
+
+        @Volatile
         private var INSTANCE: Repository? = null
+
         private const val LOG_TAG: String = "Repository"
 
         fun initialize(context: Context) {
 
-            if (INSTANCE == null) {
-                INSTANCE = Repository(context)
+            synchronized(this) {
+                if (INSTANCE == null) {
+                    INSTANCE = Repository(context)
+                }
             }
         }
 

@@ -26,16 +26,4 @@ interface ProfileDao {
 
     @Delete
     suspend fun removeProfile(profile: Profile)
-
-    @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID")
-    fun observeProfilesWithAlarms(): LiveData<List<AlarmTrigger>>
-
-    @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
-    fun observeProfileWithScheduledAlarms(id: UUID): LiveData<List<AlarmTrigger>?>
-
-    @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE Alarm.isScheduled = 1")
-    suspend fun getProfilesWithScheduledAlarms(): List<AlarmTrigger>?
 }

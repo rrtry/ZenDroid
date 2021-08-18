@@ -29,17 +29,14 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.collections.LinkedHashMap
 import kotlin.properties.Delegates
 
-class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallback, DaysPickerDialogCallback {
+class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallback, DaysPickerDialogCallback {
 
     private lateinit var profileSelectSpinner: Spinner
     private lateinit var startTimeSelectButton: Button
     private lateinit var workingDaysSelectButton: Button
-    private lateinit var arrayAdapter: ArrayAdapter<String>
-
-    private val profileLinkedMap: LinkedHashMap<String, UUID> = linkedMapOf()
+    private lateinit var arrayAdapter: ArrayAdapter<Profile>
     private val viewModel: EditAlarmViewModel by viewModels()
     private var alarmExists: Boolean = false
     private var elapsedTime: Long = 0
@@ -124,15 +121,13 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         }
         startTimeSelectButton.setOnClickListener(onClickListener)
         workingDaysSelectButton.setOnClickListener(onClickListener)
-        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item)
-        profileSelectSpinner.adapter = arrayAdapter
         profileSelectSpinner.onItemSelectedListener = this
     }
 
-    private fun getAdapterPosition(): Int {
+    private fun getInitalPosition(items: List<Profile>): Int {
         var result by Delegates.notNull<Int>()
-        for ((index, i) in profileLinkedMap.values.withIndex()) {
-            if (i == viewModel.profile?.id) {
+        for ((index, i) in items.withIndex()) {
+            if (i.id == viewModel.profile?.id) {
                 result = index
                 break
             }
@@ -143,11 +138,9 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     private fun setLiveDataObservers(): Unit {
          val profileObserver = Observer<List<Profile>?> {
              if (it != null && it.isNotEmpty()) {
-                 for (i in it) {
-                     profileLinkedMap[i.title] = i.id
-                     arrayAdapter.add(i.title)
-                 }
-                 arrayAdapter.notifyDataSetChanged()
+
+                 arrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, it)
+                 profileSelectSpinner.adapter = arrayAdapter
 
                  if (!alarmExists) {
                      viewModel.selectedItem = 0
@@ -156,7 +149,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
                      profileSelectSpinner.setSelection(viewModel.selectedItem)
                  }
                  else if (viewModel.selectedItem == -1) {
-                     val position: Int = getAdapterPosition()
+                     val position: Int = getInitalPosition(it)
                      profileSelectSpinner.setSelection(position)
                  }
                  else {
@@ -175,7 +168,7 @@ class EditEventActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         viewModel.selectedItem = position
-        val uuid: UUID? = profileLinkedMap[arrayAdapter.getItem(position)]
+        val uuid: UUID? = arrayAdapter.getItem(position)?.id
         if (uuid != null) {
             viewModel.mutableAlarm!!.profileUUID = uuid
         }
