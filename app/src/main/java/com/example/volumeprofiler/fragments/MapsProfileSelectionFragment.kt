@@ -7,12 +7,10 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.transition.TransitionInflater
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsProfileViewModel
 import java.util.*
 

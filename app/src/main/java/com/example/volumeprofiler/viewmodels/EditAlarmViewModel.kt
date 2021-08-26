@@ -10,14 +10,12 @@ import kotlinx.coroutines.launch
 class EditAlarmViewModel: ViewModel() {
 
     private val repository: Repository = Repository.get()
-    var selectedItem: Int = -1
 
-    val profileListLiveData: LiveData<List<Profile>>
-        get() {
-            return repository.observeProfiles()
-        }
+    var selectedItem: Int = -1
+    val profileListLiveData: LiveData<List<Profile>> = repository.observeProfiles().asLiveData()
+
     var mutableAlarm: Alarm? = null
-    var profile: Profile? = null
+    var mutableProfile: Profile? = null
 
     fun updateAlarm(alarm: Alarm) {
         viewModelScope.launch {

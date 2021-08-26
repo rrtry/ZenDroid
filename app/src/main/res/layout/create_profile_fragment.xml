@@ -169,34 +169,38 @@
             app:layout_constraintStart_toEndOf="@+id/imageView13"
             app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
 
-        <RelativeLayout
-            android:background="?attr/selectableItemBackground"
-            android:visibility="visible"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/SilentModeLayout"
-            app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar"
-            app:layout_constraintBottom_toTopOf="@+id/separator1"
             android:layout_width="match_parent"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:background="?attr/selectableItemBackground"
+            android:orientation="horizontal"
+            android:visibility="visible"
+            app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
 
             <TextView
                 android:id="@+id/silentModeDescription"
-                android:textColor="#000000"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="55dp"
-                android:text="Enable silent mode for ringer stream"/>
+                android:layout_marginStart="35dp"
+                android:text="Silent for ringer"
+                android:textColor="#000000"
+                app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/silentModeSwitch" />
 
             <Switch
                 android:id="@+id/silentModeSwitch"
-                android:layout_marginRight="16dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
                 android:clickable="false"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        </RelativeLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <TextView
             android:id="@+id/alarmBarTitle"
@@ -210,14 +214,14 @@
             app:layout_constraintTop_toBottomOf="@+id/imageView12" />
 
         <View
-            app:layout_constraintTop_toBottomOf="@+id/SilentModeLayout"
             android:id="@+id/separator1"
             android:layout_width="match_parent"
             android:layout_height="0.5dp"
+            android:layout_marginTop="8dp"
             android:background="#969696"
-            android:layout_marginTop="16dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/SilentModeLayout" />
 
         <TextView
             android:id="@+id/Title1"
@@ -225,11 +229,11 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="35dp"
             android:layout_marginTop="16dp"
-            android:textSize="14sp"
             android:text="Ringtones and notification sounds"
             android:textColor="#FF6B13EA"
+            android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/separator1"/>
+            app:layout_constraintTop_toBottomOf="@+id/separator1" />
 
         <RelativeLayout
             android:id="@+id/doNotDisturbLayout"
@@ -413,5 +417,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="16dp"/>
         </RelativeLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

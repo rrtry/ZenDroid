@@ -4,18 +4,19 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.volumeprofiler.database.Repository
-import com.example.volumeprofiler.fragments.ProfilesListFragment
-import com.example.volumeprofiler.services.NotificationWidgetService
+import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.services.StatsService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
 
 class Application: Application(), LifecycleObserver {
 
@@ -27,12 +28,12 @@ class Application: Application(), LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onStop(): Unit {
-        sendGoneBackgroundBroadcast()
+        startStatsService()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private fun onResume(): Unit {
-        stopNotificationService()
+        stopStatsService()
     }
 
     private fun initializeSingletons(): Unit {
@@ -48,17 +49,18 @@ class Application: Application(), LifecycleObserver {
         ProfileUtil.initialize(this)
     }
 
-    private fun sendGoneBackgroundBroadcast(): Unit {
-        val intent: Intent = Intent(this, ProfilesListFragment::class.java).apply {
-            this.action = ACTION_GONE_BACKGROUND
-        }
-        val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(this)
-        localBroadcastManager.sendBroadcast(intent)
+    private fun stopStatsService(): Unit {
+        val intent: Intent = Intent(this, StatsService::class.java)
+        stopService(intent)
     }
 
-    private fun stopNotificationService(): Unit {
-        val intent: Intent = Intent(this, NotificationWidgetService::class.java)
-        this.stopService(intent)
+    private fun startStatsService(): Unit {
+        val intent: Intent = Intent(this, StatsService::class.java)
+        if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
 
     companion object {

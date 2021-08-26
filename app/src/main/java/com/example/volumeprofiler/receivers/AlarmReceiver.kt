@@ -8,7 +8,7 @@ import android.os.Build
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.services.NotificationWidgetService
+import com.example.volumeprofiler.services.StatsService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ParcelableUtil
 import com.example.volumeprofiler.util.ProfileUtil
@@ -32,11 +32,11 @@ class AlarmReceiver: BroadcastReceiver() {
                 setAlarm(alarm, profile)
             }
             applyAudioSettings(profile)
-            sendLocalBroadcast(profile.id)
             if (isServiceRunning(context)) {
                 updateNotification(context)
+            } else {
+                sendLocalBroadcast(profile.id)
             }
-
         }
     }
 
@@ -61,8 +61,8 @@ class AlarmReceiver: BroadcastReceiver() {
     }
 
     private fun updateNotification(context: Context): Unit {
-        val intent: Intent = Intent(context, NotificationWidgetService::class.java).apply {
-            this.putExtra(NotificationWidgetService.EXTRA_UPDATE_NOTIFICATION, true)
+        val intent: Intent = Intent(context, StatsService::class.java).apply {
+            this.putExtra(StatsService.EXTRA_UPDATE_NOTIFICATION, true)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
@@ -75,7 +75,7 @@ class AlarmReceiver: BroadcastReceiver() {
 
     @SuppressWarnings("deprecation")
     private fun isServiceRunning(context: Context?): Boolean {
-        val serviceName: String = NotificationWidgetService::class.java.name
+        val serviceName: String = StatsService::class.java.name
         val activityManager: ActivityManager = context?.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val services = activityManager.getRunningServices(Int.MAX_VALUE)
         for (i in services) {

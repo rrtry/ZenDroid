@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
@@ -104,7 +105,7 @@
             android:text="Address"
             android:textColor="#FF6B13EA"
             app:layout_constraintStart_toEndOf="@+id/addressImage"
-            app:layout_constraintTop_toBottomOf="@+id/toSeekbarScene" />
+            app:layout_constraintTop_toBottomOf="@+id/radiusSlider" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/addressTextInputLayout"
@@ -145,11 +146,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/radiusTitle"
             android:layout_marginEnd="8dp"
-            app:layout_constraintEnd_toStartOf="@+id/metricsSpinner">
+            app:layout_constraintEnd_toStartOf="@+id/metricsSpinner"/>
 
-            <include layout="@layout/seekbar_scene" />
-
-        </RelativeLayout>
+        <com.google.android.material.slider.Slider
+            android:id="@+id/radiusSlider"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:value="100"
+            android:valueFrom="100"
+            android:valueTo="1000"
+            app:layout_constraintEnd_toEndOf="@+id/scene_root"
+            app:layout_constraintStart_toEndOf="@+id/metricsSpinner"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/radiusTitle" />
 
         <ImageView
             android:id="@+id/imageView16"
@@ -177,30 +187,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:drawSelectorOnTop="true"
-            app:layout_constraintBottom_toBottomOf="@+id/scene_root"
+            app:layout_constraintBottom_toBottomOf="@+id/radiusSlider"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/scene_root" />
-
-        <ImageButton
-            android:id="@+id/toSeekbarScene"
-            android:layout_width="39dp"
-            android:layout_height="39dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="4dp"
-            android:background="@null"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/scene_root"
-            app:srcCompat="@drawable/baseline_navigate_before_black_24dp" />
-
-        <ImageButton
-            android:id="@+id/toEditTextScene"
-            android:layout_width="39dp"
-            android:layout_height="39dp"
-            android:layout_marginEnd="16dp"
-            android:background="@null"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/toSeekbarScene"
-            app:srcCompat="@drawable/baseline_navigate_next_black_24dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

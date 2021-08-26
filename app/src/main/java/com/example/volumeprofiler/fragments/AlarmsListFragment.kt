@@ -34,10 +34,9 @@ import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
-import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.AlarmsListViewModel
-import com.example.volumeprofiler.viewmodels.ViewpagerSharedViewModel
+import com.example.volumeprofiler.viewmodels.MainActivitySharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.lang.StringBuilder
 import java.lang.ref.WeakReference
@@ -55,7 +54,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
     private lateinit var recyclerView: RecyclerView
     private lateinit var tracker: SelectionTracker<Long>
     private val viewModel: AlarmsListViewModel by viewModels()
-    private val sharedViewModel: ViewpagerSharedViewModel by activityViewModels()
+    private val sharedViewModel: MainActivitySharedViewModel by activityViewModels()
     private val alarmAdapter: AlarmAdapter = AlarmAdapter()
 
     override fun onCreateView(
@@ -126,16 +125,6 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         alarmAdapter.submitList(events)
     }
 
-    private fun removeAlarm(adapterPosition: Int): Unit {
-        val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(adapterPosition)
-        val alarm: Alarm = alarmTrigger.alarm
-        viewModel.removeAlarm(alarm)
-        if (alarm.isScheduled == 1) {
-            val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-            alarmUtil.cancelAlarm(alarmTrigger.alarm, alarmTrigger.profile)
-        }
-    }
-
     private inner class EventHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener, ViewHolderItemDetailsProvider<Long> {
 
         private val timeTextView: TextView = itemView.findViewById(R.id.timeTextView)
@@ -158,21 +147,15 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         private fun setCallbacks(): Unit {
             enableSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(absoluteAdapterPosition)
-                val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-
                 if (isChecked && enableSwitch.isPressed) {
-                    alarm.isScheduled = 1
-                    viewModel.updateAlarm(alarm)
-                    alarmUtil.setAlarm(alarmTrigger.alarm, alarmTrigger.profile,false)
+                    viewModel.scheduleAlarm(alarmTrigger)
                 }
                 else if (!isChecked && enableSwitch.isPressed) {
-                    alarm.isScheduled = 0
-                    viewModel.updateAlarm(alarm)
-                    alarmUtil.cancelAlarm(alarmTrigger.alarm, alarmTrigger.profile)
+                    viewModel.unScheduleAlarm(alarmTrigger)
                 }
             }
             removeAlarmButton.setOnClickListener {
-                removeAlarm(absoluteAdapterPosition)
+                viewModel.removeAlarm(alarmAdapter.getItemAtPosition(absoluteAdapterPosition))
             }
         }
 
@@ -279,7 +262,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         for (i in tracker.selection) {
             for ((index, j) in alarmAdapter.currentList.withIndex()) {
                 if (j.alarm.id == i) {
-                    removeAlarm(index)
+                    viewModel.removeAlarm(alarmAdapter.getItemAtPosition(index))
                 }
             }
         }

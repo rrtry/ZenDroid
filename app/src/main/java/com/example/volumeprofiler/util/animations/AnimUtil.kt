@@ -55,9 +55,7 @@ class AnimUtil {
         }
 
         fun selectedItemAnimation(itemView: View, selected: Boolean): Unit {
-            val value: Float = if (selected) 0.9f else 1.0f
-            @ColorInt val colorInt: Int = if (selected) Color.parseColor("#e8e8e8") else Color.WHITE
-            itemView.setBackgroundColor(colorInt)
+            val value: Float = if (selected) 0.8f else 1.0f
             val x: PropertyValuesHolder = PropertyValuesHolder.ofFloat(View.SCALE_X, value)
             val y: PropertyValuesHolder = PropertyValuesHolder.ofFloat(View.SCALE_Y, value)
             val animator = ObjectAnimator.ofPropertyValuesHolder(itemView, x, y)

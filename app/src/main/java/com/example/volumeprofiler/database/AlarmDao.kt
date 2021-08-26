@@ -1,19 +1,18 @@
 package com.example.volumeprofiler.database
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.AlarmTrigger
-import java.util.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AlarmDao {
 
     @Query("SELECT * FROM Alarm WHERE Alarm.eventId = (:id)")
-    fun observeAlarm(id: Long): LiveData<Alarm>
+    fun observeAlarm(id: Long): Flow<Alarm>
 
     @Query("SELECT * FROM Alarm WHERE Alarm.eventId = (:id)")
-    fun getAlarm(id: Long): Alarm
+    suspend fun getAlarm(id: Long): Alarm
 
     @Insert
     suspend fun addAlarm(alarm: Alarm)
@@ -26,5 +25,5 @@ interface AlarmDao {
 
     @Transaction
     @Query("SELECT * FROM Profile INNER JOIN Alarm ON Alarm.eventId = (:id) AND Alarm.isScheduled = 1")
-    fun observeScheduledAlarmWithProfile(id: Long): LiveData<AlarmTrigger?>
+    fun observeScheduledAlarmWithProfile(id: Long): Flow<AlarmTrigger?>
 }

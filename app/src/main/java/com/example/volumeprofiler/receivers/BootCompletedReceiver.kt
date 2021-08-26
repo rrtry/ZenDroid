@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.example.volumeprofiler.services.AlarmRescheduleService
-import com.example.volumeprofiler.services.NotificationWidgetService
+import com.example.volumeprofiler.services.StatsService
 
 class BootCompletedReceiver: BroadcastReceiver() {
 
@@ -25,12 +25,12 @@ class BootCompletedReceiver: BroadcastReceiver() {
 
         if (intent?.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
             startService(context, AlarmRescheduleService::class.java)
-            startService(context, NotificationWidgetService::class.java)
+            startService(context, StatsService::class.java)
         }
         else if (intent?.action == Intent.ACTION_BOOT_COMPLETED &&
                 Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             startService(context, AlarmRescheduleService::class.java)
-            startService(context, NotificationWidgetService::class.java)
+            startService(context, StatsService::class.java)
         }
     }
 

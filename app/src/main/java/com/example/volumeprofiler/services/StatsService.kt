@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import androidx.collection.ArrayMap
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.MainActivity
@@ -14,24 +14,22 @@ import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.Application.Companion.ACTION_WIDGET_PROFILE_SELECTED
 import com.example.volumeprofiler.database.Repository
 import com.example.volumeprofiler.receivers.NotificationActionReceiver
-import com.example.volumeprofiler.restoreChangedPosition
 import com.example.volumeprofiler.util.SharedPreferencesUtil
 import kotlinx.coroutines.*
-import java.util.*
-import kotlin.Comparator
-import kotlin.collections.ArrayList
+import kotlinx.coroutines.flow.*
 
-class NotificationWidgetService: Service() {
+class StatsService: Service() {
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
-    private lateinit var profilesArray: List<Profile>
+
+    private var profilesList: ArrayList<Profile> = arrayListOf()
     private val sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
     private var currentPosition: Int = -1
 
     private fun setActiveProfilePosition(): Unit {
         val id: String? = sharedPreferencesUtil.getActiveProfileId()
-        for ((index, i) in profilesArray.withIndex()) {
+        for ((index, i) in profilesList.withIndex()) {
             if (i.id.toString() == id) {
                 currentPosition = index
             }
@@ -53,12 +51,12 @@ class NotificationWidgetService: Service() {
         return Intent(this, NotificationActionReceiver::class.java).apply {
             this.action = ACTION_WIDGET_PROFILE_SELECTED
             if (prevPos == -1 || prevPos == 0) {
-                prevPos = profilesArray.size - 1
+                prevPos = profilesList.size - 1
             }
             else {
                 prevPos -= 1
             }
-            val profile: Profile = profilesArray[prevPos]
+            val profile: Profile = profilesList[prevPos]
             this.putExtra(EXTRA_PROFILE, profile)
         }.let {
             PendingIntent.getBroadcast(this, BROADCAST_REQUEST_CODE_PREVIOUS_PROFILE, it, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -69,13 +67,13 @@ class NotificationWidgetService: Service() {
         var nextPos: Int = nextPos
         return Intent(this, NotificationActionReceiver::class.java).apply {
             this.action = ACTION_WIDGET_PROFILE_SELECTED
-            if (nextPos == profilesArray.size - 1) {
+            if (nextPos == profilesList.size - 1) {
                 nextPos = 0
             }
             else {
                 nextPos += 1
             }
-            val profile: Profile = profilesArray[nextPos]
+            val profile: Profile = profilesList[nextPos]
             this.putExtra(EXTRA_PROFILE, profile)
         }.let {
             PendingIntent.getBroadcast(this, BROADCAST_REQUEST_CODE_NEXT_PROFILE, it, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -102,20 +100,22 @@ class NotificationWidgetService: Service() {
         return notification
     }
 
-    @SuppressWarnings("unchecked")
+    override fun onDestroy() {
+        job.cancel()
+        super.onDestroy()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.extras == null) {
-            val positionMap = sharedPreferencesUtil.getRecyclerViewPositionsMap()
             val repository: Repository = Repository.get()
             scope.launch {
-                val profiles = async { repository.getProfiles() }
-                profilesArray = if (positionMap != null && positionMap.isNotEmpty()) {
-                    restoreChangedPosition(profiles.await(), positionMap)
-                } else {
-                    profiles.await()
+                repository.observeProfiles().collect {
+                    profilesList = it as ArrayList<Profile>
+                    if (profilesList.isNotEmpty()) {
+                        setActiveProfilePosition()
+                        startForeground(SERVICE_ID, createNotification())
+                    }
                 }
-                setActiveProfilePosition()
-                startForeground(SERVICE_ID, createNotification())
             }
         }
         else if (intent.extras!!.getBoolean(EXTRA_UPDATE_NOTIFICATION)) {

@@ -26,9 +26,9 @@ import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
+import com.example.volumeprofiler.models.LocationTrigger
 import com.example.volumeprofiler.viewmodels.EventWrapper
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
-import com.example.volumeprofiler.viewmodels.extension.combineAndCompute
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -46,6 +46,7 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.ln
 
 class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMapReadyCallback, GoogleMap.OnMarkerDragListener, GoogleMap.OnMapClickListener, GoogleMap.OnCameraMoveStartedListener, BottomSheetFragment.Callbacks {
 
@@ -127,7 +128,6 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     }
 
     private fun setLocation(latLng: LatLng, shouldUpdateModel: Boolean): Unit {
-        Log.i("MapsActivity", shouldUpdateModel.toString())
         if (marker != null) {
             marker!!.remove()
             circle!!.remove()
@@ -159,7 +159,7 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
         if (circle != null) {
             val radius = circle!!.radius + circle!!.radius / 2
             val scale = radius / 500
-            zoomLevel = (16 - Math.log(scale) / Math.log(2.0)).toFloat()
+            zoomLevel = (16 - ln(scale) / ln(2.0)).toFloat()
         }
         return zoomLevel
     }
@@ -333,13 +333,11 @@ class MapsActivity : AppCompatActivity(), MapsCoordinatesFragment.Callback, OnMa
     companion object {
 
         private const val DWELL_LIMIT: Byte = 15
-        const val EXTRA_TRANSITION_ENTER_PROFILE: String = "enter"
-        const val EXTRA_TRANSITION_EXIT_PROFILE: String = "exit"
+        const val EXTRA_LOCATION_TRIGGER: String = "location"
 
-        fun newIntent(context: Context, onEnterProfileId: UUID?, onExitProfileId: UUID?): Intent {
+        fun newIntent(context: Context, locationTrigger: LocationTrigger?): Intent {
             return Intent(context, MapsActivity::class.java).apply {
-                if (onEnterProfileId != null) putExtra(EXTRA_TRANSITION_ENTER_PROFILE, onEnterProfileId)
-                if (onExitProfileId != null) putExtra(EXTRA_TRANSITION_EXIT_PROFILE, onExitProfileId)
+                if (locationTrigger != null) this.putExtra(EXTRA_LOCATION_TRIGGER, locationTrigger)
             }
         }
     }

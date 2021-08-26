@@ -13,11 +13,11 @@ class IncomingCallReceiver: BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent != null && intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED
-                && intent.extras != null && context != null) {
+                && intent.extras != null) {
             val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                context.createDeviceProtectedStorageContext()
+                context!!.createDeviceProtectedStorageContext()
             } else {
-                context
+                context!!
             }
             val extraState: String? = intent.extras!!.getString(TelephonyManager.EXTRA_STATE)
             val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(Application.SHARED_PREFERENCES, Context.MODE_PRIVATE)

@@ -29,7 +29,7 @@ class AlarmUtil private constructor (private val context: Context) {
         val eventTime: LocalDateTime = alarm.localDateTime
         val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, true)
         val now: LocalDateTime = LocalDateTime.now()
-        var delay: Long
+        val delay: Long
         if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
                 && now.toLocalTime() < eventTime.toLocalTime()) {
             delay = diffBetweenHoursInMillis(eventTime.toLocalTime())

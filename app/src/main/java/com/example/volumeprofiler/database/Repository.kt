@@ -1,22 +1,29 @@
 package com.example.volumeprofiler.database
 
 import android.content.Context
+import androidx.collection.ArrayMap
 import androidx.lifecycle.LiveData
 import androidx.room.Room
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.models.Location
+import com.example.volumeprofiler.util.SharedPreferencesUtil
+import com.example.volumeprofiler.util.restoreChangedPosition
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.util.UUID
 
-class Repository private constructor(context: Context) {
+open class Repository private constructor(
+        protected val context: Context) {
 
     private val database: ApplicationDatabase = Room.databaseBuilder(
         context,
         ApplicationDatabase::class.java,
             DATABASE_NAME
     ).fallbackToDestructiveMigration().build()
+
+    private val sharedPreferencesUtil: SharedPreferencesUtil = SharedPreferencesUtil.getInstance()
 
     private val profileDao: ProfileDao = database.profileDao()
     private val alarmDao: AlarmDao = database.alarmDao()
@@ -43,11 +50,7 @@ class Repository private constructor(context: Context) {
         }
     }
 
-    suspend fun observeLocations(): LiveData<List<Location>> {
-        return withContext(Dispatchers.IO) {
-            locationDao.observeLocations()
-        }
-    }
+    suspend fun observeLocations(): Flow<List<Location>> = locationDao.observeLocations()
 
     suspend fun observeLocation(id: UUID): LiveData<Location> {
         return withContext(Dispatchers.IO) {
@@ -86,9 +89,9 @@ class Repository private constructor(context: Context) {
         }
     }
 
-    fun observeProfilesWithAlarms(): LiveData<List<AlarmTrigger>> = alarmTriggerDao.observeProfilesWithAlarms()
+    fun observeProfilesWithAlarms(): Flow<List<AlarmTrigger>> = alarmTriggerDao.observeProfilesWithAlarms()
 
-    fun observeProfileWithScheduledAlarms(id: UUID): LiveData<List<AlarmTrigger>?> = alarmTriggerDao.observeProfileWithScheduledAlarms(id)
+    fun observeProfileWithScheduledAlarms(id: UUID): Flow<List<AlarmTrigger>?> = alarmTriggerDao.observeProfileWithScheduledAlarms(id)
 
     suspend fun updateProfile(profile: Profile) {
         withContext(Dispatchers.IO) {
@@ -114,7 +117,14 @@ class Repository private constructor(context: Context) {
         }
     }
 
-    fun observeProfiles(): LiveData<List<Profile>> = profileDao.observeProfiles()
+    fun observeProfiles(): Flow<List<Profile>> {
+        val positionsMap: ArrayMap<UUID, Int>? = sharedPreferencesUtil.getRecyclerViewPositionsMap()
+        return if (positionsMap != null) {
+            profileDao.observeProfiles().map { restoreChangedPosition(it, positionsMap) }
+        } else {
+            profileDao.observeProfiles()
+        }
+    }
 
     companion object {
 
@@ -135,9 +145,7 @@ class Repository private constructor(context: Context) {
         }
 
         fun get(): Repository {
-            return INSTANCE
-                    ?:
-            throw IllegalStateException("Repository must be initialized")
+            return INSTANCE ?: throw IllegalStateException("Repository must be initialized")
         }
     }
 }

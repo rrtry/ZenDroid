@@ -87,7 +87,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
             alarmExists = true
             supportActionBar?.title = "Edit alarm"
             if (viewModel.mutableAlarm == null) {
-                viewModel.profile = alarmTrigger.profile
+                viewModel.mutableProfile = alarmTrigger.profile
                 viewModel.mutableAlarm = alarmTrigger.alarm
             }
         }
@@ -127,7 +127,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     private fun getInitalPosition(items: List<Profile>): Int {
         var result by Delegates.notNull<Int>()
         for ((index, i) in items.withIndex()) {
-            if (i.id == viewModel.profile?.id) {
+            if (i.id == viewModel.mutableProfile?.id) {
                 result = index
                 break
             }
@@ -225,7 +225,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     }
 
     private fun commitChanges(): Unit {
-        if (viewModel.profile != null) {
+        if (viewModel.mutableProfile != null) {
             setAlarm()
         }
         if (!alarmExists) {
@@ -239,7 +239,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
     private fun setAlarm(): Unit {
         val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-        alarmUtil.setAlarm(viewModel.mutableAlarm!!, viewModel.profile!!, false)
+        alarmUtil.setAlarm(viewModel.mutableAlarm!!, viewModel.mutableProfile!!, false)
     }
 
     override fun onBackPressed() {

@@ -1,14 +1,10 @@
 package com.example.volumeprofiler.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
 import com.example.volumeprofiler.database.Repository
-import com.example.volumeprofiler.models.Profile
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import java.util.*
 
 class MapsSharedViewModel: ViewModel() {
 
@@ -18,15 +14,11 @@ class MapsSharedViewModel: ViewModel() {
     val addressLine: MutableLiveData<EventWrapper<String>> = MutableLiveData()
     private val bottomSheetState: MutableLiveData<EventWrapper<Int>> = MutableLiveData(EventWrapper(BottomSheetBehavior.STATE_COLLAPSED))
     val radius: MutableLiveData<EventWrapper<Float>> = MutableLiveData(EventWrapper(100f))
-
-
     var animateCameraMovement: Boolean = false
 
     fun getLatLng(): LatLng? = latLng.value?.peekContent()
 
     fun getAddressLine(): String? = this.addressLine.value?.peekContent()
-
-    fun getBottomSheetState(): Int? = this.bottomSheetState.value?.peekContent()
 
     fun getRadius(): Float? = this.radius.value?.peekContent()
 

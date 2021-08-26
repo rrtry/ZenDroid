@@ -17,8 +17,9 @@ import android.util.Log
 class ProfileUtil private constructor (private val context: Context) {
 
     fun applyAudioSettings(profile: Profile) {
+        /*
         val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        //Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, profile.isVibrateForCallsActive)
+        Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, profile.isVibrateForCallsActive)
         if (profile.isInterruptionFilterActive == 1) {
             if (profile.interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
                 lateinit var policy: Policy
@@ -45,13 +46,14 @@ class ProfileUtil private constructor (private val context: Context) {
                         bitmaskOfListContents(profile.screenOnVisualEffects + profile.screenOffVisualEffects)
                     )
                 }
-                notificationManager.notificationPolicy = policy
+                //notificationManager.notificationPolicy = policy
             }
-            notificationManager.setInterruptionFilter(profile.interruptionFilter)
+            //notificationManager.setInterruptionFilter(profile.interruptionFilter)
         }
         else {
             notificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL)
         }
+         */
         setStreamValues(profile)
         //audioManager.ringerMode = profile.ringerMode
         SharedPreferencesUtil.getInstance().saveCurrentProfile(profile)
@@ -101,6 +103,7 @@ class ProfileUtil private constructor (private val context: Context) {
 
     companion object {
 
+        @Volatile
         private var INSTANCE: ProfileUtil? = null
 
         private fun bitmaskOfListContents(list: List<Int>): Int {
@@ -113,11 +116,13 @@ class ProfileUtil private constructor (private val context: Context) {
 
         fun getInstance(): ProfileUtil {
 
-            if (INSTANCE != null) {
-                return INSTANCE!!
-            }
-            else {
-                throw IllegalStateException("Singleton must be initialized")
+            synchronized(this) {
+                if (INSTANCE != null) {
+                    return INSTANCE!!
+                }
+                else {
+                    throw IllegalStateException("Singleton must be initialized")
+                }
             }
         }
 

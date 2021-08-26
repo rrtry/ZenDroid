@@ -80,7 +80,7 @@
             android:enabled="true"
             tools:targetApi="n" />
         <service
-            android:name=".services.NotificationWidgetService"
+            android:name=".services.StatsService"
             android:directBootAware="true"
             android:enabled="true"
             tools:targetApi="n" />

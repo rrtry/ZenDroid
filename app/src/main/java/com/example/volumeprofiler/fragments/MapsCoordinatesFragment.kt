@@ -18,11 +18,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.transition.*
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.databinding.MapsSelectLocationFragmentBinding
+import com.example.volumeprofiler.databinding.SeekbarSceneBinding
 import com.example.volumeprofiler.util.Metrics
 import com.example.volumeprofiler.util.TextUtil
-import com.example.volumeprofiler.util.TextUtil.Companion.filterCoordinatesInput
-import com.example.volumeprofiler.util.TextUtil.Companion.filterRadiusInput
-import com.example.volumeprofiler.util.TextUtil.Companion.filterStreetAddressInput
 import com.example.volumeprofiler.util.TextUtil.Companion.validateCoordinatesInput
 import com.example.volumeprofiler.util.TextUtil.Companion.validateRadiusInput
 import com.example.volumeprofiler.util.ViewUtil
@@ -32,7 +31,6 @@ import com.example.volumeprofiler.viewmodels.EventObserver
 import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.material.slider.Slider
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,20 +48,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         fun getPeekHeight(): Int
     }
 
-    private lateinit var latitudeTextInputLayout: TextInputLayout
-    private lateinit var longitudeTextInputLayout: TextInputLayout
-    private lateinit var latitudeEditText: EditText
-    private lateinit var longitudeEditText: EditText
-    private lateinit var addressEditText: EditText
-    private lateinit var addressTextInputLayout: TextInputLayout
-    private lateinit var toSecondSceneButton: ImageView
-    private lateinit var seekBarScene: Scene
-    private lateinit var editTextScene: Scene
     private var currentScene: Byte = 0
-    private var radiusEditText: EditText? = null
-    private var progressTextView: TextView? = null
-    private var slider: Slider? = null
-    private var setRadiusButton: ImageButton? = null
+
+    private var _mainBinding: MapsSelectLocationFragmentBinding? = null
+    private val mainBinding: MapsSelectLocationFragmentBinding get() = _mainBinding!!
 
     private val sharedViewModel: MapsSharedViewModel by activityViewModels()
     private val viewModel: MapsCoordinatesViewModel by viewModels()
@@ -93,17 +81,8 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     private fun setTransitions(): Unit {
         val inflater = TransitionInflater.from(requireContext())
-        this.exitTransition = inflater.inflateTransition(R.transition.slide_left)
+        this.exitTransition = Scale()
         this.enterTransition = inflater.inflateTransition(R.transition.slide_left)
-    }
-
-    private fun toSeekBarScene(listener: TransitionListenerAdapter): Unit {
-        currentScene = 0
-        val transitionSet: TransitionSet = TransitionSet().addListener(listener)
-        transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
-        transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
-        transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
-        TransitionManager.go(seekBarScene, transitionSet)
     }
 
     override fun onCreateView(
@@ -111,40 +90,31 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View {
+        _mainBinding = MapsSelectLocationFragmentBinding.inflate(inflater, container, false)
+
         sharedViewModel.addressLine.observe(viewLifecycleOwner, EventObserver<String>{
-            addressEditText.setText(it)
+            mainBinding.addressEditText.setText(it)
         })
         sharedViewModel.latLng.observe(viewLifecycleOwner, EventObserver<LatLng> {
-            latitudeEditText.setText(it.latitude.toString())
-            longitudeEditText.setText(it.longitude.toString())
+            mainBinding.latitudeTextInput.setText(it.latitude.toString())
+            mainBinding.longitudeEditText.setText(it.longitude.toString())
         })
-        return inflater.inflate(R.layout.maps_select_location_fragment, container, false)
+        return mainBinding.root
     }
 
     private fun addTextObservers(): Unit {
-        latitudeEditText.addTextChangedListener(getTextWatcher(latitudeTextInputLayout))
-        longitudeEditText.addTextChangedListener(getTextWatcher(longitudeTextInputLayout))
-        addressEditText.addTextChangedListener(getTextWatcher(addressTextInputLayout))
-    }
-
-    private fun toEditTextScene(listener: TransitionListenerAdapter): Unit {
-        currentScene = 1
-        val transitionSet: TransitionSet = TransitionSet().addListener(listener)
-        transitionSet.ordering = TransitionSet.ORDERING_SEQUENTIAL
-        transitionSet.addTransition(Scale()).addTarget(R.id.radiusSlider).addTarget(R.id.progressText)
-        transitionSet.addTransition(Slide(Gravity.START)).addTarget(R.id.radiusEditText).addTarget(R.id.setRadiusButton)
-        TransitionManager.go(editTextScene, transitionSet)
+        mainBinding.latitudeTextInput.addTextChangedListener(getTextWatcher(mainBinding.latitudeTextInputLayout))
+        mainBinding.longitudeEditText.addTextChangedListener(getTextWatcher(mainBinding.longitudeTextInputLayout))
+        mainBinding.addressEditText.addTextChangedListener(getTextWatcher(mainBinding.addressTextInputLayout))
     }
 
     private fun setTextFilters(): Unit {
-        val coordinatesInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend -> filterCoordinatesInput(source) }
-        val streetAddressInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend ->  filterStreetAddressInput(source) }
-        val radiusInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend ->  filterRadiusInput(source) }
+        val coordinatesInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend -> viewModel.filterCoordinatesInput(source) }
+        val streetAddressInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend ->  viewModel.filterStreetAddressInput(source) }
         val coordinateFilters: Array<InputFilter> = arrayOf(coordinatesInputFilter)
-        latitudeEditText.filters = coordinateFilters
-        longitudeEditText.filters = coordinateFilters
-        addressEditText.filters = arrayOf(streetAddressInputFilter)
-        radiusEditText?.filters = arrayOf(radiusInputFilter)
+        mainBinding.latitudeTextInput.filters = coordinateFilters
+        mainBinding.longitudeEditText.filters = coordinateFilters
+        mainBinding.addressEditText.filters = arrayOf(streetAddressInputFilter)
     }
 
     private fun getTextWatcher(editTextLayout: TextInputLayout?): TextWatcher {
@@ -177,35 +147,18 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                             editTextLayout.error = COORDINATES_EDIT_TEXT_ERROR
                         }
                     }
-                    R.id.radiusTextInputLayout -> {
-                        viewModel.radius = s.toString()
-                        if (validateRadiusInput(s, viewModel.metrics)) {
-                            editTextLayout.error = null
-                        } else {
-                            editTextLayout.error = RADIUS_EDIT_TEXT_ERROR
-                        }
-                    }
-                    else -> {
-                        if (validateRadiusInput(s, viewModel.metrics)) {
-                            radiusEditText?.error = null
-                        } else {
-                            radiusEditText?.error = "Specify value within range from 100m to 100km"
-                        }
-                    }
                 }
             }
 
-            override fun afterTextChanged(s: Editable?) {
-
-            }
+            override fun afterTextChanged(s: Editable?) {}
         }
     }
 
     private suspend fun getCoordinatesFromAddress(): LatLng? {
-        return if (addressEditText.text.isNotEmpty()) {
+        return if (mainBinding.addressEditText.text!!.isNotEmpty()) {
             val gc: Geocoder = Geocoder(requireContext(), Locale.getDefault())
             withContext(Dispatchers.IO) {
-                val addressList: List<Address>? = gc.getFromLocationName(addressEditText.text.toString(), 1)
+                val addressList: List<Address>? = gc.getFromLocationName(mainBinding.addressEditText.text.toString(), 1)
                 if (addressList != null && addressList.isNotEmpty()) {
                     val address: Address = addressList[0]
                     LatLng(address.latitude, address.longitude)
@@ -229,54 +182,32 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             if (latLng != null) {
                 hideSoftInputFromWindow()
                 (parentActivity as? BottomSheetFragment.Callbacks)?.collapseBottomSheet()
-                sharedViewModel.animateCameraMovement = false
                 sharedViewModel.setLatLng(latLng)
             } else {
-                addressTextInputLayout.error = "Could not reverse specified address"
-                AnimUtil.shakeAnimation(addressTextInputLayout)
+                mainBinding.addressTextInputLayout.error = "Could not reverse specified address"
+                AnimUtil.shakeAnimation(mainBinding.addressTextInputLayout)
             }
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val sceneRoot: ViewGroup = view.findViewById(R.id.scene_root)
-        seekBarScene = Scene.getSceneForLayout(sceneRoot, R.layout.seekbar_scene, requireContext())
-        editTextScene = Scene.getSceneForLayout(sceneRoot, R.layout.edit_text_scene, requireContext())
 
-        val setLocationButton: Button = view.findViewById(R.id.setLocationButton)
-        val setAddressButton: Button = view.findViewById(R.id.setAddressButton)
-        setRadiusButton = view.findViewById(R.id.setRadiusButton)
-
-        val toFirstScene: ImageButton = view.findViewById(R.id.toSeekbarScene)
-        toSecondSceneButton = view.findViewById(R.id.toEditTextScene)
-        toSecondSceneButton.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+        mainBinding.addressImage.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
 
             override fun onGlobalLayout() {
-                toSecondSceneButton.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                mainBinding.addressImage.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val parentFragmentView: View = requireParentFragment().requireView()
                 parentActivity?.setHalfExpandedRatio(ViewUtil.calculateHalfExpandedRatio(
-                    requireContext(),
                     parentFragmentView.findViewById(R.id.bottomSheetRoot),
-                    toSecondSceneButton))
+                    mainBinding.addressImage))
             }
         })
-        latitudeTextInputLayout = view.findViewById(R.id.latitudeTextInputLayout)
-        longitudeTextInputLayout = view.findViewById(R.id.longitudeTextInputLayout)
-        addressTextInputLayout = view.findViewById(R.id.addressTextInputLayout)
-        latitudeEditText = view.findViewById(R.id.latitudeTextInput)
-        longitudeEditText = view.findViewById(R.id.longitudeEditText)
-        addressEditText = view.findViewById(R.id.addressEditText)
-
-        progressTextView = view.findViewById(R.id.progressText)
-        slider = view.findViewById(R.id.radiusSlider)
-
-        val spinner: Spinner = view.findViewById(R.id.metricsSpinner)
-        spinner.adapter = ArrayAdapter<Metrics>(
+        mainBinding.metricsSpinner.adapter = ArrayAdapter<Metrics>(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             arrayOf(Metrics.METERS, Metrics.KILOMETERS))
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        mainBinding.metricsSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
                 view: View?,
@@ -293,95 +224,53 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         }
         setTextFilters()
         addTextObservers()
-        val toSeekBarSceneListener: TransitionListenerAdapter = object : TransitionListenerAdapter() {
-
-            override fun onTransitionStart(transition: Transition) {
-                super.onTransitionStart(transition)
-                toFirstScene.setColorFilter(Color.GRAY)
-                toSecondSceneButton.setColorFilter(Color.parseColor("#FF6B13EA"))
-
-                slider = requireView().findViewById(R.id.radiusSlider)
-                progressTextView = requireView().findViewById(R.id.progressText)
-                setSliderOnChangeListener()
-                updateMetrics()
-            }
-        }
-        val toEditTextSceneListener: TransitionListenerAdapter = object : TransitionListenerAdapter() {
-
-            override fun onTransitionStart(transition: Transition) {
-                super.onTransitionStart(transition)
-                toFirstScene.setColorFilter(Color.parseColor("#FF6B13EA"))
-                toSecondSceneButton.setColorFilter(Color.GRAY)
-
-                radiusEditText = requireView().findViewById(R.id.radiusEditText)
-                setRadiusButton = requireView().findViewById(R.id.setRadiusButton)
-                setRadiusButtonClickListener()
-                setTextFilters()
-                updateMetrics()
-            }
-        }
         val onClickListener: View.OnClickListener = View.OnClickListener {
             when (it.id) {
-                setLocationButton.id -> {
+                mainBinding.setLocationButton.id -> {
                     var isInputValid: Boolean = true
-                    if (!TextUtil.validateCoordinatesInput(latitudeEditText.text)) {
+                    if (!TextUtil.validateCoordinatesInput(mainBinding.latitudeTextInput.text)) {
                         isInputValid = false
-                        AnimUtil.shakeAnimation(latitudeTextInputLayout)
+                        AnimUtil.shakeAnimation(mainBinding.latitudeTextInputLayout)
                     }
-                    if (!validateCoordinatesInput(longitudeEditText.text)) {
+                    if (!validateCoordinatesInput(mainBinding.longitudeEditText.text)) {
                         isInputValid = false
-                        AnimUtil.shakeAnimation(longitudeTextInputLayout)
+                        AnimUtil.shakeAnimation(mainBinding.longitudeTextInputLayout)
                     }
                     if (isInputValid) {
-                        val latLng: LatLng = LatLng(latitudeEditText.text.toString().toDouble(),
-                                longitudeEditText.text.toString().toDouble())
-                        sharedViewModel.animateCameraMovement = false
+                        val latLng: LatLng = LatLng(mainBinding.latitudeTextInput.text.toString().toDouble(),
+                                mainBinding.longitudeEditText.text.toString().toDouble())
                         sharedViewModel.setLatLng(latLng)
                     }
                 }
-                toFirstScene.id -> {
-                    toSeekBarScene(toSeekBarSceneListener)
-                }
-                toSecondSceneButton.id -> {
-                    toEditTextScene(toEditTextSceneListener)
-                }
-                setAddressButton.id -> {
+                mainBinding.setAddressButton.id -> {
                     reverseAddress()
                 }
             }
         }
-        setLocationButton.setOnClickListener(onClickListener)
-        toFirstScene.setOnClickListener(onClickListener)
-        toSecondSceneButton.setOnClickListener(onClickListener)
-        setAddressButton.setOnClickListener(onClickListener)
+        mainBinding.setLocationButton.setOnClickListener(onClickListener)
+        mainBinding.setAddressButton.setOnClickListener(onClickListener)
         setSliderOnChangeListener()
-        setRadiusButtonClickListener()
     }
 
     private fun updateMetrics(): Unit {
         if (viewModel.metrics == Metrics.KILOMETERS) {
             val value = sharedViewModel.getRadius()!! / 1000
-            slider?.valueTo = Metrics.KILOMETERS.sliderMaxValue
-            slider?.valueFrom = Metrics.KILOMETERS.sliderMinValue
-            slider?.value = value
-            progressTextView?.text = "%.3f".format(value)
-            radiusEditText?.text = SpannableStringBuilder(("%.3f".format(value)))
+            mainBinding.radiusSlider.valueTo = Metrics.KILOMETERS.sliderMaxValue
+            mainBinding.radiusSlider.valueFrom = Metrics.KILOMETERS.sliderMinValue
+            mainBinding.radiusSlider.value = value
         } else {
             val value: Float = if (sharedViewModel.getRadius()!! > Metrics.METERS.sliderMaxValue) {
                 Metrics.METERS.sliderMaxValue
             } else {
                 sharedViewModel.getRadius()!!
             }
-            slider?.valueTo = Metrics.METERS.sliderMaxValue
-            slider?.valueFrom = Metrics.METERS.sliderMinValue
-            slider?.value = value
-            progressTextView?.text = "%.3f".format(value)
-            radiusEditText?.text = SpannableStringBuilder(("%.3f".format(value)))
+            mainBinding.radiusSlider.valueTo = Metrics.METERS.sliderMaxValue
+            mainBinding.radiusSlider.valueFrom = Metrics.METERS.sliderMinValue
+            mainBinding.radiusSlider.value = value
         }
     }
 
     private fun onSliderProgressChanged(progress: Float): Unit {
-        progressTextView?.text = "%.3f".format(progress)
         if (viewModel.metrics == Metrics.METERS) {
             sharedViewModel.setRadius(progress)
         }
@@ -391,31 +280,14 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     private fun setSliderOnChangeListener(): Unit {
-        slider?.addOnChangeListener { slider, value, fromUser ->
+        mainBinding.radiusSlider.addOnChangeListener { slider, value, fromUser ->
             onSliderProgressChanged(value)
-        }
-    }
-
-    private fun setRadiusButtonClickListener(): Unit {
-        setRadiusButton?.setOnClickListener {
-            if (validateRadiusInput(radiusEditText?.text, viewModel.metrics)) {
-                val value: Float = radiusEditText?.text.toString().toFloat()
-                if (viewModel.metrics == Metrics.KILOMETERS) {
-                    sharedViewModel.setRadius(value * 1000)
-                } else {
-                    sharedViewModel.setRadius(value)
-                }
-            } else {
-                Log.i(LOG_TAG, "input invalid")
-            }
         }
     }
 
     companion object {
         private const val KEY_CURRENT_SCENE: String = "key_current_scene"
         private const val COORDINATES_EDIT_TEXT_ERROR: String = "Enter a correct value"
-        private const val RADIUS_EDIT_TEXT_ERROR: String = "Enter a value within range from 100m to 100km"
-        private const val LOG_TAG: String = "MapsCoordinatesFragment"
     }
 
     override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {
