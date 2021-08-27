@@ -79,6 +79,11 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         super.onDetach()
     }
 
+    override fun onDestroyView() {
+        _mainBinding = null
+        super.onDestroyView()
+    }
+
     private fun setTransitions(): Unit {
         val inflater = TransitionInflater.from(requireContext())
         this.exitTransition = Scale()

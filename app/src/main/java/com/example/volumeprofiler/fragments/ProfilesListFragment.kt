@@ -2,11 +2,11 @@ package com.example.volumeprofiler.fragments
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.collection.ArrayMap
 import androidx.collection.arrayMapOf
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
@@ -22,6 +22,7 @@ import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelec
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.KeyProvider
+import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.databinding.ProfilesListFragmentBinding
 import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
@@ -31,6 +32,7 @@ import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
+import com.example.volumeprofiler.util.animations.Scale
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
 import com.example.volumeprofiler.viewmodels.MainActivitySharedViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -146,6 +148,11 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         super.onPause()
     }
 
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
+
     private fun checkProfileView(isPressed: Boolean, currentPosition: Int): Unit {
         val lastIndex: Int = viewModel.lastActiveProfileIndex
         val currentProfile: Profile = profileAdapter.getItemAtPosition(currentPosition)
@@ -242,15 +249,11 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             ViewHolderItemDetailsProvider<String>,
             CompoundButton.OnCheckedChangeListener {
 
-        private val checkBox: CheckBox = itemView.findViewById(R.id.checkBox) as CheckBox
-        private val editProfileButton: Button = itemView.findViewById(R.id.editTextView) as Button
-        private val removeProfileButton: Button = itemView.findViewById(R.id.removeTextView) as Button
-        private val expandImageView: ImageView = itemView.findViewById(R.id.expandButton) as ImageView
-        private val expandableView: ConstraintLayout = itemView.findViewById(R.id.expandableView) as ConstraintLayout
+        private val adapterBinding: ProfileItemViewBinding = profileAdapter.binding
 
         init {
-            expandableView.visibility = View.GONE
-            checkBox.setOnCheckedChangeListener(this)
+            adapterBinding.expandableView.visibility = View.GONE
+            adapterBinding.checkBox.setOnCheckedChangeListener(this)
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> {
@@ -259,38 +262,48 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
         private fun expandView(animate: Boolean): Unit {
             if (animate) {
-                TransitionManager.beginDelayedTransition(binding.recyclerView, AutoTransition())
-                expandableView.visibility = View.VISIBLE
-                expandImageView.animate().rotation(180.0f).start()
+                val transition: TransitionSet = TransitionSet().apply {
+                    this.ordering = TransitionSet.ORDERING_SEQUENTIAL
+                    this.addTransition(ChangeBounds())
+                    this.addTransition(Scale())
+                }
+                TransitionManager.beginDelayedTransition(binding.recyclerView, transition)
+                adapterBinding.expandableView.visibility = View.VISIBLE
+                adapterBinding.expandButton.animate().rotation(180.0f).start()
             }
             else {
-                expandableView.visibility = View.VISIBLE
-                expandImageView.rotation = 180.0f
+                adapterBinding.expandableView.visibility = View.VISIBLE
+                adapterBinding.expandButton.rotation = 180.0f
             }
         }
 
         private fun collapseView(): Unit {
-            TransitionManager.beginDelayedTransition(binding.recyclerView, AutoTransition())
-            expandableView.visibility = View.GONE
-            expandImageView.animate().rotation(0.0f).start()
+            val transition: TransitionSet = TransitionSet().apply {
+                this.ordering = TransitionSet.ORDERING_SEQUENTIAL
+                this.addTransition(Scale())
+                this.addTransition(ChangeBounds())
+            }
+            TransitionManager.beginDelayedTransition(binding.recyclerView, transition)
+            adapterBinding.expandableView.visibility = View.GONE
+            adapterBinding.expandButton.animate().rotation(0.0f).start()
         }
 
         private fun setupTextViews(profile: Profile): Unit {
-            checkBox.text = profile.title
+            adapterBinding.checkBox.text = profile.title
         }
 
         private fun setCallbacks(profile: Profile): Unit {
-            expandImageView.setOnClickListener {
-                if (expandableView.visibility == View.GONE) {
+            profileAdapter.binding.expandButton.setOnClickListener {
+                if (adapterBinding.expandableView.visibility == View.GONE) {
                     expandView(true)
                 }
                 else {
                     collapseView()
                 }
             }
-            editProfileButton.setOnClickListener {
+            adapterBinding.editProfileButton.setOnClickListener {
                 startActivity(EditProfileActivity.newIntent(requireContext(), profile)) }
-            removeProfileButton.setOnClickListener {
+            adapterBinding.removeProfileButton.setOnClickListener {
                 viewModel.removeProfile(profile, absoluteAdapterPosition, positionMap)
             }
         }
@@ -298,7 +311,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         fun bind(profile: Profile, isSelected: Boolean): Unit {
             AnimUtil.selectedItemAnimation(itemView, isSelected)
             val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
-            checkBox.isChecked = isProfileActive
+            adapterBinding.checkBox.isChecked = isProfileActive
             if (isProfileActive) {
                 viewModel.lastActiveProfileIndex = absoluteAdapterPosition
             }
@@ -338,12 +351,13 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         }), ListAdapterItemProvider<String> {
 
         private var lastPosition: Int = -1
+        lateinit var binding: ProfileItemViewBinding
 
         fun getItemAtPosition(position: Int): Profile = getItem(position)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileHolder {
-            val view = layoutInflater.inflate(PROFILE_LAYOUT, parent, false)
-            return ProfileHolder(view)
+            binding = ProfileItemViewBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ProfileHolder(binding.root)
         }
 
         override fun onBindViewHolder(holder: ProfileHolder, position: Int) {

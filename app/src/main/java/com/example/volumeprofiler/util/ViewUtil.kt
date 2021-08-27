@@ -1,13 +1,8 @@
 package com.example.volumeprofiler.util
 
-import android.content.Context
 import android.graphics.Rect
-import android.os.Build
-import android.util.DisplayMetrics
-import android.view.Display
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 
 class ViewUtil {
 

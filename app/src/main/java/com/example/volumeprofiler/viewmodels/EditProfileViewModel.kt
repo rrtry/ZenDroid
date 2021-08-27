@@ -14,9 +14,8 @@ import java.util.*
 class EditProfileViewModel: ViewModel() {
 
     private val repository = Repository.get()
-
     private val profileIdLiveData = MutableLiveData<UUID>()
-    var alarmTriggerLiveData: LiveData<List<AlarmTrigger>?> = Transformations.switchMap(profileIdLiveData) { profileId -> repository.observeProfileWithScheduledAlarms(profileId).asLiveData() }
+    var alarmsLiveData: LiveData<List<AlarmTrigger>?> = Transformations.switchMap(profileIdLiveData) { profileId -> repository.observeProfileWithScheduledAlarms(profileId).asLiveData() }
     var mutableProfile: Profile? = null
 
     private fun setAlarm(alarmTrigger: AlarmTrigger, newProfile: Profile): Unit {

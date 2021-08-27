@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.Observer
 import com.example.volumeprofiler.*
+import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
 import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.WorkingDaysPickerDialog
 import com.example.volumeprofiler.interfaces.DaysPickerDialogCallback
@@ -33,20 +34,19 @@ import kotlin.properties.Delegates
 
 class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallback, DaysPickerDialogCallback {
 
-    private lateinit var profileSelectSpinner: Spinner
-    private lateinit var startTimeSelectButton: Button
-    private lateinit var workingDaysSelectButton: Button
     private lateinit var arrayAdapter: ArrayAdapter<Profile>
     private val viewModel: EditAlarmViewModel by viewModels()
-    private var alarmExists: Boolean = false
+    private var passedExtras: Boolean = false
+
     private var elapsedTime: Long = 0
+    private lateinit var binding: CreateAlarmActivityBinding
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
         if (menu != null) {
             val drawable: Drawable?
             val item: MenuItem = menu.findItem(R.id.saveChangesButton)
-            return if (alarmExists) {
+            return if (passedExtras) {
                 drawable = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null)
                 item.icon = drawable
                 true
@@ -81,29 +81,27 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.create_alarm_activity)
-        val alarmTrigger: AlarmTrigger? = intent?.extras?.getParcelable(EXTRA_TRIGGER)
-        if (alarmTrigger != null) {
-            alarmExists = true
+        binding = CreateAlarmActivityBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        val alarm: AlarmTrigger? = intent?.extras?.getParcelable(EXTRA_TRIGGER)
+        if (alarm != null) {
+            passedExtras = true
+            loadArgs(alarm)
             supportActionBar?.title = "Edit alarm"
-            if (viewModel.mutableAlarm == null) {
-                viewModel.mutableProfile = alarmTrigger.profile
-                viewModel.mutableAlarm = alarmTrigger.alarm
-            }
         }
         else {
-            alarmExists = false
+            passedExtras = false
             supportActionBar?.title = "Create alarm"
         }
-        initViews()
         setLiveDataObservers()
         setupCallbacks()
     }
 
-    private fun initViews(): Unit {
-        profileSelectSpinner = findViewById(R.id.profileSpinner)
-        startTimeSelectButton = findViewById(R.id.startTimeSelectButton)
-        workingDaysSelectButton = findViewById(R.id.workingDaysSelectButton)
+    private fun loadArgs(alarm: AlarmTrigger): Unit {
+        if (viewModel.mutableAlarm == null) {
+            viewModel.mutableProfile = alarm.profile
+            viewModel.mutableAlarm = alarm.alarm
+        }
     }
 
     private fun setupCallbacks(): Unit {
@@ -119,12 +117,12 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
                 }
             }
         }
-        startTimeSelectButton.setOnClickListener(onClickListener)
-        workingDaysSelectButton.setOnClickListener(onClickListener)
-        profileSelectSpinner.onItemSelectedListener = this
+        binding.startTimeSelectButton.setOnClickListener(onClickListener)
+        binding.workingDaysSelectButton.setOnClickListener(onClickListener)
+        binding.profileSpinner.onItemSelectedListener = this
     }
 
-    private fun getInitalPosition(items: List<Profile>): Int {
+    private fun getInitialAdapterPosition(items: List<Profile>): Int {
         var result by Delegates.notNull<Int>()
         for ((index, i) in items.withIndex()) {
             if (i.id == viewModel.mutableProfile?.id) {
@@ -140,20 +138,20 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
              if (it != null && it.isNotEmpty()) {
 
                  arrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, it)
-                 profileSelectSpinner.adapter = arrayAdapter
+                 binding.profileSpinner.adapter = arrayAdapter
 
-                 if (!alarmExists) {
+                 if (!passedExtras) {
                      viewModel.selectedItem = 0
                      val alarm: Alarm = Alarm(profileUUID = it[viewModel.selectedItem].id)
                      viewModel.mutableAlarm = alarm
-                     profileSelectSpinner.setSelection(viewModel.selectedItem)
+                     binding.profileSpinner.setSelection(viewModel.selectedItem)
                  }
                  else if (viewModel.selectedItem == -1) {
-                     val position: Int = getInitalPosition(it)
-                     profileSelectSpinner.setSelection(position)
+                     val position: Int = getInitialAdapterPosition(it)
+                     binding.profileSpinner.setSelection(position)
                  }
                  else {
-                     profileSelectSpinner.setSelection(viewModel.selectedItem)
+                     binding.profileSpinner.setSelection(viewModel.selectedItem)
                  }
              }
              updateStartTimeView()
@@ -175,7 +173,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     }
 
     private fun updateStartTimeView(): Unit {
-        startTimeSelectButton.text = viewModel.mutableAlarm!!.localDateTime.
+        binding.startTimeSelectButton.text = viewModel.mutableAlarm!!.localDateTime.
         format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault()))
     }
 
@@ -202,13 +200,13 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
                 }
                 result = stringBuilder.toString()
             }
-            workingDaysSelectButton.text = result
+            binding.workingDaysSelectButton.text = result
         }
         else {
             if (alarm.localDateTime.toLocalTime() > LocalTime.now()) {
-                workingDaysSelectButton.text = "Today"
+                binding.workingDaysSelectButton.text = "Today"
             } else {
-                workingDaysSelectButton.text = "Tomorrow"
+                binding.workingDaysSelectButton.text = "Tomorrow"
             }
         }
     }
@@ -228,7 +226,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         if (viewModel.mutableProfile != null) {
             setAlarm()
         }
-        if (!alarmExists) {
+        if (!passedExtras) {
             viewModel.addAlarm(viewModel.mutableAlarm!!)
         }
         else {

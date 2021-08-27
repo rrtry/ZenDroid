@@ -35,7 +35,7 @@
             app:layout_constraintTop_toBottomOf="@+id/checkBox">
 
             <View
-                android:id="@+id/view"
+                android:id="@+id/itemSeparator"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginStart="10dp"
@@ -45,7 +45,7 @@
                 tools:layout_editor_absoluteX="0dp" />
 
             <Button
-                android:id="@+id/removeTextView"
+                android:id="@+id/removeProfileButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
@@ -55,10 +55,10 @@
                 android:text="Remove"
                 android:textColor="#FF6B13EA"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/view" />
+                app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
 
             <Button
-                android:id="@+id/editTextView"
+                android:id="@+id/editProfileButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
@@ -67,9 +67,9 @@
                 android:drawableTop="@drawable/baseline_drive_file_rename_outline_black_24dp"
                 android:text="Edit"
                 android:textColor="#FF6B13EA"
-                app:layout_constraintBottom_toBottomOf="@+id/removeTextView"
+                app:layout_constraintBottom_toBottomOf="@+id/removeProfileButton"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/view" />
+                app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

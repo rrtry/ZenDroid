@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.fragments
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
@@ -29,43 +28,31 @@ import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.*
 import com.example.volumeprofiler.util.animations.AnimUtil.Companion.scaleAnimation
-import com.google.android.material.appbar.CollapsingToolbarLayout
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import android.os.Build
 import androidx.activity.result.ActivityResultLauncher
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
+import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
+import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import kotlin.math.abs
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
 
     private val viewModel: EditProfileViewModel by activityViewModels()
-
     private var callbacks: EditProfileActivityCallbacks? = null
     private var alarms: List<AlarmTrigger>? = null
-    private lateinit var interruptionFilterSwitch: Switch
-    private lateinit var menuEditNameButton: ImageButton
-    private lateinit var toolbarLayout: CollapsingToolbarLayout
-    private lateinit var mediaSeekBar: SeekBar
-    private lateinit var phoneSeekBar: SeekBar
-    private lateinit var notificationSeekBar: SeekBar
-    private lateinit var ringerSeekBar: SeekBar
-    private lateinit var alarmSeekBar: SeekBar
-    private lateinit var interruptionFilterLayout: RelativeLayout
-    private lateinit var interruptionFilterPolicy: TextView
-    private lateinit var phoneRingtoneTitle: TextView
-    private lateinit var notificationSoundTitle: TextView
-    private lateinit var alarmSoundTitle: TextView
-    private lateinit var interruptionFilterPreferencesLayout: RelativeLayout
-    private lateinit var silentModeLayout: ConstraintLayout
     private lateinit var ringtoneActivityCallback: ActivityResultLauncher<Int>
     private var passedExtras: Boolean = false
+
+    private var _binding: CreateProfileFragmentBinding? = null
+    private val binding: CreateProfileFragmentBinding get() = _binding!!
+    private var _activityBinding: CreateProfileActivityBinding? = null
+    private val activityBinding: CreateProfileActivityBinding get() = _activityBinding!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,22 +77,29 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val view: View = inflater.inflate(R.layout.create_profile_fragment, container, false)
-        initializeViews(view)
-        return view
+        _binding = CreateProfileFragmentBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setActionBar()
-        setLiveDataObservers()
+        initializeViews(view)
+        setObservers()
         updateUI()
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callbacks = requireActivity() as EditProfileActivityCallbacks
+        _activityBinding = callbacks?.getBinding()
         registerForActivityResult()
+    }
+
+    override fun onDetach() {
+        _activityBinding = null
+        callbacks = null
+        super.onDetach()
     }
 
     private fun setActionBar(): Unit {
@@ -117,7 +111,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     }
 
     private fun setActionBarTitle(title: String): Unit {
-        toolbarLayout.title = title
+        activityBinding.toolbarLayout.title = title
     }
 
     private fun changeMenuOptionVisibility(view: View, visible: Boolean) {
@@ -132,51 +126,21 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         fragment.show(requireActivity().supportFragmentManager, null)
     }
 
-    override fun onDetach() {
-        callbacks = null
-        super.onDetach()
-    }
-
     override fun onTitleChanged(str: String) {
         viewModel.mutableProfile!!.title = str
         setActionBarTitle(str)
     }
 
     private fun initializeViews(view: View): Unit {
-        val activity: Activity = requireActivity()
 
-        val vibrateForCallsLayout: RelativeLayout = view.findViewById(R.id.vibrateForCallsLayout)
-        val phoneRingtoneLayout: LinearLayout = view.findViewById(R.id.phoneRingtoneLayout)
-        val notificationSoundLayout: LinearLayout = view.findViewById(R.id.notificationSoundLayout)
-        val alarmSoundLayout: LinearLayout = view.findViewById(R.id.alarmSoundLayout)
-        val silentModeSwitch: Switch = view.findViewById(R.id.silentModeSwitch)
-        val vibrateForCallsSwitch: Switch = view.findViewById(R.id.vibrateForCallsSwitch)
-        val editNameButton: FloatingActionButton = activity.findViewById(R.id.editNameButton)
-        val menuSaveChangesButton: ImageButton = activity.findViewById(R.id.menuSaveChangesButton)
         if (passedExtras) {
-            menuSaveChangesButton.setImageDrawable(ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null))
+            activityBinding.menuSaveChangesButton.setImageDrawable(ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null))
         }
         else {
-            menuSaveChangesButton.setImageDrawable(ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_add, null))
+            activityBinding.menuSaveChangesButton.setImageDrawable(ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_add, null))
         }
-        menuEditNameButton = activity.findViewById(R.id.menuEditNameButton)
-        toolbarLayout = activity.findViewById(R.id.toolbar_layout)
-        interruptionFilterLayout = view.findViewById(R.id.doNotDisturbLayout)
-        mediaSeekBar = view.findViewById(R.id.mediaSeekBar)
-        phoneSeekBar = view.findViewById(R.id.phoneSeekBar)
-        interruptionFilterPreferencesLayout = view.findViewById(R.id.doNotDisturbPreferencesLayout)
-        interruptionFilterPolicy = view.findViewById(R.id.doNotDisturbState)
-        notificationSeekBar = view.findViewById(R.id.notificationSeekBar)
-        ringerSeekBar = view.findViewById(R.id.ringerSeekBar)
-        alarmSeekBar = view.findViewById(R.id.alarmSeekBar)
-        phoneRingtoneTitle = view.findViewById(R.id.currentPhoneRingtone)
-        alarmSoundTitle = view.findViewById(R.id.currentAlarmSound)
-        notificationSoundTitle = view.findViewById(R.id.currentNotificationSound)
-        silentModeLayout = view.findViewById(R.id.SilentModeLayout)
-        interruptionFilterSwitch = view.findViewById(R.id.doNotDisturbSwitch)
 
-        val appBarLayout: AppBarLayout = activity.findViewById(R.id.app_bar)
-        appBarLayout.addOnOffsetChangedListener(object : AppBarLayout.OnOffsetChangedListener {
+        activityBinding.appBar.addOnOffsetChangedListener(object : AppBarLayout.OnOffsetChangedListener {
 
             var isVisible: Boolean = false
 
@@ -185,11 +149,11 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                 if (abs(verticalOffset) - appBarLayout!!.totalScrollRange == 0) {
                     if (!isVisible && this@EditProfileFragment.isVisible) {
                         isVisible = true
-                        changeMenuOptionVisibility(menuEditNameButton, isVisible)
+                        changeMenuOptionVisibility(activityBinding?.menuEditNameButton, isVisible)
                     }
                 } else if (isVisible) {
                     isVisible = false
-                    changeMenuOptionVisibility(menuEditNameButton, isVisible)
+                    changeMenuOptionVisibility(activityBinding.menuEditNameButton, isVisible)
                 }
             }
         })
@@ -198,22 +162,22 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
             when (it.id) {
 
                 R.id.SilentModeLayout -> {
-                    if (silentModeSwitch.isChecked) {
-                        silentModeSwitch.isChecked = false
+                    if (binding.silentModeSwitch.isChecked) {
+                        binding.silentModeSwitch.isChecked = false
                         viewModel.mutableProfile!!.ringerMode = AudioManager.RINGER_MODE_VIBRATE
                     }
                     else {
-                        silentModeSwitch.isChecked = true
+                        binding.silentModeSwitch.isChecked = true
                         viewModel.mutableProfile!!.ringerMode = AudioManager.RINGER_MODE_SILENT
                     }
                 }
                 R.id.vibrateForCallsLayout -> {
-                    if (vibrateForCallsSwitch.isChecked) {
-                        vibrateForCallsSwitch.isChecked = false
+                    if (binding.vibrateForCallsSwitch.isChecked) {
+                        binding.vibrateForCallsSwitch.isChecked = false
                         viewModel.mutableProfile!!.isVibrateForCallsActive = 0
                     }
                     else {
-                        vibrateForCallsSwitch.isChecked = true
+                        binding.vibrateForCallsSwitch.isChecked = true
                         viewModel.mutableProfile!!.isVibrateForCallsActive = 1
                     }
                 }
@@ -222,8 +186,8 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                 R.id.phoneRingtoneLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_RINGTONE)
                 R.id.notificationSoundLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_NOTIFICATION)
                 R.id.alarmSoundLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_ALARM)
-                R.id.doNotDisturbLayout -> showPopupMenu(it)
-                R.id.doNotDisturbPreferencesLayout -> callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
+                R.id.interruptionFilterLayout -> showPopupMenu(it)
+                R.id.interruptionFilterPreferencesLayout -> callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
             }
         }
         val onCheckedChangeListener: CompoundButton.OnCheckedChangeListener = CompoundButton.OnCheckedChangeListener {
@@ -236,7 +200,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                     when (viewModel.mutableProfile!!.interruptionFilter) {
 
                         INTERRUPTION_FILTER_PRIORITY -> {
-                            if (ringerSeekBar.progress == 0) {
+                            if (binding.ringerSeekBar.progress == 0) {
                                 silentModeLayoutTransition(true)
                             }
                             changeInterruptionFilterPrefsLayout(true)
@@ -294,30 +258,30 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                 }
             }
         }
-        if (menuSaveChangesButton.visibility != View.VISIBLE) {
-            changeMenuOptionVisibility(menuSaveChangesButton, true)
+        if (activityBinding.menuSaveChangesButton.visibility != View.VISIBLE) {
+            changeMenuOptionVisibility(activityBinding.menuSaveChangesButton, true)
         }
-        menuSaveChangesButton.setOnClickListener(onClickListener)
-        vibrateForCallsLayout.setOnClickListener(onClickListener)
-        silentModeLayout.setOnClickListener(onClickListener)
-        phoneRingtoneLayout.setOnClickListener(onClickListener)
-        notificationSoundLayout.setOnClickListener(onClickListener)
-        alarmSoundLayout.setOnClickListener(onClickListener)
-        interruptionFilterLayout.setOnClickListener(onClickListener)
-        interruptionFilterPreferencesLayout.setOnClickListener(onClickListener)
+        activityBinding.menuSaveChangesButton.setOnClickListener(onClickListener)
+        binding.vibrateForCallsLayout.setOnClickListener(onClickListener)
+        binding.SilentModeLayout.setOnClickListener(onClickListener)
+        binding.phoneRingtoneLayout.setOnClickListener(onClickListener)
+        binding.notificationSoundLayout.setOnClickListener(onClickListener)
+        binding.alarmSoundLayout.setOnClickListener(onClickListener)
+        binding.interruptionFilterLayout.setOnClickListener(onClickListener)
+        binding.interruptionFilterPreferencesLayout.setOnClickListener(onClickListener)
 
-        interruptionFilterSwitch.setOnCheckedChangeListener(onCheckedChangeListener)
-        menuEditNameButton.setOnClickListener(onClickListener)
-        editNameButton.setOnClickListener(onClickListener)
+        binding.doNotDisturbSwitch.setOnCheckedChangeListener(onCheckedChangeListener)
+        activityBinding.menuEditNameButton.setOnClickListener(onClickListener)
+        activityBinding.editNameButton.setOnClickListener(onClickListener)
 
-        mediaSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
-        phoneSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
-        notificationSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
-        alarmSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
-        ringerSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
+        binding.mediaSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
+        binding.phoneSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
+        binding.notificationSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
+        binding.alarmSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
+        binding.ringerSeekBar.setOnSeekBarChangeListener(seekBarChangeListener)
 
-        phoneSeekBar.progress = MIN_CALL_STREAM_VALUE
-        alarmSeekBar.progress = MIN_ALARM_STREAM_VALUE
+        binding.phoneSeekBar.progress = MIN_CALL_STREAM_VALUE
+        binding.alarmSeekBar.progress = MIN_ALARM_STREAM_VALUE
     }
 
     private fun setDefaultRingtoneUris(): Unit {
@@ -343,29 +307,27 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     private fun changeInterruptionFilterLayout(enable: Boolean): Unit {
         val doNotDisturbTitle: TextView = requireView().findViewById(R.id.doNotDisturbTitle)
         if (enable) {
-            interruptionFilterLayout.isEnabled = true
-            interruptionFilterPolicy.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
+            binding.interruptionFilterLayout.isEnabled = true
+            binding.interruptionFilterPolicy.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
             doNotDisturbTitle.setTextColor(Color.BLACK)
         }
         else {
-            interruptionFilterLayout.isEnabled = false
-            interruptionFilterPolicy.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
+            binding.interruptionFilterLayout.isEnabled = false
+            binding.interruptionFilterPolicy.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
             doNotDisturbTitle.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
         }
     }
 
     private fun changeInterruptionFilterPrefsLayout(enable: Boolean): Unit {
-        val doNotDisturbRules: TextView = requireView().findViewById(R.id.doNotDisturbRules)
-        val doNotDisturbPreferencesTitle: TextView = requireView().findViewById(R.id.doNotDisturbPreferencesTitle)
         if (enable) {
-            interruptionFilterPreferencesLayout.isEnabled = true
-            doNotDisturbPreferencesTitle.setTextColor(Color.BLACK)
-            doNotDisturbRules.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
+            binding.interruptionFilterPreferencesLayout.isEnabled = true
+            binding.doNotDisturbPreferencesTitle.setTextColor(Color.BLACK)
+            binding.doNotDisturbRules.setTextColor(Color.parseColor(DEFAULT_TEXT_COLOR))
         }
         else {
-            interruptionFilterPreferencesLayout.isEnabled = false
-            doNotDisturbPreferencesTitle.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
-            doNotDisturbRules.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
+            binding.interruptionFilterPreferencesLayout.isEnabled = false
+            binding.doNotDisturbPreferencesTitle.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
+            binding.doNotDisturbRules.setTextColor(Color.parseColor(DISABLED_STATE_COLOR))
         }
     }
 
@@ -379,8 +341,8 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                     viewModel.mutableProfile!!.interruptionFilter = INTERRUPTION_FILTER_PRIORITY
                     changeSliderState(INTERRUPTION_FILTER_PRIORITY)
                     changeInterruptionFilterPrefsLayout(true)
-                    interruptionFilterPolicy.text = "Priority only"
-                    if (ringerSeekBar.progress == 0) {
+                    binding.interruptionFilterPolicy.text = "Priority only"
+                    if (binding.ringerSeekBar.progress == 0) {
                         silentModeLayoutTransition(true)
                     }
                     true
@@ -389,7 +351,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                     viewModel.mutableProfile!!.interruptionFilter = INTERRUPTION_FILTER_ALARMS
                     changeSliderState(INTERRUPTION_FILTER_ALARMS)
                     changeInterruptionFilterPrefsLayout(false)
-                    interruptionFilterPolicy.text = "Alarms only"
+                    binding.interruptionFilterPolicy.text = "Alarms only"
                     silentModeLayoutTransition(false)
                     true
                 }
@@ -397,7 +359,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                     viewModel.mutableProfile!!.interruptionFilter = INTERRUPTION_FILTER_NONE
                     changeSliderState(INTERRUPTION_FILTER_NONE)
                     changeInterruptionFilterPrefsLayout(false)
-                    interruptionFilterPolicy.text = "Total silence"
+                    binding.interruptionFilterPolicy.text = "Total silence"
                     silentModeLayoutTransition(false)
                     true
                 }
@@ -423,32 +385,32 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     private fun changeSliderState(mode: Int) {
         when (mode) {
             INTERRUPTION_FILTER_ALL -> {
-                mediaSeekBar.isEnabled = true
-                notificationSeekBar.isEnabled = true
-                ringerSeekBar.isEnabled = true
-                alarmSeekBar.isEnabled = true
-                phoneSeekBar.isEnabled = true
+                binding.mediaSeekBar.isEnabled = true
+                binding.notificationSeekBar.isEnabled = true
+                binding.ringerSeekBar.isEnabled = true
+                binding.alarmSeekBar.isEnabled = true
+                binding.phoneSeekBar.isEnabled = true
             }
             INTERRUPTION_FILTER_PRIORITY -> {
-                phoneSeekBar.isEnabled = true
-                mediaSeekBar.isEnabled = containsCategory(PRIORITY_CATEGORY_MEDIA)
-                notificationSeekBar.isEnabled = true
-                ringerSeekBar.isEnabled = true
-                alarmSeekBar.isEnabled = containsCategory(PRIORITY_CATEGORY_ALARMS)
+                binding.phoneSeekBar.isEnabled = true
+                binding.mediaSeekBar.isEnabled = containsCategory(PRIORITY_CATEGORY_MEDIA)
+                binding.notificationSeekBar.isEnabled = true
+                binding.ringerSeekBar.isEnabled = true
+                binding.alarmSeekBar.isEnabled = containsCategory(PRIORITY_CATEGORY_ALARMS)
             }
             INTERRUPTION_FILTER_ALARMS -> {
-                phoneSeekBar.isEnabled = true
-                notificationSeekBar.isEnabled = false
-                ringerSeekBar.isEnabled = false
-                mediaSeekBar.isEnabled = true
-                alarmSeekBar.isEnabled = true
+                binding.phoneSeekBar.isEnabled = true
+                binding.notificationSeekBar.isEnabled = false
+                binding.ringerSeekBar.isEnabled = false
+                binding.mediaSeekBar.isEnabled = true
+                binding.alarmSeekBar.isEnabled = true
             }
             INTERRUPTION_FILTER_NONE -> {
-                phoneSeekBar.isEnabled = false
-                mediaSeekBar.isEnabled = false
-                notificationSeekBar.isEnabled = false
-                ringerSeekBar.isEnabled = false
-                alarmSeekBar.isEnabled = false
+                binding.phoneSeekBar.isEnabled = false
+                binding.mediaSeekBar.isEnabled = false
+                binding.notificationSeekBar.isEnabled = false
+                binding.ringerSeekBar.isEnabled = false
+                binding.alarmSeekBar.isEnabled = false
             }
         }
     }
@@ -460,15 +422,15 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                 when (contract.ringtoneType) {
                     RingtoneManager.TYPE_RINGTONE -> {
                         viewModel.mutableProfile!!.phoneRingtoneUri = it
-                        phoneRingtoneTitle.text = getRingtoneTitle(it)
+                        binding.phoneRingtone.text = getRingtoneTitle(it)
                     }
                     RingtoneManager.TYPE_NOTIFICATION -> {
                         viewModel.mutableProfile!!.notificationSoundUri = it
-                        notificationSoundTitle.text = getRingtoneTitle(it)
+                        binding.notificationSound.text = getRingtoneTitle(it)
                     }
                     RingtoneManager.TYPE_ALARM -> {
                         viewModel.mutableProfile!!.alarmSoundUri = it
-                        alarmSoundTitle.text = getRingtoneTitle(it)
+                        binding.alarmSound.text = getRingtoneTitle(it)
                     }
                     else -> Log.i("EditProfileFragment", "unknown ringtone type")
                 }
@@ -480,8 +442,8 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         ringtoneActivityCallback.launch(type)
     }
 
-    private fun setLiveDataObservers(): Unit {
-        viewModel.alarmTriggerLiveData.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+    private fun setObservers(): Unit {
+        viewModel.alarmsLiveData.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
             if (it != null) {
                 alarms = it
             }
@@ -499,8 +461,8 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     private fun updateInterruptionFilterViews(): Unit {
         val interruptionFilter: Int = viewModel.mutableProfile!!.interruptionFilter
         val isInterruptionFilterActive: Boolean = viewModel.mutableProfile!!.isInterruptionFilterActive == 1
-        interruptionFilterPolicy.text = setInterruptionFilterTitle()
-        interruptionFilterSwitch.isChecked = isInterruptionFilterActive
+        binding.interruptionFilterPolicy.text = setInterruptionFilterTitle()
+        binding.doNotDisturbSwitch.isChecked = isInterruptionFilterActive
         if (isInterruptionFilterActive) {
             changeInterruptionFilterLayout(true)
             changeSliderState(interruptionFilter)
@@ -516,11 +478,11 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     }
 
     private fun updateSliders(): Unit {
-        mediaSeekBar.progress = viewModel.mutableProfile!!.mediaVolume
-        phoneSeekBar.progress = viewModel.mutableProfile!!.callVolume
-        notificationSeekBar.progress = viewModel.mutableProfile!!.notificationVolume
-        ringerSeekBar.progress = viewModel.mutableProfile!!.ringVolume
-        alarmSeekBar.progress = viewModel.mutableProfile!!.alarmVolume
+        binding.mediaSeekBar.progress = viewModel.mutableProfile!!.mediaVolume
+        binding.phoneSeekBar.progress = viewModel.mutableProfile!!.callVolume
+        binding.notificationSeekBar.progress = viewModel.mutableProfile!!.notificationVolume
+        binding.ringerSeekBar.progress = viewModel.mutableProfile!!.ringVolume
+        binding.alarmSeekBar.progress = viewModel.mutableProfile!!.alarmVolume
     }
 
     private fun updateUI(): Unit {
@@ -528,15 +490,15 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         updateSliders()
         updateInterruptionFilterViews()
         if (passedExtras) {
-            phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
-            notificationSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
-            alarmSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
+            binding.phoneRingtone.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
+            binding.notificationSound.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
+            binding.alarmSound.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
         }
         else {
             setDefaultRingtoneUris()
-            phoneRingtoneTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
-            alarmSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
-            notificationSoundTitle.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
+            binding.phoneRingtone.text = getRingtoneTitle(viewModel.mutableProfile!!.phoneRingtoneUri)
+            binding.alarmSound.text = getRingtoneTitle(viewModel.mutableProfile!!.alarmSoundUri)
+            binding.notificationSound.text = getRingtoneTitle(viewModel.mutableProfile!!.notificationSoundUri)
         }
     }
 
@@ -573,8 +535,8 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
     }
 
     private fun silentModeLayoutTransition(visible: Boolean): Unit {
-        TransitionManager.beginDelayedTransition(view?.findViewById(R.id.root), AutoTransition())
-        if (visible) silentModeLayout.visibility = View.VISIBLE else silentModeLayout.visibility = View.GONE
+        TransitionManager.beginDelayedTransition(binding.constraintRoot, AutoTransition())
+        if (visible) binding.SilentModeLayout.visibility = View.VISIBLE else binding.SilentModeLayout.visibility = View.GONE
     }
 
     companion object {

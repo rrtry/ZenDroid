@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
 import com.example.volumeprofiler.fragments.ZenModePreferencesFragment
 import com.example.volumeprofiler.fragments.EditProfileFragment
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
@@ -16,6 +17,7 @@ import com.example.volumeprofiler.models.Profile
 class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     private var elapsedTime: Long = 0
+    private lateinit var binding: CreateProfileActivityBinding
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -29,7 +31,8 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.create_profile_activity)
+        binding = CreateProfileActivityBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         val currentFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
         if (currentFragment == null) {
             addRootFragment()
@@ -80,6 +83,10 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     override fun onPopBackStack() {
         popFromBackStack()
+    }
+
+    override fun getBinding(): CreateProfileActivityBinding {
+        return binding
     }
 
     companion object {

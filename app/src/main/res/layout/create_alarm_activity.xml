@@ -27,7 +27,7 @@
         app:layout_constraintTop_toBottomOf="@+id/textView5" />
 
     <View
-        android:id="@+id/separator"
+        android:id="@+id/itemSeparator"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:layout_marginStart="16dp"
@@ -70,7 +70,7 @@
         android:textColor="#FF6B13EA"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/separator" />
+        app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
 
     <Button
         android:id="@+id/startTimeSelectButton"

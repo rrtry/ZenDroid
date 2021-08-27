@@ -27,6 +27,7 @@ import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelec
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.KeyProvider
+import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.fragments.dialogs.WarningDialog
 import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
@@ -37,7 +38,6 @@ import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.AlarmsListViewModel
 import com.example.volumeprofiler.viewmodels.MainActivitySharedViewModel
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.lang.StringBuilder
 import java.lang.ref.WeakReference
 import java.time.DayOfWeek
@@ -51,20 +51,22 @@ import kotlin.collections.ArrayList
 class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
     private var showDialog: Boolean = false
-    private lateinit var recyclerView: RecyclerView
+
     private lateinit var tracker: SelectionTracker<Long>
     private val viewModel: AlarmsListViewModel by viewModels()
     private val sharedViewModel: MainActivitySharedViewModel by activityViewModels()
     private val alarmAdapter: AlarmAdapter = AlarmAdapter()
 
+    private var _binding: AlarmsFragmentBinding? = null
+    private val binding: AlarmsFragmentBinding get() = _binding!!
+
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.alarms_fragment, container, false)
-        val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
-        floatingActionButton.setOnClickListener {
+    ): View {
+        _binding = AlarmsFragmentBinding.inflate(inflater, container, false)
+        binding.fab.setOnClickListener {
             if (!showDialog) {
                 val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java)
                 startActivity(intent)
@@ -75,22 +77,21 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
                 fragment.show(fragmentManager, null)
             }
         }
-        return view
+        return binding.root
     }
 
     private fun initRecyclerView(view: View): Unit {
-        recyclerView = view.findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        recyclerView.adapter = alarmAdapter
-        recyclerView.itemAnimator = DefaultItemAnimator()
+        binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        binding.recyclerView.adapter = alarmAdapter
+        binding.recyclerView.itemAnimator = DefaultItemAnimator()
     }
 
     private fun initSelectionTracker(): Unit {
         tracker = SelectionTracker.Builder(
                 SELECTION_ID,
-                recyclerView,
+                binding.recyclerView,
                 KeyProvider(alarmAdapter),
-                DetailsLookup(recyclerView),
+                DetailsLookup(binding.recyclerView),
                 StorageStrategy.createLongStorage()
         ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
                 .build()
@@ -117,10 +118,10 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
     private fun updateUI(events: List<AlarmTrigger>) {
         if (events.isEmpty()) {
-            view?.findViewById<TextView>(R.id.hint_scheduler)?.visibility = View.VISIBLE
+            binding.hintScheduler.visibility = View.VISIBLE
         }
         else {
-            view?.findViewById<TextView>(R.id.hint_scheduler)?.visibility = View.GONE
+            binding.hintScheduler.visibility = View.GONE
         }
         alarmAdapter.submitList(events)
     }

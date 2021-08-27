@@ -82,7 +82,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
                 .commit()
     }
 
-    private fun showFragment(tag: String): Unit {
+    private fun replaceFragment(tag: String): Unit {
         childFragmentManager
                 .beginTransaction()
                 .hide(childFragmentManager.findFragmentByTag(activeFragmentTag)!!)
@@ -94,13 +94,13 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
         return when (item.itemId) {
             R.id.profile_tab -> {
                 val tag: String = TAG_PROFILES_FRAGMENT
-                showFragment(tag)
+                replaceFragment(tag)
                 activeFragmentTag = tag
                 true
             }
             R.id.location_tab -> {
                 val tag: String = TAG_COORDINATES_FRAGMENT
-                showFragment(tag)
+                replaceFragment(tag)
                 activeFragmentTag = tag
                 true
             } else -> false
