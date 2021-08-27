@@ -1,6 +1,7 @@
 package com.example.volumeprofiler.util
 
 import android.util.Log
+import androidx.core.text.isDigitsOnly
 
 class TextUtil {
 
@@ -43,29 +44,8 @@ class TextUtil {
             }
         }
 
-        fun filterRadiusInput(source: CharSequence?): CharSequence {
-            return if (source != null) {
-                val stringBuilder: StringBuilder = StringBuilder()
-                for (i in source) {
-                    if (Character.isDigit(i) || i == '.') {
-                        stringBuilder.append(i)
-                    }
-                }
-                stringBuilder.toString()
-            } else {
-                ""
-            }
-        }
-
-        fun validateRadiusInput(s: CharSequence?, currentMetric: Metrics): Boolean {
-            if (s == null || s.toString().isEmpty()) {
-                return false
-            }
-            return if (currentMetric == Metrics.METERS) {
-                s.toString().toFloat() <= Metrics.METERS.sliderMaxValue
-            } else {
-                s.toString().toFloat() <= Metrics.KILOMETERS.sliderMaxValue
-            }
+        fun validateAddressInput(source: CharSequence?): Boolean {
+            return !(source!!.isEmpty() && source.isBlank() && source.isDigitsOnly())
         }
     }
 }

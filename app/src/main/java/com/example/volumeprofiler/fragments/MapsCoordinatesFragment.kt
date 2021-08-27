@@ -1,12 +1,10 @@
 package com.example.volumeprofiler.fragments
 
 import android.content.Context
-import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -19,11 +17,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.transition.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.MapsSelectLocationFragmentBinding
-import com.example.volumeprofiler.databinding.SeekbarSceneBinding
 import com.example.volumeprofiler.util.Metrics
 import com.example.volumeprofiler.util.TextUtil
 import com.example.volumeprofiler.util.TextUtil.Companion.validateCoordinatesInput
-import com.example.volumeprofiler.util.TextUtil.Companion.validateRadiusInput
 import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.animations.Scale
@@ -96,13 +92,24 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             savedInstanceState: Bundle?
     ): View {
         _mainBinding = MapsSelectLocationFragmentBinding.inflate(inflater, container, false)
-
         sharedViewModel.addressLine.observe(viewLifecycleOwner, EventObserver<String>{
             mainBinding.addressEditText.setText(it)
         })
         sharedViewModel.latLng.observe(viewLifecycleOwner, EventObserver<LatLng> {
             mainBinding.latitudeTextInput.setText(it.latitude.toString())
             mainBinding.longitudeEditText.setText(it.longitude.toString())
+        })
+        viewModel.observableLatitudeEditStatus.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            mainBinding.latitudeTextInputLayout.error = if (it) null else "Invalid input"
+        })
+        viewModel.observableLongitudeEditStatus.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            mainBinding.longitudeTextInputLayout.error = if (it) null else "Invalid input"
+        })
+        viewModel.observableAddressEditState.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            mainBinding.addressTextInputLayout.error = if (it) null else "Invalid input"
+        })
+        viewModel.observableMetrics.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            updateMetrics(it)
         })
         return mainBinding.root
     }
@@ -114,8 +121,8 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     private fun setTextFilters(): Unit {
-        val coordinatesInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend -> viewModel.filterCoordinatesInput(source) }
-        val streetAddressInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend ->  viewModel.filterStreetAddressInput(source) }
+        val coordinatesInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend -> TextUtil.filterCoordinatesInput(source) }
+        val streetAddressInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend ->  TextUtil.filterStreetAddressInput(source) }
         val coordinateFilters: Array<InputFilter> = arrayOf(coordinatesInputFilter)
         mainBinding.latitudeTextInput.filters = coordinateFilters
         mainBinding.longitudeEditText.filters = coordinateFilters
@@ -126,31 +133,20 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         return object : TextWatcher {
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                if (editTextLayout?.id == R.id.addressTextInputLayout) {
-                    viewModel.address = s.toString()
-                    editTextLayout.error = null
-                }
+
             }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 when (editTextLayout?.id) {
-                    R.id.addressTextInputLayout -> viewModel.address = s.toString()
 
+                    R.id.addressTextInputLayout -> {
+                        viewModel.validateAddressInput(s)
+                    }
                     R.id.longitudeTextInputLayout -> {
-                        viewModel.longitude = s.toString()
-                        if (validateCoordinatesInput(s)) {
-                            editTextLayout.error = null
-                        } else {
-                            editTextLayout.error = COORDINATES_EDIT_TEXT_ERROR
-                        }
+                        viewModel.validateLongitudeInput(s)
                     }
                     R.id.latitudeTextInputLayout -> {
-                        viewModel.latitude = s.toString()
-                        if (validateCoordinatesInput(s)) {
-                            editTextLayout.error = null
-                        } else {
-                            editTextLayout.error = COORDINATES_EDIT_TEXT_ERROR
-                        }
+                        viewModel.validateLatitudeInput(s)
                     }
                 }
             }
@@ -219,8 +215,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                 position: Int,
                 id: Long
             ) {
-                viewModel.metrics = parent?.selectedItem as Metrics
-                updateMetrics()
+                viewModel.setMetrics(parent!!.selectedItem as Metrics)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -233,11 +228,11 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             when (it.id) {
                 mainBinding.setLocationButton.id -> {
                     var isInputValid: Boolean = true
-                    if (!TextUtil.validateCoordinatesInput(mainBinding.latitudeTextInput.text)) {
+                    if (viewModel.observableLatitudeEditStatus.value == false) {
                         isInputValid = false
                         AnimUtil.shakeAnimation(mainBinding.latitudeTextInputLayout)
                     }
-                    if (!validateCoordinatesInput(mainBinding.longitudeEditText.text)) {
+                    if (viewModel.observableLongitudeEditStatus.value == false) {
                         isInputValid = false
                         AnimUtil.shakeAnimation(mainBinding.longitudeTextInputLayout)
                     }
@@ -257,8 +252,8 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         setSliderOnChangeListener()
     }
 
-    private fun updateMetrics(): Unit {
-        if (viewModel.metrics == Metrics.KILOMETERS) {
+    private fun updateMetrics(metrics: Metrics): Unit {
+        if (metrics == Metrics.KILOMETERS) {
             val value = sharedViewModel.getRadius()!! / 1000
             mainBinding.radiusSlider.valueTo = Metrics.KILOMETERS.sliderMaxValue
             mainBinding.radiusSlider.valueFrom = Metrics.KILOMETERS.sliderMinValue
@@ -276,7 +271,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     private fun onSliderProgressChanged(progress: Float): Unit {
-        if (viewModel.metrics == Metrics.METERS) {
+        if (viewModel.observableMetrics.value == Metrics.METERS) {
             sharedViewModel.setRadius(progress)
         }
         else {

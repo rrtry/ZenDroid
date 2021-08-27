@@ -56,8 +56,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private val mainActivitySharedViewModel: MainActivitySharedViewModel by activityViewModels()
 
     private var _binding: ProfilesListFragmentBinding? = null
-    private val binding: ProfilesListFragmentBinding
-    get() = _binding!!
+    private val binding: ProfilesListFragmentBinding get() = _binding!!
 
     /*
     private var uiStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -267,13 +266,13 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                     this.addTransition(ChangeBounds())
                     this.addTransition(Scale())
                 }
-                TransitionManager.beginDelayedTransition(binding.recyclerView, transition)
+                TransitionManager.beginDelayedTransition(adapterBinding.root, transition)
                 adapterBinding.expandableView.visibility = View.VISIBLE
                 adapterBinding.expandButton.animate().rotation(180.0f).start()
             }
             else {
                 adapterBinding.expandableView.visibility = View.VISIBLE
-                adapterBinding.expandButton.rotation = 180.0f
+                adapterBinding.expandButton.rotation = 180f
             }
         }
 
@@ -283,9 +282,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                 this.addTransition(Scale())
                 this.addTransition(ChangeBounds())
             }
-            TransitionManager.beginDelayedTransition(binding.recyclerView, transition)
+            TransitionManager.beginDelayedTransition(adapterBinding.root, transition)
             adapterBinding.expandableView.visibility = View.GONE
-            adapterBinding.expandButton.animate().rotation(0.0f).start()
+            adapterBinding.expandButton.animate().rotation(0f).start()
         }
 
         private fun setupTextViews(profile: Profile): Unit {

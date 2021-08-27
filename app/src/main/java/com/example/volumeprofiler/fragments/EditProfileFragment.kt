@@ -149,7 +149,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                 if (abs(verticalOffset) - appBarLayout!!.totalScrollRange == 0) {
                     if (!isVisible && this@EditProfileFragment.isVisible) {
                         isVisible = true
-                        changeMenuOptionVisibility(activityBinding?.menuEditNameButton, isVisible)
+                        changeMenuOptionVisibility(activityBinding.menuEditNameButton, isVisible)
                     }
                 } else if (isVisible) {
                     isVisible = false
@@ -181,7 +181,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                         viewModel.mutableProfile!!.isVibrateForCallsActive = 1
                     }
                 }
-                R.id.menuSaveChangesButton -> commitChanges()
+                R.id.menuSaveChangesButton -> updateDB()
                 R.id.editNameButton, R.id.menuEditNameButton -> showTextInputDialog()
                 R.id.phoneRingtoneLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_RINGTONE)
                 R.id.notificationSoundLayout -> startRingtonePickerActivity(RingtoneManager.TYPE_NOTIFICATION)
@@ -523,7 +523,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         viewModel.applyAudioSettingsIfActive()
     }
 
-    private fun commitChanges(): Unit {
+    private fun updateDB(): Unit {
         applyImplicitChanges()
         if (passedExtras) {
             viewModel.updateProfile(viewModel.mutableProfile!!)

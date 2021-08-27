@@ -30,8 +30,8 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         binding = CreateProfileActivityBinding.inflate(layoutInflater)
+        super.onCreate(savedInstanceState)
         setContentView(binding.root)
         val currentFragment: Fragment? = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
         if (currentFragment == null) {
