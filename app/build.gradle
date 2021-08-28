@@ -13,6 +13,9 @@ android {
     viewBinding {
         enabled = true
     }
+    dataBinding {
+        enabled = true
+    }
 
     defaultConfig {
         multiDexEnabled true

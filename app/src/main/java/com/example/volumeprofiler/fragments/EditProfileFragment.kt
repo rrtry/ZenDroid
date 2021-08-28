@@ -238,13 +238,6 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
                     else {
                         seekBar.progress = progress
                     }
-                    when (seekBar.id) {
-                        R.id.mediaSeekBar -> viewModel.mutableProfile!!.mediaVolume = progress
-                        R.id.phoneSeekBar -> viewModel.mutableProfile!!.callVolume = progress
-                        R.id.notificationSeekBar -> viewModel.mutableProfile!!.notificationVolume = progress
-                        R.id.ringerSeekBar -> viewModel.mutableProfile!!.ringVolume = progress
-                        R.id.alarmSeekBar -> viewModel.mutableProfile!!.alarmVolume = progress
-                    }
                 }
             }
 
@@ -253,8 +246,15 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                if (seekBar?.id == R.id.ringerSeekBar) {
-                    silentModeLayoutTransition(seekBar.progress == 0)
+                when (seekBar?.id) {
+                    R.id.mediaSeekBar -> viewModel.mutableProfile!!.mediaVolume = seekBar.progress
+                    R.id.phoneSeekBar -> viewModel.mutableProfile!!.callVolume = seekBar.progress
+                    R.id.notificationSeekBar -> viewModel.mutableProfile!!.notificationVolume = seekBar.progress
+                    R.id.ringerSeekBar -> {
+                        viewModel.mutableProfile!!.ringVolume = seekBar.progress
+                        silentModeLayoutTransition(seekBar.progress == 0)
+                    }
+                    R.id.alarmSeekBar -> viewModel.mutableProfile!!.alarmVolume = seekBar.progress
                 }
             }
         }
@@ -269,8 +269,8 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         binding.alarmSoundLayout.setOnClickListener(onClickListener)
         binding.interruptionFilterLayout.setOnClickListener(onClickListener)
         binding.interruptionFilterPreferencesLayout.setOnClickListener(onClickListener)
-
         binding.doNotDisturbSwitch.setOnCheckedChangeListener(onCheckedChangeListener)
+
         activityBinding.menuEditNameButton.setOnClickListener(onClickListener)
         activityBinding.editNameButton.setOnClickListener(onClickListener)
 
