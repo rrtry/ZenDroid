@@ -10,7 +10,9 @@
             android:title="Alarms only"/>
         <item
             android:id="@+id/total_silence"
-            android:title="Total silence">
-        </item>
+            android:title="Total silence"/>
+        <item
+            android:id="@+id/allow_all"
+            android:title="Allow all"/>
     </group>
 </menu>

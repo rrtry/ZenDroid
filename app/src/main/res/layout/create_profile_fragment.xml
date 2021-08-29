@@ -1,435 +1,440 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-
-    android:layout_width="match_parent"
+<layout
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:fillViewport="true"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:paddingTop="16dp"
-        android:id="@+id/constraintRoot"
+    <data>
+        <variable
+            name="viewModel"
+            type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
+    </data>
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content">
-
-        <ImageView
-            android:id="@+id/imageView9"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
-            app:srcCompat="@drawable/baseline_music_note_deep_purple_300_24dp" />
-
-        <SeekBar
-            android:id="@+id/mediaSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:max="15"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView9"
-            app:layout_constraintTop_toBottomOf="@+id/mediaBarTitle" />
-
-        <TextView
-            android:id="@+id/mediaBarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:text="Media volume"
-            android:textColor="#000000"
-            app:layout_constraintStart_toEndOf="@+id/imageView9"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageView
-            android:id="@+id/imageView10"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
-            app:srcCompat="@drawable/baseline_call_deep_purple_300_24dp" />
-
-        <SeekBar
-            android:id="@+id/phoneSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:max="5"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView10"
-            app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
-
-        <TextView
-            android:id="@+id/phoneBarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            android:text="Call volume"
-            android:textColor="#000000"
-            app:layout_constraintStart_toEndOf="@+id/imageView10"
-            app:layout_constraintTop_toBottomOf="@+id/mediaSeekBar" />
-
-        <ImageView
-            android:id="@+id/imageView11"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
-            app:srcCompat="@drawable/baseline_circle_notifications_deep_purple_300_24dp" />
-
-        <SeekBar
-            android:id="@+id/notificationSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:max="7"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView11"
-            app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
-
-        <TextView
-            android:id="@+id/notificationBarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="32dp"
-            android:text="Notification volume"
-            android:textColor="#000000"
-            app:layout_constraintStart_toEndOf="@+id/imageView11"
-            app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar" />
-
-        <ImageView
-            android:id="@+id/imageView12"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
-            app:srcCompat="@drawable/baseline_notifications_active_black_24dp" />
-
-        <SeekBar
-            android:id="@+id/ringerSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:max="7"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView12"
-            app:layout_constraintTop_toBottomOf="@+id/ringerBarTitle" />
-
-        <TextView
-            android:id="@+id/ringerBarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="32dp"
-            android:text="Ring volume"
-            android:textColor="#000000"
-            app:layout_constraintStart_toEndOf="@+id/imageView12"
-            app:layout_constraintTop_toBottomOf="@+id/notificationSeekBar" />
-
-        <ImageView
-            android:id="@+id/imageView13"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/alarmSeekBar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
-            app:srcCompat="@drawable/baseline_alarm_deep_purple_300_24dp" />
-
-        <SeekBar
-            android:id="@+id/alarmSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:max="7"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView13"
-            app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:layout_height="match_parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/SilentModeLayout"
+            android:paddingTop="16dp"
+            android:id="@+id/constraintRoot"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:orientation="horizontal"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
+            android:orientation="vertical"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/imageView9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
+                app:srcCompat="@drawable/baseline_music_note_deep_purple_300_24dp" />
+
+            <SeekBar
+                android:id="@+id/mediaSeekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:progress="@={viewModel.mediaVolume}"
+                android:max="15"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView9"
+                app:layout_constraintTop_toBottomOf="@+id/mediaBarTitle" />
 
             <TextView
-                android:id="@+id/silentModeDescription"
+                android:id="@+id/mediaBarTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="45dp"
-                android:text="Silent for ringer"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:text="Media volume"
                 android:textColor="#000000"
-                app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/silentModeSwitch" />
-
-            <Switch
-                android:id="@+id/silentModeSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:clickable="false"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView9"
                 app:layout_constraintTop_toTopOf="parent" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <TextView
-            android:id="@+id/alarmBarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="32dp"
-            android:text="Alarm volume"
-            android:textColor="#000000"
-            app:layout_constraintStart_toEndOf="@+id/imageView13"
-            app:layout_constraintTop_toBottomOf="@+id/ringerSeekBar" />
-
-        <View
-            android:id="@+id/separator1"
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:layout_marginTop="8dp"
-            android:background="#969696"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/SilentModeLayout" />
-
-        <TextView
-            android:id="@+id/Title1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="35dp"
-            android:layout_marginTop="32dp"
-            android:text="Ringtones and notification sounds"
-            android:textColor="#FF6B13EA"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/separator1" />
-
-        <RelativeLayout
-            android:id="@+id/interruptionFilterLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="?attr/selectableItemBackground"
-            android:paddingTop="16dp"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/Title1">
-
-            <TextView
-                android:id="@+id/doNotDisturbTitle"
+            <ImageView
+                android:id="@+id/imageView10"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Do Not disturb"
+                android:layout_marginStart="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
+                app:srcCompat="@drawable/baseline_call_deep_purple_300_24dp" />
+
+            <SeekBar
+                android:id="@+id/phoneSeekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:progress="@={viewModel.callVolume}"
+                android:max="5"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView10"
+                app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
+
+            <TextView
+                android:id="@+id/phoneBarTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:text="Call volume"
                 android:textColor="#000000"
-                android:textSize="16sp" />
+                app:layout_constraintStart_toEndOf="@+id/imageView10"
+                app:layout_constraintTop_toBottomOf="@+id/mediaSeekBar" />
+
+            <ImageView
+                android:id="@+id/imageView11"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
+                app:srcCompat="@drawable/baseline_circle_notifications_deep_purple_300_24dp" />
+
+            <SeekBar
+                android:id="@+id/notificationSeekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:progress="@={viewModel.notificationVolume}"
+                android:max="7"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView11"
+                app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
 
             <TextView
-                android:id="@+id/interruptionFilterPolicy"
+                android:id="@+id/notificationBarTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/doNotDisturbTitle"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="Priority only"
-                android:textSize="14sp" />
-
-            <Switch
-                android:id="@+id/doNotDisturbSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_marginRight="16dp"
-                android:layout_toRightOf="@+id/doNotDisturbTitle" />
-        </RelativeLayout>
-
-        <LinearLayout
-            android:id="@+id/phoneRingtoneLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="16dp"
-            android:background="?attr/selectableItemBackground"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/alarmSoundLayout">
-
-            <TextView
-                android:id="@+id/phoneRingtoneTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Phone ringtone"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="32dp"
+                android:text="Notification volume"
                 android:textColor="#000000"
-                android:textSize="16sp" />
+                app:layout_constraintStart_toEndOf="@+id/imageView11"
+                app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar" />
 
-            <TextView
-                android:id="@+id/phoneRingtone"
+            <ImageView
+                android:id="@+id/imageView12"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="Flutey Phone"
-                android:textSize="14sp" />
-        </LinearLayout>
+                android:layout_marginStart="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
+                app:srcCompat="@drawable/baseline_notifications_active_black_24dp" />
 
-        <LinearLayout
-            android:id="@+id/notificationSoundLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="8dp"
-            android:background="?attr/selectableItemBackground"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/vibrateForCallsLayout">
+            <SeekBar
+                android:id="@+id/ringerSeekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:max="7"
+                android:progress="@={viewModel.ringVolume}"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView12"
+                app:layout_constraintTop_toBottomOf="@+id/ringerBarTitle" />
 
             <TextView
-                android:id="@+id/notificationSoundTitle"
+                android:id="@+id/ringerBarTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Default notification sound"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="32dp"
+                android:text="Ring volume"
                 android:textColor="#000000"
-                android:textSize="16sp" />
+                app:layout_constraintStart_toEndOf="@+id/imageView12"
+                app:layout_constraintTop_toBottomOf="@+id/notificationSeekBar" />
 
-            <TextView
-                android:id="@+id/notificationSound"
+            <ImageView
+                android:id="@+id/imageView13"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:clickable="false"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="Pixie Dust"
-                android:textSize="14sp" />
-        </LinearLayout>
+                android:layout_marginStart="16dp"
+                app:layout_constraintBottom_toBottomOf="@+id/alarmSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
+                app:srcCompat="@drawable/baseline_alarm_deep_purple_300_24dp" />
 
-        <LinearLayout
-            android:id="@+id/alarmSoundLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="?attr/selectableItemBackground"
-            android:paddingTop="16dp"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/notificationSoundLayout">
+            <SeekBar
+                android:id="@+id/alarmSeekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:max="7"
+                android:progress="@={viewModel.alarmVolume}"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView13"
+                app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/SilentModeLayout"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:orientation="horizontal"
+                android:visibility="visible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
+
+                <TextView
+                    android:id="@+id/silentModeDescription"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="45dp"
+                    android:text="Silent for ringer"
+                    android:textColor="#000000"
+                    app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/silentModeSwitch" />
+
+                <Switch
+                    android:id="@+id/silentModeSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:clickable="false"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <TextView
-                android:id="@+id/alarmSoundTitle"
+                android:id="@+id/alarmBarTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Default alarm sound"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="32dp"
+                android:text="Alarm volume"
                 android:textColor="#000000"
-                android:textSize="16sp" />
+                app:layout_constraintStart_toEndOf="@+id/imageView13"
+                app:layout_constraintTop_toBottomOf="@+id/ringerSeekBar" />
+
+            <View
+                android:id="@+id/separator1"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="8dp"
+                android:background="#969696"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/SilentModeLayout" />
 
             <TextView
-                android:id="@+id/alarmSound"
+                android:id="@+id/Title1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="Cesium"
-                android:textSize="14sp" />
-        </LinearLayout>
+                android:layout_marginStart="35dp"
+                android:layout_marginTop="16dp"
+                android:text="Ringtones and notification sounds"
+                android:textColor="#FF6B13EA"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/separator1" />
 
-        <RelativeLayout
-            android:id="@+id/interruptionFilterPreferencesLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:paddingTop="16dp"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/interruptionFilterLayout">
-
-            <TextView
-                android:id="@+id/doNotDisturbPreferencesTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Do Not Disturb preferences"
-                android:textColor="#000000"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/doNotDisturbRules"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/doNotDisturbPreferencesTitle"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="No rules set"
-                android:textSize="14sp" />
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/vibrateForCallsLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:orientation="horizontal"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp"
-            app:layout_constraintStart_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/interruptionFilterPreferencesLayout">
-
-            <TextView
-                android:id="@+id/vibrateForCallsTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Also vibrate for calls"
-                android:textColor="#000000"
-                android:textSize="16sp" />
-
-            <Switch
-                android:id="@+id/vibrateForCallsSwitch"
+            <RelativeLayout
+                android:id="@+id/interruptionFilterLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="16dp"
-                android:clickable="false" />
-        </RelativeLayout>
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="8dp"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/Title1">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.core.widget.NestedScrollView>
+                <TextView
+                    android:id="@+id/doNotDisturbTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Do Not disturb"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/interruptionFilterPolicy"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/doNotDisturbTitle"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="Priority only"
+                    android:textSize="14sp" />
+            </RelativeLayout>
+
+            <LinearLayout
+                android:id="@+id/phoneRingtoneLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="16dp"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/alarmSoundLayout">
+
+                <TextView
+                    android:id="@+id/phoneRingtoneTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Phone ringtone"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/phoneRingtone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="Flutey Phone"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/notificationSoundLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/vibrateForCallsLayout">
+
+                <TextView
+                    android:id="@+id/notificationSoundTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Default notification sound"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/notificationSound"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="Pixie Dust"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/alarmSoundLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="16dp"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/notificationSoundLayout">
+
+                <TextView
+                    android:id="@+id/alarmSoundTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Default alarm sound"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/alarmSound"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="Cesium"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <RelativeLayout
+                android:id="@+id/interruptionFilterPreferencesLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="16dp"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/interruptionFilterLayout">
+
+                <TextView
+                    android:id="@+id/doNotDisturbPreferencesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Do Not Disturb preferences"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/doNotDisturbRules"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/doNotDisturbPreferencesTitle"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="No rules set"
+                    android:textSize="14sp" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/vibrateForCallsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:orientation="horizontal"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/interruptionFilterPreferencesLayout">
+
+                <TextView
+                    android:id="@+id/vibrateForCallsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Also vibrate for calls"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <Switch
+                    android:id="@+id/vibrateForCallsSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="16dp"
+                    android:clickable="false" />
+            </RelativeLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+</layout>

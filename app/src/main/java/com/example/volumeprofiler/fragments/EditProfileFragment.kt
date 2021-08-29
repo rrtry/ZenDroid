@@ -35,15 +35,31 @@ import android.app.NotificationManager.Policy.*
 import android.os.Build
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.content.res.ResourcesCompat
+import androidx.databinding.DataBindingUtil
 import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
 import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
 import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import kotlin.math.abs
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
-class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
+class EditProfileFragment: Fragment() {
 
     private val viewModel: EditProfileViewModel by activityViewModels()
+
+    private var _binding: CreateProfileFragmentBinding? = null
+    private val binding: CreateProfileFragmentBinding get() = _binding!!
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        _binding = DataBindingUtil.inflate(inflater, R.layout.create_profile_fragment, container, false)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
+
+    /*
     private var callbacks: EditProfileActivityCallbacks? = null
     private var alarms: List<AlarmTrigger>? = null
     private lateinit var ringtoneActivityCallback: ActivityResultLauncher<Int>
@@ -65,6 +81,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         }
     }
 
+
     private fun loadArgs(model: Profile): Unit {
         if (viewModel.mutableProfile == null) {
             viewModel.mutableProfile = model
@@ -76,10 +93,21 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         viewModel.mutableProfile = Profile("Profile")
     }
 
+    private var _binding: CreateProfileFragmentBinding? = null
+    private val binding: CreateProfileFragmentBinding get() = _binding!!
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (viewModel.profile == null) {
+            viewModel.profile = Profile("title")
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = CreateProfileFragmentBinding.inflate(inflater, container, false)
+        _binding = DataBindingUtil.inflate(inflater, R.layout.create_profile_fragment, container,false)
         return binding.root
     }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -88,6 +116,13 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         setObservers()
         updateUI()
     }
+
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
+
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -539,6 +574,7 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
         if (visible) binding.SilentModeLayout.visibility = View.VISIBLE else binding.SilentModeLayout.visibility = View.GONE
     }
 
+
     companion object {
 
         private const val DEFAULT_TEXT_COLOR: String = "#757575"
@@ -558,4 +594,9 @@ class EditProfileFragment: Fragment(), ProfileNameInputDialogCallback {
             }
         }
     }
+
+    override fun onTitleChanged(str: String) {
+
+    }
+     */
 }

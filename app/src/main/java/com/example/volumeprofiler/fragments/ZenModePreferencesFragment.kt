@@ -126,11 +126,11 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                     if (binding.blockWhenScreenIsOnSwitch != null) {
                         if (binding.blockWhenScreenIsOnSwitch!!.isChecked) {
                             binding.blockWhenScreenIsOnSwitch!!.isChecked = false
-                            viewModel.mutableProfile!!.screenOnVisualEffects.remove(SUPPRESSED_EFFECT_SCREEN_ON)
+                            viewModel.profile!!.screenOnVisualEffects.remove(SUPPRESSED_EFFECT_SCREEN_ON)
                         }
                         else {
                             binding.blockWhenScreenIsOnSwitch!!.isChecked = true
-                            viewModel.mutableProfile!!.screenOffVisualEffects.add(SUPPRESSED_EFFECT_SCREEN_ON)
+                            viewModel.profile!!.screenOffVisualEffects.add(SUPPRESSED_EFFECT_SCREEN_ON)
                         }
                     }
                 }
@@ -138,11 +138,11 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                     if (binding.blockWhenScreenIsOffSwitch != null) {
                         if (binding.blockWhenScreenIsOffSwitch!!.isChecked) {
                             binding.blockWhenScreenIsOffSwitch!!.isChecked = false
-                            viewModel.mutableProfile!!.screenOffVisualEffects.remove(SUPPRESSED_EFFECT_SCREEN_ON)
+                            viewModel.profile!!.screenOffVisualEffects.remove(SUPPRESSED_EFFECT_SCREEN_ON)
                         }
                         else {
                             binding.blockWhenScreenIsOffSwitch!!.isChecked = true
-                            viewModel.mutableProfile!!.screenOffVisualEffects.add(SUPPRESSED_EFFECT_SCREEN_ON)
+                            viewModel.profile!!.screenOffVisualEffects.add(SUPPRESSED_EFFECT_SCREEN_ON)
                         }
                     }
                 }
@@ -158,27 +158,27 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                 binding.repeatCallersLayout.id -> {
                     if (binding.repeatCallersSwitch.isChecked) {
                         binding.repeatCallersSwitch.isChecked = false
-                        viewModel.mutableProfile!!.priorityCategories.remove(PRIORITY_CATEGORY_REPEAT_CALLERS)
+                        viewModel.profile!!.priorityCategories.remove(PRIORITY_CATEGORY_REPEAT_CALLERS)
                     }
                     else {
                         binding.repeatCallersSwitch.isChecked = true
-                        viewModel.mutableProfile!!.priorityCategories.add(PRIORITY_CATEGORY_REPEAT_CALLERS)
+                        viewModel.profile!!.priorityCategories.add(PRIORITY_CATEGORY_REPEAT_CALLERS)
                     }
                 }
                 binding.otherInterruptionsLayout.id -> {
-                    val fragment = PriorityInterruptionsSelectionDialog.newInstance(viewModel.mutableProfile!!).apply {
+                    val fragment = PriorityInterruptionsSelectionDialog.newInstance(viewModel.profile!!).apply {
                         this.setTargetFragment(this@ZenModePreferencesFragment, OTHER_INTERRUPTIONS_FRAGMENT)
                     }
                     fragment.show(requireActivity().supportFragmentManager, null)
                 }
                 binding.whenScreenIsOffLayout?.id -> {
-                    val fragment = ScreenOffVisualRestrictionsDialog.newInstance(viewModel.mutableProfile!!).apply {
+                    val fragment = ScreenOffVisualRestrictionsDialog.newInstance(viewModel.profile!!).apply {
                         this.setTargetFragment(this@ZenModePreferencesFragment, WHEN_SCREEN_IS_OFF_FRAGMENT)
                     }
                     fragment.show(requireActivity().supportFragmentManager, null)
                 }
                 binding.whenScreenIsOnLayout?.id -> {
-                    val fragment = ScreenOnVisualRestrictionsDialog.newInstance(viewModel.mutableProfile!!).apply {
+                    val fragment = ScreenOnVisualRestrictionsDialog.newInstance(viewModel.profile!!).apply {
                         this.setTargetFragment(this@ZenModePreferencesFragment, WHEN_SCREEN_IS_ON_FRAGMENT)
                     }
                     fragment.show(requireActivity().supportFragmentManager, null)
@@ -197,8 +197,8 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
     }
 
     private fun updateUI(): Unit {
-        binding.otherInterruptionsDescription.text = getPriorityCategoriesDescription(viewModel.mutableProfile!!.priorityCategories)
-        binding.exceptionsCallsDescription.text = if (!containsCategory(PRIORITY_CATEGORY_CALLS)) "None" else when (viewModel.mutableProfile!!.priorityCallSenders) {
+        binding.otherInterruptionsDescription.text = getPriorityCategoriesDescription(viewModel.profile!!.priorityCategories)
+        binding.exceptionsCallsDescription.text = if (!containsCategory(PRIORITY_CATEGORY_CALLS)) "None" else when (viewModel.profile!!.priorityCallSenders) {
             PRIORITY_SENDERS_ANY -> {
                 "From anyone"
             }
@@ -210,7 +210,7 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
             }
             else -> "None"
         }
-        binding.exceptionsMessagesDescription.text = if (!containsCategory(PRIORITY_CATEGORY_MESSAGES)) "None" else when (viewModel.mutableProfile!!.priorityMessageSenders) {
+        binding.exceptionsMessagesDescription.text = if (!containsCategory(PRIORITY_CATEGORY_MESSAGES)) "None" else when (viewModel.profile!!.priorityMessageSenders) {
             PRIORITY_SENDERS_ANY -> {
                 "From anyone"
             }
@@ -222,7 +222,7 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
             }
             else -> "None"
         }
-        binding.exceptionsMessagesDescription.text = when (viewModel.mutableProfile!!.primaryConversationSenders) {
+        binding.exceptionsMessagesDescription.text = when (viewModel.profile!!.primaryConversationSenders) {
             CONVERSATION_SENDERS_ANYONE -> {
                 "From anyone"
             }
@@ -234,8 +234,8 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
             }
             else -> "None"
         }
-        binding.whenScreenIsOnDescription?.text = getVisualEffectsDescription(viewModel.mutableProfile!!.screenOnVisualEffects, 1)
-        binding.whenScreenIsOffDescription?.text = getVisualEffectsDescription(viewModel.mutableProfile!!.screenOffVisualEffects, 0)
+        binding.whenScreenIsOnDescription?.text = getVisualEffectsDescription(viewModel.profile!!.screenOnVisualEffects, 1)
+        binding.whenScreenIsOffDescription?.text = getVisualEffectsDescription(viewModel.profile!!.screenOffVisualEffects, 0)
     }
 
     private fun getPriorityCategoriesDescription(list: List<Int>): String {
@@ -263,7 +263,7 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
     }
 
     private fun containsCategory(category: Int): Boolean {
-        val list: List<Int> = viewModel.mutableProfile!!.priorityCategories
+        val list: List<Int> = viewModel.profile!!.priorityCategories
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
                 (category == PRIORITY_CATEGORY_ALARMS || category == PRIORITY_CATEGORY_MEDIA || category == PRIORITY_CATEGORY_SYSTEM)) {
             list.contains(category)
@@ -308,17 +308,17 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                 when (it.itemId) {
                     R.id.all_conversations -> {
                         binding.exceptionsConversationsDescirption?.text = "Anyone"
-                        viewModel.mutableProfile!!.primaryConversationSenders = CONVERSATION_SENDERS_ANYONE
+                        viewModel.profile!!.primaryConversationSenders = CONVERSATION_SENDERS_ANYONE
                         true
                     }
                     R.id.priority_conversations -> {
                         binding.exceptionsConversationsDescirption?.text = "Important"
-                        viewModel.mutableProfile!!.primaryConversationSenders = CONVERSATION_SENDERS_IMPORTANT
+                        viewModel.profile!!.primaryConversationSenders = CONVERSATION_SENDERS_IMPORTANT
                         true
                     }
                     R.id.none -> {
                         binding.exceptionsConversationsDescirption?.text = "None"
-                        viewModel.mutableProfile!!.primaryConversationSenders = CONVERSATION_SENDERS_NONE
+                        viewModel.profile!!.primaryConversationSenders = CONVERSATION_SENDERS_NONE
                         true
                     }
                     else -> {
@@ -333,9 +333,9 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
             popupMenu.setOnMenuItemClickListener {
                 if (it.itemId != R.id.none) {
                     if (!containsCategory(PRIORITY_CATEGORY_CALLS) && category == PRIORITY_CATEGORY_CALLS) {
-                        viewModel.mutableProfile!!.priorityCategories.add(PRIORITY_CATEGORY_CALLS)
+                        viewModel.profile!!.priorityCategories.add(PRIORITY_CATEGORY_CALLS)
                     } else if (!containsCategory(PRIORITY_CATEGORY_MESSAGES) && category == PRIORITY_CATEGORY_MESSAGES) {
-                        viewModel.mutableProfile!!.priorityCategories.add(PRIORITY_CATEGORY_MESSAGES)
+                        viewModel.profile!!.priorityCategories.add(PRIORITY_CATEGORY_MESSAGES)
                     }
                 }
                 when (it.itemId) {
@@ -343,11 +343,11 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                         val text: String = "From starred contacts only"
                         if (category == PRIORITY_CATEGORY_MESSAGES) {
                             binding.exceptionsMessagesDescription.text = text
-                            viewModel.mutableProfile!!.priorityMessageSenders = PRIORITY_SENDERS_STARRED
+                            viewModel.profile!!.priorityMessageSenders = PRIORITY_SENDERS_STARRED
                         }
                         else {
                             binding.exceptionsCallsDescription.text = text
-                            viewModel.mutableProfile!!.priorityCallSenders = PRIORITY_SENDERS_STARRED
+                            viewModel.profile!!.priorityCallSenders = PRIORITY_SENDERS_STARRED
                         }
                         true
                     }
@@ -355,11 +355,11 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                         val text: String = "From contacts only"
                         if (category == PRIORITY_CATEGORY_MESSAGES) {
                             binding.exceptionsMessagesDescription.text = text
-                            viewModel.mutableProfile!!.priorityMessageSenders = PRIORITY_SENDERS_CONTACTS
+                            viewModel.profile!!.priorityMessageSenders = PRIORITY_SENDERS_CONTACTS
                         }
                         else {
                             binding.exceptionsCallsDescription.text = text
-                            viewModel.mutableProfile!!.priorityCallSenders = PRIORITY_SENDERS_CONTACTS
+                            viewModel.profile!!.priorityCallSenders = PRIORITY_SENDERS_CONTACTS
                         }
                         true
                     }
@@ -367,11 +367,11 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                         val text: String = "From anyone"
                         if (category == PRIORITY_CATEGORY_MESSAGES) {
                             binding.exceptionsMessagesDescription.text = text
-                            viewModel.mutableProfile!!.priorityMessageSenders = PRIORITY_SENDERS_ANY
+                            viewModel.profile!!.priorityMessageSenders = PRIORITY_SENDERS_ANY
                         }
                         else {
                             binding.exceptionsCallsDescription.text = text
-                            viewModel.mutableProfile!!.priorityCallSenders = PRIORITY_SENDERS_ANY
+                            viewModel.profile!!.priorityCallSenders = PRIORITY_SENDERS_ANY
                         }
                         true
                     }
@@ -383,7 +383,7 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
                         else {
                             binding.exceptionsCallsDescription.text = text
                         }
-                        viewModel.mutableProfile!!.priorityCategories.remove(category)
+                        viewModel.profile!!.priorityCategories.remove(category)
                         true
                     }
                     else -> {
@@ -396,17 +396,17 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
     }
 
     override fun onPrioritySelected(categories: ArrayList<Int>) {
-        viewModel.mutableProfile!!.priorityCategories = categories
+        viewModel.profile!!.priorityCategories = categories
         binding.otherInterruptionsDescription.text = getPriorityCategoriesDescription(categories)
     }
 
     override fun onEffectsSelected(effects: ArrayList<Int>, type: Int) {
         if (type == 1) {
-            viewModel.mutableProfile!!.screenOnVisualEffects = effects
+            viewModel.profile!!.screenOnVisualEffects = effects
             binding.whenScreenIsOnDescription?.text = getVisualEffectsDescription(effects, type)
         }
         else if (type == 0) {
-            viewModel.mutableProfile!!.screenOffVisualEffects = effects
+            viewModel.profile!!.screenOffVisualEffects = effects
             binding.whenScreenIsOffDescription?.text = getVisualEffectsDescription(effects, type)
         }
     }
