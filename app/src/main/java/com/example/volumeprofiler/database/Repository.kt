@@ -111,6 +111,12 @@ open class Repository private constructor(
         }
     }
 
+    suspend fun getProfile(id: UUID): Profile {
+        return withContext(Dispatchers.IO) {
+            profileDao.getProfile(id)
+        }
+    }
+
     suspend fun getProfiles(): List<Profile> {
         return withContext(Dispatchers.IO) {
             profileDao.getProfiles()

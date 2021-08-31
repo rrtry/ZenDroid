@@ -40,6 +40,14 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
     private var _binding: ZenPreferencesFragmentBinding? = null
     private val binding: ZenPreferencesFragmentBinding get() = _binding!!
 
+    override fun onPrioritySelected(categories: ArrayList<Int>) {
+
+    }
+
+    override fun onEffectsSelected(effects: ArrayList<Int>, type: Int) {
+
+    }
+    /*
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
@@ -417,4 +425,5 @@ class ZenModePreferencesFragment: Fragment(), PriorityInterruptionsCallback, Vis
         private const val WHEN_SCREEN_IS_OFF_FRAGMENT: Int = 2
         private const val OTHER_INTERRUPTIONS_FRAGMENT: Int = 0
     }
+     */
 }

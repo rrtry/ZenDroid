@@ -1,7 +1,12 @@
 package com.example.volumeprofiler.activities
 
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
@@ -26,6 +31,23 @@ class MainActivity : AppCompatActivity() {
         viewPager.adapter = pagerAdapter
         viewPager.setPageTransformer(ZoomOutPageTransformer())
         setupTabLayout()
+        requestNotificationPolicyAccess()
+    }
+
+    private fun requestNotificationPolicyAccess(): Unit {
+        val notificationManager: NotificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val audioManager: AudioManager = this.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            val intent: Intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        } else {
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS)
+            Log.i("MainActivity", "STREAM_NOTIFICATION: ${audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)}")
+            Log.i("MainActivity", "STREAM_RING: ${audioManager.getStreamVolume(AudioManager.STREAM_RING)}")
+            Log.i("MainActivity", "RINGER_MODE: ${audioManager.ringerMode}")
+        }
     }
 
     private fun setupTabLayout(): Unit {

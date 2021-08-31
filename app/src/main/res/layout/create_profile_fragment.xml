@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<layout xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
+        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
+        <import type="android.media.RingtoneManager"/>
         <variable
             name="viewModel"
             type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
@@ -181,7 +182,7 @@
                 app:layout_constraintStart_toEndOf="@+id/imageView13"
                 app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/SilentModeLayout"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
@@ -189,6 +190,7 @@
                 android:background="?attr/selectableItemBackground"
                 android:orientation="horizontal"
                 android:visibility="visible"
+                android:onClick="@{() -> viewModel.onSilentModeLayoutClick()}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
@@ -197,9 +199,10 @@
                     android:id="@+id/silentModeDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="45dp"
-                    android:text="Silent for ringer"
+                    android:layout_marginStart="60dp"
+                    android:text="Enable silent mode for ringer"
                     android:textColor="#000000"
+                    android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/silentModeSwitch" />
@@ -210,11 +213,13 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="16dp"
                     android:clickable="false"
+                    ringerMode="@{viewModel.ringerMode}"
+                    ringerSeekBar="@{ringerSeekBar}"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <TextView
                 android:id="@+id/alarmBarTitle"
@@ -256,6 +261,7 @@
                 android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:paddingTop="8dp"
+                android:onClick="@{() -> viewModel.onInterruptionFilterLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/Title1">
@@ -277,7 +283,16 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="Priority only"
+                    priorityCategories="@{viewModel.priorityCategories}"
+                    interruptionFilter="@{viewModel.interruptionFilter}"
+                    mediaSeekBar="@{mediaSeekBar}"
+                    callSeekBar="@{phoneSeekBar}"
+                    notificationSeekBar="@{notificationSeekBar}"
+                    ringerSeekBar="@{ringerSeekBar}"
+                    alarmSeekBar="@{alarmSeekBar}"
+                    ringerMode="@{viewModel.ringerMode}"
+                    silentModeLayout="@{SilentModeLayout}"
+                    android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter)}"
                     android:textSize="14sp" />
             </RelativeLayout>
 
@@ -288,6 +303,7 @@
                 android:orientation="vertical"
                 android:paddingTop="16dp"
                 android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onRingtoneLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/alarmSoundLayout">
@@ -308,7 +324,7 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="Flutey Phone"
+                    android:text="@{BindingConverters.getRingtoneTitle(context, viewModel.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)}"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -319,6 +335,7 @@
                 android:orientation="vertical"
                 android:paddingTop="8dp"
                 android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onNotificationSoundLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/vibrateForCallsLayout">
@@ -340,7 +357,7 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="Pixie Dust"
+                    android:text="@{BindingConverters.getRingtoneTitle(context, viewModel.notificationSoundUri, RingtoneManager.TYPE_NOTIFICATION)}"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -351,6 +368,7 @@
                 android:orientation="vertical"
                 android:background="?attr/selectableItemBackground"
                 android:paddingTop="16dp"
+                android:onClick="@{() -> viewModel.onAlarmSoundLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/notificationSoundLayout">
@@ -371,7 +389,7 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="Cesium"
+                    android:text="@{BindingConverters.getRingtoneTitle(context, viewModel.alarmSoundUri, RingtoneManager.TYPE_ALARM)}"
                     android:textSize="14sp" />
             </LinearLayout>
 
@@ -413,6 +431,7 @@
                 android:background="?attr/selectableItemBackground"
                 android:orientation="horizontal"
                 android:paddingTop="16dp"
+                android:onClick="@{() -> viewModel.onVibrateForCallsLayoutClick()}"
                 android:paddingBottom="16dp"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -432,6 +451,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="16dp"
+                    shouldVibrateForCalls="@{viewModel.vibrateForCalls}"
                     android:clickable="false" />
             </RelativeLayout>
 

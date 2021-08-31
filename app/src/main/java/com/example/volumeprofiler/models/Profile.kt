@@ -30,7 +30,7 @@ data class Profile(var title: String,
 
                    var interruptionFilter: Int = INTERRUPTION_FILTER_PRIORITY,
                    var isInterruptionFilterActive: Int = 1,
-                   var ringerMode: Int = AudioManager.RINGER_MODE_VIBRATE,
+                   var ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
                    var isVibrateForCallsActive: Int = 0,
 
                    var priorityCategories: ArrayList<Int> = arrayListOf(PRIORITY_CATEGORY_CALLS, PRIORITY_CATEGORY_MESSAGES),
