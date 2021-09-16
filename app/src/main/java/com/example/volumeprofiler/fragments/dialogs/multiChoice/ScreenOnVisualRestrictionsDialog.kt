@@ -1,14 +1,12 @@
 package com.example.volumeprofiler.fragments.dialogs.multiChoice
 
 import android.app.NotificationManager.Policy.*
-import android.content.Context
 import android.os.Bundle
 import androidx.annotation.ArrayRes
 import androidx.collection.ArrayMap
 import androidx.collection.arrayMapOf
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.interfaces.VisualRestrictionsCallback
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -20,24 +18,17 @@ class ScreenOnVisualRestrictionsDialog: BaseMultiChoiceDialog<List<Int>>() {
             2 to listOf(SUPPRESSED_EFFECT_PEEK, SUPPRESSED_EFFECT_SCREEN_ON),
             3 to listOf(SUPPRESSED_EFFECT_NOTIFICATION_LIST)
     )
-    override val title: String = "When the screen is on"
-    private var callbacks: VisualRestrictionsCallback? = null
+    override val title: String = TITLE
 
     @get:ArrayRes
     override val arrayRes: Int = R.array.screenIsOn
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        callbacks = targetFragment as VisualRestrictionsCallback
-    }
-
-    override fun onDetach() {
-        callbacks = null
-        super.onDetach()
-    }
-
     override fun onApply(arrayList: ArrayList<Int>) {
-        callbacks?.onEffectsSelected(arrayList, 1)
+        val bundle: Bundle = Bundle().apply {
+            this.putIntegerArrayList(InterruptionFilterFragment.EFFECTS_KEY, arrayList)
+            this.putInt(InterruptionFilterFragment.EFFECTS_TYPE_KEY, 1)
+        }
+        parentFragmentManager.setFragmentResult(InterruptionFilterFragment.EFFECTS_REQUEST_KEY, bundle)
     }
 
     override fun getArrayList(): ArrayList<Int> {
@@ -63,10 +54,11 @@ class ScreenOnVisualRestrictionsDialog: BaseMultiChoiceDialog<List<Int>>() {
 
     companion object {
 
-        fun newInstance(profile: Profile): ScreenOnVisualRestrictionsDialog {
+        private const val TITLE: String = "When the screen is on"
+
+        fun newInstance(screenOnVisualEffects: ArrayList<Int>): ScreenOnVisualRestrictionsDialog {
             val arguments: Bundle = Bundle().apply {
-                val arg: ArrayList<Int> = profile.screenOnVisualEffects
-                this.putSerializable(ARG_SELECTED_ITEMS, arg)
+                this.putSerializable(ARG_SELECTED_ITEMS, screenOnVisualEffects)
             }
             return ScreenOnVisualRestrictionsDialog().apply {
                 this.arguments = arguments

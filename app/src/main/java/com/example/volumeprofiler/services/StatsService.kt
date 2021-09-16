@@ -6,29 +6,33 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.MainActivity
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.Application.Companion.ACTION_WIDGET_PROFILE_SELECTED
-import com.example.volumeprofiler.database.Repository
+import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.receivers.NotificationActionReceiver
 import com.example.volumeprofiler.util.SharedPreferencesUtil
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class StatsService: Service() {
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
 
     private var profilesList: ArrayList<Profile> = arrayListOf()
-    private val sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
     private var currentPosition: Int = -1
 
+    @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+    @Inject lateinit var repository: ProfileRepository
+
     private fun setActiveProfilePosition(): Unit {
-        val id: String? = sharedPreferencesUtil.getActiveProfileId()
+        val id: String? = sharedPreferencesUtil.getEnabledProfileId()
         for ((index, i) in profilesList.withIndex()) {
             if (i.id.toString() == id) {
                 currentPosition = index
@@ -86,7 +90,7 @@ class StatsService: Service() {
         }
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.baseline_volume_down_deep_purple_300_24dp)
-                .setContentTitle(sharedPreferencesUtil.getActiveProfileTitle())
+                .setContentTitle(sharedPreferencesUtil.getEnabledProfileTitle())
                 .addAction(R.drawable.baseline_navigate_before_black_24dp, "Previous", createPreviousSelectionIntent(currentPosition))
                 .addAction(R.drawable.baseline_navigate_next_black_24dp, "Next", createNextSelectionIntent(currentPosition))
                 .setContentIntent(contentIntent)
@@ -107,7 +111,6 @@ class StatsService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.extras == null) {
-            val repository: Repository = Repository.get()
             scope.launch {
                 repository.observeProfiles().collect {
                     profilesList = it as ArrayList<Profile>

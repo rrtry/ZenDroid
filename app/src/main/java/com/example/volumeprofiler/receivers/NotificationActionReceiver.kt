@@ -8,15 +8,18 @@ import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.services.StatsService
 import com.example.volumeprofiler.util.ProfileUtil
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class NotificationActionReceiver: BroadcastReceiver() {
 
-    @SuppressWarnings("unchecked")
+    @Inject lateinit var profileUtil: ProfileUtil
+
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.action == Application.ACTION_WIDGET_PROFILE_SELECTED && intent.extras != null) {
-            val profileUtil: ProfileUtil = ProfileUtil.getInstance()
             val profile: Profile = intent.extras!!.getParcelable(StatsService.EXTRA_PROFILE)!!
-            profileUtil.applyAudioSettings(profile)
+            profileUtil.applyProfile(profile)
             sendServiceCommand(context!!)
         }
     }

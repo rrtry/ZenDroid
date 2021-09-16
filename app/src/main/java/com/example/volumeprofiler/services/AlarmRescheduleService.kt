@@ -9,16 +9,22 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.database.Repository
+import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.AlarmUtil
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AlarmRescheduleService: Service() {
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
     private lateinit var notificationManager: NotificationManager
+
+    @Inject lateinit var repository: AlarmRepository
+    @Inject lateinit var alarmUtil: AlarmUtil
 
     override fun onCreate() {
         super.onCreate()
@@ -26,11 +32,9 @@ class AlarmRescheduleService: Service() {
     }
 
     private suspend fun doWork(): Unit {
-        val repository: Repository = Repository.get()
-        val toSchedule: List<AlarmTrigger>? = repository.getProfilesWithScheduledAlarms()
+        val toSchedule: List<AlarmTrigger>? = repository.getActiveAlarmTriggers()
         if (toSchedule != null && toSchedule.isNotEmpty()) {
             Log.i(LOG_TAG, "setting the alarms again")
-            val alarmUtil = AlarmUtil.getInstance()
             alarmUtil.setMultipleAlarms(toSchedule)
         }
         else {

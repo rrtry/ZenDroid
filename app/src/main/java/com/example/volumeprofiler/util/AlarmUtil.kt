@@ -15,17 +15,23 @@ import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.receivers.AlarmReceiver
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalTime
 import java.time.ZoneId
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.collections.ArrayList
 
-class AlarmUtil private constructor (private val context: Context) {
+@Singleton
+class AlarmUtil @Inject constructor (
+        @ApplicationContext private val context: Context
+        ) {
 
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun setAlarm(alarm: Alarm, profile: Profile, onReschedule: Boolean): Long {
+    fun setAlarm(alarm: Alarm, profile: Profile, reScheduling: Boolean): Long {
         val alarmId: Long = alarm.id
-        val recurringDays: ArrayList<Int> = alarm.workingsDays
+        val recurringDays: ArrayList<Int> = alarm.scheduledDays
         val eventTime: LocalDateTime = alarm.localDateTime
         val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, true)
         val now: LocalDateTime = LocalDateTime.now()
@@ -40,7 +46,7 @@ class AlarmUtil private constructor (private val context: Context) {
                 delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
             }
             else {
-                if (!onReschedule) {
+                if (!reScheduling) {
                     nextDay = now.dayOfWeek.plus(1)
                     delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
                 }
@@ -100,25 +106,6 @@ class AlarmUtil private constructor (private val context: Context) {
 
         private const val LOG_TAG: String = "AlarmUtil"
         const val EXIT_SUCCESS: Long = -1
-
-        private var INSTANCE: AlarmUtil? = null
-
-        fun getInstance(): AlarmUtil {
-
-            if (INSTANCE != null) {
-                return INSTANCE!!
-            }
-            else {
-                throw IllegalStateException("Singleton must be initialized")
-            }
-        }
-
-        fun initialize(context: Context) {
-
-            if (INSTANCE == null) {
-                INSTANCE = AlarmUtil(context)
-            }
-        }
 
         private fun diffBetweenDatesInMillis(nextDay: DayOfWeek, hour: Int, minute: Int): Long {
             val now: LocalDateTime = LocalDateTime.now()

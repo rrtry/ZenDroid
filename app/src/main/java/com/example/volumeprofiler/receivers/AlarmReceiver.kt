@@ -6,58 +6,43 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.example.volumeprofiler.Application
+import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.services.StatsService
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ParcelableUtil
 import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.util.SharedPreferencesUtil
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import java.util.*
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AlarmReceiver: BroadcastReceiver() {
+
+    @Inject lateinit var profileUtil: ProfileUtil
+    @Inject lateinit var alarmUtil: AlarmUtil
+    @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
 
     @SuppressWarnings("unchecked")
     override fun onReceive(context: Context?, intent: Intent?) {
-
         if (context != null && intent?.action == Application.ACTION_ALARM_TRIGGER) {
-            val alarm: Alarm = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_ALARM)!!, ParcelableUtil.getParcelableCreator<Alarm>())
-            val profile: Profile = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_PROFILE)!!, ParcelableUtil.getParcelableCreator<Profile>())
-            val result: Long = setAlarm(alarm, profile)
+            val alarm: Alarm = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_ALARM)!!, ParcelableUtil.getParcelableCreator())
+            val profile: Profile = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_PROFILE)!!, ParcelableUtil.getParcelableCreator())
+            val result: Long = alarmUtil.setAlarm(alarm, profile, true)
             if (result != (-1).toLong()) {
-                cancelAlarm(alarm, profile)
-                // Repository.get().updateTriggeredAlarm(alarm) start service
+                alarmUtil.cancelAlarm(alarm, profile)
+                // TODO update database
             }
-            else {
-                setAlarm(alarm, profile)
-            }
-            applyAudioSettings(profile)
+            profileUtil.applyProfile(profile)
             if (isServiceRunning(context)) {
                 updateNotification(context)
             } else {
-                sendLocalBroadcast(profile.id)
+                // TODO update recyclerView items using event bus implementation
             }
+            sharedPreferencesUtil.writeCurrentProfileProperties(profile)
         }
-    }
-
-    private fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
-        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-        alarmUtil.cancelAlarm(alarm, profile)
-    }
-
-    private fun setAlarm(alarm: Alarm, profile: Profile): Long {
-        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-        return alarmUtil.setAlarm(alarm, profile, true)
-    }
-
-    private fun sendLocalBroadcast(id: UUID): Unit {
-        val profileUtil: ProfileUtil = ProfileUtil.getInstance()
-        profileUtil.sendLocalBroadcast(id)
-    }
-
-    private fun applyAudioSettings(profile: Profile): Unit {
-        val profileUtil: ProfileUtil = ProfileUtil.getInstance()
-        profileUtil.applyAudioSettings(profile)
     }
 
     private fun updateNotification(context: Context): Unit {
@@ -72,8 +57,7 @@ class AlarmReceiver: BroadcastReceiver() {
         }
     }
 
-
-    @SuppressWarnings("deprecation")
+    @Suppress("deprecation")
     private fun isServiceRunning(context: Context?): Boolean {
         val serviceName: String = StatsService::class.java.name
         val activityManager: ActivityManager = context?.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -101,11 +85,6 @@ class AlarmReceiver: BroadcastReceiver() {
     companion object {
 
         private const val LOG_TAG: String = "AlarmReceiver"
-        const val PREFS_PROFILE_ID: String = "prefs_profile_id"
-        const val PREFS_PROFILE_STREAM_NOTIFICATION: String = "prefs_profile_stream_notification"
-        const val PREFS_PROFILE_STREAM_RING: String = "prefs_profile_streams_ring"
-        const val PREFS_PROFILE_TITLE: String = "prefs_profile_title"
-        const val EXTRA_PROFILE_ID: String = "profile_id"
         const val EXTRA_ALARM: String = "extra_alarm"
         const val EXTRA_PROFILE: String = "extra_profile"
     }

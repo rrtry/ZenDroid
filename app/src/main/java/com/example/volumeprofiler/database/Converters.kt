@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
-class Conveters {
+class Converters {
 
     @TypeConverter
     fun toList(string: String): ArrayList<Int> {

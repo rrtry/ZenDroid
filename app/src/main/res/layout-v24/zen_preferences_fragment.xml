@@ -1,297 +1,398 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    android:id="@+id/rootElement"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <data>
+        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
+        <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
+        <import type="android.app.NotificationManager.Policy"/>
+        <variable
+            name="viewModel"
+            type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
+    </data>
+
+    <ScrollView
+        android:id="@+id/rootElement"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="35dp"
-            android:layout_marginTop="16dp"
-            android:text="Exceptions: Calls"
-            android:textColor="#FF6B13EA"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <LinearLayout
-            android:orientation="vertical"
-            app:layout_constraintTop_toBottomOf="@+id/textView2"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            android:paddingTop="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:id="@+id/exceptionsCallsLayout"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:id="@+id/rootViewGroup"
+            android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/exceptionCallsTitle"
-                android:textColor="#000000"
-                android:layout_width="wrap_content"
-                android:paddingStart="35dp"
-                android:textSize="16sp"
-                android:layout_height="wrap_content"
-                android:text="Calls"/>
-
-            <TextView
-                android:id="@+id/exceptionsCallsDescription"
-                android:layout_width="wrap_content"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:textSize="14sp"
-                android:layout_height="wrap_content"
-                android:text="From starred contacts only"/>
-        </LinearLayout>
-
-        <RelativeLayout
-            android:id="@+id/repeatCallersLayout"
-            android:layout_width="match_parent"
-            android:background="?attr/selectableItemBackground"
-            app:layout_constraintTop_toBottomOf="@id/exceptionsCallsLayout"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:id="@+id/repeatCallersTitle"
+                android:id="@+id/textView2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
-                android:layout_marginLeft="35dp"
-                android:text="Allow repeat callers"
-                android:textColor="#000000"
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/repeatCallersDescription"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:text="Exceptions: Calls"
+                android:textColor="#FF6B13EA"
                 android:textSize="14sp"
-                android:layout_marginTop="8dp"
-                android:layout_below="@id/repeatCallersTitle"
-                android:layout_marginLeft="35dp"
-                android:text="If the same person calls second time\nwithin 15 minutes period"/>
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <Switch
-                android:id="@+id/repeatCallersSwitch"
-                android:layout_width="match_parent"
-                android:clickable="false"
-                android:layout_marginRight="16dp"
-                android:layout_height="wrap_content"
-                android:layout_toRightOf="@+id/repeatCallersDescription"
-                android:layout_below="@id/repeatCallersTitle"/>
-        </RelativeLayout>
-
-        <View
-            android:id="@+id/separator2"
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:layout_marginTop="16dp"
-            android:background="#cfcfcf"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/repeatCallersLayout" />
-
-        <TextView
-            android:id="@+id/textView3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="35dp"
-            android:layout_marginTop="16dp"
-            android:text="Exceptions: Messages"
-            android:textColor="#FF6B13EA"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/separator2" />
-
-        <LinearLayout
-            android:orientation="vertical"
-            app:layout_constraintTop_toBottomOf="@+id/textView3"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            android:paddingTop="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:id="@+id/exceptionsMessagesLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:textColor="#000000"
-                android:layout_width="wrap_content"
-                android:paddingStart="35dp"
-                android:textSize="16sp"
-                android:layout_height="wrap_content"
-                android:text="Messages"/>
-
-            <TextView
-                android:id="@+id/exceptionsMessagesDescription"
-                android:layout_width="wrap_content"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:textSize="14sp"
-                android:layout_height="wrap_content"
-                android:text="From starred contacts only"/>
-        </LinearLayout>
-
-        <View
-            android:id="@+id/separator3"
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:layout_marginTop="16dp"
-            android:background="#cfcfcf"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/exceptionsMessagesLayout" />
-
-        <TextView
-            android:id="@+id/textView4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="35dp"
-            android:layout_marginTop="16dp"
-            android:text="Exceptions: Other interruptions"
-            android:textSize="14sp"
-            android:textColor="#FF6B13EA"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/separator3" />
-
-        <LinearLayout
-            android:orientation="vertical"
-            app:layout_constraintTop_toBottomOf="@+id/textView4"
-            app:layout_constraintEnd_toStartOf="parent"
-            app:layout_constraintStart_toEndOf="parent"
-            android:paddingTop="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:id="@+id/otherInterruptionsLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:textColor="#000000"
-                android:layout_width="wrap_content"
-                android:paddingStart="35dp"
-                android:textSize="16sp"
-                android:layout_height="wrap_content"
-                android:text="Other interruptions"/>
-
-            <TextView
-                android:id="@+id/otherInterruptionsDescription"
-                android:layout_width="wrap_content"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:textSize="14sp"
-                android:layout_height="wrap_content"
-                android:text="Restrict everything"/>
-        </LinearLayout>
-
-        <View
-            android:id="@+id/separator4"
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:layout_marginTop="16dp"
-            android:background="#cfcfcf"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/otherInterruptionsLayout" />
-
-        <TextView
-            android:id="@+id/textView12"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="35dp"
-            android:layout_marginTop="16dp"
-            android:text="Block visual disturbances"
-            android:textColor="#FF6B13EA"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/separator4" />
-
-        <RadioGroup
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView12"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <RelativeLayout
+            <LinearLayout
+                android:orientation="vertical"
+                app:layout_constraintTop_toBottomOf="@+id/textView2"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                android:paddingTop="16dp"
+                android:onClick="@{() -> viewModel.onCallsLayoutClick()}"
                 android:background="?attr/selectableItemBackground"
-                android:id="@+id/blockWhenScreenIsOnLayout"
+                android:id="@+id/exceptionsCallsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:id="@+id/blockWhenScreenIsOnTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginLeft="35dp"
-                    android:text="Block when screen is on"
+                    android:id="@+id/exceptionCallsTitle"
                     android:textColor="#000000"
-                    android:textSize="16sp" />
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content"
+                    android:text="Calls"/>
 
                 <TextView
-                    android:id="@+id/blockWhenScreenIsOnDescription"
+                    android:id="@+id/exceptionsCallsDescription"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
                     android:textSize="14sp"
-                    android:layout_marginLeft="35dp"
-                    android:layout_below="@id/blockWhenScreenIsOnTitle"
-                    android:layout_marginTop="8dp"
-                    android:text="Prevent notification silenced by Do Not Disturb\nfrom peeking or popping on screen"/>
-
-                <Switch
-                    android:id="@+id/blockWhenScreenIsOnSwitch"
-                    android:layout_width="match_parent"
-                    android:clickable="false"
-                    android:layout_marginRight="16dp"
                     android:layout_height="wrap_content"
-                    android:layout_toRightOf="@+id/blockWhenScreenIsOnDescription"
-                    android:layout_below="@id/blockWhenScreenIsOnTitle"/>
+                    android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityCallSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_CALLS)}"/>
+            </LinearLayout>
 
-            </RelativeLayout>
-
-            <RelativeLayout
-                android:id="@+id/blockWhenScreenIsOffLayout"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:id="@+id/callsStarredContactsLayout"
+                android:orientation="vertical"
                 android:background="?attr/selectableItemBackground"
+                app:layout_constraintTop_toBottomOf="@+id/exceptionsCallsLayout"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                android:paddingTop="16dp"
+                rootViewGroup="@{rootViewGroup}"
+                prioritySenders="@{viewModel.priorityCallSenders}"
+                priorityCategories="@{viewModel.priorityCategories}"
+                categoryType="@{Policy.PRIORITY_CATEGORY_CALLS}"
+                android:onClick="@{() -> viewModel.onStarredContactsLayoutClick()}"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:id="@+id/blockWhenScreenIsOffTitle"
+                    android:id="@+id/CallsStarredContactsTitle"
+                    android:textColor="#000000"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content"
+                    android:text="Starred contacts"/>
+
+                <TextView
+                    android:id="@+id/CallsStarredContactsDescription"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:textSize="14sp"
+                    android:layout_height="wrap_content"
+                    android:text="@{ContentUtilKt.queryStarredContacts(context)}"/>
+            </LinearLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:background="?attr/selectableItemBackground"
+                android:id="@+id/repeatCallersLayout"
+                android:layout_width="match_parent"
+                android:onClick="@{() -> viewModel.onRepetitiveCallersLayoutClick()}"
+                callSenders="@{viewModel.priorityCallSenders}"
+                priorityCategories="@{viewModel.priorityCategories}"
+                app:layout_constraintTop_toBottomOf="@id/callsStarredContactsLayout"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:id="@+id/repeatCallersTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:layout_marginLeft="35dp"
-                    android:text="Block when screen is off"
+                    android:text="Allow repeat callers"
                     android:textColor="#000000"
                     android:textSize="16sp" />
 
                 <TextView
-                    android:id="@+id/blockWhenScreenIsOffDescription"
+                    android:id="@+id/repeatCallersDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="4dp"
+                    android:text="If the same person calls second time\nwithin 15 minutes period"
                     android:textSize="14sp"
-                    android:layout_marginTop="8dp"
-                    android:layout_below="@id/blockWhenScreenIsOffTitle"
-                    android:layout_marginLeft="35dp"
-                    android:text="Prevent notifications silenced by Do Not Disturb\nfrom turning on the screen"/>
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/repeatCallersTitle" />
 
                 <Switch
-                    android:id="@+id/blockWhenScreenIsOffSwitch"
-                    android:layout_width="match_parent"
-                    android:layout_marginRight="16dp"
-                    android:clickable="false"
+                    android:id="@+id/repeatCallersSwitch"
+                    callSenders="@{viewModel.priorityCallSenders}"
+                    repeatingCallersPriorityCategories="@{viewModel.priorityCategories}"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_toRightOf="@+id/blockWhenScreenIsOffDescription"
-                    android:layout_below="@id/blockWhenScreenIsOffTitle"/>
+                    android:layout_below="@id/repeatCallersTitle"
+                    android:layout_marginBottom="16dp"
+                    android:layout_toRightOf="@+id/repeatCallersDescription"
+                    android:clickable="false"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/repeatCallersDescription"
+                    app:layout_constraintTop_toTopOf="@+id/repeatCallersDescription" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
-            </RelativeLayout>
-        </RadioGroup>
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+            <View
+                android:id="@+id/separator2"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="16dp"
+                android:background="#cfcfcf"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/repeatCallersLayout" />
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="35dp"
+                android:layout_marginTop="16dp"
+                android:text="Exceptions: Messages"
+                android:textColor="#FF6B13EA"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/separator2" />
+
+            <LinearLayout
+                android:orientation="vertical"
+                app:layout_constraintTop_toBottomOf="@+id/textView3"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                android:paddingTop="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onMessagesLayoutClick()}"
+                android:id="@+id/exceptionsMessagesLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:textColor="#000000"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content"
+                    android:text="Messages"/>
+
+                <TextView
+                    android:id="@+id/exceptionsMessagesDescription"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:textSize="14sp"
+                    android:layout_height="wrap_content"
+                    android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/messagesStarredContactsLayout"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintTop_toBottomOf="@+id/exceptionsMessagesLayout"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                android:paddingTop="16dp"
+                rootViewGroup="@{rootViewGroup}"
+                prioritySenders="@{viewModel.priorityMessageSenders}"
+                priorityCategories="@{viewModel.priorityCategories}"
+                categoryType="@{Policy.PRIORITY_CATEGORY_MESSAGES}"
+                android:onClick="@{() -> viewModel.onStarredContactsLayoutClick()}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/messagesStarredContactsTitle"
+                    android:textColor="#000000"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content"
+                    android:text="Starred contacts"/>
+
+                <TextView
+                    android:id="@+id/messagesStarredContactsDescription"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:textSize="14sp"
+                    android:layout_height="wrap_content"
+                    android:text="@{ContentUtilKt.queryStarredContacts(context)}"/>
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator3"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="16dp"
+                android:background="#cfcfcf"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/messagesStarredContactsLayout" />
+
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="35dp"
+                android:layout_marginTop="16dp"
+                android:text="Exceptions: Other interruptions"
+                android:textSize="14sp"
+                android:textColor="#FF6B13EA"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/separator3" />
+
+            <LinearLayout
+                android:orientation="vertical"
+                app:layout_constraintTop_toBottomOf="@+id/textView4"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                android:paddingTop="16dp"
+                android:onClick="@{() -> viewModel.onPriorityInterruptionsLayoutClick()}"
+                android:background="?attr/selectableItemBackground"
+                android:id="@+id/otherInterruptionsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:textColor="#000000"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content"
+                    android:text="Other interruptions"/>
+
+                <TextView
+                    android:id="@+id/otherInterruptionsDescription"
+                    android:layout_width="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:textSize="14sp"
+                    android:layout_height="wrap_content"
+                    android:text="@{BindingConverters.priorityCategoriesToString(viewModel.priorityCategories)}"/>
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator4"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="16dp"
+                android:background="#cfcfcf"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/otherInterruptionsLayout" />
+
+            <TextView
+                android:id="@+id/textView12"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="35dp"
+                android:layout_marginTop="16dp"
+                android:text="Block visual disturbances"
+                android:textColor="#FF6B13EA"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/separator4" />
+
+            <RadioGroup
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textView12"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <RelativeLayout
+                    android:background="?attr/selectableItemBackground"
+                    android:id="@+id/blockWhenScreenIsOnLayout"
+                    android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_ON)}"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/blockWhenScreenIsOnTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginLeft="35dp"
+                        android:text="Block when screen is on"
+                        android:textColor="#000000"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/blockWhenScreenIsOnDescription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:layout_marginLeft="35dp"
+                        android:layout_below="@id/blockWhenScreenIsOnTitle"
+                        android:layout_marginTop="8dp"
+                        android:text="Prevent notification silenced by Do Not Disturb\nfrom peeking or popping on screen"/>
+
+                    <Switch
+                        android:id="@+id/blockWhenScreenIsOnSwitch"
+                        android:layout_width="match_parent"
+                        android:clickable="false"
+                        android:layout_marginRight="16dp"
+                        suppressedEffectScreenOn="@{viewModel.screenOnVisualEffects}"
+                        android:layout_height="wrap_content"
+                        android:layout_toRightOf="@+id/blockWhenScreenIsOnDescription"
+                        android:layout_below="@id/blockWhenScreenIsOnTitle"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/blockWhenScreenIsOffLayout"
+                    android:layout_width="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_OFF)}"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/blockWhenScreenIsOffTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginLeft="35dp"
+                        android:text="Block when screen is off"
+                        android:textColor="#000000"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/blockWhenScreenIsOffDescription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:layout_marginTop="8dp"
+                        android:layout_below="@id/blockWhenScreenIsOffTitle"
+                        android:layout_marginLeft="35dp"
+                        android:text="Prevent notifications silenced by Do Not Disturb\nfrom turning on the screen"/>
+
+                    <Switch
+                        android:id="@+id/blockWhenScreenIsOffSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_marginRight="16dp"
+                        android:clickable="false"
+                        suppressedEffectScreenOff="@{viewModel.screenOffVisualEffects}"
+                        android:layout_height="wrap_content"
+                        android:layout_toRightOf="@+id/blockWhenScreenIsOffDescription"
+                        android:layout_below="@id/blockWhenScreenIsOffTitle"/>
+
+                </RelativeLayout>
+            </RadioGroup>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+</layout>

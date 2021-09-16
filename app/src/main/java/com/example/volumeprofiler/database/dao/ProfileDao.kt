@@ -1,9 +1,7 @@
-package com.example.volumeprofiler.database
+package com.example.volumeprofiler.database.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.AlarmTrigger
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 
@@ -15,9 +13,6 @@ interface ProfileDao {
 
     @Query("SELECT * FROM Profile")
     suspend fun getProfiles(): List<Profile>
-
-    @Query("SELECT * FROM Profile WHERE id=(:id)")
-    fun observeProfile(id: UUID): LiveData<Profile?>
 
     @Query("SELECT * FROM Profile WHERE id=(:id)")
     suspend fun getProfile(id: UUID): Profile

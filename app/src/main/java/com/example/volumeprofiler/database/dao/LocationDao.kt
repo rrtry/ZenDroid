@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.database
+package com.example.volumeprofiler.database.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*

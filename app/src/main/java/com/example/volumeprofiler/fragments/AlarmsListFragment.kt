@@ -1,13 +1,12 @@
 package com.example.volumeprofiler.fragments
 
-import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.recyclerview.widget.ListAdapter
 import android.view.*
-import android.widget.Button
-import android.widget.Switch
-import android.widget.TextView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
@@ -27,6 +26,7 @@ import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelec
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.KeyProvider
+import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.fragments.dialogs.WarningDialog
 import com.example.volumeprofiler.interfaces.ActionModeProvider
@@ -35,9 +35,11 @@ import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.AlarmsListViewModel
 import com.example.volumeprofiler.viewmodels.MainActivitySharedViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.lang.StringBuilder
 import java.lang.ref.WeakReference
 import java.time.DayOfWeek
@@ -46,19 +48,39 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.*
+import javax.inject.Inject
 import kotlin.collections.ArrayList
 
+@AndroidEntryPoint
 class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
     private var showDialog: Boolean = false
 
     private lateinit var tracker: SelectionTracker<Long>
+
     private val viewModel: AlarmsListViewModel by viewModels()
     private val sharedViewModel: MainActivitySharedViewModel by activityViewModels()
+
     private val alarmAdapter: AlarmAdapter = AlarmAdapter()
 
     private var _binding: AlarmsFragmentBinding? = null
     private val binding: AlarmsFragmentBinding get() = _binding!!
+
+    private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
+
+    @Inject lateinit var alarmUtil: AlarmUtil
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            // TODO handle activity result
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        activityResultLauncher.unregister()
+    }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -68,41 +90,20 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         _binding = AlarmsFragmentBinding.inflate(inflater, container, false)
         binding.fab.setOnClickListener {
             if (!showDialog) {
-                val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java)
-                startActivity(intent)
+                startDetailsActivity()
             }
             else {
-                val fragment: WarningDialog = WarningDialog()
-                val fragmentManager = requireActivity().supportFragmentManager
-                fragment.show(fragmentManager, null)
+                showWarningDialog()
             }
         }
         return binding.root
-    }
-
-    private fun initRecyclerView(view: View): Unit {
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        binding.recyclerView.adapter = alarmAdapter
-        binding.recyclerView.itemAnimator = DefaultItemAnimator()
-    }
-
-    private fun initSelectionTracker(): Unit {
-        tracker = SelectionTracker.Builder(
-                SELECTION_ID,
-                binding.recyclerView,
-                KeyProvider(alarmAdapter),
-                DetailsLookup(binding.recyclerView),
-                StorageStrategy.createLongStorage()
-        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
-                .build()
-        tracker.addObserver(BaseSelectionObserver<Long>(WeakReference(this)))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRecyclerView(view)
         initSelectionTracker()
-        viewModel.eventListLiveData.observe(viewLifecycleOwner,
+        viewModel.alarmListLiveData.observe(viewLifecycleOwner,
                 Observer<List<AlarmTrigger>> { t ->
                     if (t != null) {
                         updateUI(t)
@@ -116,6 +117,48 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
             })
     }
 
+    override fun onPause() {
+        super.onPause()
+        tracker.clearSelection()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    private fun initRecyclerView(view: View): Unit {
+        binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        binding.recyclerView.adapter = alarmAdapter
+        binding.recyclerView.itemAnimator = DefaultItemAnimator()
+    }
+
+    private fun showWarningDialog(): Unit {
+        val fragment: WarningDialog = WarningDialog()
+        val fragmentManager = requireActivity().supportFragmentManager
+        fragment.show(fragmentManager, null)
+    }
+
+    private fun initSelectionTracker(): Unit {
+        tracker = SelectionTracker.Builder(
+            SELECTION_ID,
+            binding.recyclerView,
+            KeyProvider(alarmAdapter),
+            DetailsLookup(binding.recyclerView),
+            StorageStrategy.createLongStorage()
+        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
+            .build()
+        tracker.addObserver(BaseSelectionObserver<Long>(WeakReference(this)))
+    }
+
+    private fun startDetailsActivity(alarmTrigger: AlarmTrigger? = null): Unit {
+        val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java)
+        if (alarmTrigger != null) {
+            intent.putExtra(EditAlarmActivity.EXTRA_TRIGGER, alarmTrigger)
+        }
+        activityResultLauncher.launch(intent)
+    }
+
     private fun updateUI(events: List<AlarmTrigger>) {
         if (events.isEmpty()) {
             binding.hintScheduler.visibility = View.VISIBLE
@@ -126,14 +169,25 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         alarmAdapter.submitList(events)
     }
 
-    private inner class EventHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener, ViewHolderItemDetailsProvider<Long> {
+    private fun cancelAlarm(alarmTrigger: AlarmTrigger): Unit {
+        alarmUtil.cancelAlarm(alarmTrigger.alarm, alarmTrigger.profile)
+        viewModel.cancelAlarm(alarmTrigger)
+    }
 
-        private val timeTextView: TextView = itemView.findViewById(R.id.timeTextView)
-        @SuppressLint("UseSwitchCompatOrMaterialCode")
-        private val enableSwitch: Switch = itemView.findViewById(R.id.scheduleSwitch)
-        private val daysTextView: TextView = itemView.findViewById(R.id.occurrencesTextView)
-        private val profileTextView: TextView = itemView.findViewById(R.id.profileName)
-        private val removeAlarmButton: Button = itemView.findViewById(R.id.deleteGeofenceButton)
+    private fun scheduleAlarm(alarmTrigger: AlarmTrigger): Unit {
+        alarmUtil.setAlarm(alarmTrigger.alarm, alarmTrigger.profile, false)
+        viewModel.scheduleAlarm(alarmTrigger)
+    }
+
+    private fun removeAlarm(alarmTrigger: AlarmTrigger): Unit {
+        if (alarmTrigger.alarm.isScheduled == 1) {
+            alarmUtil.cancelAlarm(alarmTrigger.alarm, alarmTrigger.profile)
+        }
+        viewModel.removeAlarm(alarmTrigger)
+    }
+
+    private inner class AlarmViewHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener, ViewHolderItemDetailsProvider<Long> {
+
         private lateinit var alarm: Alarm
         private lateinit var profile: Profile
 
@@ -146,31 +200,31 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         }
 
         private fun setCallbacks(): Unit {
-            enableSwitch.setOnCheckedChangeListener { _, isChecked ->
+            alarmAdapter.binding.scheduleSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(absoluteAdapterPosition)
-                if (isChecked && enableSwitch.isPressed) {
-                    viewModel.scheduleAlarm(alarmTrigger)
+                if (isChecked && alarmAdapter.binding.scheduleSwitch.isPressed) {
+                    scheduleAlarm(alarmTrigger)
                 }
-                else if (!isChecked && enableSwitch.isPressed) {
-                    viewModel.unScheduleAlarm(alarmTrigger)
+                else if (!isChecked && alarmAdapter.binding.scheduleSwitch.isPressed) {
+                    cancelAlarm(alarmTrigger)
                 }
             }
-            removeAlarmButton.setOnClickListener {
-                viewModel.removeAlarm(alarmAdapter.getItemAtPosition(absoluteAdapterPosition))
+            alarmAdapter.binding.deleteAlarmButton.setOnClickListener {
+                removeAlarm(alarmAdapter.getItemAtPosition(absoluteAdapterPosition))
             }
         }
 
         private fun updateTextViews(): Unit {
             val time = alarm.localDateTime.toLocalTime()
             val pattern = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault())
-            timeTextView.text = time.format(pattern)
-            daysTextView.text = updateScheduledDaysTextView()
-            profileTextView.text = "${profile.title}"
+            alarmAdapter.binding.timeTextView.text = time.format(pattern)
+            alarmAdapter.binding.occurrencesTextView.text = updateScheduledDaysTextView()
+            alarmAdapter.binding.profileName.text = "${profile.title}"
         }
 
         private fun updateScheduledDaysTextView(): String {
             val stringBuilder: StringBuilder = StringBuilder()
-            val workingsDays: ArrayList<Int> = alarm.workingsDays
+            val workingsDays: ArrayList<Int> = alarm.scheduledDays
             if (workingsDays.isNotEmpty()) {
                 if (workingsDays.size == 1) {
                     return DayOfWeek.of(workingsDays[0]).getDisplayName(TextStyle.FULL, Locale.getDefault())
@@ -201,21 +255,17 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
             this.alarm = alarmTrigger.alarm
             this.profile = alarmTrigger.profile
             AnimUtil.selectedItemAnimation(itemView, isSelected)
-            enableSwitch.isChecked = alarm.isScheduled == 1
+            alarmAdapter.binding.scheduleSwitch.isChecked = alarm.isScheduled == 1
             setCallbacks()
             updateTextViews()
         }
 
         override fun onClick(v: View?) {
-            val alarmTrigger: AlarmTrigger = alarmAdapter.getItemAtPosition(absoluteAdapterPosition)
-            val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java).apply {
-                this.putExtra(EditAlarmActivity.EXTRA_TRIGGER, alarmTrigger)
-            }
-            startActivity(intent)
+            startDetailsActivity(alarmAdapter.getItemAtPosition(absoluteAdapterPosition))
         }
     }
 
-    private inner class AlarmAdapter : ListAdapter<AlarmTrigger, EventHolder>(object : DiffUtil.ItemCallback<AlarmTrigger>() {
+    private inner class AlarmAdapter : ListAdapter<AlarmTrigger, AlarmViewHolder>(object : DiffUtil.ItemCallback<AlarmTrigger>() {
 
         override fun areItemsTheSame(oldItem: AlarmTrigger, newItem: AlarmTrigger): Boolean {
             return oldItem.alarm.id == newItem.alarm.id
@@ -228,14 +278,16 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
     }), ListAdapterItemProvider<Long> {
 
         private var lastPosition: Int = -1
+        lateinit var binding: AlarmItemViewBinding
 
         fun getItemAtPosition(position: Int): AlarmTrigger = getItem(position)
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventHolder {
-            return EventHolder(layoutInflater.inflate(EVENT_LAYOUT, parent, false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {
+            binding = AlarmItemViewBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return AlarmViewHolder(binding.root)
         }
 
-        override fun onBindViewHolder(holder: EventHolder, position: Int) {
+        override fun onBindViewHolder(holder: AlarmViewHolder, position: Int) {
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
             }
@@ -263,7 +315,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         for (i in tracker.selection) {
             for ((index, j) in alarmAdapter.currentList.withIndex()) {
                 if (j.alarm.id == i) {
-                    viewModel.removeAlarm(alarmAdapter.getItemAtPosition(index))
+                    removeAlarm(j)
                 }
             }
         }

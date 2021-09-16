@@ -1,22 +1,13 @@
 package com.example.volumeprofiler
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.volumeprofiler.database.Repository
-import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.services.StatsService
-import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.ProfileUtil
-import com.example.volumeprofiler.util.SharedPreferencesUtil
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
 
 class Application: Application(), LifecycleObserver {
 
@@ -28,7 +19,7 @@ class Application: Application(), LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onStop(): Unit {
-        startStatsService()
+        //startStatsService()
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
@@ -37,6 +28,7 @@ class Application: Application(), LifecycleObserver {
     }
 
     private fun initializeSingletons(): Unit {
+        /*
         val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             this.createDeviceProtectedStorageContext()
         }
@@ -47,6 +39,7 @@ class Application: Application(), LifecycleObserver {
         Repository.initialize(storageContext)
         AlarmUtil.initialize(this)
         ProfileUtil.initialize(this)
+         */
     }
 
     private fun stopStatsService(): Unit {

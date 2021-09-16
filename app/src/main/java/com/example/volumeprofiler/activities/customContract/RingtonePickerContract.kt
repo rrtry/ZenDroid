@@ -8,14 +8,17 @@ import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContract
 import kotlin.properties.Delegates
 
-class RingtonePickerContract: ActivityResultContract<Int, Uri?>() {
+class RingtonePickerContract(): ActivityResultContract<Int, Uri?>() {
 
     var ringtoneType by Delegates.notNull<Int>()
+    var existingUri: Uri = Uri.EMPTY
 
     override fun createIntent(context: Context, input: Int?): Intent {
         ringtoneType = input!!
         return Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
             this.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, input)
+            this.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if (existingUri == Uri.EMPTY)
+                RingtoneManager.getActualDefaultRingtoneUri(context, input) else existingUri)
         }
     }
 

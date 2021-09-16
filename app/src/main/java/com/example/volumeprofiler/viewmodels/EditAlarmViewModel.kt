@@ -1,35 +1,69 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.*
-import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.database.Repository
+import com.example.volumeprofiler.database.repositories.ProfileRepository
+import com.example.volumeprofiler.models.Alarm
+import com.example.volumeprofiler.models.AlarmTrigger
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import javax.inject.Inject
 
-class EditAlarmViewModel: ViewModel() {
+@HiltViewModel
+class EditAlarmViewModel @Inject constructor(
+        private val profileRepository: ProfileRepository,
+): ViewModel() {
 
-    private val repository: Repository = Repository.get()
+    var areArgsSet: Boolean = false
 
-    var selectedItem: Int = -1
-    val profileListLiveData: LiveData<List<Profile>> = repository.observeProfiles().asLiveData()
+    sealed class Event {
+        data class ShowDialogEvent(val dialogType: DialogType): Event()
+        object ShowPopupWindowEvent: Event()
+    }
 
-    var mutableAlarm: Alarm? = null
-    var mutableProfile: Profile? = null
+    enum class DialogType {
+        DAYS_SELECTION,
+        TIME_SELECTION
+    }
 
-    fun updateAlarm(alarm: Alarm) {
+    val profilesLiveData: LiveData<List<Profile>> = profileRepository.observeProfiles().asLiveData()
+
+    val selectedProfile: MutableLiveData<Profile> = MutableLiveData()
+    val scheduledDays: MutableLiveData<ArrayList<Int>> = MutableLiveData()
+    val startTime: MutableLiveData<LocalDateTime> = MutableLiveData()
+
+    private val channel: Channel<Event> = Channel(Channel.BUFFERED)
+    val eventsFlow: Flow<Event> = channel.receiveAsFlow()
+
+    fun onTimeSelectButtonClick(): Unit {
         viewModelScope.launch {
-            repository.updateAlarm(alarm)
+            channel.send(Event.ShowDialogEvent(DialogType.TIME_SELECTION))
         }
     }
 
-    fun addAlarm(alarm: Alarm) {
+    fun onDaysSelectButtonClick(): Unit {
         viewModelScope.launch {
-            repository.addAlarm(alarm)
+            channel.send(Event.ShowDialogEvent(DialogType.DAYS_SELECTION))
         }
+    }
+
+    fun setArgs(alarmTrigger: AlarmTrigger): Unit {
+        selectedProfile.value = alarmTrigger.profile
+        scheduledDays.value = alarmTrigger.alarm.scheduledDays
+        startTime.value = alarmTrigger.alarm.localDateTime
+    }
+
+    fun getAlarm(): Alarm? {
+
     }
 
     override fun onCleared(): Unit {
-        Log.i("EditEventViewModel", "onCleared()")
+        super.onCleared()
+        channel.close()
     }
 }

@@ -5,50 +5,60 @@ import androidx.collection.ArrayMap
 import androidx.lifecycle.*
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmTrigger
-import com.example.volumeprofiler.database.Repository
+import com.example.volumeprofiler.database.repositories.AlarmRepository
+import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.models.LocationTrigger
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Inject
 
-class ProfileListViewModel: ViewModel() {
+@HiltViewModel
+class ProfileListViewModel @Inject constructor(
+        private val profileRepository: ProfileRepository,
+        private val alarmRepository: AlarmRepository
+): ViewModel() {
 
-    private val sharedPreferencesUtil: SharedPreferencesUtil = SharedPreferencesUtil.getInstance()
-    private val repository: Repository = Repository.get()
+    sealed class Event {
 
-    val alarmsToRemoveLiveData = MutableLiveData<List<AlarmTrigger>?>()
-    val locationsToRemoveLiveData = MutableLiveData<List<LocationTrigger>>()
+        data class CancelAlarmsEvent(val alarms: List<AlarmTrigger>?): Event()
+
+        object RemoveGeofencesEvent: Event()
+    }
+
+    private val eventChannel: Channel<Event> = Channel(Channel.BUFFERED)
+    val eventFlow: Flow<Event> = eventChannel.receiveAsFlow()
 
     var lastActiveProfileIndex: Int = -1
 
-    fun applyProfileSettings(profile: Profile): Unit {
-        val profileUtil = ProfileUtil.getInstance()
-        profileUtil.applyAudioSettings(profile)
-    }
-
-    fun clearActiveProfileRecord(currentProfile: Profile): Unit {
-        if (sharedPreferencesUtil.getActiveProfileId() == currentProfile.id.toString()) {
-            sharedPreferencesUtil.clearActiveProfileRecord(currentProfile.id)
-        }
-    }
-
-    fun removeProfile(profile: Profile, position: Int, positionMap: ArrayMap<UUID, Int>): Unit {
-        if (position == lastActiveProfileIndex) {
-            lastActiveProfileIndex = -1
-        }
-        val id: UUID = profile.id
-        if (sharedPreferencesUtil.getActiveProfileId() == id.toString()) {
-            sharedPreferencesUtil.clearActiveProfileRecord(id)
-        }
-        positionMap.remove(id)
+    fun addProfile(profile: Profile): Unit {
         viewModelScope.launch {
-            alarmsToRemoveLiveData.value = repository.getAlarmsByProfileId(id)
-            repository.removeProfile(profile)
+            profileRepository.addProfile(profile)
+        }
+    }
+
+    fun updateProfile(profile: Profile): Unit {
+        viewModelScope.launch {
+            profileRepository.updateProfile(profile)
+        }
+    }
+
+    fun removeProfile(profile: Profile): Unit {
+        viewModelScope.launch {
+            eventChannel.send(Event.CancelAlarmsEvent(alarmRepository.getActiveAlarmTriggersByProfileId(profile.id)))
+            eventChannel.send(Event.RemoveGeofencesEvent)
+            profileRepository.removeProfile(profile)
         }
     }
 
     override fun onCleared(): Unit {
-        Log.i("ProfileListViewModel", "onCleared()")
+        super.onCleared()
+        eventChannel.cancel()
     }
 }

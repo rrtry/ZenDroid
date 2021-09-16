@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.fragments.dialogs
 
 import android.app.Dialog
-import android.content.Context
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.view.KeyEvent
@@ -13,22 +12,12 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.interfaces.ProfileNameInputDialogCallback
+import com.example.volumeprofiler.activities.EditProfileActivity.Companion.INPUT_TITLE_REQUEST_KEY
+import com.example.volumeprofiler.fragments.EditProfileFragment
 
 class ProfileNameInputDialog: DialogFragment() {
 
-    private var callbacks: ProfileNameInputDialogCallback? = null
     private var editText: EditText? = null
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        callbacks = targetFragment as ProfileNameInputDialogCallback
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        callbacks = null
-    }
 
     override fun onDestroyView() {
         editText = null
@@ -65,7 +54,7 @@ class ProfileNameInputDialog: DialogFragment() {
             override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {
                 if (keyCode == KeyEvent.KEYCODE_ENTER) {
                     if (editText!!.text!!.isNotEmpty()) {
-                        commitChanges()
+                        changeTitle()
                     }
                     return true
                 }
@@ -75,7 +64,7 @@ class ProfileNameInputDialog: DialogFragment() {
         editText?.text = SpannableStringBuilder(arguments?.getString(EXTRA_TITLE))
         positiveButton.setOnClickListener {
             if (editText!!.text!!.isNotEmpty()) {
-                commitChanges()
+                changeTitle()
             }
         }
         negativeButton.setOnClickListener {
@@ -83,8 +72,10 @@ class ProfileNameInputDialog: DialogFragment() {
         }
     }
 
-    private fun commitChanges(): Unit {
-        callbacks?.onTitleChanged(editText?.text.toString())
+    private fun changeTitle(): Unit {
+        parentFragmentManager.setFragmentResult(INPUT_TITLE_REQUEST_KEY, Bundle().apply {
+            this.putString(EXTRA_TITLE, editText?.text.toString())
+        })
         finish()
     }
 

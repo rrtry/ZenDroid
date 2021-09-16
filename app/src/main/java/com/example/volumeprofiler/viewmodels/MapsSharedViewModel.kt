@@ -3,12 +3,9 @@ package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
-import com.example.volumeprofiler.database.Repository
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 
 class MapsSharedViewModel: ViewModel() {
-
-    val repository: Repository = Repository.get()
 
     val latLng: MutableLiveData<EventWrapper<LatLng>> = MutableLiveData()
     val addressLine: MutableLiveData<EventWrapper<String>> = MutableLiveData()

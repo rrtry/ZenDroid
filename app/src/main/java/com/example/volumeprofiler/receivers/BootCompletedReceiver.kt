@@ -9,6 +9,7 @@ import com.example.volumeprofiler.services.StatsService
 
 class BootCompletedReceiver: BroadcastReceiver() {
 
+    /*
     private fun startService(context: Context, service: Class<*>): Unit {
         val intent: Intent = Intent(context, service)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -18,9 +19,10 @@ class BootCompletedReceiver: BroadcastReceiver() {
             context.startService(intent)
         }
     }
+     */
 
     override fun onReceive(context: Context?, intent: Intent?): Unit {
-
+        /*
         val context: Context = context as Context
 
         if (intent?.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
@@ -32,6 +34,7 @@ class BootCompletedReceiver: BroadcastReceiver() {
             startService(context, AlarmRescheduleService::class.java)
             startService(context, StatsService::class.java)
         }
+         */
     }
 
     companion object {

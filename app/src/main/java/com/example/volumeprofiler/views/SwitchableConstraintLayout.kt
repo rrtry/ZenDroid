@@ -27,7 +27,7 @@ class SwitchableConstraintLayout @JvmOverloads constructor(
                         0.33f, 0.33f, 0.33f, 0f, 0f,
                         0.33f, 0.33f, 0.33f, 0f, 0f,
                         0.33f, 0.33f, 0.33f, 0f, 0f,
-                        0.0f, 0.0f, 0.0f, 0.75f, 0f
+                        0.0f, 0.0f, 0.0f, ALPHA, 0f
                 )
         )
         paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
@@ -51,5 +51,9 @@ class SwitchableConstraintLayout @JvmOverloads constructor(
         if (disabled) {
             canvas?.restore()
         }
+    }
+
+    companion object {
+        private const val ALPHA: Float = 0.75F
     }
 }

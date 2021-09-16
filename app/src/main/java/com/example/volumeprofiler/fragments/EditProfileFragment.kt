@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context
-import android.media.AudioManager
 import android.media.RingtoneManager
 import android.os.Bundle
 import android.util.Log
@@ -20,45 +19,54 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
 import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
-import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.util.AlarmUtil
 import kotlinx.coroutines.Job
+import android.app.NotificationManager.*
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.AudioManager.*
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
+import android.util.DisplayMetrics
+import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.content.ContextCompat
+import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import android.app.NotificationManager.*
-import android.media.AudioManager.*
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
+@AndroidEntryPoint
 class EditProfileFragment: Fragment() {
 
     private val viewModel: EditProfileViewModel by activityViewModels()
+    private var callbacks: EditProfileActivityCallbacks? = null
 
     private var _binding: CreateProfileFragmentBinding? = null
     private val binding: CreateProfileFragmentBinding get() = _binding!!
 
-    private lateinit var job: Job
+    private var job: Job? = null
 
     private lateinit var ringtoneActivityCallback: ActivityResultLauncher<Int>
     private lateinit var storagePermissionCallback: ActivityResultLauncher<String>
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setArgs()
-    }
-
-    private fun setArgs(): Unit {
-        if (arguments?.getParcelable<Profile>(EXTRA_PROFILE) != null) {
-            val arg: Profile = arguments?.getParcelable<Profile>(EXTRA_PROFILE)!!
-            viewModel.setArgs(arg, true)
-        } else {
-            viewModel.setArgs(Profile("New profile"), false)
-        }
-    }
+    private lateinit var notificationPolicyCallback: ActivityResultLauncher<Intent>
+    private lateinit var hapticService: Vibrator
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         registerForActivityResult()
+        registerForPermissionResult()
+        registerForNotificationPolicyResult()
+        callbacks = requireActivity() as EditProfileActivityCallbacks
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        hapticService = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -68,42 +76,94 @@ class EditProfileFragment: Fragment() {
         return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        job = viewModel.fragmentEventsFlow.onEach {
+            when (it) {
+                EditProfileViewModel.Event.NavigateToNextFragment -> {
+                    callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
+                }
+                EditProfileViewModel.Event.StoragePermissionRequestEvent -> {
+                    requestStoragePermission()
+                }
+                EditProfileViewModel.Event.ShowPopupWindowEvent -> {
+                    showPopupMenu()
+                }
+                EditProfileViewModel.Event.NotificationPolicyRequestEvent -> {
+                    startNotificationPolicyActivity()
+                }
+                is EditProfileViewModel.Event.ChangeRingtoneEvent -> {
+                    startRingtonePickerActivity(it.ringtoneType)
+                }
+                is EditProfileViewModel.Event.ChangeRingerMode -> {
+                    if (it.fromUser) {
+                        changeMode(it.streamType)
+                        createVibrateEffect()
+                        showToast(it.streamType)
+                    }
+                }
+                else -> Log.i("EditProfileFragment", "unknown event")
+            }
+        }.launchIn(viewLifecycleOwner.lifecycleScope)
+        removeFromLayout(binding.SilentModeLayout)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        job?.cancel()
+        job = null
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setStoragePermissionProperty()
+        setNotificationPolicyProperty()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
-    override fun onStop() {
-        super.onStop()
-        job.cancel()
+    override fun onDetach() {
+        super.onDetach()
+        callbacks = null
+        ringtoneActivityCallback.unregister()
+        storagePermissionCallback.unregister()
+        notificationPolicyCallback.unregister()
     }
 
-    override fun onStart() {
-        super.onStart()
-        job = viewModel.eventsFlow.onEach {
-                    when (it) {
-                        EditProfileViewModel.Event.StoragePermissionRequestEvent -> {
-                            requestStoragePermission()
-                        }
-                        EditProfileViewModel.Event.ShowPopupWindowEvent -> {
-                            showPopupMenu()
-                        }
-                        is EditProfileViewModel.Event.ChangeRingtoneEvent -> {
-                            startRingtonePickerActivity(it.ringtoneType)
-                        }
-                        is EditProfileViewModel.Event.ResetAlarmsEvent -> {
-                            // TODO handle event
-                        }
-                    }
-                }.launchIn(viewLifecycleOwner.lifecycleScope)
+    private fun checkStoragePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun startRingtonePickerActivity(type: Int): Unit {
-        ringtoneActivityCallback.launch(type)
+    private fun checkNotificationPolicyAccess(): Boolean {
+        val notificationManager: NotificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        return notificationManager.isNotificationPolicyAccessGranted
     }
 
-    private fun requestStoragePermission(): Unit {
-        storagePermissionCallback.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+    private fun setStoragePermissionProperty(): Unit {
+        viewModel.storagePermissionGranted.value = checkStoragePermission()
+    }
+
+    private fun setNotificationPolicyProperty(): Unit {
+        viewModel.notificationPolicyAccessGranted.value = checkNotificationPolicyAccess()
+    }
+
+    private fun registerForNotificationPolicyResult(): Unit {
+        notificationPolicyCallback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            Log.i("EditProfileFragment", checkNotificationPolicyAccess().toString())
+            viewModel.notificationPolicyAccessGranted.value = checkNotificationPolicyAccess()
+        }
+    }
+
+    private fun registerForPermissionResult(): Unit {
+        storagePermissionCallback = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            viewModel.storagePermissionGranted.value = it
+            if (it) {
+                viewModel.updateSoundUris()
+            }
+        }
     }
 
     private fun registerForActivityResult(): Unit {
@@ -126,6 +186,89 @@ class EditProfileFragment: Fragment() {
         }
     }
 
+    private fun startRingtonePickerActivity(type: Int): Unit {
+        val contract: RingtonePickerContract = ringtoneActivityCallback.contract as RingtonePickerContract
+        when (type) {
+            RingtoneManager.TYPE_RINGTONE -> {
+                contract.existingUri = viewModel.phoneRingtoneUri.value!!
+            }
+            RingtoneManager.TYPE_NOTIFICATION -> {
+                contract.existingUri = viewModel.notificationSoundUri.value!!
+            }
+            RingtoneManager.TYPE_ALARM -> {
+                contract.existingUri = viewModel.alarmSoundUri.value!!
+            }
+            else -> Log.i("EditProfileFragment", "unknown ringtone type")
+        }
+        ringtoneActivityCallback.launch(type)
+    }
+
+    private fun startNotificationPolicyActivity(): Unit {
+        notificationPolicyCallback.launch(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+    }
+
+    @Suppress("deprecation")
+    private fun getDisplayDensity(): Float {
+        val windowManager: WindowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val display: Display = windowManager.defaultDisplay
+        val displayMetrics: DisplayMetrics = DisplayMetrics()
+        display.getRealMetrics(displayMetrics)
+        return displayMetrics.density
+    }
+
+    private fun removeFromLayout(view: View): Unit {
+        setConstraints()
+        if (!hapticService.hasVibrator()) {
+            binding.constraintRoot.removeView(view)
+        }
+    }
+
+    private fun setConstraints(): Unit {
+        val constraintSet: ConstraintSet = ConstraintSet()
+        constraintSet.clone(binding.constraintRoot)
+        constraintSet.connect(R.id.separator1, ConstraintSet.TOP, R.id.alarmSeekBar, ConstraintSet.BOTTOM, (32 * getDisplayDensity()).toInt())
+        constraintSet.applyTo(binding.constraintRoot)
+    }
+
+    @Suppress("deprecation")
+    private fun createVibrateEffect(): Unit {
+        if (hapticService.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                hapticService.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                hapticService.vibrate(200)
+            }
+        }
+    }
+
+    private fun changeMode(streamType: Int, mode: Int): Unit {
+        if (streamType == STREAM_NOTIFICATION) {
+            viewModel.notificationMode.value = mode
+        } else if (streamType == STREAM_RING) {
+            viewModel.ringerMode.value = mode
+        }
+    }
+
+    private fun changeMode(streamType: Int): Unit {
+        if (hapticService.hasVibrator()) {
+            changeMode(streamType, RINGER_MODE_VIBRATE)
+        } else {
+            changeMode(streamType, RINGER_MODE_SILENT)
+        }
+    }
+
+    private fun showToast(streamType: Int): Unit {
+        if (hapticService.hasVibrator()) {
+            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notification set to vibrate" else "Ringer set to vibrate", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notification set to silent" else "Ringer set to silent", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun requestStoragePermission(): Unit {
+        storagePermissionCallback.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+
     private fun showPopupMenu(): Unit {
         val popupMenu: PopupMenu = PopupMenu(requireContext(), binding.interruptionFilterLayout)
         popupMenu.inflate(R.menu.dnd_mode_menu)
@@ -137,12 +280,10 @@ class EditProfileFragment: Fragment() {
                 }
                 R.id.alarms_only -> {
                     viewModel.interruptionFilter.value = INTERRUPTION_FILTER_ALARMS
-                    viewModel.ringerMode.value = RINGER_MODE_SILENT
                     true
                 }
                 R.id.total_silence -> {
                     viewModel.interruptionFilter.value = INTERRUPTION_FILTER_NONE
-                    viewModel.ringerMode.value = RINGER_MODE_SILENT
                     true
                 }
                 R.id.allow_all -> {
@@ -155,33 +296,6 @@ class EditProfileFragment: Fragment() {
         popupMenu.show()
     }
 
-    private fun registerForPermissionResult(): Unit {
-        storagePermissionCallback = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            if (it) {
-                Log.i("EditProfileFragment", "READ_EXTERNAL_STORAGE granted")
-            } else {
-                Log.i("EditProfileFragment", "READ_EXTERNAL_STORAGE denied")
-            }
-        }
-    }
-
-    fun setAlarms(triggers: List<AlarmTrigger>, newProfile: Profile): Unit {
-        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-        for (i in triggers) {
-            alarmUtil.setAlarm(i.alarm, newProfile, false)
-        }
-    }
-
-    /*
-    fun applyAudioSettingsIfActive(): Unit {
-        val sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
-        if (sharedPreferencesUtil.getActiveProfileId()
-                == mutableProfile!!.id.toString()) {
-            val profileUtil: ProfileUtil = ProfileUtil.getInstance()
-            profileUtil.applyAudioSettings(mutableProfile!!)
-        }
-    }
-     */
 
     companion object {
 

@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.fragments
 
+import android.app.NotificationManager
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -32,7 +33,41 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var tracker: SelectionTracker<String>
+    private lateinit var notificationManager: NotificationManager
     private val locationAdapter: LocationAdapter = LocationAdapter()
+
+    /*
+    private fun createNotification(): Notification {
+        val builder = NotificationCompat.Builder(requireContext(), "notification_channel_id")
+                .setContentTitle("Example notification")
+                .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel().also {
+                builder.setChannelId(it.id)
+            }
+        }
+        return builder.build()
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private fun createNotificationChannel(): NotificationChannel {
+        return NotificationChannel(
+                "notification_channel_id", "notification_channel_name", NotificationManager.IMPORTANCE_DEFAULT
+        ).also { channel ->
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
+    override fun onResume() {
+        super.onResume()
+        notificationManager.notify(7, createNotification())
+    }
+     */
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -76,7 +111,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
 
         private val addressTextView: TextView = itemView.findViewById(R.id.addressTextView)
         private val profileTextView: TextView = itemView.findViewById(R.id.profileTextView)
-        private val deleteGeofenceButton: Button = itemView.findViewById(R.id.deleteGeofenceButton)
+        private val deleteGeofenceButton: Button = itemView.findViewById(R.id.deleteAlarmButton)
 
         fun bind(locationTrigger: LocationTrigger, isSelected: Boolean): Unit {
             AnimUtil.selectedItemAnimation(itemView, isSelected)
@@ -122,6 +157,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
     companion object {
 
         private const val SELECTION_ID: String = "LOCATION"
+        private const val NOTIFICATION_ID: String = "n_id"
     }
 
     override fun onActionItemRemove() {

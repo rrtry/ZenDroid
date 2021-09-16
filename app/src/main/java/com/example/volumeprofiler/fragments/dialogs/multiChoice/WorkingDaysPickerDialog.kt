@@ -93,10 +93,9 @@ class WorkingDaysPickerDialog: DialogFragment() {
 
     companion object {
 
-        fun newInstance(alarm: Alarm): WorkingDaysPickerDialog {
+        fun newInstance(scheduledDays: ArrayList<Int>): WorkingDaysPickerDialog {
             val arguments: Bundle = Bundle().apply {
-                val workingDays: ArrayList<Int> = alarm.workingsDays
-                this.putSerializable(ARG_WORKING_DAYS, workingDays)
+                this.putSerializable(ARG_WORKING_DAYS, scheduledDays)
             }
             return WorkingDaysPickerDialog().apply {
                 this.arguments = arguments

@@ -4,7 +4,10 @@
 
     <data>
         <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
+        <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
+        <import type="com.example.volumeprofiler.util.ContentUtilKt"/>
         <import type="android.media.RingtoneManager"/>
+        <import type="android.media.AudioManager"/>
         <variable
             name="viewModel"
             type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
@@ -42,6 +45,9 @@
                 android:layout_marginEnd="16dp"
                 android:progress="@={viewModel.mediaVolume}"
                 android:max="15"
+                mediaInterruptionFilter="@{viewModel.interruptionFilter}"
+                mediaPriorityCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView9"
                 app:layout_constraintTop_toBottomOf="@+id/mediaBarTitle" />
@@ -76,6 +82,8 @@
                 android:layout_marginEnd="16dp"
                 android:progress="@={viewModel.callVolume}"
                 android:max="5"
+                android:min="1"
+                callInterruptionFilter="@{viewModel.interruptionFilter}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView10"
                 app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
@@ -92,10 +100,14 @@
                 app:layout_constraintTop_toBottomOf="@+id/mediaSeekBar" />
 
             <ImageView
-                android:id="@+id/imageView11"
+                android:id="@+id/notificationIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
+                notificationMode="@{viewModel.notificationMode}"
+                notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                notificationPriorityCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
@@ -110,8 +122,13 @@
                 android:layout_marginEnd="16dp"
                 android:progress="@={viewModel.notificationVolume}"
                 android:max="7"
+                notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                notificationPriorityCategories="@{viewModel.priorityCategories}"
+                notificationMode="@{viewModel.notificationMode}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/imageView11"
+                app:layout_constraintStart_toEndOf="@+id/notificationIcon"
                 app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
 
             <TextView
@@ -122,14 +139,18 @@
                 android:layout_marginTop="32dp"
                 android:text="Notification volume"
                 android:textColor="#000000"
-                app:layout_constraintStart_toEndOf="@+id/imageView11"
+                app:layout_constraintStart_toEndOf="@+id/notificationIcon"
                 app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar" />
 
             <ImageView
-                android:id="@+id/imageView12"
+                android:id="@+id/ringerIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
+                iconRingerMode="@{viewModel.ringerMode}"
+                ringerIconInterruptionFilter="@{viewModel.interruptionFilter}"
+                ringerPriorityCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
@@ -144,8 +165,13 @@
                 android:layout_marginEnd="16dp"
                 android:max="7"
                 android:progress="@={viewModel.ringVolume}"
+                ringerMode="@{viewModel.ringerMode}"
+                ringerSeekBarInterruptionFilter="@{viewModel.interruptionFilter}"
+                ringerSeekBarPropertyCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/imageView12"
+                app:layout_constraintStart_toEndOf="@+id/ringerIcon"
                 app:layout_constraintTop_toBottomOf="@+id/ringerBarTitle" />
 
             <TextView
@@ -156,7 +182,7 @@
                 android:layout_marginTop="32dp"
                 android:text="Ring volume"
                 android:textColor="#000000"
-                app:layout_constraintStart_toEndOf="@+id/imageView12"
+                app:layout_constraintStart_toEndOf="@+id/ringerIcon"
                 app:layout_constraintTop_toBottomOf="@+id/notificationSeekBar" />
 
             <ImageView
@@ -177,6 +203,10 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="16dp"
                 android:max="7"
+                android:min="1"
+                alarmInterruptionFilter="@{viewModel.interruptionFilter}"
+                alarmPriorityCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:progress="@={viewModel.alarmVolume}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView13"
@@ -184,13 +214,16 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/SilentModeLayout"
+                silentModeInterruptionFilter="@{viewModel.interruptionFilter}"
+                silentModePriorityCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onSilentModeLayoutClick()}"
                 android:orientation="horizontal"
                 android:visibility="visible"
-                android:onClick="@{() -> viewModel.onSilentModeLayoutClick()}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
@@ -200,7 +233,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="60dp"
-                    android:text="Enable silent mode for ringer"
+                    android:text="Mute ringer"
                     android:textColor="#000000"
                     android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
@@ -209,12 +242,14 @@
 
                 <Switch
                     android:id="@+id/silentModeSwitch"
+                    ringerMode="@{viewModel.ringerMode}"
+                    ringerSwitchInterruptionFilter="@{viewModel.interruptionFilter}"
+                    ringerSwitchPriorityCategories="@{viewModel.priorityCategories}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="16dp"
                     android:clickable="false"
-                    ringerMode="@{viewModel.ringerMode}"
-                    ringerSeekBar="@{ringerSeekBar}"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -254,8 +289,9 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/separator1" />
 
-            <RelativeLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/interruptionFilterLayout"
+                notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -269,6 +305,8 @@
                 <TextView
                     android:id="@+id/doNotDisturbTitle"
                     android:layout_width="wrap_content"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:text="Do Not disturb"
@@ -277,27 +315,21 @@
 
                 <TextView
                     android:id="@+id/interruptionFilterPolicy"
+                    app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle"
+                    app:layout_constraintStart_toStartOf="parent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/doNotDisturbTitle"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    priorityCategories="@{viewModel.priorityCategories}"
-                    interruptionFilter="@{viewModel.interruptionFilter}"
-                    mediaSeekBar="@{mediaSeekBar}"
-                    callSeekBar="@{phoneSeekBar}"
-                    notificationSeekBar="@{notificationSeekBar}"
-                    ringerSeekBar="@{ringerSeekBar}"
-                    alarmSeekBar="@{alarmSeekBar}"
-                    ringerMode="@{viewModel.ringerMode}"
-                    silentModeLayout="@{SilentModeLayout}"
-                    android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter)}"
+                    android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
                     android:textSize="14sp" />
-            </RelativeLayout>
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
-            <LinearLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/phoneRingtoneLayout"
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -310,6 +342,8 @@
 
                 <TextView
                     android:id="@+id/phoneRingtoneTitle"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
@@ -320,15 +354,17 @@
                 <TextView
                     android:id="@+id/phoneRingtone"
                     android:layout_width="wrap_content"
+                    app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle"
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="@{BindingConverters.getRingtoneTitle(context, viewModel.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)}"
+                    android:text="@{ContentUtilKt.getRingtoneTitle(context, viewModel.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)}"
                     android:textSize="14sp" />
-            </LinearLayout>
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
-            <LinearLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
                 android:id="@+id/notificationSoundLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -344,6 +380,8 @@
                     android:id="@+id/notificationSoundTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     android:paddingStart="35dp"
                     android:text="Default notification sound"
                     android:textColor="#000000"
@@ -357,12 +395,15 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="@{BindingConverters.getRingtoneTitle(context, viewModel.notificationSoundUri, RingtoneManager.TYPE_NOTIFICATION)}"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
+                    android:text="@{ContentUtilKt.getRingtoneTitle(context, viewModel.notificationSoundUri, RingtoneManager.TYPE_NOTIFICATION)}"
                     android:textSize="14sp" />
-            </LinearLayout>
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
-            <LinearLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/alarmSoundLayout"
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -375,6 +416,8 @@
 
                 <TextView
                     android:id="@+id/alarmSoundTitle"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
@@ -386,19 +429,24 @@
                     android:id="@+id/alarmSound"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle"
+                    app:layout_constraintStart_toStartOf="parent"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="@{BindingConverters.getRingtoneTitle(context, viewModel.alarmSoundUri, RingtoneManager.TYPE_ALARM)}"
+                    android:text="@{ContentUtilKt.getRingtoneTitle(context, viewModel.alarmSoundUri, RingtoneManager.TYPE_ALARM)}"
                     android:textSize="14sp" />
-            </LinearLayout>
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
-            <RelativeLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/interruptionFilterPreferencesLayout"
+                notificationPolicyAccess="@{viewModel.notificationPolicyAccessGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
                 android:paddingTop="16dp"
+                preferencesInterruptionFilter="@{viewModel.interruptionFilter}"
+                android:onClick="@{() -> viewModel.onPreferencesLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/interruptionFilterLayout">
@@ -410,7 +458,8 @@
                     android:paddingStart="35dp"
                     android:text="Do Not Disturb preferences"
                     android:textColor="#000000"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/doNotDisturbRules"
@@ -420,9 +469,11 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="No rules set"
-                    android:textSize="14sp" />
-            </RelativeLayout>
+                    android:text="@{BindingConverters.interruptionRulesToString(viewModel.notificationPolicyAccessGranted)}"
+                    android:textSize="14sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <RelativeLayout
                 android:id="@+id/vibrateForCallsLayout"

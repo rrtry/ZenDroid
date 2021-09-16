@@ -15,4 +15,4 @@ data class Alarm(@PrimaryKey(autoGenerate = true) @ColumnInfo(name = "eventId") 
                  @ColumnInfo(index = true) var profileUUID: UUID,
                  var localDateTime: LocalDateTime = LocalDateTime.now(),
                  var isScheduled: Int = 0,
-                 var workingsDays: ArrayList<Int> = arrayListOf()) : Parcelable
+                 var scheduledDays: ArrayList<Int> = arrayListOf()) : Parcelable

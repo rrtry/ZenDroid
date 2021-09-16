@@ -14,6 +14,7 @@ import kotlin.collections.ArrayList
 abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
 
     protected var selectedItems: ArrayList<Int> = arrayListOf()
+    private var shouldSetArgs: Boolean = false
 
     @get:ArrayRes
     abstract val arrayRes: Int
@@ -42,23 +43,26 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
         return result
     }
 
-    @Suppress("unchecked")
     final override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) {
+            @Suppress("unchecked_cast")
             selectedItems = savedInstanceState.getSerializable(EXTRA_SELECTED_ITEMS) as ArrayList<Int>
+            shouldSetArgs = savedInstanceState.getBoolean(EXTRA_LOADED_ARGS)
         }
     }
 
     final override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putSerializable(EXTRA_SELECTED_ITEMS, selectedItems)
+        outState.putBoolean(EXTRA_LOADED_ARGS, shouldSetArgs)
     }
 
+    @Suppress("unchecked_cast")
     final override fun onResume() {
         super.onResume()
         val alertDialog: AlertDialog = dialog as AlertDialog
-        if (selectedItems.isEmpty()) {
+        if (!shouldSetArgs) {
             val args: ArrayList<Int> = arguments?.getSerializable(ARG_SELECTED_ITEMS) as ArrayList<Int>
             if (args.isNotEmpty()) {
                 for ((index, value) in args.withIndex()) {
@@ -69,10 +73,13 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
                     }
                 }
             }
+            shouldSetArgs = true
         }
         else {
-            for (value in selectedItems) {
-                alertDialog.listView.setItemChecked(value, true)
+            if (selectedItems.isNotEmpty()) {
+                for (value in selectedItems) {
+                    alertDialog.listView.setItemChecked(value, true)
+                }
             }
         }
     }
@@ -90,20 +97,21 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
                                     selectedItems.remove(which)
                                 }
                             })
-                    .setPositiveButton(R.string.apply,
-                            DialogInterface.OnClickListener { dialog, id ->
-                                onApply(getArrayList())
-                            })
-                    .setNegativeButton(R.string.cancel,
-                            DialogInterface.OnClickListener { dialog, id ->
-                                dialog.dismiss()
-                            })
+                    .setPositiveButton(R.string.apply
+                    ) { _, _ ->
+                        onApply(getArrayList())
+                    }
+                    .setNegativeButton(R.string.cancel
+                    ) { dialog, _ ->
+                        dialog.dismiss()
+                    }
             builder.create()
         } ?: throw IllegalStateException("Activity cannot be null")
     }
 
     companion object {
 
+        private const val EXTRA_LOADED_ARGS: String = "extra_loaded_args"
         const val EXTRA_SELECTED_ITEMS: String = "extra_selected_items"
         const val ARG_SELECTED_ITEMS: String = "items_selected_items"
     }

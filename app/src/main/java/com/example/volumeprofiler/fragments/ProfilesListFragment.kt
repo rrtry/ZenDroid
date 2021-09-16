@@ -1,16 +1,20 @@
 package com.example.volumeprofiler.fragments
 
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.collection.ArrayMap
 import androidx.collection.arrayMapOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.*
 import androidx.lifecycle.Observer
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
@@ -28,16 +32,22 @@ import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.AlarmTrigger
 import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.util.SharedPreferencesUtil
 import com.example.volumeprofiler.util.animations.Scale
 import com.example.volumeprofiler.viewmodels.ProfileListViewModel
 import com.example.volumeprofiler.viewmodels.MainActivitySharedViewModel
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.*
+import javax.inject.Inject
 import kotlin.collections.ArrayList
 import kotlin.collections.List
 import kotlin.collections.isNotEmpty
@@ -45,12 +55,17 @@ import kotlin.collections.set
 import kotlin.collections.toList
 import kotlin.collections.withIndex
 
+@AndroidEntryPoint
 class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
-    private var sharedPreferencesUtil = SharedPreferencesUtil.getInstance()
+    @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+    @Inject lateinit var alarmUtil: AlarmUtil
+    @Inject lateinit var profileUtil: ProfileUtil
+
     private val profileAdapter: ProfileAdapter = ProfileAdapter()
     private lateinit var positionMap: ArrayMap<UUID, Int>
     private lateinit var tracker: SelectionTracker<String>
+    private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
 
     private val viewModel: ProfileListViewModel by viewModels()
     private val mainActivitySharedViewModel: MainActivitySharedViewModel by activityViewModels()
@@ -58,6 +73,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private var _binding: ProfilesListFragmentBinding? = null
     private val binding: ProfilesListFragmentBinding get() = _binding!!
 
+    private var job: Job? = null
+
+    // TODO replace LocalBroadcastManager with SharedFlow and implement application-wide event bus
     /*
     private var uiStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
@@ -76,10 +94,40 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     }
      */
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (it.resultCode == Activity.RESULT_OK) {
+                val profile: Profile? = it.data?.getParcelableExtra(EditProfileActivity.EXTRA_PROFILE)
+                if (profile != null) {
+                    val shouldUpdate: Boolean = it.data?.getBooleanExtra(EditProfileActivity.EXTRA_SHOULD_UPDATE, false)!!
+                    if (shouldUpdate) {
+                        viewModel.updateProfile(profile)
+                    } else {
+                        viewModel.addProfile(profile)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        activityResultLauncher.unregister()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
         setPositionMap()
+    }
+
+    private fun startDetailsActivity(profile: Profile?): Unit {
+        val intent: Intent = Intent(requireContext(), EditProfileActivity::class.java)
+        if (profile != null) {
+            intent.putExtra(EditProfileActivity.EXTRA_PROFILE, profile)
+        }
+        activityResultLauncher.launch(intent)
     }
 
     private fun setPositionMap(): Unit {
@@ -93,11 +141,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     ): View {
         _binding = ProfilesListFragmentBinding.inflate(inflater, container, false)
         val view: View = binding.root
-        val floatingActionButton: FloatingActionButton = view.findViewById(R.id.fab)
-        floatingActionButton.setOnClickListener {
-            val intent: Intent = EditProfileActivity.newIntent(requireContext(), null)
-            startActivity(intent)
-        }
         initRecyclerView(view)
         setItemTouchHelper()
         initSelectionTracker()
@@ -119,32 +162,42 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             StorageStrategy.createStringStorage()
         ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
             .build()
-        tracker.addObserver(BaseSelectionObserver<String>(WeakReference(this)))
+        tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.fab.setOnClickListener {
+            startDetailsActivity(null)
+        }
         mainActivitySharedViewModel.profileListLiveData.observe(viewLifecycleOwner,
-                Observer<List<Profile>> { t ->
+                Observer { t ->
                     if (t != null) {
                         updateUI(t)
                     }
                 })
-        viewModel.alarmsToRemoveLiveData.observe(viewLifecycleOwner,
-                Observer<List<AlarmTrigger>?> { t ->
-                    if (t != null && t.isNotEmpty()) {
-                        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
-                        alarmUtil.cancelMultipleAlarms(t)
-                    }
-                })
+        job = viewModel.eventFlow.onEach {
+            if (it is ProfileListViewModel.Event.CancelAlarmsEvent && it.alarms != null) {
+                alarmUtil.cancelMultipleAlarms(it.alarms)
+            }
+            if (it is ProfileListViewModel.Event.RemoveGeofencesEvent) {
+                // TODO remove location updates
+            }
+        }.launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     override fun onPause() {
         if (positionMap.isNotEmpty()) {
-            sharedPreferencesUtil.saveRecyclerViewPositionsMap(positionMap)
+            sharedPreferencesUtil.writeProfilePositions(positionMap)
         }
         tracker.clearSelection()
         super.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        job?.cancel()
+        job = null
     }
 
     override fun onDestroyView() {
@@ -158,11 +211,22 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         profileAdapter.notifyItemChanged(currentPosition)
         viewModel.lastActiveProfileIndex = currentPosition
         if (isPressed) {
-            viewModel.applyProfileSettings(currentProfile)
+            profileUtil.applyProfile(currentProfile)
         }
         if (lastIndex != -1) {
             profileAdapter.notifyItemChanged(lastIndex)
         }
+    }
+
+    private fun removeProfile(profile: Profile, position: Int): Unit {
+        if (position == viewModel.lastActiveProfileIndex) {
+            viewModel.lastActiveProfileIndex = -1
+        }
+        if (sharedPreferencesUtil.getEnabledProfileId() == profile.id.toString()) {
+            sharedPreferencesUtil.clearActiveProfileRecord()
+        }
+        positionMap.remove(profile.id)
+        viewModel.removeProfile(profile)
     }
 
     private fun setItemTouchHelper(): Unit {
@@ -264,9 +328,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                 val transition: TransitionSet = TransitionSet().apply {
                     this.ordering = TransitionSet.ORDERING_SEQUENTIAL
                     this.addTransition(ChangeBounds())
-                    this.addTransition(Scale())
+                    this.addTransition(Fade())
                 }
-                TransitionManager.beginDelayedTransition(adapterBinding.root, transition)
+                TransitionManager.beginDelayedTransition(binding.recyclerView, transition)
                 adapterBinding.expandableView.visibility = View.VISIBLE
                 adapterBinding.expandButton.animate().rotation(180.0f).start()
             }
@@ -287,7 +351,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             adapterBinding.expandButton.animate().rotation(0f).start()
         }
 
-        private fun setupTextViews(profile: Profile): Unit {
+        private fun setTextView(profile: Profile): Unit {
             adapterBinding.checkBox.text = profile.title
         }
 
@@ -301,20 +365,21 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                 }
             }
             adapterBinding.editProfileButton.setOnClickListener {
-                startActivity(EditProfileActivity.newIntent(requireContext(), profile)) }
+                startDetailsActivity(profile)
+            }
             adapterBinding.removeProfileButton.setOnClickListener {
-                viewModel.removeProfile(profile, absoluteAdapterPosition, positionMap)
+                removeProfile(profile, absoluteAdapterPosition)
             }
         }
 
         fun bind(profile: Profile, isSelected: Boolean): Unit {
             AnimUtil.selectedItemAnimation(itemView, isSelected)
-            val isProfileActive: Boolean = sharedPreferencesUtil.isProfileActive(profile)
+            val isProfileActive: Boolean = sharedPreferencesUtil.isProfileEnabled(profile)
             adapterBinding.checkBox.isChecked = isProfileActive
             if (isProfileActive) {
                 viewModel.lastActiveProfileIndex = absoluteAdapterPosition
             }
-            setupTextViews(profile)
+            setTextView(profile)
             setCallbacks(profile)
         }
 
@@ -326,7 +391,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                 else {
                     val lastIndex: Int = viewModel.lastActiveProfileIndex
                     val currentProfile: Profile = profileAdapter.getItemAtPosition(absoluteAdapterPosition)
-                    viewModel.clearActiveProfileRecord(currentProfile)
+                    sharedPreferencesUtil.clearActiveProfileRecord()
                     if (lastIndex != -1) {
                         viewModel.lastActiveProfileIndex = -1
                     }
@@ -383,7 +448,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         private const val SWIPE_FLAGS: Int = 0
         private const val DRAG_FLAGS: Int = ItemTouchHelper.UP or ItemTouchHelper.DOWN
         private const val LOG_TAG: String = "ProfilesListFragment"
-        private const val PROFILE_LAYOUT = R.layout.profile_item_view
         private const val SELECTION_ID: String = "PROFILE"
     }
 
@@ -392,7 +456,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             val id: UUID = UUID.fromString(i)
             for ((index, j) in profileAdapter.currentList.withIndex()) {
                 if (j.id == id) {
-                    viewModel.removeProfile(j, index, positionMap)
+                    removeProfile(j, index)
                 }
             }
         }

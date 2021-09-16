@@ -1,52 +1,54 @@
 package com.example.volumeprofiler.activities
 
+import android.app.Activity
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.*
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
-import androidx.lifecycle.Observer
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
 import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.WorkingDaysPickerDialog
-import com.example.volumeprofiler.interfaces.DaysPickerDialogCallback
-import com.example.volumeprofiler.interfaces.TimePickerFragmentCallback
-import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.viewmodels.EditAlarmViewModel.DialogType
 import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.viewmodels.EditAlarmViewModel
-import java.time.DayOfWeek
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.time.format.TextStyle
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.properties.Delegates
+import javax.inject.Inject
 
-class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener, TimePickerFragmentCallback, DaysPickerDialogCallback {
+@AndroidEntryPoint
+class EditAlarmActivity: AppCompatActivity() {
 
-    private lateinit var arrayAdapter: ArrayAdapter<Profile>
     private val viewModel: EditAlarmViewModel by viewModels()
-    private var passedExtras: Boolean = false
 
     private var elapsedTime: Long = 0
+
     private lateinit var binding: CreateAlarmActivityBinding
+    @Inject lateinit var alarmUtil: AlarmUtil
+
+    private var job: Job? = null
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
         if (menu != null) {
             val drawable: Drawable?
             val item: MenuItem = menu.findItem(R.id.saveChangesButton)
-            return if (passedExtras) {
+            return if (hasArgs) {
                 drawable = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null)
                 item.icon = drawable
                 true
@@ -62,7 +64,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         super.onOptionsItemSelected(item)
         if (item.itemId == R.id.saveChangesButton) {
-            commitChanges()
+            setSuccessfulResult()
             return true
         }
         return false
@@ -79,10 +81,27 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    private fun setBinding(): Unit {
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
+    }
+
+    private fun setArgs(): Unit {
+        if (intent.extras != null) {
+            val alarmTrigger: AlarmTrigger = intent.getParcelableExtra(EXTRA_TRIGGER)!!
+        } else {
+
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setBinding()
+        collectFlows()
+        viewModel.profilesLiveData.observe(this, androidx.lifecycle.Observer {
+            val profile: Profile = getProfile(it)
+        })
+        /*
         val alarm: AlarmTrigger? = intent?.extras?.getParcelable(EXTRA_TRIGGER)
         if (alarm != null) {
             passedExtras = true
@@ -95,8 +114,48 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         }
         setLiveDataObservers()
         setupCallbacks()
+         */
     }
 
+    private fun collectFlows(): Unit {
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.eventsFlow.onEach {
+                    when (it) {
+                        is EditAlarmViewModel.Event.ShowDialogEvent -> {
+                            if (it.dialogType == DialogType.DAYS_SELECTION) {
+                                showDaysPickerDialog()
+                            } else if (it.dialogType == DialogType.TIME_SELECTION) {
+                                showTimePickerDialog()
+                            }
+                        }
+                        else -> Log.i("EditAlarmActivity", "Unknown event")
+                    }
+                }.collect()
+            }
+        }
+    }
+
+    private fun getProfile(list: List<Profile>): Profile? {
+        for (i in list) {
+            if (profileUUID == i.id) {
+                return i
+            }
+        }
+        return null
+    }
+
+    private fun showDaysPickerDialog(): Unit {
+        val fragment: WorkingDaysPickerDialog = WorkingDaysPickerDialog.newInstance(viewModel.scheduledDays.value!!)
+        fragment.show(supportFragmentManager, null)
+    }
+
+    private fun showTimePickerDialog(): Unit {
+        val fragment: TimePickerFragment = TimePickerFragment.newInstance(viewModel.startTime.value!!)
+        fragment.show(supportFragmentManager, null)
+    }
+
+    /*
     private fun loadArgs(alarm: AlarmTrigger): Unit {
         if (viewModel.mutableAlarm == null) {
             viewModel.mutableProfile = alarm.profile
@@ -121,6 +180,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         binding.workingDaysSelectButton.setOnClickListener(onClickListener)
         binding.profileSpinner.onItemSelectedListener = this
     }
+
 
     private fun getInitialAdapterPosition(items: List<Profile>): Int {
         var result by Delegates.notNull<Int>()
@@ -177,6 +237,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault()))
     }
 
+
     private fun updateDaysView(): Unit {
         val alarm: Alarm = viewModel.mutableAlarm!!
         val result: String
@@ -222,7 +283,7 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         updateDaysView()
     }
 
-    private fun commitChanges(): Unit {
+    private fun setSuccessfulResult(): Unit {
         if (viewModel.mutableProfile != null) {
             setAlarm()
         }
@@ -236,8 +297,21 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
     }
 
     private fun setAlarm(): Unit {
-        val alarmUtil: AlarmUtil = AlarmUtil.getInstance()
         alarmUtil.setAlarm(viewModel.mutableAlarm!!, viewModel.mutableProfile!!, false)
+    }
+     */
+
+    private fun setSuccessfulResult(): Unit {
+        val intent: Intent = Intent().apply {
+            this.putExtra(EXTRA_ALARM, viewModel.getAlarm())
+        }
+        setResult(Activity.RESULT_OK, intent)
+        finish()
+    }
+
+    private fun setCancelledResult(): Unit {
+        setResult(Activity.RESULT_CANCELED)
+        finish()
     }
 
     override fun onBackPressed() {
@@ -254,5 +328,6 @@ class EditAlarmActivity: AppCompatActivity(), AdapterView.OnItemSelectedListener
         private const val TIME_INTERVAL: Int = 2000
         private const val LOG_TAG: String = "EditEventActivity"
         const val EXTRA_TRIGGER: String = "extra_trigger"
+        const val EXTRA_ALARM: String = "extra_alarm"
     }
 }
