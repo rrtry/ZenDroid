@@ -15,14 +15,13 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
 import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 import com.example.volumeprofiler.fragments.EditProfileFragment
 import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.AlarmRelation
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.util.AlarmUtil
 import com.example.volumeprofiler.util.ProfileUtil
@@ -31,9 +30,7 @@ import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -49,9 +46,8 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
     private var elapsedTime: Long = 0
 
     private lateinit var binding: CreateProfileActivityBinding
-    private val viewModel by viewModels<EditProfileViewModel>()
 
-    private var job: Job? = null
+    private val viewModel by viewModels<EditProfileViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,16 +63,18 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
     }
 
     private fun collectEventsFlow(): Unit {
-        job = viewModel.activityEventsFlow.onEach { it ->
-            if (it is EditProfileViewModel.Event.ShowDialogFragment && it.dialogType == EditProfileViewModel.DialogType.TITLE) {
-                showTitleInputDialog()
-            }
-            if (it is EditProfileViewModel.Event.SaveChangesEvent) {
-                updateAlarms(it.profile)
-                applyProfileIfEnabled(it.profile)
-                setSuccessfulResult(it.profile, it.shouldUpdate)
-            }
-        }.launchIn(lifecycleScope)
+        lifecycleScope.launch {
+            viewModel.activityEventsFlow.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED).onEach {
+                if (it is EditProfileViewModel.Event.ShowDialogFragment && it.dialogType == EditProfileViewModel.DialogType.TITLE) {
+                    showTitleInputDialog()
+                }
+                if (it is EditProfileViewModel.Event.SaveChangesEvent) {
+                    updateAlarms(it.profile)
+                    applyProfileIfEnabled(it.profile)
+                    setSuccessfulResult(it.profile, it.shouldUpdate)
+                }
+            }.collect()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -116,12 +114,6 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
         setFragmentResultListener()
         setOffsetListener()
         setNavigationListener()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        job?.cancel()
-        job = null
     }
 
     private fun setNavigationListener(): Unit {
@@ -254,9 +246,9 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
         popFromBackStack()
     }
 
-    private fun setAlarms(triggers: List<AlarmTrigger>, newProfile: Profile): Unit {
-        for (i in triggers) {
-            alarmUtil.setAlarm(i.alarm, newProfile, false)
+    private fun setAlarms(relations: List<AlarmRelation>, newProfile: Profile): Unit {
+        for (i in relations) {
+            alarmUtil.scheduleAlarm(i.alarm, newProfile, false)
         }
     }
 
@@ -270,16 +262,21 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
     private fun applyProfileIfEnabled(profile: Profile): Unit {
         if (sharedPreferencesUtil.getEnabledProfileId() == profile.id.toString()) {
-            profileUtil.applyProfile(profile)
+            profileUtil.setProfile(profile)
         }
     }
 
     companion object {
 
-        const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
-        const val TAG_INTERRUPTIONS_FRAGMENT: String = "tag_interruptions_fragment"
         private const val TIME_INTERVAL: Int = 2000
         private const val KEY_ELAPSED_TIME: String = "key_elapsed_time"
+        private val PERMISSIONS: Array<String> = arrayOf(
+                android.Manifest.permission.READ_PHONE_STATE,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.ACCESS_NOTIFICATION_POLICY
+        )
+        const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
+        const val TAG_INTERRUPTIONS_FRAGMENT: String = "tag_interruptions_fragment"
         const val EXTRA_PROFILE = "extra_profile"
         const val EXTRA_SHOULD_UPDATE: String = "extra_should_update"
         const val INPUT_TITLE_REQUEST_KEY: String = "input_title_request_key"

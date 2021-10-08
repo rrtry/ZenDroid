@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:id="@+id/bottomSheetRoot"
-    android:background="@color/white"
+    android:background="?attr/colorOnPrimary"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -22,10 +22,5 @@
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottom_navigation"/>
-    <!--
-    app:defaultNavHost="true"
-    android:name="androidx.navigation.fragment.NavHostFragment"
-    app:navGraph="@navigation/my_nav"
-    -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

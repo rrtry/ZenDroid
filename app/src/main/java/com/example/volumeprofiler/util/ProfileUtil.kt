@@ -6,19 +6,38 @@ import android.content.Context
 import android.media.AudioManager
 import com.example.volumeprofiler.models.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.media.AudioManager.*
 import android.os.Build
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyManager
+import com.example.volumeprofiler.util.interruptionPolicy.*
 
 @Singleton
 class ProfileUtil @Inject constructor (
         @ApplicationContext private val context: Context
         ) {
 
+    @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val telephonyManager: TelephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+    private val phoneStateListener: PhoneStateListener = object : PhoneStateListener() {
+
+        override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+            super.onCallStateChanged(state, phoneNumber)
+            phoneState = state
+        }
+    }
+
+    init {
+        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
+    }
+
+    private var phoneState: Int = TelephonyManager.CALL_STATE_IDLE
 
     private fun createNotificationPolicy(profile: Profile): Policy? {
         if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
@@ -48,58 +67,69 @@ class ProfileUtil @Inject constructor (
         return null
     }
 
+    private fun setNotificationPolicy(policy: Policy?): Unit {
+        notificationManager.notificationPolicy = policy
+    }
+
     private fun setInterruptionFilter(profile: Profile): Unit {
         if (profile.interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
-            notificationManager.notificationPolicy = createNotificationPolicy(profile)
+            setNotificationPolicy(createNotificationPolicy(profile))
         }
-        notificationManager.setInterruptionFilter(profile.interruptionFilter)
+        setInterruptionFilter(profile.interruptionFilter)
     }
 
-    fun applyProfile(profile: Profile) {
-        audioManager.setStreamVolume(STREAM_MUSIC, profile.mediaVolume, 0)
-        audioManager.setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, 0)
-        when (profile.notificationMode) {
-            RINGER_MODE_VIBRATE -> {
-                toggleVibrateMode(STREAM_NOTIFICATION)
-            }
-            RINGER_MODE_SILENT -> {
-                toggleSilentMode(STREAM_NOTIFICATION)
-            }
-            RINGER_MODE_NORMAL -> {
-                audioManager.setStreamVolume(STREAM_NOTIFICATION, profile.notificationVolume, FLAG_ALLOW_RINGER_MODES)
-            }
+    private fun setInterruptionFilter(interruptionFilter: Int): Unit {
+        notificationManager.setInterruptionFilter(interruptionFilter)
+    }
+
+    fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int): Unit {
+        when (mode) {
+            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, FLAG_ALLOW_RINGER_MODES or FLAG_SHOW_UI)
+            RINGER_MODE_VIBRATE -> setVibrateMode(streamType)
+            RINGER_MODE_SILENT -> setSilentMode(streamType)
         }
-        audioManager.setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
+    }
+
+    fun setProfile(profile: Profile) {
         setInterruptionFilter(profile)
+        setStreamVolume(STREAM_MUSIC, profile.mediaVolume, FLAG_SHOW_UI)
+        setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, FLAG_SHOW_UI)
+        setStreamVolume(STREAM_ALARM, profile.alarmVolume, FLAG_SHOW_UI)
+        if (phoneState == TelephonyManager.CALL_STATE_RINGING) {
+            setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
+        } else {
+            setRingerMode(STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode)
+        }
+        sharedPreferencesUtil.writeCurrentProfileProperties(profile)
     }
 
-    fun toggleSilentMode(streamType: Int): Unit {
+    fun setDefaults(): Unit {
+        setInterruptionFilter(INTERRUPTION_FILTER_ALL)
+        setStreamVolume(STREAM_MUSIC, 1, FLAG_SHOW_UI)
+        setStreamVolume(STREAM_VOICE_CALL, 1, FLAG_SHOW_UI)
+        setStreamVolume(STREAM_ALARM, 1, FLAG_SHOW_UI)
+        setStreamVolume(STREAM_NOTIFICATION, 3, FLAG_SHOW_UI)
+    }
+
+    private fun setSilentMode(streamType: Int): Unit {
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_RAISE, 0)
         }
-        audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, AudioManager.FLAG_ALLOW_RINGER_MODES)
+        audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, FLAG_ALLOW_RINGER_MODES or FLAG_SHOW_UI)
     }
 
-    fun toggleVibrateMode(streamType: Int): Unit {
+    private fun setVibrateMode(streamType: Int): Unit {
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_RAISE, 0)
         }
-        audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES)
+        audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES or FLAG_SHOW_UI)
     }
 
-    fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
+    private fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
+        if (audioManager.isStreamMute(streamType)) {
+            audioManager.adjustStreamVolume(streamType, ADJUST_UNMUTE, 0)
+        }
         audioManager.setStreamVolume(streamType, index, flags)
-    }
-
-    // TODO implement application-wide event bus
-    fun sendLocalBroadcast(profileId: UUID): Unit {
-        /*
-        val localBroadcastManager: LocalBroadcastManager = LocalBroadcastManager.getInstance(context)
-        val intent: Intent = Intent(Application.ACTION_UPDATE_UI).apply {
-            this.putExtra(AlarmReceiver.EXTRA_PROFILE_ID, profileId)
-        }
-        localBroadcastManager.sendBroadcast(intent)
-         */
     }
 
     companion object {

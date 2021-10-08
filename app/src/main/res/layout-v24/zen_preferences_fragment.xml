@@ -29,7 +29,7 @@
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
                 android:text="Exceptions: Calls"
-                android:textColor="#FF6B13EA"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -62,6 +62,7 @@
                     android:paddingTop="4dp"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/light_gray"
                     android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityCallSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_CALLS)}"/>
             </LinearLayout>
 
@@ -95,9 +96,10 @@
                     android:layout_width="wrap_content"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
+                    android:textColor="@color/light_gray"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
-                    android:text="@{ContentUtilKt.queryStarredContacts(context)}"/>
+                    android:text="Contacts"/>
             </LinearLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
@@ -128,6 +130,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="35dp"
                     android:layout_marginTop="4dp"
+                    android:textColor="@color/light_gray"
                     android:text="If the same person calls second time\nwithin 15 minutes period"
                     android:textSize="14sp"
                     app:layout_constraintStart_toStartOf="parent"
@@ -166,7 +169,7 @@
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
                 android:text="Exceptions: Messages"
-                android:textColor="#FF6B13EA"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/separator2" />
@@ -196,6 +199,7 @@
                     android:layout_width="wrap_content"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
+                    android:textColor="@color/light_gray"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
                     android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"/>
@@ -231,9 +235,10 @@
                     android:layout_width="wrap_content"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
+                    android:textColor="@color/light_gray"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
-                    android:text="@{ContentUtilKt.queryStarredContacts(context)}"/>
+                    android:text="Contacts"/>
             </LinearLayout>
 
             <View
@@ -254,7 +259,7 @@
                 android:layout_marginTop="16dp"
                 android:text="Exceptions: Other interruptions"
                 android:textSize="14sp"
-                android:textColor="#FF6B13EA"
+                android:textColor="?attr/colorPrimary"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/separator3" />
 
@@ -283,6 +288,7 @@
                     android:layout_width="wrap_content"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
+                    android:textColor="@color/light_gray"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
                     android:text="@{BindingConverters.priorityCategoriesToString(viewModel.priorityCategories)}"/>
@@ -305,7 +311,7 @@
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
                 android:text="Block visual disturbances"
-                android:textColor="#FF6B13EA"
+                android:textColor="?attr/colorPrimary"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/separator4" />
 
@@ -338,6 +344,7 @@
                         android:layout_height="wrap_content"
                         android:textSize="14sp"
                         android:layout_marginLeft="35dp"
+                        android:textColor="@color/light_gray"
                         android:layout_below="@id/blockWhenScreenIsOnTitle"
                         android:layout_marginTop="8dp"
                         android:text="Prevent notification silenced by Do Not Disturb\nfrom peeking or popping on screen"/>
@@ -377,6 +384,7 @@
                         android:layout_height="wrap_content"
                         android:textSize="14sp"
                         android:layout_marginTop="8dp"
+                        android:textColor="@color/light_gray"
                         android:layout_below="@id/blockWhenScreenIsOffTitle"
                         android:layout_marginLeft="35dp"
                         android:text="Prevent notifications silenced by Do Not Disturb\nfrom turning on the screen"/>

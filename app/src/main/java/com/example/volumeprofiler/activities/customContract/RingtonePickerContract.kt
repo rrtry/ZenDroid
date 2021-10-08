@@ -3,10 +3,10 @@ package com.example.volumeprofiler.activities.customContract
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.media.RingtoneManager
 import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContract
 import kotlin.properties.Delegates
+import android.media.RingtoneManager.*
 
 class RingtonePickerContract(): ActivityResultContract<Int, Uri?>() {
 
@@ -15,16 +15,17 @@ class RingtonePickerContract(): ActivityResultContract<Int, Uri?>() {
 
     override fun createIntent(context: Context, input: Int?): Intent {
         ringtoneType = input!!
-        return Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-            this.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, input)
-            this.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if (existingUri == Uri.EMPTY)
-                RingtoneManager.getActualDefaultRingtoneUri(context, input) else existingUri)
+        return Intent(ACTION_RINGTONE_PICKER).apply {
+            this.putExtra(EXTRA_RINGTONE_TYPE, input)
+            this.putExtra(EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            this.putExtra(EXTRA_RINGTONE_EXISTING_URI, if (existingUri == Uri.EMPTY)
+                getActualDefaultRingtoneUri(context, input) else existingUri)
         }
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
         return if (resultCode == Activity.RESULT_OK && intent != null) {
-            intent.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            intent.getParcelableExtra(EXTRA_RINGTONE_PICKED_URI)
         } else {
             null
         }

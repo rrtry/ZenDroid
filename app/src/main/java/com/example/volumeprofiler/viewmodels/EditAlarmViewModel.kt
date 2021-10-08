@@ -4,15 +4,16 @@ import androidx.lifecycle.*
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.AlarmRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.util.*
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 
 @HiltViewModel
 class EditAlarmViewModel @Inject constructor(
@@ -23,7 +24,6 @@ class EditAlarmViewModel @Inject constructor(
 
     sealed class Event {
         data class ShowDialogEvent(val dialogType: DialogType): Event()
-        object ShowPopupWindowEvent: Event()
     }
 
     enum class DialogType {
@@ -33,9 +33,12 @@ class EditAlarmViewModel @Inject constructor(
 
     val profilesLiveData: LiveData<List<Profile>> = profileRepository.observeProfiles().asLiveData()
 
-    val selectedProfile: MutableLiveData<Profile> = MutableLiveData()
-    val scheduledDays: MutableLiveData<ArrayList<Int>> = MutableLiveData()
-    val startTime: MutableLiveData<LocalDateTime> = MutableLiveData()
+    val selectedSpinnerPosition: MutableLiveData<Int> = MutableLiveData(0)
+    val scheduledDays: MutableLiveData<ArrayList<Int>> = MutableLiveData(arrayListOf())
+    val startTime: MutableLiveData<LocalDateTime> = MutableLiveData(LocalDateTime.now())
+
+    private var id: Long? = null
+    private var isScheduled: Boolean = false
 
     private val channel: Channel<Event> = Channel(Channel.BUFFERED)
     val eventsFlow: Flow<Event> = channel.receiveAsFlow()
@@ -52,14 +55,52 @@ class EditAlarmViewModel @Inject constructor(
         }
     }
 
-    fun setArgs(alarmTrigger: AlarmTrigger): Unit {
-        selectedProfile.value = alarmTrigger.profile
-        scheduledDays.value = alarmTrigger.alarm.scheduledDays
-        startTime.value = alarmTrigger.alarm.localDateTime
+    private fun getProfileUUID(): UUID {
+        return profilesLiveData.value!![selectedSpinnerPosition.value!!].id
     }
 
-    fun getAlarm(): Alarm? {
+    fun getProfile(): Profile {
+        return profilesLiveData.value!![selectedSpinnerPosition.value!!]
+    }
 
+    fun getAlarmId(): Long? {
+        return this.id
+    }
+
+    private fun getPosition(uuid: UUID): Int {
+        for ((index, i) in profilesLiveData.value!!.withIndex()) {
+            if (i.id == uuid) {
+                return index
+            }
+        }
+        return 0
+    }
+
+    fun setArgs(alarmRelation: AlarmRelation?): Unit {
+        if (!areArgsSet && alarmRelation != null) {
+
+            selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id)
+            scheduledDays.value = alarmRelation.alarm.scheduledDays
+            startTime.value = alarmRelation.alarm.localDateTime
+
+            id = alarmRelation.alarm.id
+            isScheduled = alarmRelation.alarm.isScheduled == 1
+
+            areArgsSet = true
+        }
+    }
+
+    fun getAlarm(): Alarm {
+        val alarm: Alarm =  Alarm(
+            profileUUID = getProfileUUID(),
+            localDateTime = startTime.value!!,
+            isScheduled = if (isScheduled) 1 else 0,
+            scheduledDays = scheduledDays.value!!
+        )
+        if (id != null) {
+            alarm.id = this.id!!
+        }
+        return alarm
     }
 
     override fun onCleared(): Unit {

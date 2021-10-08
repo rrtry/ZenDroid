@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     android:id="@+id/cardView"
     android:animateLayoutChanges="true"
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -11,12 +11,12 @@
     android:layout_marginStart="7dp"
     android:layout_marginEnd="7dp"
     android:layout_marginTop="7dp"
+    android:background="?attr/colorOnSecondary"
     app:cardCornerRadius="5dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#FFFFFF">
+        android:layout_height="match_parent">
 
         <TextView
             android:id="@+id/timeTextView"
@@ -47,6 +47,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:text="Sun, Mon, Tue, Sat"
+            android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/imageView4"
             app:layout_constraintTop_toBottomOf="@+id/timeTextView" />
 
@@ -69,6 +70,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:text="Profile"
+            android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/imageView3"
             app:layout_constraintTop_toBottomOf="@+id/imageView4" />
 
@@ -82,19 +84,28 @@
             app:layout_constraintTop_toBottomOf="@+id/timeTextView"
             app:srcCompat="@drawable/baseline_calendar_today_black_24dp" />
 
-        <Button
-            android:id="@+id/deleteAlarmButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="8dp"
-            style="?android:attr/borderlessButtonStyle"
-            android:backgroundTint="@color/white"
-            android:drawableLeft="@drawable/baseline_delete_forever_deep_purple_400_24dp"
-            android:text="Delete"
-            android:textColor="#FF6B13EA"
+        <ImageButton
+            android:id="@+id/delayAlarmButton"
+            android:layout_width="50dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp"
+            android:background="?attr/selectableItemBackground"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toStartOf="@+id/deleteAlarmButton"
+            app:srcCompat="@drawable/baseline_alarm_off_deep_purple_500_24dp" />
+
+        <ImageButton
+            android:id="@+id/deleteAlarmButton"
+            android:layout_width="50dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="4dp"
+            android:background="?attr/selectableItemBackground"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

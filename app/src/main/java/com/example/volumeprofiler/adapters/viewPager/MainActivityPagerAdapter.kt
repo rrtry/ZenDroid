@@ -7,13 +7,9 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.example.volumeprofiler.fragments.AlarmsListFragment
 import com.example.volumeprofiler.fragments.LocationsListFragment
 import com.example.volumeprofiler.fragments.ProfilesListFragment
-import dagger.hilt.android.qualifiers.ActivityContext
-import dagger.hilt.android.scopes.ActivityRetainedScoped
-import javax.inject.Inject
 
-@ActivityRetainedScoped
-class MainActivityPagerAdapter @Inject constructor(
-    @ActivityContext fa: Context
+class MainActivityPagerAdapter constructor(
+    fa: Context
 ): FragmentStateAdapter(fa as AppCompatActivity) {
 
     override fun getItemCount(): Int {

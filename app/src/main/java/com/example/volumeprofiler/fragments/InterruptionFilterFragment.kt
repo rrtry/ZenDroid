@@ -17,6 +17,8 @@ import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
@@ -27,9 +29,9 @@ import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOnVisualRe
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
@@ -40,33 +42,10 @@ class InterruptionFilterFragment: Fragment() {
     private var _binding: ZenPreferencesFragmentBinding? = null
     private val binding: ZenPreferencesFragmentBinding get() = _binding!!
 
-    private var job: Job? = null
-
-    private fun onPriorityResult(bundle: Bundle): Unit {
-        val priorityCategories: ArrayList<Int> = bundle.getIntegerArrayList(PRIORITY_CATEGORIES_KEY) as ArrayList<Int>
-        viewModel.priorityCategories.value = priorityCategories
-    }
-
-    private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
-        val type: Int = bundle.getInt(EFFECTS_TYPE_KEY)
-        val effects: ArrayList<Int> = bundle.getIntegerArrayList(EFFECTS_KEY) as ArrayList<Int>
-        if (type == 0) {
-            viewModel.screenOffVisualEffects.value = effects
-        } else {
-            viewModel.screenOnVisualEffects.value = effects
-        }
-    }
-
     private fun disableNestedScrolling(): Unit {
         val appBar: AppBarLayout = requireActivity().findViewById(R.id.app_bar)
         appBar.setExpanded(false, true)
         ViewCompat.setNestedScrollingEnabled(requireView().findViewById(R.id.rootElement), false)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        job?.cancel()
-        job = null
     }
 
     private fun startFavoriteContactsActivity(): Unit {
@@ -84,23 +63,28 @@ class InterruptionFilterFragment: Fragment() {
     }
 
     private fun collectEventsFlow(): Unit {
-        job = viewModel.fragmentEventsFlow.onEach {
-            when (it) {
-                EditProfileViewModel.Event.StartContactsActivity -> {
-                    startFavoriteContactsActivity()
-                }
-                is EditProfileViewModel.Event.ShowPopupWindow -> {
-                    showPopupWindow(it.category)
-                }
-                is EditProfileViewModel.Event.ShowDialogFragment -> {
-                    showDialog(it.dialogType)
-                }
-                else -> {
-                    Log.i("EditProfileFragment", "unknown event")
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
+                when (it) {
+                    EditProfileViewModel.Event.StartContactsActivity -> {
+                        startFavoriteContactsActivity()
+                    }
+                    EditProfileViewModel.Event.QueryStarredContacts -> {
 
-            }
-        }.launchIn(viewLifecycleOwner.lifecycleScope)
+                    }
+                    is EditProfileViewModel.Event.ShowPopupWindow -> {
+                        showPopupWindow(it.category)
+                    }
+                    is EditProfileViewModel.Event.ShowDialogFragment -> {
+                        showDialog(it.dialogType)
+                    }
+                    else -> {
+                        Log.i("EditProfileFragment", "unknown event")
+                    }
+
+                }
+            }.collect()
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -216,6 +200,21 @@ class InterruptionFilterFragment: Fragment() {
         }
         else {
             showExceptionsPopupWindow(popupMenu, category)
+        }
+    }
+
+    private fun onPriorityResult(bundle: Bundle): Unit {
+        val priorityCategories: ArrayList<Int> = bundle.getIntegerArrayList(PRIORITY_CATEGORIES_KEY) as ArrayList<Int>
+        viewModel.priorityCategories.value = priorityCategories
+    }
+
+    private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
+        val type: Int = bundle.getInt(EFFECTS_TYPE_KEY)
+        val effects: ArrayList<Int> = bundle.getIntegerArrayList(EFFECTS_KEY) as ArrayList<Int>
+        if (type == 0) {
+            viewModel.screenOffVisualEffects.value = effects
+        } else {
+            viewModel.screenOnVisualEffects.value = effects
         }
     }
 

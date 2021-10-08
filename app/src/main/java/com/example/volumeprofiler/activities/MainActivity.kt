@@ -22,10 +22,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
-        supportActionBar?.title = "Title"
+        supportActionBar?.title = "VolumeProfiler"
         viewPager = findViewById(R.id.pager)
         viewPager.adapter = pagerAdapter
-        viewPager.setPageTransformer(ZoomOutPageTransformer())
         setupTabLayout()
     }
 
@@ -59,7 +58,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-
         private val drawables: List<Int> = listOf(android.R.drawable.ic_menu_recent_history,
                 android.R.drawable.ic_menu_sort_by_size,
                 android.R.drawable.ic_lock_silent_mode, android.R.drawable.ic_menu_mylocation)

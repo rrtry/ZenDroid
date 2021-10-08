@@ -1,9 +1,9 @@
 package com.example.volumeprofiler.database.repositories
 
 import com.example.volumeprofiler.database.dao.AlarmDao
-import com.example.volumeprofiler.database.dao.AlarmTriggerDao
+import com.example.volumeprofiler.database.dao.AlarmRelationDao
 import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.AlarmRelation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class AlarmRepository @Inject constructor(
         private val alarmDao: AlarmDao,
-        private val alarmTriggerDao: AlarmTriggerDao) {
+        private val alarmRelationDao: AlarmRelationDao) {
 
     suspend fun addAlarm(alarm: Alarm) {
         withContext(Dispatchers.IO) {
@@ -34,20 +34,20 @@ class AlarmRepository @Inject constructor(
         }
     }
 
-    suspend fun getActiveAlarmTriggers(): List<AlarmTrigger>? {
+    suspend fun getEnabledAlarms(): List<AlarmRelation>? {
         return withContext(Dispatchers.IO) {
-            alarmTriggerDao.getActiveAlarmTriggers()
+            alarmRelationDao.getActiveAlarmTriggers()
         }
     }
 
-    suspend fun getActiveAlarmTriggersByProfileId(id: UUID): List<AlarmTrigger>? {
+    suspend fun getScheduledAlarmsByProfileId(id: UUID): List<AlarmRelation>? {
         return withContext(Dispatchers.IO) {
-            alarmTriggerDao.getActiveAlarmTriggersByProfileId(id)
+            alarmRelationDao.getActiveAlarmTriggersByProfileId(id)
         }
     }
 
-    fun observeAlarmTriggers(): Flow<List<AlarmTrigger>> = alarmTriggerDao.observeAlarmTriggers()
+    fun observeAlarmTriggers(): Flow<List<AlarmRelation>> = alarmRelationDao.observeAlarmTriggers()
 
-    fun observeAlarmTriggersByProfileId(id: UUID): Flow<List<AlarmTrigger>?> = alarmTriggerDao.observeAlarmTriggersByProfileId(id)
+    fun observeAlarmTriggersByProfileId(id: UUID): Flow<List<AlarmRelation>?> = alarmRelationDao.observeAlarmTriggersByProfileId(id)
 
 }

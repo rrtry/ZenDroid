@@ -9,51 +9,18 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.MediaStore
+import android.util.Log
 import androidx.databinding.BindingConversion
+import java.time.DayOfWeek
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.format.TextStyle
+import java.util.*
+import kotlin.collections.ArrayList
 
 object BindingConverters {
-
-    @JvmStatic
-    fun queryStarredContacts(context: Context): String {
-        val projection: Array<String> = arrayOf(ContactsContract.Contacts.DISPLAY_NAME)
-        val cursor: Cursor? = context.contentResolver.query(
-            ContactsContract.Contacts.CONTENT_URI,
-            projection,
-            "${ContactsContract.Data.STARRED} = 1",
-            null,
-            "${ContactsContract.Contacts.DISPLAY_NAME} ASC"
-        )
-        val stringBuilder: StringBuilder = StringBuilder()
-        cursor?.use {
-            if (it.count > 0) {
-                while (it.moveToNext() && it.position <= 2) {
-                    stringBuilder.append(it.getString(it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)) + if (it.isLast) "and ${it.count} others" else ", ")
-                }
-            } else {
-                stringBuilder.append("None")
-            }
-        }
-        return stringBuilder.toString()
-    }
-
-    @JvmStatic
-    fun getRingtoneTitle(context: Context, uri: Uri, type: Int): String {
-        val actualUri: Uri = if (uri == Uri.EMPTY) RingtoneManager.getActualDefaultRingtoneUri(
-            context,
-            type
-        ) else uri
-        val contentResolver: ContentResolver = context.contentResolver
-        val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
-        var title: String = ""
-        val cursor: Cursor? = contentResolver.query(actualUri, projection, null, null, null)
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                title = cursor.getString(0)
-                cursor.close()
-            }
-        }
-        return title
-    }
 
     @JvmStatic
     fun prioritySendersToString(prioritySenders: Int, priorityCategories: List<Int>, categoryType: Int): String {
@@ -96,6 +63,7 @@ object BindingConverters {
         }
     }
 
+    @BindingConversion
     @JvmStatic
     fun priorityCategoriesToString(categories: List<Int>): String {
         val otherInterruptions: List<Int> = listOf(
@@ -126,8 +94,10 @@ object BindingConverters {
         }
     }
 
+    @BindingConversion
     @JvmStatic
     fun interruptionRulesToString(notificationAccessGranted: Boolean): String {
+        Log.i("BindingConverters", "interruptionRulesToString()")
         return if (!notificationAccessGranted) {
             "Notification policy access required"
         } else {

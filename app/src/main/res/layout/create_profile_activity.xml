@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
+        <import type="android.R.drawable"/>
         <variable
             name="viewModel"
             type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
@@ -47,7 +48,7 @@
                         android:layout_gravity="right"
                         android:onClick="@{() -> viewModel.onSaveChangesButtonClick()}"
                         android:background="@null"
-                        android:src="@{viewModel.hasArgs ? @android:drawable/ic_menu_add : @android:drawable/ic_menu_save"
+                        android:src="@{viewModel.isNew() ? @android:drawable/ic_menu_add : @android:drawable/ic_menu_save}"
                         android:layout_marginRight="16dp"/>
 
                     <ImageButton

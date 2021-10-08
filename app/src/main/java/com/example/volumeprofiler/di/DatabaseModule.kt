@@ -24,13 +24,21 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideProfileDao(database: ApplicationDatabase) = database.profileDao()
+    fun provideProfileDao(database: ApplicationDatabase) = database.getProfileDao()
 
     @Provides
     @Singleton
-    fun provideAlarmDao(database: ApplicationDatabase) = database.alarmDao()
+    fun provideAlarmDao(database: ApplicationDatabase) = database.getAlarmDao()
 
     @Provides
     @Singleton
-    fun provideAlarmTriggerDao(database: ApplicationDatabase) = database.alarmTriggerDao()
+    fun provideAlarmRelationDao(database: ApplicationDatabase) = database.getAlarmRelationDao()
+
+    @Provides
+    @Singleton
+    fun provideLocationDao(database: ApplicationDatabase) = database.getLocationDao()
+
+    @Provides
+    @Singleton
+    fun provideLocationRelationDao(database: ApplicationDatabase) = database.getLocationRelationDao()
 }

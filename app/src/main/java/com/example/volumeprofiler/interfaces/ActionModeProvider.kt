@@ -10,5 +10,4 @@ interface ActionModeProvider<T> {
     fun getTracker(): SelectionTracker<T>
 
     fun getFragmentActivity(): FragmentActivity
-
 }

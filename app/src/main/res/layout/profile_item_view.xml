@@ -3,17 +3,17 @@
     android:id="@+id/cardView"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="7dp"
     android:layout_marginStart="7dp"
     android:layout_marginEnd="7dp"
     android:layout_marginTop="7dp"
+    android:background="?attr/colorOnSecondary"
     app:cardCornerRadius="4dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:id="@+id/rootView"
         android:layout_width="match_parent">
 
@@ -26,53 +26,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/expandableView"
-            android:animateLayoutChanges="true"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="visible"
-            app:layout_constraintTop_toBottomOf="@+id/checkBox">
-
-            <View
-                android:id="@+id/itemSeparator"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="10dp"
-                android:background="@android:color/darker_gray"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:layout_editor_absoluteX="0dp" />
-
-            <Button
-                android:id="@+id/removeProfileButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="4dp"
-                android:background="@android:color/transparent"
-                android:drawableTop="@drawable/baseline_delete_forever_deep_purple_400_24dp"
-                android:text="Remove"
-                android:textColor="#FF6B13EA"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
-
-            <Button
-                android:id="@+id/editProfileButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginEnd="16dp"
-                android:background="@android:color/transparent"
-                android:drawableTop="@drawable/baseline_drive_file_rename_outline_black_24dp"
-                android:text="Edit"
-                android:textColor="#FF6B13EA"
-                app:layout_constraintBottom_toBottomOf="@+id/removeProfileButton"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
         <ImageView
             android:id="@+id/expandButton"
             android:layout_width="wrap_content"
@@ -82,6 +35,73 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/baseline_expand_more_grey_500_24dp" />
+
+        <View
+            android:id="@+id/itemSeparator"
+            android:visibility="invisible"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="4dp"
+            android:background="@android:color/darker_gray"
+            app:layout_constraintBottom_toTopOf="@+id/expandableView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/checkBox" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/expandableView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:animateLayoutChanges="true"
+            android:visibility="visible"
+            app:layout_constraintTop_toBottomOf="@+id/checkBox">
+
+            <ImageButton
+                android:id="@+id/removeProfileButton"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/headsetButton"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
+
+            <ImageButton
+                android:id="@+id/headsetButton"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/editProfileButton"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/removeProfileButton"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/baseline_headset_black_24dp" />
+
+            <ImageButton
+                android:id="@+id/editProfileButton"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/headsetButton"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/baseline_drive_file_rename_outline_black_24dp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

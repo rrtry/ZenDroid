@@ -9,15 +9,24 @@ import kotlinx.parcelize.Parcelize
 import java.util.*
 
 @Parcelize
-@Entity(foreignKeys = [ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["onExitProfile"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE),
-                      ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["onEnterProfile"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE)])
+@Entity(foreignKeys = [ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["onExitProfileId"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE),
+                      ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["onEnterProfileId"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE)])
 data class Location(
-        @PrimaryKey
-        val id: UUID = UUID.randomUUID(),
+
+        @PrimaryKey(autoGenerate = true)
+        @ColumnInfo (name = "location_id")
+        val id: Int = 0,
+
         var latitude: Double,
         var longitude: Double,
         var address: String,
-        @ColumnInfo(index = true) var onExitProfileId: UUID?,
-        @ColumnInfo(index = true) var onEnterProfileId: UUID,
-        var radius: Int = 100,
+        var radius: Float = 100f,
+        var enabled: Byte = 0,
+
+        @ColumnInfo(index = true)
+        var onExitProfileId: UUID,
+
+        @ColumnInfo(index = true)
+        var onEnterProfileId: UUID,
+
 ): Parcelable

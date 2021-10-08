@@ -5,7 +5,6 @@
     <data>
         <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
         <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
-        <import type="com.example.volumeprofiler.util.ContentUtilKt"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>
         <variable
@@ -31,6 +30,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
+                mediaInterruptionFilter="@{viewModel.interruptionFilter}"
+                mediaPriorityCategories="@{viewModel.priorityCategories}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                mediaVolume="@{viewModel.mediaVolume}"
                 app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
@@ -59,7 +62,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="16dp"
                 android:text="Media volume"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/imageView9"
                 app:layout_constraintTop_toTopOf="parent" />
 
@@ -95,7 +98,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="32dp"
                 android:text="Call volume"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/imageView10"
                 app:layout_constraintTop_toBottomOf="@+id/mediaSeekBar" />
 
@@ -138,7 +141,7 @@
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="32dp"
                 android:text="Notification volume"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/notificationIcon"
                 app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar" />
 
@@ -181,7 +184,7 @@
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="32dp"
                 android:text="Ring volume"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/ringerIcon"
                 app:layout_constraintTop_toBottomOf="@+id/notificationSeekBar" />
 
@@ -234,7 +237,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="60dp"
                     android:text="Mute ringer"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
                     app:layout_constraintStart_toStartOf="parent"
@@ -263,7 +266,7 @@
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="32dp"
                 android:text="Alarm volume"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/imageView13"
                 app:layout_constraintTop_toBottomOf="@+id/ringerSeekBar" />
 
@@ -284,7 +287,7 @@
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
                 android:text="Ringtones and notification sounds"
-                android:textColor="#FF6B13EA"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/separator1" />
@@ -310,7 +313,7 @@
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:text="Do Not disturb"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
 
                 <TextView
@@ -321,6 +324,7 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@id/doNotDisturbTitle"
                     android:paddingStart="35dp"
+                    android:textColor="@color/light_gray"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
                     android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
@@ -348,7 +352,7 @@
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:text="Phone ringtone"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
 
                 <TextView
@@ -359,7 +363,8 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:text="@{ContentUtilKt.getRingtoneTitle(context, viewModel.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)}"
+                    android:textColor="@color/light_gray"
+                    android:text="@{viewModel.phoneRingtoneTitle}"
                     android:textSize="14sp" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -384,7 +389,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     android:paddingStart="35dp"
                     android:text="Default notification sound"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
 
                 <TextView
@@ -395,9 +400,10 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
+                    android:textColor="@color/light_gray"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
-                    android:text="@{ContentUtilKt.getRingtoneTitle(context, viewModel.notificationSoundUri, RingtoneManager.TYPE_NOTIFICATION)}"
+                    android:text="@{viewModel.notificationRingtoneTitle}"
                     android:textSize="14sp" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -422,7 +428,7 @@
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:text="Default alarm sound"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
 
                 <TextView
@@ -433,8 +439,9 @@
                     app:layout_constraintStart_toStartOf="parent"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
+                    android:textColor="@color/light_gray"
                     android:paddingBottom="8dp"
-                    android:text="@{ContentUtilKt.getRingtoneTitle(context, viewModel.alarmSoundUri, RingtoneManager.TYPE_ALARM)}"
+                    android:text="@{viewModel.alarmRingtoneTitle}"
                     android:textSize="14sp" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -457,7 +464,7 @@
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:text="Do Not Disturb preferences"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp"
                     app:layout_constraintTop_toTopOf="parent" />
 
@@ -469,6 +476,7 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
+                    android:textColor="@color/light_gray"
                     android:text="@{BindingConverters.interruptionRulesToString(viewModel.notificationPolicyAccessGranted)}"
                     android:textSize="14sp"
                     app:layout_constraintStart_toStartOf="parent"
@@ -494,7 +502,7 @@
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
                     android:text="Also vibrate for calls"
-                    android:textColor="#000000"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
 
                 <Switch

@@ -1,27 +1,28 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.app.NotificationManager
 import android.media.RingtoneManager
 import android.net.Uri
 import androidx.lifecycle.*
-import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.AlarmRelation
 import com.example.volumeprofiler.models.Profile
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.receiveAsFlow
 import android.app.NotificationManager.Policy.*
 import kotlin.collections.ArrayList
 import android.media.AudioManager.*
+import android.util.Log
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.database.repositories.AlarmRepository
+import com.example.volumeprofiler.util.ContentResolverUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
         private val alarmRepository: AlarmRepository,
+        private val contentResolverUtil: ContentResolverUtil
 ): ViewModel() {
 
     var areArgsSet: Boolean = false
@@ -34,7 +35,9 @@ class EditProfileViewModel @Inject constructor(
         object NotificationPolicyRequestEvent: Event()
         object ShowPopupWindowEvent: Event()
         object StartContactsActivity: Event()
+        object QueryStarredContacts: Event()
 
+        data class QueryRingtoneTitle(val type: Int, val uri: Uri): Event()
         data class SaveChangesEvent(val profile: Profile, val shouldUpdate: Boolean): Event()
         data class ShowDialogFragment(val dialogType: DialogType): Event()
         data class ChangeRingerMode(val streamType: Int, val fromUser: Boolean): Event()
@@ -49,25 +52,31 @@ class EditProfileViewModel @Inject constructor(
         TITLE
     }
 
+    val isNew: MutableLiveData<Boolean> = MutableLiveData(false)
+
     private val profileIdLiveData = MutableLiveData<UUID>()
-    private val alarmsLiveData: LiveData<List<AlarmTrigger>?> = Transformations.switchMap(profileIdLiveData) { profileId -> alarmRepository.observeAlarmTriggersByProfileId(profileId).asLiveData() }
+    private val alarmsLiveData: LiveData<List<AlarmRelation>?> = Transformations.switchMap(profileIdLiveData) { profileId -> alarmRepository.observeAlarmTriggersByProfileId(profileId).asLiveData() }
 
     val title: MutableLiveData<String> = MutableLiveData("New profile")
     val currentFragmentTag: MutableLiveData<String> = MutableLiveData(EditProfileActivity.TAG_PROFILE_FRAGMENT)
-    val mediaVolume: MutableLiveData<Int> = MutableLiveData(0)
-    val callVolume: MutableLiveData<Int> = MutableLiveData(1)
-    val notificationVolume: MutableLiveData<Int> = MutableLiveData(3)
-    val ringVolume: MutableLiveData<Int> = MutableLiveData(3)
-    val alarmVolume: MutableLiveData<Int> = MutableLiveData(1)
-    val vibrateForCalls: MutableLiveData<Int> = MutableLiveData(0)
-    val phoneRingtoneUri: MutableLiveData<Uri> = MutableLiveData(Uri.EMPTY)
-    val notificationSoundUri: MutableLiveData<Uri> = MutableLiveData(Uri.EMPTY)
-    val alarmSoundUri: MutableLiveData<Uri> = MutableLiveData(Uri.EMPTY)
+    val mediaVolume: MutableLiveData<Int> = MutableLiveData()
+    val callVolume: MutableLiveData<Int> = MutableLiveData()
+    val notificationVolume: MutableLiveData<Int> = MutableLiveData()
+    val ringVolume: MutableLiveData<Int> = MutableLiveData()
+    val alarmVolume: MutableLiveData<Int> = MutableLiveData()
+    val vibrateForCalls: MutableLiveData<Int> = MutableLiveData()
+    val phoneRingtoneUri: MutableLiveData<Uri> = MutableLiveData()
+    val notificationSoundUri: MutableLiveData<Uri> = MutableLiveData()
+    val alarmSoundUri: MutableLiveData<Uri> = MutableLiveData()
 
-    val interruptionFilter: MutableLiveData<Int> = MutableLiveData(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-    val priorityCategories: MutableLiveData<ArrayList<Int>> = MutableLiveData(arrayListOf(PRIORITY_CATEGORY_MESSAGES))
-    val priorityCallSenders: MutableLiveData<Int> = MutableLiveData(0)
-    val priorityMessageSenders: MutableLiveData<Int> = MutableLiveData(PRIORITY_SENDERS_CONTACTS)
+    val phoneRingtoneTitle: LiveData<String> = phoneRingtoneUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, RingtoneManager.TYPE_RINGTONE) }
+    val notificationRingtoneTitle: LiveData<String> = notificationSoundUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, RingtoneManager.TYPE_NOTIFICATION) }
+    val alarmRingtoneTitle: LiveData<String> = alarmSoundUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, RingtoneManager.TYPE_ALARM) }
+
+    val interruptionFilter: MutableLiveData<Int> = MutableLiveData()
+    val priorityCategories: MutableLiveData<ArrayList<Int>> = MutableLiveData()
+    val priorityCallSenders: MutableLiveData<Int> = MutableLiveData()
+    val priorityMessageSenders: MutableLiveData<Int> = MutableLiveData()
     val screenOnVisualEffects: MutableLiveData<ArrayList<Int>> = MutableLiveData(arrayListOf())
     val screenOffVisualEffects: MutableLiveData<ArrayList<Int>> = MutableLiveData(arrayListOf())
     val primaryConversationSenders: MutableLiveData<Int> = MutableLiveData(CONVERSATION_SENDERS_ANYONE)
@@ -84,6 +93,32 @@ class EditProfileViewModel @Inject constructor(
     val fragmentEventsFlow: Flow<Event> = eventChannel.receiveAsFlow()
     val activityEventsFlow: Flow<Event> = activityEventChannel.receiveAsFlow()
 
+    private fun setBindings(profile: Profile): Unit {
+        title.value = profile.title
+
+        mediaVolume.value = profile.mediaVolume
+        callVolume.value = profile.callVolume
+        notificationVolume.value = profile.notificationVolume
+        ringVolume.value = profile.ringVolume
+        alarmVolume.value = profile.alarmVolume
+
+        phoneRingtoneUri.value = profile.phoneRingtoneUri
+        notificationSoundUri.value = profile.notificationSoundUri
+        alarmSoundUri.value = profile.alarmSoundUri
+
+        interruptionFilter.value = profile.interruptionFilter
+        ringerMode.value = profile.ringerMode
+        notificationMode.value = profile.notificationMode
+        vibrateForCalls.value = profile.isVibrateForCallsActive
+
+        priorityCategories.value = profile.priorityCategories
+        priorityCallSenders.value = profile.priorityCallSenders
+        priorityMessageSenders.value = profile.priorityMessageSenders
+        screenOnVisualEffects.value = profile.screenOnVisualEffects
+        screenOffVisualEffects.value = profile.screenOffVisualEffects
+        primaryConversationSenders.value = profile.primaryConversationSenders
+    }
+
     fun setArgs(profile: Profile, hasArguments: Boolean): Unit {
         if (!areArgsSet) {
             areArgsSet = true
@@ -91,6 +126,8 @@ class EditProfileViewModel @Inject constructor(
             setBindings(profile)
             if (hasArguments) {
                 setProfileID(profile.id)
+            } else {
+                isNew.value = true
             }
         }
     }
@@ -135,22 +172,7 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    private fun setBindings(profile: Profile): Unit {
-        title.value = profile.title
-        mediaVolume.value = profile.mediaVolume
-        callVolume.value = profile.callVolume
-        notificationVolume.value = profile.notificationVolume
-        ringVolume.value = profile.ringVolume
-        alarmVolume.value = profile.alarmVolume
-        phoneRingtoneUri.value = profile.phoneRingtoneUri
-        notificationSoundUri.value = profile.notificationSoundUri
-        alarmSoundUri.value = profile.alarmSoundUri
-        ringerMode.value = profile.ringerMode
-        notificationMode.value = profile.notificationMode
-        vibrateForCalls.value = profile.isVibrateForCallsActive
-    }
-
-    fun getAlarms(): List<AlarmTrigger>? {
+    fun getAlarms(): List<AlarmRelation>? {
         return alarmsLiveData.value
     }
 
@@ -237,6 +259,8 @@ class EditProfileViewModel @Inject constructor(
             } else if (streamType == STREAM_RING && ringerMode.value != RINGER_MODE_NORMAL) {
                 ringerMode.value = RINGER_MODE_NORMAL
             }
+        } else {
+            Log.i("EditProfileViewModel", "onStreamVolumeChanged: input is not from the user")
         }
     }
 

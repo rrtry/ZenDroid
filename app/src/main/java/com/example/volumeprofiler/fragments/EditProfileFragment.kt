@@ -20,7 +20,6 @@ import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
 import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import com.example.volumeprofiler.models.Profile
-import kotlinx.coroutines.Job
 import android.app.NotificationManager.*
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -33,11 +32,14 @@ import android.util.DisplayMetrics
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
@@ -49,12 +51,11 @@ class EditProfileFragment: Fragment() {
     private var _binding: CreateProfileFragmentBinding? = null
     private val binding: CreateProfileFragmentBinding get() = _binding!!
 
-    private var job: Job? = null
-
     private lateinit var ringtoneActivityCallback: ActivityResultLauncher<Int>
     private lateinit var storagePermissionCallback: ActivityResultLauncher<String>
     private lateinit var notificationPolicyCallback: ActivityResultLauncher<Intent>
-    private lateinit var hapticService: Vibrator
+
+    private var hapticService: Vibrator? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -64,6 +65,14 @@ class EditProfileFragment: Fragment() {
         callbacks = requireActivity() as EditProfileActivityCallbacks
     }
 
+    override fun onDetach() {
+        super.onDetach()
+        callbacks = null
+        ringtoneActivityCallback.unregister()
+        storagePermissionCallback.unregister()
+        notificationPolicyCallback.unregister()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         hapticService = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -71,47 +80,43 @@ class EditProfileFragment: Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = DataBindingUtil.inflate(inflater, R.layout.create_profile_fragment, container, false)
-        binding.viewModel = this.viewModel
+        binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        job = viewModel.fragmentEventsFlow.onEach {
-            when (it) {
-                EditProfileViewModel.Event.NavigateToNextFragment -> {
-                    callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
-                }
-                EditProfileViewModel.Event.StoragePermissionRequestEvent -> {
-                    requestStoragePermission()
-                }
-                EditProfileViewModel.Event.ShowPopupWindowEvent -> {
-                    showPopupMenu()
-                }
-                EditProfileViewModel.Event.NotificationPolicyRequestEvent -> {
-                    startNotificationPolicyActivity()
-                }
-                is EditProfileViewModel.Event.ChangeRingtoneEvent -> {
-                    startRingtonePickerActivity(it.ringtoneType)
-                }
-                is EditProfileViewModel.Event.ChangeRingerMode -> {
-                    if (it.fromUser) {
-                        changeMode(it.streamType)
-                        createVibrateEffect()
-                        showToast(it.streamType)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
+                when (it) {
+                    EditProfileViewModel.Event.NavigateToNextFragment -> {
+                        callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
                     }
+                    EditProfileViewModel.Event.StoragePermissionRequestEvent -> {
+                        requestStoragePermission()
+                    }
+                    EditProfileViewModel.Event.ShowPopupWindowEvent -> {
+                        showPopupMenu()
+                    }
+                    EditProfileViewModel.Event.NotificationPolicyRequestEvent -> {
+                        startNotificationPolicyActivity()
+                    }
+                    is EditProfileViewModel.Event.ChangeRingtoneEvent -> {
+                        startRingtonePickerActivity(it.ringtoneType)
+                    }
+                    is EditProfileViewModel.Event.ChangeRingerMode -> {
+                        if (it.fromUser) {
+                            changeMode(it.streamType)
+                            createVibrateEffect()
+                            showToast(it.streamType)
+                        }
+                    }
+                    else -> Log.i("EditProfileFragment", "unknown event")
                 }
-                else -> Log.i("EditProfileFragment", "unknown event")
-            }
-        }.launchIn(viewLifecycleOwner.lifecycleScope)
+            }.collect()
+        }
         removeFromLayout(binding.SilentModeLayout)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        job?.cancel()
-        job = null
     }
 
     override fun onResume() {
@@ -125,16 +130,9 @@ class EditProfileFragment: Fragment() {
         _binding = null
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        callbacks = null
-        ringtoneActivityCallback.unregister()
-        storagePermissionCallback.unregister()
-        notificationPolicyCallback.unregister()
-    }
-
     private fun checkStoragePermission(): Boolean {
-        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun checkNotificationPolicyAccess(): Boolean {
@@ -152,7 +150,6 @@ class EditProfileFragment: Fragment() {
 
     private fun registerForNotificationPolicyResult(): Unit {
         notificationPolicyCallback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            Log.i("EditProfileFragment", checkNotificationPolicyAccess().toString())
             viewModel.notificationPolicyAccessGranted.value = checkNotificationPolicyAccess()
         }
     }
@@ -218,7 +215,7 @@ class EditProfileFragment: Fragment() {
 
     private fun removeFromLayout(view: View): Unit {
         setConstraints()
-        if (!hapticService.hasVibrator()) {
+        if (!hapticService!!.hasVibrator()) {
             binding.constraintRoot.removeView(view)
         }
     }
@@ -232,11 +229,11 @@ class EditProfileFragment: Fragment() {
 
     @Suppress("deprecation")
     private fun createVibrateEffect(): Unit {
-        if (hapticService.hasVibrator()) {
+        if (hapticService!!.hasVibrator()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                hapticService.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+                hapticService!!.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
-                hapticService.vibrate(200)
+                hapticService!!.vibrate(200)
             }
         }
     }
@@ -250,7 +247,7 @@ class EditProfileFragment: Fragment() {
     }
 
     private fun changeMode(streamType: Int): Unit {
-        if (hapticService.hasVibrator()) {
+        if (hapticService!!.hasVibrator()) {
             changeMode(streamType, RINGER_MODE_VIBRATE)
         } else {
             changeMode(streamType, RINGER_MODE_SILENT)
@@ -258,10 +255,10 @@ class EditProfileFragment: Fragment() {
     }
 
     private fun showToast(streamType: Int): Unit {
-        if (hapticService.hasVibrator()) {
-            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notification set to vibrate" else "Ringer set to vibrate", Toast.LENGTH_SHORT).show()
+        if (hapticService!!.hasVibrator()) {
+            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notifications are set to vibrate" else "Ringer is set to vibrate", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notification set to silent" else "Ringer set to silent", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notifications are set to silent" else "Ringer is set to silent", Toast.LENGTH_SHORT).show()
         }
     }
 

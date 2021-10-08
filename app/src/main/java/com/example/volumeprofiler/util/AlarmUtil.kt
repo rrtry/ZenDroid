@@ -5,19 +5,16 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import java.time.DayOfWeek
-import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.models.Alarm
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.AlarmTrigger
-import com.example.volumeprofiler.receivers.AlarmReceiver
+import com.example.volumeprofiler.models.AlarmRelation
+import com.example.volumeprofiler.broadcastReceivers.AlarmReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.LocalTime
-import java.time.ZoneId
+import java.time.*
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.ArrayList
@@ -29,50 +26,73 @@ class AlarmUtil @Inject constructor (
 
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun setAlarm(alarm: Alarm, profile: Profile, reScheduling: Boolean): Long {
-        val alarmId: Long = alarm.id
-        val recurringDays: ArrayList<Int> = alarm.scheduledDays
+    fun scheduleAlarm(alarm: Alarm, profile: Profile, repeating: Boolean, showToast: Boolean = false): Boolean {
+
+        val scheduledDays: ArrayList<Int> = alarm.scheduledDays
         val eventTime: LocalDateTime = alarm.localDateTime
         val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, true)
         val now: LocalDateTime = LocalDateTime.now()
-        val delay: Long
-        if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
-                && now.toLocalTime() < eventTime.toLocalTime()) {
-            delay = diffBetweenHoursInMillis(eventTime.toLocalTime())
+        val delay: Long = getDelay(now, eventTime, scheduledDays, repeating)
+
+        return if (delay >= 0) {
+            setAlarm(now, delay, pendingIntent!!)
+            true
+        } else {
+            false
         }
-        else {
-            var nextDay: DayOfWeek? = getNextDayOnSchedule(recurringDays)
-            if (nextDay != null) {
-                delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
-            }
-            else {
-                if (!reScheduling) {
-                    nextDay = now.dayOfWeek.plus(1)
-                    delay = diffBetweenDatesInMillis(nextDay, eventTime.hour, eventTime.minute)
-                }
-                else {
-                    return alarmId
-                }
-            }
-        }
-        val currentTimeInMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
+    private fun setAlarm(now: LocalDateTime, delay: Long, pendingIntent: PendingIntent): Unit {
+        val currentTimeInMillis: Long = toEpochMilli(now)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
         else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, currentTimeInMillis + delay, pendingIntent)
         }
-        return EXIT_SUCCESS
     }
 
-    private fun getPendingIntent(alarm: Alarm, profile: Profile, shouldCreate: Boolean): PendingIntent? {
+    private fun getDelay(now: LocalDateTime, eventTime: LocalDateTime, recurringDays: ArrayList<Int>, repeating: Boolean): Long {
+        if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
+                && now.toLocalTime() < eventTime.toLocalTime()) {
+            return localTimeDifference(eventTime.toLocalTime())
+        }
+        else {
+            var nextDay: DayOfWeek? = getNextDayOnSchedule(recurringDays)
+            return if (nextDay != null) {
+                localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute)
+            } else {
+                if (!repeating) {
+                    nextDay = now.dayOfWeek.plus(1)
+                    localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute)
+                } else {
+                    -1
+                }
+            }
+        }
+    }
+
+    fun delayAlarm(alarmRelation: AlarmRelation): Boolean {
+        val alarm: Alarm = alarmRelation.alarm
+        val profile: Profile = alarmRelation.profile
+        return if (pendingIntentExists(alarm, profile) && alarm.scheduledDays.isNotEmpty()) {
+            val nextDay: DayOfWeek = getNextDayOnSchedule(alarm.scheduledDays)!!
+            val now: LocalDateTime = LocalDateTime.now()
+            setAlarm(now, localDateTimeDifference(nextDay, alarm.localDateTime.hour, alarm.localDateTime.minute), getPendingIntent(alarm, profile, true)!!)
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun getPendingIntent(alarm: Alarm, profile: Profile, createOrUpdate: Boolean): PendingIntent? {
         val id: Int = alarm.id.toInt()
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             this.action = Application.ACTION_ALARM_TRIGGER
             this.putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
             this.putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
-        return if (shouldCreate) {
+        return if (createOrUpdate) {
             PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
         else {
@@ -80,25 +100,28 @@ class AlarmUtil @Inject constructor (
         }
     }
 
+    private fun pendingIntentExists(alarm: Alarm, profile: Profile): Boolean {
+        return getPendingIntent(alarm, profile, false) != null
+    }
+
     fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
-        val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, false)
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
+        if (pendingIntentExists(alarm, profile)) {
+            alarmManager.cancel(getPendingIntent(alarm, profile, false))
         }
         else {
             Log.i("AlarmUtil", "failed to cancel alarm")
         }
     }
 
-    fun cancelMultipleAlarms(list: List<AlarmTrigger>): Unit {
+    fun cancelMultipleAlarms(list: List<AlarmRelation>): Unit {
         for (i in list) {
             cancelAlarm(i.alarm, i.profile)
         }
     }
 
-    fun setMultipleAlarms(list: List<AlarmTrigger>): Unit {
+    fun setMultipleAlarms(list: List<AlarmRelation>): Unit {
         for (i in list) {
-            setAlarm(i.alarm, i.profile, false)
+            scheduleAlarm(i.alarm, i.profile, false)
         }
     }
 
@@ -107,13 +130,22 @@ class AlarmUtil @Inject constructor (
         private const val LOG_TAG: String = "AlarmUtil"
         const val EXIT_SUCCESS: Long = -1
 
-        private fun diffBetweenDatesInMillis(nextDay: DayOfWeek, hour: Int, minute: Int): Long {
+        // TODO provide implementation
+        fun isDismissAvailable(): Boolean {
+            return false
+        }
+
+        private fun toEpochMilli(now: LocalDateTime): Long {
+            return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }
+
+        private fun localDateTimeDifference(nextDay: DayOfWeek, hour: Int, minute: Int): Long {
             val now: LocalDateTime = LocalDateTime.now()
             val nextDate: LocalDateTime = now.with(TemporalAdjusters.next(nextDay)).withHour(hour).withMinute(minute).withSecond(0)
             return ChronoUnit.MILLIS.between(now, nextDate)
         }
 
-        private fun diffBetweenHoursInMillis(nextHour: LocalTime) = ChronoUnit.MILLIS.between(LocalTime.now(), nextHour)
+        private fun localTimeDifference(nextHour: LocalTime) = ChronoUnit.MILLIS.between(LocalTime.now(), nextHour)
 
         private fun getNextDayOnSchedule(eventOccurrences: ArrayList<Int>): DayOfWeek? {
             if (eventOccurrences.isEmpty()) {

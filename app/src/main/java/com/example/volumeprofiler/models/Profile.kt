@@ -35,4 +35,9 @@ data class Profile(var title: String,
                    var priorityMessageSenders: Int = PRIORITY_SENDERS_ANY,
                    var screenOnVisualEffects: ArrayList<Int> = arrayListOf(),
                    var screenOffVisualEffects: ArrayList<Int> = arrayListOf(),
-                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE): Parcelable
+                   var primaryConversationSenders: Int = CONVERSATION_SENDERS_ANYONE): Parcelable {
+
+    override fun toString(): String {
+        return title
+    }
+}

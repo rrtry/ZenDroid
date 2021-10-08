@@ -23,25 +23,54 @@ import com.google.android.material.appbar.CollapsingToolbarLayout
 
 object BindingAdapters {
 
+    @JvmStatic
     private fun setEnabledState(layout: ViewGroup, enabled: Boolean): Unit {
         layout.isEnabled = enabled
         (layout as SwitchableConstraintLayout).disabled = !enabled
     }
 
+    @JvmStatic
     private fun setSilentIcon(icon: ImageView): Unit {
         icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_notifications_off_black_24dp, icon.context.theme))
     }
 
+    @JvmStatic
     private fun setVibrateIcon(icon: ImageView): Unit {
         icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_vibration_black_24dp, icon.context.theme))
     }
 
+    @JvmStatic
     private fun setNormalNotificationIcon(icon: ImageView): Unit {
         icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_circle_notifications_deep_purple_300_24dp, icon.context.theme))
     }
 
+    @JvmStatic
+    private fun setMediaOffIcon(icon: ImageView): Unit {
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_music_off_black_24dp, icon.context.theme))
+    }
+
+    @JvmStatic
+    private fun setMediaOnIcon(icon: ImageView): Unit {
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_music_note_deep_purple_300_24dp, icon.context.theme))
+    }
+
+    @JvmStatic
     private fun setNormalRingerIcon(icon: ImageView): Unit {
         icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_notifications_active_black_24dp, icon.context.theme))
+    }
+
+    @JvmStatic
+    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted", "mediaVolume", requireAll = false)
+    fun bindMediaIcon(imageView: ImageView, mediaInterruptionFilter: Int, mediaPriorityCategories: List<Int>, notificationAccessGranted: Boolean, mediaVolume: Int): Unit {
+        if (!isMediaStreamActive(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)) {
+            setMediaOffIcon(imageView)
+        } else {
+            if (mediaVolume > 0) {
+                setMediaOnIcon(imageView)
+            } else {
+                setMediaOffIcon(imageView)
+            }
+        }
     }
 
     @JvmStatic
@@ -150,6 +179,9 @@ object BindingAdapters {
     @BindingAdapter("ringerMode", "ringerSeekBarInterruptionFilter", "ringerSeekBarPropertyCategories", "notificationAccessGranted", requireAll = false)
     fun bindRingSeekBar(view: SeekBar, ringerMode: Int, ringerSeekBarInterruptionFilter: Int, ringerSeekBarPropertyCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = isRingerStreamActive(ringerSeekBarInterruptionFilter, ringerSeekBarPropertyCategories, notificationAccessGranted)
+        if (!view.isEnabled) {
+            view.progress = 0
+        }
     }
 
     @JvmStatic

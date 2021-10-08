@@ -6,7 +6,7 @@ import androidx.room.Relation
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class AlarmTrigger (
+data class AlarmRelation (
 
         @Embedded var profile: Profile,
 

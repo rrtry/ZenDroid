@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
@@ -11,6 +10,7 @@
         android:layout_width="match_parent"
         android:focusableInTouchMode="true"
         android:focusable="true"
+        android:background="?attr/colorOnPrimary"
         android:layout_height="wrap_content">
 
         <ImageView
@@ -29,7 +29,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:text="Coordinates"
-            android:textColor="#FF6B13EA"
+            android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             app:layout_constraintStart_toEndOf="@+id/imageView2"
             app:layout_constraintTop_toBottomOf="@+id/setAddressButton" />
@@ -103,7 +103,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:text="Address"
-            android:textColor="#FF6B13EA"
+            android:textColor="?attr/colorPrimary"
             app:layout_constraintStart_toEndOf="@+id/addressImage"
             app:layout_constraintTop_toBottomOf="@+id/radiusSlider" />
 
@@ -177,8 +177,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
-            android:text="Radius"
-            android:textColor="#FF6B13EA"
+            android:text="Area radius"
+            android:textColor="?attr/colorPrimary"
             app:layout_constraintStart_toEndOf="@+id/imageView16"
             app:layout_constraintTop_toTopOf="parent" />
 

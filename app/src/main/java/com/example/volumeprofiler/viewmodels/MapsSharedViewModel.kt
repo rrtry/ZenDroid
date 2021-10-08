@@ -1,38 +1,47 @@
 package com.example.volumeprofiler.viewmodels
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.material.bottomsheet.BottomSheetBehavior
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import javax.inject.Inject
 
-class MapsSharedViewModel: ViewModel() {
+@HiltViewModel
+class MapsSharedViewModel @Inject constructor(): ViewModel() {
 
-    val latLng: MutableLiveData<EventWrapper<LatLng>> = MutableLiveData()
-    val addressLine: MutableLiveData<EventWrapper<String>> = MutableLiveData()
-    private val bottomSheetState: MutableLiveData<EventWrapper<Int>> = MutableLiveData(EventWrapper(BottomSheetBehavior.STATE_COLLAPSED))
-    val radius: MutableLiveData<EventWrapper<Float>> = MutableLiveData(EventWrapper(100f))
-    var animateCameraMovement: Boolean = false
+    val latLng: MutableStateFlow<LatLng?> = MutableStateFlow(null)
+    val address: MutableStateFlow<String?> = MutableStateFlow(null)
+    val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
 
-    fun getLatLng(): LatLng? = latLng.value?.peekContent()
+    var animateMovement: Boolean = false
 
-    fun getAddressLine(): String? = this.addressLine.value?.peekContent()
-
-    fun getRadius(): Float? = this.radius.value?.peekContent()
-
-    fun setLatLng(latLng: LatLng): Unit {
-        this.latLng.value = EventWrapper(latLng)
+    fun getLatLng(): LatLng? {
+        return latLng.value
     }
 
-    fun setAddressLine(addressLine: String): Unit {
-        this.addressLine.value = EventWrapper(addressLine, 1)
+    fun getAddress(): String? {
+        return address.value
+    }
+
+    fun getRadius(): Float {
+        return radius.value
+    }
+
+    fun setLatLng(latLng: LatLng): Unit {
+        this.latLng.value = latLng
+    }
+
+    fun setAddress(addressLine: String): Unit {
+        address.value = addressLine
     }
 
     fun setBottomSheetState(state: Int): Unit {
-        this.bottomSheetState.value = EventWrapper(state)
+
     }
 
     fun setRadius(radius: Float): Unit {
-        this.radius.value = EventWrapper(radius)
+        this.radius.value = radius
     }
 
     companion object {

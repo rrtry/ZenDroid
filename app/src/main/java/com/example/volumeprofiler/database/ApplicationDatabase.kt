@@ -5,19 +5,20 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.volumeprofiler.database.dao.*
 import com.example.volumeprofiler.models.Alarm
+import com.example.volumeprofiler.models.Location
 import com.example.volumeprofiler.models.Profile
 
-@Database(entities = [Profile::class, Alarm::class], version = 3, exportSchema = true)
+@Database(entities = [Profile::class, Alarm::class, Location::class], version = 4, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class ApplicationDatabase: RoomDatabase() {
 
-    abstract fun profileDao(): ProfileDao
+    abstract fun getProfileDao(): ProfileDao
 
-    abstract fun alarmDao(): AlarmDao
+    abstract fun getAlarmDao(): AlarmDao
 
-    abstract fun alarmTriggerDao(): AlarmTriggerDao
+    abstract fun getAlarmRelationDao(): AlarmRelationDao
 
-    abstract fun locationDao(): LocationDao
+    abstract fun getLocationDao(): LocationDao
 
-    abstract fun locationTriggerDao(): LocationTriggerDao
+    abstract fun getLocationRelationDao(): LocationRelationDao
 }

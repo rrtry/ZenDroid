@@ -1,9 +1,10 @@
 package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.*
 import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.AlarmTrigger
+import com.example.volumeprofiler.models.AlarmRelation
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -12,9 +13,9 @@ class AlarmsListViewModel @Inject constructor(
         private val repository: AlarmRepository
 ): ViewModel() {
 
-    val alarmListLiveData: LiveData<List<AlarmTrigger>> = repository.observeAlarmTriggers().asLiveData()
+    val alarmsFlow: Flow<List<AlarmRelation>> = repository.observeAlarmTriggers()
 
-    private fun updateAlarm(alarm: Alarm) {
+    fun updateAlarm(alarm: Alarm) {
         viewModelScope.launch {
             repository.updateAlarm(alarm)
         }
@@ -32,20 +33,20 @@ class AlarmsListViewModel @Inject constructor(
         }
     }
 
-    fun cancelAlarm(alarmTrigger: AlarmTrigger): Unit {
-        val alarm: Alarm = alarmTrigger.alarm
+    fun cancelAlarm(alarmRelation: AlarmRelation): Unit {
+        val alarm: Alarm = alarmRelation.alarm
         alarm.isScheduled = 0
         updateAlarm(alarm)
     }
 
-    fun scheduleAlarm(alarmTrigger: AlarmTrigger): Unit {
-        val alarm: Alarm = alarmTrigger.alarm
+    fun scheduleAlarm(alarmRelation: AlarmRelation): Unit {
+        val alarm: Alarm = alarmRelation.alarm
         alarm.isScheduled = 1
         updateAlarm(alarm)
     }
 
-    fun removeAlarm(alarmTrigger: AlarmTrigger) {
-        val alarm: Alarm = alarmTrigger.alarm
+    fun removeAlarm(alarmRelation: AlarmRelation) {
+        val alarm: Alarm = alarmRelation.alarm
         removeAlarm(alarm)
     }
 }

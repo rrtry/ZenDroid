@@ -3,14 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
+        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
+        <import type="com.example.volumeprofiler.util.TextUtil"/>
         <variable
             name="viewModel"
             type="com.example.volumeprofiler.viewmodels.EditAlarmViewModel"/>
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -31,6 +31,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:entries="@{viewModel.profilesLiveData}"
+            android:selectedItemPosition="@={viewModel.selectedSpinnerPosition}"
             android:layout_marginEnd="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/imageView7"
@@ -43,7 +44,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:background="#FF6B13EA"
+            android:background="@android:color/darker_gray"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/imageView7"
             app:layout_constraintTop_toBottomOf="@+id/profileSpinner" />
@@ -65,7 +66,7 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="16dp"
             android:text="Profile"
-            android:textColor="#FF6B13EA"
+            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -77,8 +78,8 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="16dp"
             android:text="Start time"
-            android:textColor="#FF6B13EA"
             android:textSize="16sp"
+            android:textColor="?attr/colorPrimary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
 
@@ -89,7 +90,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:text="Select start time"
+            android:text="@{TextUtil.localizedTimeToString(viewModel.startTime.toLocalTime())}"
             android:onClick="@{() -> viewModel.onTimeSelectButtonClick()}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
@@ -113,8 +114,8 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:text="Repeat"
+            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
-            android:textColor="#FF6B13EA"
             app:layout_constraintStart_toEndOf="@+id/imageView"
             app:layout_constraintTop_toBottomOf="@+id/startTimeSelectButton" />
 
@@ -126,7 +127,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
             android:onClick="@{() -> viewModel.onDaysSelectButtonClick()}"
-            android:text="Select working days"
+            android:text="@{TextUtil.weekDaysToString(viewModel.scheduledDays, viewModel.startTime)}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/imageView"
             app:layout_constraintTop_toBottomOf="@+id/textView3" />
