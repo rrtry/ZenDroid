@@ -82,7 +82,7 @@ class SharedPreferencesUtil @Inject constructor (
         return false
     }
 
-    fun clearActiveProfileRecord(): Unit {
+    fun clearPreferences(): Unit {
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
         editor.clear().apply()
     }

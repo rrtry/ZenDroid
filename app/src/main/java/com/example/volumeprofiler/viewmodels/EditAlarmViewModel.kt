@@ -8,6 +8,7 @@ import com.example.volumeprofiler.models.AlarmRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -22,15 +23,6 @@ class EditAlarmViewModel @Inject constructor(
 
     var areArgsSet: Boolean = false
 
-    sealed class Event {
-        data class ShowDialogEvent(val dialogType: DialogType): Event()
-    }
-
-    enum class DialogType {
-        DAYS_SELECTION,
-        TIME_SELECTION
-    }
-
     val profilesLiveData: LiveData<List<Profile>> = profileRepository.observeProfiles().asLiveData()
 
     val selectedSpinnerPosition: MutableLiveData<Int> = MutableLiveData(0)
@@ -42,6 +34,16 @@ class EditAlarmViewModel @Inject constructor(
 
     private val channel: Channel<Event> = Channel(Channel.BUFFERED)
     val eventsFlow: Flow<Event> = channel.receiveAsFlow()
+
+    sealed class Event {
+
+        data class ShowDialogEvent(val dialogType: DialogType): Event()
+    }
+
+    enum class DialogType {
+        DAYS_SELECTION,
+        TIME_SELECTION
+    }
 
     fun onTimeSelectButtonClick(): Unit {
         viewModelScope.launch {

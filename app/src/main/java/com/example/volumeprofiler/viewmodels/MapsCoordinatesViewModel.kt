@@ -9,7 +9,6 @@ class MapsCoordinatesViewModel: ViewModel() {
 
     val longitudeEditStatus: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val latitudeEditStatus: MutableStateFlow<Boolean> = MutableStateFlow(true)
-    val addressEditState: MutableStateFlow<Boolean> = MutableStateFlow(true)
 
     val metrics: MutableStateFlow<Metrics> = MutableStateFlow(Metrics.METERS)
 
@@ -19,10 +18,6 @@ class MapsCoordinatesViewModel: ViewModel() {
 
     fun validateLatitudeInput(source: CharSequence?) {
         latitudeEditStatus.value = TextUtil.validateCoordinatesInput(source)
-    }
-
-    fun validateAddressInput(source: CharSequence?) {
-        addressEditState.value = TextUtil.validateAddressInput(source)
     }
 
     fun setMetrics(m: Metrics) {

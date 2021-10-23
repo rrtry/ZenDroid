@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.viewmodels
 
+import android.app.NotificationManager
 import android.media.RingtoneManager
 import android.net.Uri
 import androidx.lifecycle.*
@@ -15,9 +16,12 @@ import android.util.Log
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.util.ContentResolverUtil
+import com.example.volumeprofiler.util.interruptionPolicy.isNotificationStreamActive
+import com.example.volumeprofiler.util.interruptionPolicy.isRingerStreamActive
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
+import android.app.NotificationManager.*
 
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
@@ -26,7 +30,6 @@ class EditProfileViewModel @Inject constructor(
 ): ViewModel() {
 
     var areArgsSet: Boolean = false
-    var hasArgs: Boolean = false
 
     sealed class Event {
 
@@ -35,12 +38,11 @@ class EditProfileViewModel @Inject constructor(
         object NotificationPolicyRequestEvent: Event()
         object ShowPopupWindowEvent: Event()
         object StartContactsActivity: Event()
-        object QueryStarredContacts: Event()
+        object WriteSystemSettingsRequestEvent: Event()
 
-        data class QueryRingtoneTitle(val type: Int, val uri: Uri): Event()
         data class SaveChangesEvent(val profile: Profile, val shouldUpdate: Boolean): Event()
         data class ShowDialogFragment(val dialogType: DialogType): Event()
-        data class ChangeRingerMode(val streamType: Int, val fromUser: Boolean): Event()
+        data class ChangeRingerMode(val streamType: Int, val showToast: Boolean, val vibrate: Boolean): Event()
         data class ChangeRingtoneEvent(val ringtoneType: Int): Event()
         data class ShowPopupWindow(val category: Int): Event()
     }
@@ -55,7 +57,10 @@ class EditProfileViewModel @Inject constructor(
     val isNew: MutableLiveData<Boolean> = MutableLiveData(false)
 
     private val profileIdLiveData = MutableLiveData<UUID>()
-    private val alarmsLiveData: LiveData<List<AlarmRelation>?> = Transformations.switchMap(profileIdLiveData) { profileId -> alarmRepository.observeAlarmTriggersByProfileId(profileId).asLiveData() }
+    private val alarmsLiveData: LiveData<List<AlarmRelation>?> = Transformations.switchMap(profileIdLiveData) { profileId -> alarmRepository.observeAlarmsByProfileId(profileId).asLiveData() }
+
+    //private val profileIdStateFlow: MutableStateFlow<UUID?> = MutableStateFlow(null)
+    //private val alarmsFlow: Flow<List<AlarmRelation>?> = profileIdStateFlow.flatMapLatest { id -> alarmRepository.observeAlarmsByProfileId(id!!) }
 
     val title: MutableLiveData<String> = MutableLiveData("New profile")
     val currentFragmentTag: MutableLiveData<String> = MutableLiveData(EditProfileActivity.TAG_PROFILE_FRAGMENT)
@@ -83,6 +88,7 @@ class EditProfileViewModel @Inject constructor(
 
     val storagePermissionGranted: MutableLiveData<Boolean> = MutableLiveData(false)
     val notificationPolicyAccessGranted: MutableLiveData<Boolean> = MutableLiveData(false)
+    val canWriteSettings: MutableLiveData<Boolean> = MutableLiveData(false)
 
     val ringerMode: MutableLiveData<Int> = MutableLiveData(RINGER_MODE_NORMAL)
     val notificationMode: MutableLiveData<Int> = MutableLiveData(RINGER_MODE_NORMAL)
@@ -119,16 +125,24 @@ class EditProfileViewModel @Inject constructor(
         primaryConversationSenders.value = profile.primaryConversationSenders
     }
 
-    fun setArgs(profile: Profile, hasArguments: Boolean): Unit {
+    fun setArgs(profile: Profile, hasExtras: Boolean): Unit {
         if (!areArgsSet) {
-            areArgsSet = true
-            hasArgs = hasArguments
             setBindings(profile)
-            if (hasArguments) {
+            if (hasExtras) {
                 setProfileID(profile.id)
             } else {
                 isNew.value = true
             }
+            areArgsSet = true
+        }
+    }
+
+    private fun setRingerMode(): Unit {
+        if (!isNotificationStreamActive(interruptionFilter.value!!, priorityCategories.value!!, notificationPolicyAccessGranted.value!!)) {
+            notificationMode.value = RINGER_MODE_SILENT
+        }
+        if (!isRingerStreamActive(interruptionFilter.value!!, priorityCategories.value!!, notificationPolicyAccessGranted.value!!)) {
+            ringerMode.value = RINGER_MODE_SILENT
         }
     }
 
@@ -160,7 +174,7 @@ class EditProfileViewModel @Inject constructor(
     fun onSilentModeLayoutClick(): Unit {
         if (ringerMode.value == RINGER_MODE_SILENT) {
             if (previousStreamVolume == 0) {
-                ringerMode.value = RINGER_MODE_VIBRATE
+                onStreamMuted(STREAM_RING, showToast = false, vibrate = false)
             } else {
                 ringerMode.value = RINGER_MODE_NORMAL
             }
@@ -177,6 +191,7 @@ class EditProfileViewModel @Inject constructor(
     }
 
     fun onSaveChangesButtonClick(): Unit {
+        setRingerMode()
         viewModelScope.launch {
             activityEventChannel.send(Event.SaveChangesEvent(getProfile(),profileIdLiveData.value != null))
         }
@@ -187,10 +202,16 @@ class EditProfileViewModel @Inject constructor(
     }
 
     fun onVibrateForCallsLayoutClick(): Unit {
-        if (vibrateForCalls.value == 1) {
-            vibrateForCalls.value = 0
+        if (canWriteSettings.value!!) {
+            if (vibrateForCalls.value == 1) {
+                vibrateForCalls.value = 0
+            } else {
+                vibrateForCalls.value = 1
+            }
         } else {
-            vibrateForCalls.value = 1
+            viewModelScope.launch {
+                eventChannel.send(Event.WriteSystemSettingsRequestEvent)
+            }
         }
     }
 
@@ -244,23 +265,21 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    private fun onStreamMuted(streamType: Int, fromUser: Boolean): Unit {
+    private fun onStreamMuted(streamType: Int, showToast: Boolean, vibrate: Boolean): Unit {
         viewModelScope.launch {
-            eventChannel.send(Event.ChangeRingerMode(streamType, fromUser))
+            eventChannel.send(Event.ChangeRingerMode(streamType, showToast, vibrate))
         }
     }
 
     fun onStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int): Unit {
         if (fromUser) {
             if (value == 0) {
-                onStreamMuted(streamType, fromUser)
+                onStreamMuted(streamType, showToast = true, vibrate = true)
             } else if (streamType == STREAM_NOTIFICATION && notificationMode.value != RINGER_MODE_NORMAL) {
                 notificationMode.value = RINGER_MODE_NORMAL
             } else if (streamType == STREAM_RING && ringerMode.value != RINGER_MODE_NORMAL) {
                 ringerMode.value = RINGER_MODE_NORMAL
             }
-        } else {
-            Log.i("EditProfileViewModel", "onStreamVolumeChanged: input is not from the user")
         }
     }
 
@@ -328,9 +347,14 @@ class EditProfileViewModel @Inject constructor(
         alarmSoundUri.value = alarmSoundUri.value
     }
 
-    fun containsPriorityCategory(category: Int): Boolean = priorityCategories.value!!.contains(category)
+    fun containsPriorityCategory(category: Int): Boolean {
+        return priorityCategories.value!!.contains(category)
+    }
 
-    private fun containsSuppressedEffect(effect: Int): Boolean = if (effect == SUPPRESSED_EFFECT_SCREEN_ON) screenOnVisualEffects.value!!.contains(effect) else screenOffVisualEffects.value!!.contains(effect)
+    private fun containsSuppressedEffect(effect: Int): Boolean {
+        return if (effect == SUPPRESSED_EFFECT_SCREEN_ON) screenOnVisualEffects.value!!.contains(effect)
+        else screenOffVisualEffects.value!!.contains(effect)
+    }
 
     private fun addSuppressedEffect(effect: Int): Unit {
         if (!containsSuppressedEffect(effect)) {

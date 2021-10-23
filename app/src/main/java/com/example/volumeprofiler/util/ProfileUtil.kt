@@ -1,18 +1,25 @@
 package com.example.volumeprofiler.util
 
+import android.annotation.TargetApi
 import android.app.NotificationManager
 import android.app.NotificationManager.*
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.Manifest.permission.*
 import com.example.volumeprofiler.models.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.media.AudioManager.*
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
-import com.example.volumeprofiler.util.interruptionPolicy.*
+import android.util.Log
+import androidx.core.content.ContextCompat
 
 @Singleton
 class ProfileUtil @Inject constructor (
@@ -84,52 +91,106 @@ class ProfileUtil @Inject constructor (
 
     fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int): Unit {
         when (mode) {
-            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, FLAG_ALLOW_RINGER_MODES or FLAG_SHOW_UI)
+            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, FLAG_ALLOW_RINGER_MODES)
             RINGER_MODE_VIBRATE -> setVibrateMode(streamType)
             RINGER_MODE_SILENT -> setSilentMode(streamType)
         }
     }
 
+    private fun setRingtoneUri(uri: Uri, type: Int): Unit {
+        RingtoneManager.setActualDefaultRingtoneUri(context, type, uri)
+    }
+
+    private fun setVibrateWhenRinging(state: Int): Unit {
+        if (Settings.System.canWrite(context)) {
+            Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
+        } else {
+            Log.e("ProfileUtil", "Not allowed to modify system settings", SecurityException())
+        }
+    }
+
     fun setProfile(profile: Profile) {
-        setInterruptionFilter(profile)
-        setStreamVolume(STREAM_MUSIC, profile.mediaVolume, FLAG_SHOW_UI)
-        setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, FLAG_SHOW_UI)
-        setStreamVolume(STREAM_ALARM, profile.alarmVolume, FLAG_SHOW_UI)
+        if (notificationManager.currentInterruptionFilter != INTERRUPTION_FILTER_ALL) {
+            setInterruptionFilter(INTERRUPTION_FILTER_ALL)
+        }
+        setStreamVolume(STREAM_MUSIC, profile.mediaVolume, 0)
+        setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, 0)
+        setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
         if (phoneState == TelephonyManager.CALL_STATE_RINGING) {
             setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
         } else {
             setRingerMode(STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode)
         }
+        setInterruptionFilter(profile)
+        setRingtoneUri(profile.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)
+        setRingtoneUri(profile.notificationSoundUri, RingtoneManager.TYPE_NOTIFICATION)
+        setRingtoneUri(profile.alarmSoundUri, RingtoneManager.TYPE_ALARM)
+        setVibrateWhenRinging(profile.isVibrateForCallsActive)
         sharedPreferencesUtil.writeCurrentProfileProperties(profile)
+    }
+
+    fun canWriteSettings(): Boolean {
+        return Settings.System.canWrite(context)
+    }
+
+    fun arePermissionsGranted(): Boolean {
+        return checkSelfPermission(READ_EXTERNAL_STORAGE)
+                && checkSelfPermission(READ_PHONE_STATE)
+    }
+
+    fun canSetProfile(): Boolean {
+        return arePermissionsGranted() &&
+                canWriteSettings() &&
+                isNotificationPolicyAccessGranted()
+    }
+
+    fun getMissingPermissions(): List<String> {
+        val list: ArrayList<String> = arrayListOf()
+        if (!checkSelfPermission(READ_EXTERNAL_STORAGE)) {
+            list.add(READ_EXTERNAL_STORAGE)
+        }
+        if (!checkSelfPermission(READ_PHONE_STATE)) {
+            list.add(READ_PHONE_STATE)
+        }
+        return list
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    fun isNotificationPolicyAccessGranted(): Boolean {
+        return notificationManager.isNotificationPolicyAccessGranted
+    }
+
+    private fun checkSelfPermission(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
     fun setDefaults(): Unit {
         setInterruptionFilter(INTERRUPTION_FILTER_ALL)
-        setStreamVolume(STREAM_MUSIC, 1, FLAG_SHOW_UI)
-        setStreamVolume(STREAM_VOICE_CALL, 1, FLAG_SHOW_UI)
-        setStreamVolume(STREAM_ALARM, 1, FLAG_SHOW_UI)
-        setStreamVolume(STREAM_NOTIFICATION, 3, FLAG_SHOW_UI)
+        setStreamVolume(STREAM_MUSIC, 1, 0)
+        setStreamVolume(STREAM_VOICE_CALL, 1, 0)
+        setStreamVolume(STREAM_ALARM, 1, 0)
+        setStreamVolume(STREAM_NOTIFICATION, 3, 0)
+        sharedPreferencesUtil.clearPreferences()
     }
 
     private fun setSilentMode(streamType: Int): Unit {
-        if (audioManager.isStreamMute(streamType)) {
-            audioManager.adjustStreamVolume(streamType, ADJUST_RAISE, 0)
-        }
-        audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, FLAG_ALLOW_RINGER_MODES or FLAG_SHOW_UI)
+        audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, FLAG_ALLOW_RINGER_MODES)
     }
 
     private fun setVibrateMode(streamType: Int): Unit {
-        if (audioManager.isStreamMute(streamType)) {
-            audioManager.adjustStreamVolume(streamType, ADJUST_RAISE, 0)
-        }
-        audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES or FLAG_SHOW_UI)
+        toggleMuteState(streamType)
+        audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES)
     }
 
     private fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
+        toggleMuteState(streamType)
+        audioManager.setStreamVolume(streamType, index, flags)
+    }
+
+    private fun toggleMuteState(streamType: Int): Unit {
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_UNMUTE, 0)
         }
-        audioManager.setStreamVolume(streamType, index, flags)
     }
 
     companion object {

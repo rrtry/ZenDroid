@@ -43,8 +43,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     @Inject lateinit var geocoderUtil: GeocoderUtil
 
-    private var currentScene: Byte = 0
-
     private var _binding: MapsSelectLocationFragmentBinding? = null
     private val binding: MapsSelectLocationFragmentBinding get() = _binding!!
 
@@ -53,15 +51,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState != null) {
-            this.currentScene = savedInstanceState.getByte(KEY_CURRENT_SCENE, 0)
-        }
         setTransitions()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putByte(KEY_CURRENT_SCENE, currentScene)
     }
 
     override fun onAttach(context: Context) {
@@ -80,8 +70,12 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     private fun setTransitions(): Unit {
-        this.exitTransition = Slide(Gravity.START)
-        this.enterTransition = Slide(Gravity.START)
+        val exitTransition: Transition = Slide(Gravity.START)
+        val enterTransition: Transition = Slide(Gravity.START)
+
+        enterTransition.startDelay = 200
+        this.exitTransition = exitTransition
+        this.enterTransition = enterTransition
     }
 
     override fun onCreateView(
@@ -96,16 +90,13 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     private fun addTextObservers(): Unit {
         binding.latitudeTextInput.addTextChangedListener(getTextWatcher(binding.latitudeTextInputLayout))
         binding.longitudeEditText.addTextChangedListener(getTextWatcher(binding.longitudeTextInputLayout))
-        binding.addressEditText.addTextChangedListener(getTextWatcher(binding.addressTextInputLayout))
     }
 
     private fun setTextFilters(): Unit {
         val coordinatesInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend -> TextUtil.filterCoordinatesInput(source) }
-        val streetAddressInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend ->  TextUtil.filterStreetAddressInput(source) }
         val coordinateFilters: Array<InputFilter> = arrayOf(coordinatesInputFilter)
         binding.latitudeTextInput.filters = coordinateFilters
         binding.longitudeEditText.filters = coordinateFilters
-        binding.addressEditText.filters = arrayOf(streetAddressInputFilter)
     }
 
     private fun getTextWatcher(editTextLayout: TextInputLayout?): TextWatcher {
@@ -118,9 +109,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 when (editTextLayout?.id) {
 
-                    R.id.addressTextInputLayout -> {
-                        viewModel.validateAddressInput(s)
-                    }
                     R.id.longitudeTextInputLayout -> {
                         viewModel.validateLongitudeInput(s)
                     }
@@ -141,11 +129,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    sharedViewModel.address.collect {
-                        binding.addressEditText.setText(it)
-                    }
-                }
-                launch {
                     sharedViewModel.latLng.collect {
                         binding.latitudeTextInput.setText(it?.latitude.toString())
                         binding.longitudeEditText.setText(it?.longitude.toString())
@@ -162,25 +145,20 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                     }
                 }
                 launch {
-                    viewModel.addressEditState.collect {
-                        binding.addressTextInputLayout.error = if (it) null else "Invalid input"
-                    }
-                }
-                launch {
                     viewModel.metrics.collect {
                         updateMetrics(it)
                     }
                 }
             }
         }
-        binding.addressImage.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+        binding.coordinatesTitle.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
 
             override fun onGlobalLayout() {
-                binding.addressImage.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                binding.coordinatesTitle.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val parentFragmentView: View = requireParentFragment().requireView()
                 parentActivity?.setHalfExpandedRatio(ViewUtil.calculateHalfExpandedRatio(
                     parentFragmentView.findViewById(R.id.bottomSheetRoot),
-                    binding.addressImage))
+                    binding.coordinatesTitle))
             }
         })
         binding.metricsSpinner.adapter = ArrayAdapter(
@@ -221,23 +199,9 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                         sharedViewModel.setLatLng(latLng)
                     }
                 }
-                binding.setAddressButton.id -> {
-                    ViewUtil.hideSoftInputFromWindow(requireActivity(), requireActivity().currentFocus?.windowToken)
-                    lifecycleScope.launch {
-                        val latLng: LatLng? = geocoderUtil.getLatLngFromAddress(binding.addressEditText.text.toString())
-                        if (latLng != null) {
-                            (parentActivity as? BottomSheetFragment.Callbacks)?.collapseBottomSheet()
-                            sharedViewModel.setLatLng(latLng)
-                        } else {
-                            binding.addressTextInputLayout.error = "Could not reverse specified address"
-                            AnimUtil.shakeAnimation(binding.addressTextInputLayout)
-                        }
-                    }
-                }
             }
         }
         binding.setLocationButton.setOnClickListener(onClickListener)
-        binding.setAddressButton.setOnClickListener(onClickListener)
         setSliderOnChangeListener()
     }
 
@@ -272,11 +236,6 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         binding.radiusSlider.addOnChangeListener { slider, value, fromUser ->
             onSliderProgressChanged(value)
         }
-    }
-
-    companion object {
-
-        private const val KEY_CURRENT_SCENE: String = "key_current_scene"
     }
 
     override fun onEditorAction(v: TextView?, actionId: Int, event: KeyEvent?): Boolean {

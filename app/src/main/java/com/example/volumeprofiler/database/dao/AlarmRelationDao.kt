@@ -12,17 +12,17 @@ interface AlarmRelationDao {
 
     @Transaction
     @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
-    suspend fun getActiveAlarmTriggersByProfileId(id: UUID): List<AlarmRelation>?
+    suspend fun getActiveAlarmsByProfileId(id: UUID): List<AlarmRelation>?
 
     @Transaction
     @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID")
-    fun observeAlarmTriggers(): Flow<List<AlarmRelation>>
+    fun observeAlarms(): Flow<List<AlarmRelation>>
 
     @Transaction
     @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
-    fun observeAlarmTriggersByProfileId(id: UUID): Flow<List<AlarmRelation>?>
+    fun observeAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?>
 
     @Transaction
     @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE Alarm.isScheduled = 1")
-    suspend fun getActiveAlarmTriggers(): List<AlarmRelation>?
+    suspend fun getActiveAlarms(): List<AlarmRelation>?
 }

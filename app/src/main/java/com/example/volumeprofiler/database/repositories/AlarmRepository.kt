@@ -36,18 +36,24 @@ class AlarmRepository @Inject constructor(
 
     suspend fun getEnabledAlarms(): List<AlarmRelation>? {
         return withContext(Dispatchers.IO) {
-            alarmRelationDao.getActiveAlarmTriggers()
+            alarmRelationDao.getActiveAlarms()
         }
     }
 
     suspend fun getScheduledAlarmsByProfileId(id: UUID): List<AlarmRelation>? {
         return withContext(Dispatchers.IO) {
-            alarmRelationDao.getActiveAlarmTriggersByProfileId(id)
+            alarmRelationDao.getActiveAlarmsByProfileId(id)
         }
     }
 
-    fun observeAlarmTriggers(): Flow<List<AlarmRelation>> = alarmRelationDao.observeAlarmTriggers()
+    suspend fun getScheduledAlarm(id: Long): Alarm {
+        return withContext(Dispatchers.IO) {
+            alarmDao.getAlarm(id)
+        }
+    }
 
-    fun observeAlarmTriggersByProfileId(id: UUID): Flow<List<AlarmRelation>?> = alarmRelationDao.observeAlarmTriggersByProfileId(id)
+    fun observeAlarms(): Flow<List<AlarmRelation>> = alarmRelationDao.observeAlarms()
+
+    fun observeAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?> = alarmRelationDao.observeAlarmsByProfileId(id)
 
 }

@@ -15,7 +15,7 @@ class LocationsListViewModel @Inject constructor(
         private val locationRepository: LocationRepository
 ): ViewModel() {
 
-    val locationsFlow: Flow<List<LocationRelation>> = locationRepository.getLocations()
+    val locationsFlow: Flow<List<LocationRelation>> = locationRepository.observeLocations()
 
     fun addLocation(location: Location): Unit {
         viewModelScope.launch {

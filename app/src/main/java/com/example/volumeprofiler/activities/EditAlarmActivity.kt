@@ -38,7 +38,6 @@ class EditAlarmActivity: AppCompatActivity() {
     private lateinit var binding: CreateAlarmActivityBinding
 
     @Inject lateinit var alarmUtil: AlarmUtil
-    private var alarm: AlarmRelation? = null
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
@@ -73,7 +72,7 @@ class EditAlarmActivity: AppCompatActivity() {
                 true
             }
             R.id.saveChangesButton -> {
-                updateAlarm()
+                scheduleAlarm()
                 setSuccessfulResult()
                 true
             }
@@ -98,12 +97,12 @@ class EditAlarmActivity: AppCompatActivity() {
 
     private fun setBinding(): Unit {
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
-        binding.viewModel = this.viewModel
+        binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
     }
 
-    private fun updateAlarm(): Unit {
+    private fun scheduleAlarm(): Unit {
         if (viewModel.getAlarmId() != null) {
             alarmUtil.scheduleAlarm(viewModel.getAlarm(), viewModel.getProfile(), false)
         }
@@ -120,7 +119,7 @@ class EditAlarmActivity: AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        alarm = intent.getParcelableExtra(EXTRA_TRIGGER) as? AlarmRelation
+        val alarm: AlarmRelation? = intent.getParcelableExtra(EXTRA_ALARM_PROFILE_RELATION) as? AlarmRelation
         setBinding()
         setActionBar()
         setFragmentResultListeners()
@@ -173,8 +172,8 @@ class EditAlarmActivity: AppCompatActivity() {
 
     private fun setSuccessfulResult(): Unit {
         val intent: Intent = Intent().apply {
-            this.putExtra(EXTRA_ALARM, viewModel.getAlarm())
-            this.putExtra(EXTRA_UPDATE_FLAG, viewModel.getAlarmId() != null)
+            putExtra(EXTRA_ALARM, viewModel.getAlarm())
+            putExtra(EXTRA_UPDATE_FLAG, viewModel.getAlarmId() != null)
         }
         setResult(Activity.RESULT_OK, intent)
         finish()
@@ -201,7 +200,7 @@ class EditAlarmActivity: AppCompatActivity() {
         const val EXTRA_UPDATE_FLAG: String = "extra_update_flag"
         const val TIME_REQUEST_KEY: String = "time_request_key"
         const val SCHEDULED_DAYS_REQUEST_KEY: String = "scheduled_days_request_key"
-        const val EXTRA_TRIGGER: String = "extra_trigger"
+        const val EXTRA_ALARM_PROFILE_RELATION: String = "extra_trigger"
         const val EXTRA_ALARM: String = "extra_alarm"
     }
 }

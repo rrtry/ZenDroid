@@ -134,7 +134,13 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
                 launch {
                     eventBus.sharedFlow.collectLatest {
                         if (it is EventBus.Event.UpdateAlarmState) {
-                            alarmAdapter.notifyItemChanged(alarmAdapter.getItemPosition(it.id)!!, PAYLOAD_ADD_DISMISS_OPTION)
+                            val id: Int? = alarmAdapter.getItemPosition(it.alarm.id)
+                            if (id != null) {
+                                alarmAdapter.notifyItemChanged(id, Bundle().apply {
+                                    putSerializable(EXTRA_DIFF_SCHEDULED_DAYS, it.alarm.scheduledDays)
+                                    putSerializable(EXTRA_DIFF_START_TIME, it.alarm.localDateTime)
+                                })
+                            }
                         }
                     }
                 }
@@ -182,7 +188,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
     private fun startDetailsActivity(alarmRelation: AlarmRelation? = null): Unit {
         val intent: Intent = Intent(requireContext(), EditAlarmActivity::class.java)
         if (alarmRelation != null) {
-            intent.putExtra(EditAlarmActivity.EXTRA_TRIGGER, alarmRelation)
+            intent.putExtra(EditAlarmActivity.EXTRA_ALARM_PROFILE_RELATION, alarmRelation)
         }
         activityResultLauncher.launch(intent)
     }
@@ -290,9 +296,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
             super.getChangePayload(oldItem, newItem)
 
             val diffBundle: Bundle = Bundle()
-            if (oldItem.profile.title != newItem.profile.title) {
-                putTitlePayload(diffBundle, newItem)
-            }
+
             if (oldItem.alarm.localDateTime != newItem.alarm.localDateTime) {
                 putTimePayload(diffBundle, newItem)
             }
@@ -312,16 +316,12 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
             diffBundle.putSerializable(EXTRA_DIFF_START_TIME, newItem.alarm.localDateTime)
         }
 
-        private fun putTitlePayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putSerializable(EXTRA_DIFF_PROFILE_TITLE, newItem.profile.title)
-        }
-
         private fun putScheduledPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
             diffBundle.putInt(EXTRA_DIFF_SCHEDULED, newItem.alarm.isScheduled)
         }
 
         private fun putProfileNamePayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putSerializable(EXTRA_DIFF_PROFILE_TITLE, newItem.alarm.profileUUID)
+            diffBundle.putSerializable(EXTRA_DIFF_PROFILE_TITLE, newItem.profile.title)
         }
 
         private fun putScheduledDaysPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
@@ -373,9 +373,6 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
                         tracker.let {
                             AnimUtil.selectedItemAnimation(holder.itemView, tracker.isSelected(getItem(position).alarm.id))
                         }
-                    }
-                    PAYLOAD_ADD_DISMISS_OPTION -> {
-
                     }
                 }
             } else {

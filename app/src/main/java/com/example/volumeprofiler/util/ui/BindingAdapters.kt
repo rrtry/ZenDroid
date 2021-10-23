@@ -103,9 +103,9 @@ object BindingAdapters {
     @BindingAdapter("rootViewGroup", "prioritySenders", "priorityCategories", "categoryType")
     fun bindStarredContactsLayout(view: View, rootViewGroup: ViewGroup, prioritySenders: Int, priorityCategories: List<Int>, categoryType: Int): Unit {
         val transition: AutoTransition = AutoTransition().apply {
-            this.excludeChildren(R.id.exceptionsCallsLayout, true)
-            this.excludeChildren(R.id.exceptionsMessagesLayout, true)
-            this.excludeChildren(R.id.otherInterruptionsLayout, true)
+            excludeChildren(R.id.exceptionsCallsLayout, true)
+            excludeChildren(R.id.exceptionsMessagesLayout, true)
+            excludeChildren(R.id.otherInterruptionsLayout, true)
         }
         TransitionManager.beginDelayedTransition(rootViewGroup, transition)
         view.isVisible = prioritySenders == PRIORITY_SENDERS_STARRED && priorityCategories.contains(categoryType)
@@ -124,12 +124,6 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("title")
-    fun bindActivityToolbar(toolbar: Toolbar, title: String): Unit {
-        toolbar.title = title
-    }
-
-    @JvmStatic
     @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted",requireAll = false)
     fun bindMediaSeekBar(view: SeekBar, mediaInterruptionFilter: Int, mediaPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = isMediaStreamActive(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)
@@ -138,7 +132,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("callInterruptionFilter")
     fun bindCallSeekBar(view: SeekBar, callInterruptionFilter: Int): Unit {
-        view.isEnabled = true
+        view.isEnabled = callInterruptionFilter != INTERRUPTION_FILTER_NONE
     }
 
     @JvmStatic
@@ -148,7 +142,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("iconRingerMode", "ringerIconInterruptionFilter", "ringerPriorityCategories", "notificationAccessGranted")
+    @BindingAdapter("iconRingerMode", "ringerIconInterruptionFilter", "ringerPriorityCategories", "notificationAccessGranted", requireAll = false)
     fun bindRingerIcon(icon: ImageView, ringerMode: Int, ringerIconInterruptionFilter: Int, ringerPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
         if (!isRingerStreamActive(ringerIconInterruptionFilter, ringerPriorityCategories, notificationAccessGranted)) {
             setSilentIcon(icon)
@@ -176,12 +170,15 @@ object BindingAdapters {
     }
 
     @JvmStatic
+    @BindingAdapter("canWriteSettings")
+    fun bindVibrateForCallsLayout(viewGroup: SwitchableConstraintLayout, canWriteSettings: Boolean): Unit {
+        viewGroup.disabled = !canWriteSettings
+    }
+
+    @JvmStatic
     @BindingAdapter("ringerMode", "ringerSeekBarInterruptionFilter", "ringerSeekBarPropertyCategories", "notificationAccessGranted", requireAll = false)
     fun bindRingSeekBar(view: SeekBar, ringerMode: Int, ringerSeekBarInterruptionFilter: Int, ringerSeekBarPropertyCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = isRingerStreamActive(ringerSeekBarInterruptionFilter, ringerSeekBarPropertyCategories, notificationAccessGranted)
-        if (!view.isEnabled) {
-            view.progress = 0
-        }
     }
 
     @JvmStatic

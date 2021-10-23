@@ -1,14 +1,21 @@
 package com.example.volumeprofiler.activities
 
+import android.Manifest
 import android.app.Activity
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInfo
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
+import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
+import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
@@ -33,11 +40,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.util.*
 import javax.inject.Inject
 import kotlin.math.abs
 
 @AndroidEntryPoint
-class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
+class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, ActivityCompat.OnRequestPermissionsResultCallback {
 
     @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
     @Inject lateinit var profileUtil: ProfileUtil
@@ -65,16 +73,60 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
     private fun collectEventsFlow(): Unit {
         lifecycleScope.launch {
             viewModel.activityEventsFlow.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED).onEach {
-                if (it is EditProfileViewModel.Event.ShowDialogFragment && it.dialogType == EditProfileViewModel.DialogType.TITLE) {
-                    showTitleInputDialog()
-                }
-                if (it is EditProfileViewModel.Event.SaveChangesEvent) {
-                    updateAlarms(it.profile)
-                    applyProfileIfEnabled(it.profile)
-                    setSuccessfulResult(it.profile, it.shouldUpdate)
+                when (it) {
+                    is EditProfileViewModel.Event.ShowDialogFragment -> {
+                        if (it.dialogType == EditProfileViewModel.DialogType.TITLE) {
+                            showTitleInputDialog()
+                        }
+                    }
+                    is EditProfileViewModel.Event.SaveChangesEvent -> {
+                        var granted: Boolean = true
+
+                        if (!profileUtil.arePermissionsGranted()) {
+                            granted = false
+                            requestPermissions()
+                        }
+                        if (!profileUtil.isNotificationPolicyAccessGranted() && granted) {
+                            granted = false
+                            startNotificationPolicyActivity()
+                        }
+                        if (!profileUtil.canWriteSettings() && granted) {
+                            granted = false
+                            startWriteSettingsActivity()
+                        }
+
+                        if (granted) {
+                            updateAlarms(it.profile)
+                            applyProfileIfEnabled(it.profile)
+                            setSuccessfulResult(it.profile, it.shouldUpdate)
+                        }
+                    }
+                    else -> Log.i("EditProfileActivity", "unknown event")
                 }
             }.collect()
         }
+    }
+
+    private fun requestPermissions(): Unit {
+        ActivityCompat.requestPermissions(this@EditProfileActivity, arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.READ_PHONE_STATE
+        ), 0)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (grantResults[0] == 1) {
+            viewModel.storagePermissionGranted.value = true
+        }
+    }
+
+    private fun startNotificationPolicyActivity(): Unit {
+        startActivity(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+    }
+
+    private fun startWriteSettingsActivity(): Unit {
+        startActivity(Intent(ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")))
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -88,12 +140,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
     }
 
     private fun setNotificationPolicyProperty(): Unit {
-        viewModel.notificationPolicyAccessGranted.value = checkNotificationPolicyAccess()
-    }
-
-    private fun checkNotificationPolicyAccess(): Boolean {
-        val notificationManager: NotificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        return notificationManager.isNotificationPolicyAccessGranted
+        viewModel.notificationPolicyAccessGranted.value = profileUtil.isNotificationPolicyAccessGranted()
     }
 
     private fun setSuccessfulResult(profile: Profile, updateFlag: Boolean): Unit {
@@ -270,11 +317,6 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks {
 
         private const val TIME_INTERVAL: Int = 2000
         private const val KEY_ELAPSED_TIME: String = "key_elapsed_time"
-        private val PERMISSIONS: Array<String> = arrayOf(
-                android.Manifest.permission.READ_PHONE_STATE,
-                android.Manifest.permission.READ_EXTERNAL_STORAGE,
-                android.Manifest.permission.ACCESS_NOTIFICATION_POLICY
-        )
         const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
         const val TAG_INTERRUPTIONS_FRAGMENT: String = "tag_interruptions_fragment"
         const val EXTRA_PROFILE = "extra_profile"

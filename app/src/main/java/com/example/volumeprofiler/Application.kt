@@ -27,29 +27,12 @@ class Application: Application(), LifecycleObserver {
 
     }
 
-    /*
-    private fun stopStatsService(): Unit {
-        val intent: Intent = Intent(this, StatsService::class.java)
-        stopService(intent)
-    }
-
-    private fun startStatsService(): Unit {
-        val intent: Intent = Intent(this, StatsService::class.java)
-        if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
-    }
-     */
-
     companion object {
 
         private const val LOG_TAG: String = "Application"
 
         const val ACTION_GEOFENCE_TRANSITION: String = "com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"
-        const val ACTION_ALARM_TRIGGER: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
+        const val ACTION_ALARM_ALERT: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
         const val ACTION_UPDATE_ALARM_STATE: String = "com.example.volumeprofiler.ACTION_UPDATE_ALARM_STATE"
-        const val ACTION_WIDGET_PROFILE_SELECTED: String = "com.example.volumeprofiler.WIDGET_PROFILE_SELECTED"
     }
 }

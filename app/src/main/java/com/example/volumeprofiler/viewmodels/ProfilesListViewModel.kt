@@ -4,7 +4,9 @@ import androidx.lifecycle.*
 import com.example.volumeprofiler.models.Profile
 import com.example.volumeprofiler.models.AlarmRelation
 import com.example.volumeprofiler.database.repositories.AlarmRepository
+import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
+import com.example.volumeprofiler.models.LocationRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -17,12 +19,13 @@ import javax.inject.Inject
 class ProfilesListViewModel @Inject constructor(
         private val profileRepository: ProfileRepository,
         private val alarmRepository: AlarmRepository,
+        private val locationRepository: LocationRepository
 ): ViewModel() {
 
     sealed class Event {
 
         data class CancelAlarmsEvent(val alarms: List<AlarmRelation>?): Event()
-        object RemoveGeofencesEvent: Event()
+        data class RemoveGeofencesEvent(val geofences: List<LocationRelation>): Event()
     }
 
     private val eventChannel: Channel<Event> = Channel(Channel.BUFFERED)
@@ -46,8 +49,12 @@ class ProfilesListViewModel @Inject constructor(
 
     fun removeProfile(profile: Profile): Unit {
         viewModelScope.launch {
-            eventChannel.send(Event.CancelAlarmsEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
-            eventChannel.send(Event.RemoveGeofencesEvent)
+            launch {
+                eventChannel.send(Event.CancelAlarmsEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
+            }
+            launch {
+                eventChannel.send(Event.RemoveGeofencesEvent(locationRepository.getLocationsByProfileId(profile.id)))
+            }
             profileRepository.removeProfile(profile)
         }
     }

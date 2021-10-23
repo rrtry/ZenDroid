@@ -7,8 +7,11 @@ import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.selection.SelectionTracker
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.interfaces.ActionModeProvider
+import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.scopes.FragmentScoped
 import java.lang.ref.WeakReference
 
+@FragmentScoped
 class BaseSelectionObserver<T>(
         private val provider: WeakReference<ActionModeProvider<T>>
         ): SelectionTracker.SelectionObserver<T>() {

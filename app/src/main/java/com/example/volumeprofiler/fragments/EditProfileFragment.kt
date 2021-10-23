@@ -2,7 +2,6 @@ package com.example.volumeprofiler.fragments
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.NotificationManager
 import android.content.Context
 import android.media.RingtoneManager
 import android.os.Bundle
@@ -24,9 +23,11 @@ import android.app.NotificationManager.*
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager.*
+import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.util.DisplayMetrics
 import android.widget.Toast
@@ -36,14 +37,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import com.example.volumeprofiler.util.ProfileUtil
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
 class EditProfileFragment: Fragment() {
+
+    @Inject
+    lateinit var profileUtil: ProfileUtil
 
     private val viewModel: EditProfileViewModel by activityViewModels()
     private var callbacks: EditProfileActivityCallbacks? = null
@@ -85,11 +91,18 @@ class EditProfileFragment: Fragment() {
         return binding.root
     }
 
+    private fun startSystemSettingsActivity(): Unit {
+        startActivity(Intent(ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${requireActivity().packageName}")))
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
                 when (it) {
+                    EditProfileViewModel.Event.WriteSystemSettingsRequestEvent -> {
+                        startSystemSettingsActivity()
+                    }
                     EditProfileViewModel.Event.NavigateToNextFragment -> {
                         callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
                     }
@@ -106,9 +119,11 @@ class EditProfileFragment: Fragment() {
                         startRingtonePickerActivity(it.ringtoneType)
                     }
                     is EditProfileViewModel.Event.ChangeRingerMode -> {
-                        if (it.fromUser) {
-                            changeMode(it.streamType)
+                        changeMode(it.streamType)
+                        if (it.vibrate) {
                             createVibrateEffect()
+                        }
+                        if (it.showToast) {
                             showToast(it.streamType)
                         }
                     }
@@ -123,6 +138,7 @@ class EditProfileFragment: Fragment() {
         super.onResume()
         setStoragePermissionProperty()
         setNotificationPolicyProperty()
+        setCanWriteSettingsProperty()
     }
 
     override fun onDestroyView() {
@@ -135,23 +151,26 @@ class EditProfileFragment: Fragment() {
             requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun checkNotificationPolicyAccess(): Boolean {
-        val notificationManager: NotificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        return notificationManager.isNotificationPolicyAccessGranted
-    }
-
     private fun setStoragePermissionProperty(): Unit {
         viewModel.storagePermissionGranted.value = checkStoragePermission()
     }
 
     private fun setNotificationPolicyProperty(): Unit {
-        viewModel.notificationPolicyAccessGranted.value = checkNotificationPolicyAccess()
+        viewModel.notificationPolicyAccessGranted.value = profileUtil.isNotificationPolicyAccessGranted()
+    }
+
+    private fun setCanWriteSettingsProperty(): Unit {
+        viewModel.canWriteSettings.value = profileUtil.canWriteSettings()
     }
 
     private fun registerForNotificationPolicyResult(): Unit {
         notificationPolicyCallback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            viewModel.notificationPolicyAccessGranted.value = checkNotificationPolicyAccess()
+            viewModel.notificationPolicyAccessGranted.value = profileUtil.isNotificationPolicyAccessGranted()
         }
+    }
+
+    private fun hasVibratorHardware(): Boolean {
+        return hapticService!!.hasVibrator()
     }
 
     private fun registerForPermissionResult(): Unit {
@@ -159,6 +178,8 @@ class EditProfileFragment: Fragment() {
             viewModel.storagePermissionGranted.value = it
             if (it) {
                 viewModel.updateSoundUris()
+            } else {
+                shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
     }
@@ -214,8 +235,8 @@ class EditProfileFragment: Fragment() {
     }
 
     private fun removeFromLayout(view: View): Unit {
-        setConstraints()
-        if (!hapticService!!.hasVibrator()) {
+        if (!hasVibratorHardware()) {
+            setConstraints()
             binding.constraintRoot.removeView(view)
         }
     }
@@ -229,25 +250,28 @@ class EditProfileFragment: Fragment() {
 
     @Suppress("deprecation")
     private fun createVibrateEffect(): Unit {
-        if (hapticService!!.hasVibrator()) {
+        if (hasVibratorHardware()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                hapticService!!.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+                hapticService!!.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
-                hapticService!!.vibrate(200)
+                hapticService!!.vibrate(100)
             }
         }
     }
 
     private fun changeMode(streamType: Int, mode: Int): Unit {
-        if (streamType == STREAM_NOTIFICATION) {
-            viewModel.notificationMode.value = mode
-        } else if (streamType == STREAM_RING) {
-            viewModel.ringerMode.value = mode
+        when (streamType) {
+            STREAM_NOTIFICATION -> {
+                viewModel.notificationMode.value = mode
+            }
+            STREAM_RING -> {
+                viewModel.ringerMode.value = mode
+            }
         }
     }
 
     private fun changeMode(streamType: Int): Unit {
-        if (hapticService!!.hasVibrator()) {
+        if (hasVibratorHardware()) {
             changeMode(streamType, RINGER_MODE_VIBRATE)
         } else {
             changeMode(streamType, RINGER_MODE_SILENT)
@@ -255,7 +279,7 @@ class EditProfileFragment: Fragment() {
     }
 
     private fun showToast(streamType: Int): Unit {
-        if (hapticService!!.hasVibrator()) {
+        if (hasVibratorHardware()) {
             Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notifications are set to vibrate" else "Ringer is set to vibrate", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notifications are set to silent" else "Ringer is set to silent", Toast.LENGTH_SHORT).show()
@@ -292,7 +316,6 @@ class EditProfileFragment: Fragment() {
         }
         popupMenu.show()
     }
-
 
     companion object {
 

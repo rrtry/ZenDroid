@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.util
 
-import androidx.core.text.isDigitsOnly
-import com.example.volumeprofiler.models.Alarm
+import android.Manifest
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -14,6 +13,15 @@ import kotlin.collections.ArrayList
 class TextUtil {
 
     companion object {
+
+        fun getPermissionName(permission: String): String {
+            return when (permission) {
+                Manifest.permission.READ_PHONE_STATE -> "Phone"
+                Manifest.permission.READ_EXTERNAL_STORAGE -> "Storage"
+                Manifest.permission.ACCESS_FINE_LOCATION -> "Location"
+                else -> ""
+            }
+        }
 
         @JvmStatic
         fun weekDaysToString(scheduledDays: ArrayList<Int>, startTime: LocalDateTime): String {
@@ -71,24 +79,6 @@ class TextUtil {
             } else {
                 ""
             }
-        }
-
-        fun filterStreetAddressInput(source: CharSequence?): CharSequence {
-            return if (source != null) {
-                val stringBuilder: StringBuilder = StringBuilder()
-                for (i in source) {
-                    if (Character.isLetter(i) || Character.isDigit(i) || i == ',' || i == '.' || i == '-' || Character.isSpaceChar(i)) {
-                        stringBuilder.append(i)
-                    }
-                }
-                stringBuilder.toString()
-            } else {
-                ""
-            }
-        }
-
-        fun validateAddressInput(source: CharSequence?): Boolean {
-            return !(source!!.isEmpty() && source.isBlank() && source.isDigitsOnly())
         }
     }
 }

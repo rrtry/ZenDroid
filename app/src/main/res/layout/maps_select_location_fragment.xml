@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
+<ScrollView
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:layout_height="wrap_content"
+    android:focusableInTouchMode="true"
+    app:layout_behavior="android.support.design.widget.BottomSheetBehavior">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout"
@@ -27,12 +29,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:text="Coordinates"
             android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             app:layout_constraintStart_toEndOf="@+id/imageView2"
-            app:layout_constraintTop_toBottomOf="@+id/setAddressButton" />
+            app:layout_constraintTop_toBottomOf="@+id/radiusSlider" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/latitudeTextInputLayout"
@@ -86,57 +88,6 @@
             android:text="Set coordinates"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/longitudeTextInputLayout" />
-
-        <ImageView
-            android:id="@+id/addressImage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/addressTitle"
-            app:srcCompat="@drawable/baseline_location_city_black_24dp" />
-
-        <TextView
-            android:id="@+id/addressTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:text="Address"
-            android:textColor="?attr/colorPrimary"
-            app:layout_constraintStart_toEndOf="@+id/addressImage"
-            app:layout_constraintTop_toBottomOf="@+id/radiusSlider" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/addressTextInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:hint="Address search"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/addressTitle">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/addressEditText"
-                android:layout_width="match_parent"
-                android:imeOptions="actionDone"
-                android:layout_height="wrap_content"
-                android:singleLine="true" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <Button
-            android:id="@+id/setAddressButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:text="Set address"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/addressTextInputLayout" />
 
         <RelativeLayout
             android:id="@+id/scene_root"
@@ -192,4 +143,4 @@
             app:layout_constraintTop_toTopOf="@+id/scene_root" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.core.widget.NestedScrollView>
+</ScrollView>

@@ -54,6 +54,10 @@ fun isAlarmStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, 
     }
 }
 
+fun isCallStreamActive(interruptionFilter: Int): Boolean {
+    return interruptionFilter != INTERRUPTION_FILTER_NONE
+}
+
 fun isMediaStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean): Boolean {
     return if (!notificationAccessGranted) {
         true

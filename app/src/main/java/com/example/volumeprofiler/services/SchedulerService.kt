@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.services
 
 import android.app.*
-import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import com.example.volumeprofiler.database.repositories.AlarmRepository
@@ -15,7 +14,7 @@ import com.example.volumeprofiler.util.createSchedulerNotification
 @AndroidEntryPoint
 class SchedulerService: Service() {
 
-    private val job: Job = SupervisorJob()
+    private val job: Job = Job()
     private val scope = CoroutineScope(Dispatchers.Main + job)
 
     @Inject lateinit var repository: AlarmRepository
@@ -24,21 +23,28 @@ class SchedulerService: Service() {
     private suspend fun scheduleAlarms(): Unit {
         val toSchedule: List<AlarmRelation>? = repository.getEnabledAlarms()
         if (toSchedule != null && toSchedule.isNotEmpty()) {
-            alarmUtil.setMultipleAlarms(toSchedule)
+            alarmUtil.setAlarms(toSchedule)
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+
         startForeground(SERVICE_ID, createSchedulerNotification(this))
+
         scope.launch {
             val request = launch {
                 scheduleAlarms()
             }
             request.join()
-            stopForeground(true)
-            stopSelf()
+            stopService()
         }
         return START_STICKY
+    }
+
+    private fun stopService(): Unit {
+        stopForeground(true)
+        stopSelf(SERVICE_ID)
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -52,8 +58,6 @@ class SchedulerService: Service() {
 
     companion object {
 
-        const val NOTIFICATION_CHANNEL_ID: String = "channel_162"
-        const val NOTIFICATION_CHANNEL_NAME: String = "Background Processing"
-        const val SERVICE_ID: Int = 162
+        private const val SERVICE_ID: Int = 162
     }
 }

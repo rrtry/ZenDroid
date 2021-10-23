@@ -1,21 +1,27 @@
 package com.example.volumeprofiler.activities
 
 import android.Manifest
+import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.database.MatrixCursor
 import android.graphics.Color
+import android.location.Address
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.BaseColumns
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.animation.BounceInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.cursoradapter.widget.SimpleCursorAdapter
+import androidx.appcompat.widget.SearchView
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +30,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.transition.Slide
+import androidx.transition.TransitionManager
+import androidx.transition.TransitionSet
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
@@ -41,6 +50,7 @@ import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.OnTokenCanceledListener
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetBehavior.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -66,16 +76,40 @@ class MapsActivity : AppCompatActivity(),
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var mMap: GoogleMap
+    private lateinit var searchView: SearchView
 
-    @Inject lateinit var geocoderUtil: GeocoderUtil
+    private var sheetState: Int = STATE_COLLAPSED
 
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            Log.i("MapsActivity", "ACCESS_FINE_LOCATION granted")
-        }
-        else {
-            Log.i("MapsActivity", "ACCESS_FINE_LOCATION denied")
+    @Inject
+    lateinit var geocoderUtil: GeocoderUtil
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.google_maps_activity)
+        searchView = findViewById(R.id.searchView)
+        setSearchableInfo()
+        setSearchViewSuggestions()
+        fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
+        setBottomSheetBehaviour(savedInstanceState)
+        addBottomSheetFragment()
+        getMap()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(EXTRA_SHEET_STATE, sheetState)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        handleSearchIntent(intent)
+    }
+
+    private fun handleSearchIntent(intent: Intent?): Unit {
+        if (Intent.ACTION_SEARCH == intent?.action) {
+            intent.getStringExtra(SearchManager.QUERY)?.also { query ->
+                searchView.setQuery(query, false)
+            }
         }
     }
 
@@ -86,14 +120,81 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.google_maps_activity)
-        fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
-        bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.containerBottomSheet))
-        setBottomSheetBehaviour()
-        addBottomSheetFragment()
-        getMap()
+    private fun setSearchableInfo(): Unit {
+        val searchManager: SearchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
+    }
+
+    private fun populateCursor(results: List<Address>): Unit {
+        val columns: Array<String> = arrayOf(
+                BaseColumns._ID,
+                COLUMN_LATITUDE,
+                COLUMN_LONGITUDE,
+                SearchManager.SUGGEST_COLUMN_TEXT_1,
+        )
+        val matrixCursor: MatrixCursor = MatrixCursor(columns)
+        for (i in results.indices) {
+            val row: Array<String> = arrayOf(i.toString(),
+                    results[i].latitude.toString(),
+                    results[i].longitude.toString(),
+                    results[i].getAddressLine(0))
+            matrixCursor.addRow(row)
+        }
+        searchView.suggestionsAdapter.changeCursor(matrixCursor)
+    }
+
+    private fun executeSearch(query: String): Unit {
+        lifecycleScope.launch {
+            val results: List<Address>? = geocoderUtil.getAddressFromLocationName(query)
+            if (results != null && results.isNotEmpty()) {
+                populateCursor(results)
+            }
+        }
+    }
+
+    private fun setSuggestionsAdapter(): SimpleCursorAdapter {
+        val adapter = SimpleCursorAdapter(
+                this,
+                android.R.layout.simple_list_item_1,
+                null,
+                arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1),
+                intArrayOf(android.R.id.text1),
+                0)
+        searchView.suggestionsAdapter = adapter
+        return adapter
+    }
+
+    private fun setSearchViewSuggestions(): Unit {
+        setSuggestionsAdapter()
+        searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
+
+            override fun onSuggestionSelect(position: Int): Boolean {
+                return false
+            }
+
+            override fun onSuggestionClick(position: Int): Boolean {
+                val cursor = searchView.suggestionsAdapter.cursor
+                viewModel.latLng.value = LatLng(
+                        cursor.getString(cursor.getColumnIndex(COLUMN_LATITUDE)).toDouble(),
+                        cursor.getString(cursor.getColumnIndex(COLUMN_LONGITUDE)).toDouble())
+                searchView.setQuery(null, false)
+                searchView.setQuery(cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)), false)
+                return true
+            }
+        })
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText != null && newText.length > MIN_LENGTH) {
+                    executeSearch(newText)
+                }
+                return true
+            }
+        })
     }
 
     private fun getMap(): Unit {
@@ -105,12 +206,6 @@ class MapsActivity : AppCompatActivity(),
     private fun setNightStyle(): Unit {
         mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.mapstyle_night))
     }
-
-    /*
-    private fun requestLocationPermission(): Unit {
-        requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-     */
 
     private fun bounceInterpolatorAnimation(): Unit {
         val handler = Handler(Looper.getMainLooper())
@@ -132,23 +227,18 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun updateCoordinates(latLng: LatLng, animateCameraMovement: Boolean): Unit {
-        viewModel.animateMovement = animateCameraMovement
         viewModel.setLatLng(latLng)
     }
 
     private fun setLocation(latLng: LatLng): Unit {
-        if (marker != null) {
-            marker!!.remove()
-            circle!!.remove()
-        }
         addMarker()
         addCircle()
-        val zoomLevel: Float = getZoomLevel()
-        if (viewModel.animateMovement) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
-        } else {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
-        }
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, getZoomLevel()))
+        setAddress(latLng)
+        bounceInterpolatorAnimation()
+    }
+
+    private fun setAddress(latLng: LatLng): Unit {
         lifecycleScope.launch {
             val result: String? = geocoderUtil.getAddressFromLatLng(latLng)
             if (result != null) {
@@ -156,7 +246,6 @@ class MapsActivity : AppCompatActivity(),
                 marker!!.title = result
             }
         }
-        bounceInterpolatorAnimation()
     }
 
     private fun getZoomLevel(): Float {
@@ -170,6 +259,9 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun addCircle(): Unit {
+        if (circle != null) {
+            circle!!.remove()
+        }
         circle = mMap.addCircle(CircleOptions()
                 .center(viewModel.getLatLng()!!)
                 .radius(viewModel.getRadius().toDouble())
@@ -178,13 +270,16 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun addMarker(): Unit {
+        if (marker != null) {
+            marker!!.remove()
+        }
         marker = mMap.addMarker(MarkerOptions().position(viewModel.getLatLng()!!).title(viewModel.getAddress()))
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     private fun getRecentLocation(): Unit {
         fusedLocationProvider.lastLocation.addOnSuccessListener {
-            if (it != null && TimeUnit.MILLISECONDS.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT) {
+            if (it != null && TimeUnit.MILLISECONDS.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT_MINUTES) {
                 updateCoordinates(LatLng(it.latitude, it.longitude), false)
             } else {
                 getCurrentLocation()
@@ -222,22 +317,53 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun setBottomSheetBehaviour(): Unit {
+    private fun setBottomSheetBehaviour(savedInstanceState: Bundle?): Unit {
         bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.containerBottomSheet))
         bottomSheetBehavior.isFitToContents = false
         bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
 
             override fun onStateChanged(bottomSheet: View, newState: Int) {
-                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+                if (newState == STATE_HIDDEN) {
+                    bottomSheetBehavior.state = STATE_COLLAPSED
                 }
-                viewModel.setBottomSheetState(newState)
+                when (newState) {
+                    STATE_EXPANDED -> {
+                        if (searchView.visibility == View.VISIBLE) {
+                            setSearchViewVisibility(View.INVISIBLE, true)
+                        }
+                    }
+                    STATE_COLLAPSED, STATE_HALF_EXPANDED -> {
+                        if (searchView.visibility == View.INVISIBLE) {
+                            setSearchViewVisibility(View.VISIBLE, true)
+                        }
+                    }
+                }
+                sheetState = newState
             }
+
             override fun onSlide(bottomSheet: View, slideOffset: Float) {
 
             }
         })
-        bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        if (savedInstanceState != null) {
+            sheetState = savedInstanceState.getInt(EXTRA_SHEET_STATE)
+            if (sheetState == STATE_EXPANDED) {
+                setSearchViewVisibility(View.INVISIBLE, false)
+            }
+        }
+    }
+
+    private fun getTransition(): TransitionSet {
+        val transition: TransitionSet = TransitionSet()
+        transition.addTarget(R.id.searchView).addTransition(Slide(Gravity.TOP))
+        return transition
+    }
+
+    private fun setSearchViewVisibility(visibility: Int, animate: Boolean) {
+        if (animate) {
+            TransitionManager.beginDelayedTransition(findViewById(R.id.rootLayout), getTransition())
+        }
+        searchView.visibility = visibility
     }
 
     private fun isNightModeEnabled(): Boolean {
@@ -278,8 +404,8 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onBackPressed() {
-        if (bottomSheetBehavior.state != BottomSheetBehavior.STATE_COLLAPSED) {
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        if (bottomSheetBehavior.state != STATE_COLLAPSED) {
+            bottomSheetBehavior.state = STATE_COLLAPSED
         } else {
             super.onBackPressed()
         }
@@ -294,8 +420,8 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun collapseBottomSheet() {
-        if (bottomSheetBehavior.state != BottomSheetBehavior.STATE_COLLAPSED) {
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        if (bottomSheetBehavior.state != STATE_COLLAPSED) {
+            bottomSheetBehavior.state = STATE_COLLAPSED
         }
     }
 
@@ -345,8 +471,12 @@ class MapsActivity : AppCompatActivity(),
 
     companion object {
 
-        private const val DWELL_LIMIT: Byte = 30
+        private const val DWELL_LIMIT_MINUTES: Byte = 15
         private const val EXTRA_LOCATION_TRIGGER: String = "location"
+        private const val EXTRA_SHEET_STATE: String = "extra_sheet_state"
+        private const val COLUMN_LATITUDE: String = "latitude"
+        private const val COLUMN_LONGITUDE: String = "longitude"
+        private const val MIN_LENGTH: Int = 10
 
         fun newIntent(context: Context, locationRelation: LocationRelation?): Intent {
             return Intent(context, MapsActivity::class.java).apply {

@@ -5,8 +5,10 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.core.content.ContextCompat
 import com.example.volumeprofiler.Application.Companion.ACTION_GEOFENCE_TRANSITION
 import com.example.volumeprofiler.broadcastReceivers.GeofenceReceiver
 import com.example.volumeprofiler.models.Location

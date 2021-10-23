@@ -6,6 +6,9 @@ import com.example.volumeprofiler.models.Alarm
 @Dao
 interface AlarmDao {
 
+    @Query("SELECT * FROM Alarm WHERE Alarm.eventId = (:id)")
+    suspend fun getAlarm(id: Long): Alarm
+
     @Insert
     suspend fun addAlarm(alarm: Alarm)
 

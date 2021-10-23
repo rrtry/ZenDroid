@@ -9,7 +9,6 @@ import javax.inject.Inject
 import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
-import android.util.Log
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {

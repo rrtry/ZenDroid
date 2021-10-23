@@ -483,13 +483,14 @@
                     app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
-            <RelativeLayout
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/vibrateForCallsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
                 android:orientation="horizontal"
                 android:paddingTop="16dp"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:onClick="@{() -> viewModel.onVibrateForCallsLayoutClick()}"
                 android:paddingBottom="16dp"
                 app:layout_constraintStart_toEndOf="parent"
@@ -512,7 +513,7 @@
                     android:layout_marginRight="16dp"
                     shouldVibrateForCalls="@{viewModel.vibrateForCalls}"
                     android:clickable="false" />
-            </RelativeLayout>
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>

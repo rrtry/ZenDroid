@@ -78,7 +78,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
     ): View {
         _binding = LocationsListFragmentBinding.inflate(inflater, container, false)
         binding.fab.setOnClickListener {
-
+            startMapActivity()
         }
         return binding.root
     }
@@ -92,20 +92,6 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = locationAdapter
     }
-
-    /*
-    private fun initSelectionTracker(): Unit {
-        tracker = SelectionTracker.Builder(
-                SELECTION_ID,
-                binding.recyclerView,
-                KeyProvider(locationAdapter),
-                DetailsLookup(binding.recyclerView),
-                StorageStrategy.createStringStorage()
-        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
-                .build()
-        tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
-    }
-     */
 
     private fun updateUI(list: List<LocationRelation>): Unit {
         if (list.isEmpty()) {
@@ -167,6 +153,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             binding.removeGeofenceButton.setOnClickListener {
                 removeGeofence(locationAdapter.getItemAtPosition(bindingAdapterPosition))
             }
+
             binding.enabledGeofenceSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (buttonView.isPressed) {
                     val item: LocationRelation = locationAdapter.getItemAtPosition(bindingAdapterPosition)

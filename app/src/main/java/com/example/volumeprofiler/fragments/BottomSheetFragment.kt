@@ -31,7 +31,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) {
-            this.activeFragmentTag = savedInstanceState.getString(KEY_CURRENT_FRAGMENT, TAG_COORDINATES_FRAGMENT)
+            activeFragmentTag = savedInstanceState.getString(KEY_CURRENT_FRAGMENT, TAG_COORDINATES_FRAGMENT)
         }
     }
 
@@ -51,9 +51,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val view: View = inflater.inflate(R.layout.bottom_sheet_fragment, container, false)
-        view.setOnTouchListener { v, event -> true }
-        return view
+        return inflater.inflate(R.layout.bottom_sheet_fragment, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -74,7 +72,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
 
     private fun addFragments(): Unit {
         val coordinatesFragment: Fragment = MapsCoordinatesFragment()
-        val profileSelectionFragment: Fragment = MapsProfileSelectionFragment.buildArgs(arguments?.getSerializable(MapsProfileSelectionFragment.ID_PAIR) as? Pair<UUID, UUID>)
+        val profileSelectionFragment: Fragment = MapsProfileSelectionFragment.buildArgs(null)
         childFragmentManager
                 .beginTransaction()
                 .add(R.id.fragmentContainer, coordinatesFragment, TAG_COORDINATES_FRAGMENT)
@@ -93,15 +91,13 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.profile_tab -> {
-                val tag: String = TAG_PROFILES_FRAGMENT
-                replaceFragment(tag)
-                activeFragmentTag = tag
+                replaceFragment(TAG_PROFILES_FRAGMENT)
+                activeFragmentTag = TAG_PROFILES_FRAGMENT
                 true
             }
             R.id.location_tab -> {
-                val tag: String = TAG_COORDINATES_FRAGMENT
-                replaceFragment(tag)
-                activeFragmentTag = tag
+                replaceFragment(TAG_COORDINATES_FRAGMENT)
+                activeFragmentTag = TAG_COORDINATES_FRAGMENT
                 true
             } else -> false
         }
@@ -112,16 +108,5 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
         private const val TAG_COORDINATES_FRAGMENT: String = "coordinates"
         private const val TAG_PROFILES_FRAGMENT: String = "profiles"
         private const val KEY_CURRENT_FRAGMENT: String = "key_current_fragment"
-
-        fun buildArgs(ids: Pair<UUID, UUID>?): Fragment {
-            val bundle: Bundle = Bundle().apply {
-                if (ids != null) {
-                    this.putSerializable(MapsProfileSelectionFragment.ID_PAIR, ids)
-                }
-            }
-            return BottomSheetFragment().apply {
-                this.arguments = bundle
-            }
-        }
     }
 }

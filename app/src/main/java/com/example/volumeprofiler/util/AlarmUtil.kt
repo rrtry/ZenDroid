@@ -88,9 +88,9 @@ class AlarmUtil @Inject constructor (
     private fun getPendingIntent(alarm: Alarm, profile: Profile, createOrUpdate: Boolean): PendingIntent? {
         val id: Int = alarm.id.toInt()
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
-            this.action = Application.ACTION_ALARM_TRIGGER
-            this.putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
-            this.putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+            action = Application.ACTION_ALARM_ALERT
+            putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
         return if (createOrUpdate) {
             PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -113,13 +113,13 @@ class AlarmUtil @Inject constructor (
         }
     }
 
-    fun cancelMultipleAlarms(list: List<AlarmRelation>): Unit {
+    fun cancelAlarms(list: List<AlarmRelation>): Unit {
         for (i in list) {
             cancelAlarm(i.alarm, i.profile)
         }
     }
 
-    fun setMultipleAlarms(list: List<AlarmRelation>): Unit {
+    fun setAlarms(list: List<AlarmRelation>): Unit {
         for (i in list) {
             scheduleAlarm(i.alarm, i.profile, false)
         }

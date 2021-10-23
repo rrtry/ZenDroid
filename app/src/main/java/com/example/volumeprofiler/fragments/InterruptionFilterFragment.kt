@@ -69,9 +69,6 @@ class InterruptionFilterFragment: Fragment() {
                     EditProfileViewModel.Event.StartContactsActivity -> {
                         startFavoriteContactsActivity()
                     }
-                    EditProfileViewModel.Event.QueryStarredContacts -> {
-
-                    }
                     is EditProfileViewModel.Event.ShowPopupWindow -> {
                         showPopupWindow(it.category)
                     }

@@ -5,9 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.media.AudioManager
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
@@ -38,11 +36,8 @@ import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.ProfileUtil
-import com.example.volumeprofiler.util.SharedPreferencesUtil
+import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.animations.AnimUtil
-import com.example.volumeprofiler.util.restoreChangedPositions
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -55,7 +50,6 @@ import java.lang.ref.WeakReference
 import java.util.*
 import javax.inject.Inject
 
-
 @AndroidEntryPoint
 class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
@@ -64,6 +58,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
     @Inject
     lateinit var alarmUtil: AlarmUtil
+
+    @Inject
+    lateinit var geofenceUtil: GeofenceUtil
 
     @Inject
     lateinit var profileUtil: ProfileUtil
@@ -85,21 +82,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private val binding: ProfilesListFragmentBinding get() = _binding!!
 
     private var searchQuery: String? = null
-    private var absoluteAdapterPosition: Int = 0
-
-    private fun notificationModeToString(notificationMode: Int): Unit {
-        when (notificationMode) {
-            AudioManager.RINGER_MODE_NORMAL -> {
-                Log.i("ProfilesListFragment", "RINGER_MODE_NORMAL")
-            }
-            AudioManager.RINGER_MODE_VIBRATE -> {
-                Log.i("ProfilesListFragment", "RINGER_MODE_VIBRATE")
-            }
-            AudioManager.RINGER_MODE_SILENT -> {
-                Log.i("ProfilesListFragment", "RINGER_MODE_SILENT")
-            }
-        }
-    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -208,7 +190,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = profileAdapter
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
-        binding.recyclerView.layoutManager?.onRestoreInstanceState(savedInstanceState?.getParcelable(EXTRA_RV_STATE))
     }
 
     private fun initSelectionTracker(savedInstanceState: Bundle?): Unit {
@@ -227,6 +208,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         }
     }
 
+    @SuppressWarnings("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.fab.setOnClickListener {
@@ -236,11 +218,17 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.eventFlow.onEach {
-                        if (it is ProfilesListViewModel.Event.CancelAlarmsEvent && it.alarms != null) {
-                            alarmUtil.cancelMultipleAlarms(it.alarms)
-                        }
-                        if (it is ProfilesListViewModel.Event.RemoveGeofencesEvent) {
-
+                        when (it) {
+                            is ProfilesListViewModel.Event.CancelAlarmsEvent -> {
+                                if (!it.alarms.isNullOrEmpty()) {
+                                    alarmUtil.cancelAlarms(it.alarms)
+                                }
+                            }
+                            is ProfilesListViewModel.Event.RemoveGeofencesEvent -> {
+                                for (i in it.geofences) {
+                                    geofenceUtil.removeGeofence(i)
+                                }
+                            }
                         }
                     }.collect()
                 }
@@ -295,7 +283,8 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             viewModel.lastSelected = null
         }
         if (sharedPreferencesUtil.getEnabledProfileId() == profile.id.toString()) {
-            sharedPreferencesUtil.clearActiveProfileRecord()
+            profileUtil.setDefaults()
+            sharedPreferencesUtil.clearPreferences()
         }
         positionMap.remove(profile.id)
         viewModel.removeProfile(profile)
@@ -405,7 +394,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
     private fun setDefaults(): Unit {
         profileUtil.setDefaults()
-        sharedPreferencesUtil.clearActiveProfileRecord()
         viewModel.lastSelected = null
     }
 
@@ -444,7 +432,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             adapterBinding.expandButton.animate().rotation(0f).start()
         }
 
-        private fun setTextView(profile: Profile): Unit {
+        private fun setCheckBoxText(profile: Profile): Unit {
             adapterBinding.checkBox.text = profile.title
         }
 
@@ -493,7 +481,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         fun bind(profile: Profile, isSelected: Boolean, animate: Boolean): Unit {
             setSelectedState(isSelected, animate)
             setEnabledState(profile)
-            setTextView(profile)
+            setCheckBoxText(profile)
             setListeners(profile)
         }
 
@@ -616,6 +604,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         private const val EXTRA_SELECTION: String = "extra_selection"
         private const val EXTRA_QUERY: String = "extra_query"
         private const val EXTRA_RV_STATE: String = "abs_position"
+
     }
 
     override fun onActionItemRemove() {

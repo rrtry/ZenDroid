@@ -13,7 +13,7 @@ class AlarmsListViewModel @Inject constructor(
         private val repository: AlarmRepository
 ): ViewModel() {
 
-    val alarmsFlow: Flow<List<AlarmRelation>> = repository.observeAlarmTriggers()
+    val alarmsFlow: Flow<List<AlarmRelation>> = repository.observeAlarms()
 
     fun updateAlarm(alarm: Alarm) {
         viewModelScope.launch {
