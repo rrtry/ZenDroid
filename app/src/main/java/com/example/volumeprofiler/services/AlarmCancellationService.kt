@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
 import com.example.volumeprofiler.database.repositories.AlarmRepository
-import com.example.volumeprofiler.models.Alarm
+import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.util.createAlarmCancelNotification
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -57,6 +57,7 @@ class AlarmCancellationService: Service() {
 
     private fun stopService(): Unit {
         stopForeground(true)
+        releaseWakeLock()
         stopSelf(SERVICE_ID)
     }
 
@@ -80,7 +81,6 @@ class AlarmCancellationService: Service() {
 
     override fun onDestroy() {
         job.cancel()
-        releaseWakeLock()
         super.onDestroy()
     }
 

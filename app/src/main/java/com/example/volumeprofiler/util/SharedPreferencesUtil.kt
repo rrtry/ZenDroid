@@ -1,10 +1,11 @@
 package com.example.volumeprofiler.util
 
+import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.collection.ArrayMap
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.entities.Profile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -54,9 +55,11 @@ class SharedPreferencesUtil @Inject constructor (
         editor.apply()
     }
 
+    /*
     fun getEnabledProfileTitle(): String? {
         return sharedPreferences.getString(PREFS_PROFILE_TITLE, "Select profile")
     }
+     */
 
     fun getRingerMode(): Int {
         return sharedPreferences.getInt(PREFS_RINGER_MODE, -1)
@@ -91,9 +94,18 @@ class SharedPreferencesUtil @Inject constructor (
         return sharedPreferences.getString(PREFS_PROFILE_ID, null)
     }
 
+    fun setPermissionResult(permission: String): Unit {
+        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+        editor.putBoolean(permission, true)
+        editor.apply()
+    }
+
+    fun wasPermissionAskedBefore(permission: String): Boolean {
+        return sharedPreferences.getBoolean(permission, false)
+    }
+
     companion object {
 
-        private const val PREFS_POSITIONS_MAP: String = "prefs_positions_map"
         const val SHARED_PREFS: String = "volumeprofiler_shared_prefs"
         const val PREFS_PROFILE_ID = "prefs_profile_id"
         const val PREFS_PROFILE_STREAM_NOTIFICATION = "prefs_profile_stream_notification"
@@ -101,5 +113,11 @@ class SharedPreferencesUtil @Inject constructor (
         const val PREFS_PROFILE_TITLE = "prefs_profile_title"
         const val PREFS_RINGER_MODE: String = "prefs_ringer_mode"
         const val PREFS_NOTIFICATION_MODE: String = "prefs_notification_mode"
+
+        private const val PREFS_POSITIONS_MAP: String = "prefs_positions_map"
+        private const val PREFS_STORAGE_PERMISSION: String = Manifest.permission.READ_EXTERNAL_STORAGE
+        private const val PREFS_PHONE_PERMISSION: String = Manifest.permission.READ_PHONE_STATE
+        private const val PREFS_LOCATION_PERMISSION: String = Manifest.permission.ACCESS_FINE_LOCATION
+        private const val PREFS_BACKGROUND_LOCATION_PERMISSION: String = Manifest.permission.ACCESS_BACKGROUND_LOCATION
     }
 }

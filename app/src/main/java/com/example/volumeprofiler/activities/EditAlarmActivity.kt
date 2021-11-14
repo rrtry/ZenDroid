@@ -1,29 +1,36 @@
 package com.example.volumeprofiler.activities
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.Manifest.permission.*
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
+import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_DATE_TIME
+import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScheduledDaysPickerDialog
 import com.example.volumeprofiler.viewmodels.EditAlarmViewModel.DialogType
-import com.example.volumeprofiler.models.AlarmRelation
-import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.EditAlarmViewModel
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -32,12 +39,50 @@ import javax.inject.Inject
 class EditAlarmActivity: AppCompatActivity() {
 
     private val viewModel: EditAlarmViewModel by viewModels()
-
     private var elapsedTime: Long = 0
 
     private lateinit var binding: CreateAlarmActivityBinding
+    private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
 
-    @Inject lateinit var alarmUtil: AlarmUtil
+    @Inject
+    lateinit var alarmUtil: AlarmUtil
+
+    @Inject
+    lateinit var profileUtil: ProfileUtil
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            when {
+                it -> {
+                    saveAlarm()
+                }
+                shouldShowRequestPermissionRationale(READ_PHONE_STATE) -> {
+                    Snackbar.make(binding.root, "Phone permission is required", Snackbar.LENGTH_LONG).apply {
+                        setAction("Show explanation") {
+                            ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
+                        }
+                    }.show()
+                }
+                else -> {
+                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
+                }
+            }
+        }
+        val alarm: AlarmRelation? = getAlarmRelation()
+        setBinding()
+        setActionBar()
+        setFragmentResultListeners()
+        collectEventsFlow()
+        viewModel.profilesLiveData.observe(this, {
+            viewModel.setArgs(alarm)
+        })
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        phonePermissionLauncher.unregister()
+    }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
@@ -52,6 +97,10 @@ class EditAlarmActivity: AppCompatActivity() {
             }
         }
         return false
+    }
+
+    private fun getAlarmRelation(): AlarmRelation? {
+        return intent.getParcelableExtra(EXTRA_ALARM_PROFILE_RELATION) as? AlarmRelation
     }
 
     private fun setAddIcon(item: MenuItem): Unit {
@@ -72,11 +121,32 @@ class EditAlarmActivity: AppCompatActivity() {
                 true
             }
             R.id.saveChangesButton -> {
-                scheduleAlarm()
-                setSuccessfulResult()
+                saveAlarm()
                 true
             }
             else -> false
+        }
+    }
+
+    private fun saveAlarm(): Unit {
+        val alarm: Alarm = viewModel.getAlarm()
+        val shouldUpdateAlarm: Boolean = viewModel.getAlarmId() != null
+        val profile: Profile? = getAlarmRelation()?.profile
+        if (shouldUpdateAlarm && alarm.isScheduled == 1) {
+            when {
+                profileUtil.grantedRequiredPermissions(profile) -> {
+                    scheduleAlarm()
+                    setSuccessfulResult()
+                }
+                profileUtil.shouldRequestPhonePermission(profile) -> {
+                    phonePermissionLauncher.launch(READ_PHONE_STATE)
+                }
+                else -> {
+                    sendSystemPreferencesAccessNotification(this, profileUtil)
+                }
+            }
+        } else {
+            setSuccessfulResult()
         }
     }
 
@@ -103,9 +173,7 @@ class EditAlarmActivity: AppCompatActivity() {
     }
 
     private fun scheduleAlarm(): Unit {
-        if (viewModel.getAlarmId() != null) {
-            alarmUtil.scheduleAlarm(viewModel.getAlarm(), viewModel.getProfile(), false)
-        }
+        alarmUtil.scheduleAlarm(viewModel.getAlarm(), viewModel.getProfile(), repeating = false, showToast = true)
     }
 
     private fun setActionBar(): Unit {
@@ -117,19 +185,20 @@ class EditAlarmActivity: AppCompatActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val alarm: AlarmRelation? = intent.getParcelableExtra(EXTRA_ALARM_PROFILE_RELATION) as? AlarmRelation
-        setBinding()
-        setActionBar()
-        setFragmentResultListeners()
-        collectEventsFlow()
-        viewModel.profilesLiveData.observe(this, {
-            viewModel.setArgs(alarm)
-        })
-    }
-
     private fun setFragmentResultListeners(): Unit {
+        supportFragmentManager.setFragmentResultListener(
+            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, this,
+            { requestKey, result ->
+                if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
+                    if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+                        phonePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                    } else {
+                        startActivity(getApplicationSettingsIntent(this))
+                    }
+                } else if (!shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+                    Snackbar.make(binding.root, "You can always grant permissions in settings", Snackbar.LENGTH_LONG).show()
+                }
+            })
         supportFragmentManager.setFragmentResultListener(TIME_REQUEST_KEY, this) { _, bundle ->
             val localDateTime: LocalDateTime? = bundle.getSerializable(EXTRA_LOCAL_DATE_TIME) as? LocalDateTime
             if (localDateTime != null) {
@@ -146,27 +215,31 @@ class EditAlarmActivity: AppCompatActivity() {
 
     private fun collectEventsFlow(): Unit {
         lifecycleScope.launch {
-            viewModel.eventsFlow.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED).onEach {
-                when (it) {
-                    is EditAlarmViewModel.Event.ShowDialogEvent -> {
-                        if (it.dialogType == DialogType.DAYS_SELECTION) {
-                            showDaysPickerDialog()
-                        } else if (it.dialogType == DialogType.TIME_SELECTION) {
-                            showTimePickerDialog()
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.eventsFlow.collect {
+                        when (it) {
+                            is EditAlarmViewModel.Event.ShowDialogEvent -> {
+                                if (it.dialogType == DialogType.DAYS_SELECTION) {
+                                    showDaysPickerDialog()
+                                } else if (it.dialogType == DialogType.TIME_SELECTION) {
+                                    showTimePickerDialog()
+                                }
+                            }
                         }
                     }
                 }
-            }.collect()
+            }
         }
     }
 
     private fun showDaysPickerDialog(): Unit {
-        val fragment: ScheduledDaysPickerDialog = ScheduledDaysPickerDialog.newInstance(viewModel.scheduledDays.value!!)
+        val fragment: ScheduledDaysPickerDialog = ScheduledDaysPickerDialog.newInstance(viewModel.scheduledDays.value)
         fragment.show(supportFragmentManager, null)
     }
 
     private fun showTimePickerDialog(): Unit {
-        val fragment: TimePickerFragment = TimePickerFragment.newInstance(viewModel.startTime.value!!)
+        val fragment: TimePickerFragment = TimePickerFragment.newInstance(viewModel.startTime.value)
         fragment.show(supportFragmentManager, null)
     }
 
@@ -200,7 +273,7 @@ class EditAlarmActivity: AppCompatActivity() {
         const val EXTRA_UPDATE_FLAG: String = "extra_update_flag"
         const val TIME_REQUEST_KEY: String = "time_request_key"
         const val SCHEDULED_DAYS_REQUEST_KEY: String = "scheduled_days_request_key"
-        const val EXTRA_ALARM_PROFILE_RELATION: String = "extra_trigger"
+        const val EXTRA_ALARM_PROFILE_RELATION: String = "extra_alarm_relation"
         const val EXTRA_ALARM: String = "extra_alarm"
     }
 }

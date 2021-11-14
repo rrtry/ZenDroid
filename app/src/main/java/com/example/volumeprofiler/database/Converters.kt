@@ -10,6 +10,20 @@ import java.util.*
 class Converters {
 
     @TypeConverter
+    fun toBoolean(byte: Byte): Boolean {
+        return byte == 1.toByte()
+    }
+
+    @TypeConverter
+    fun fromBoolean(bool: Boolean): Byte {
+        return if (bool) {
+            1.toByte()
+        } else {
+            0.toByte()
+        }
+    }
+
+    @TypeConverter
     fun toList(string: String): ArrayList<Int> {
         return string.split(',').mapNotNull {
             try {

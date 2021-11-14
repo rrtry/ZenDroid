@@ -3,8 +3,8 @@ package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.volumeprofiler.database.repositories.LocationRepository
-import com.example.volumeprofiler.models.Location
-import com.example.volumeprofiler.models.LocationRelation
+import com.example.volumeprofiler.entities.Location
+import com.example.volumeprofiler.entities.LocationRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -23,7 +23,7 @@ class LocationsListViewModel @Inject constructor(
         }
     }
 
-    private fun updateLocation(location: Location): Unit {
+    fun updateLocation(location: Location): Unit {
         viewModelScope.launch {
             locationRepository.updateLocation(location)
         }

@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.models
+package com.example.volumeprofiler.entities
 
 import android.net.Uri
 import androidx.room.PrimaryKey
@@ -24,6 +24,8 @@ data class Profile(var title: String,
                    var phoneRingtoneUri: Uri = Uri.EMPTY,
                    var notificationSoundUri: Uri = Uri.EMPTY,
                    var alarmSoundUri: Uri = Uri.EMPTY,
+
+                   var streamsUnlinked: Boolean = false,
 
                    var interruptionFilter: Int = INTERRUPTION_FILTER_PRIORITY,
                    var ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,

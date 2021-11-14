@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.fragments
 
+import android.provider.Settings.*
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.NotificationManager.Policy.*
@@ -22,25 +23,39 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
+import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.PriorityInterruptionsSelectionDialog
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOffVisualRestrictionsDialog
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOnVisualRestrictionsDialog
+import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import android.Manifest.permission.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import com.example.volumeprofiler.activities.EditProfileActivity
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
 class InterruptionFilterFragment: Fragment() {
 
+    @Inject
+    lateinit var profileUtil: ProfileUtil
+
     private val viewModel: EditProfileViewModel by activityViewModels()
 
     private var _binding: ZenPreferencesFragmentBinding? = null
     private val binding: ZenPreferencesFragmentBinding get() = _binding!!
+
+    private var callback: EditProfileActivityCallbacks? = null
 
     private fun disableNestedScrolling(): Unit {
         val appBar: AppBarLayout = requireActivity().findViewById(R.id.app_bar)
@@ -50,7 +65,7 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun startFavoriteContactsActivity(): Unit {
         val intent: Intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).apply {
-            this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         startActivity(intent)
     }
@@ -86,14 +101,36 @@ class InterruptionFilterFragment: Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        callback = requireActivity() as EditProfileActivityCallbacks
         collectEventsFlow()
         disableNestedScrolling()
-        fragmentManager?.setFragmentResultListener(PRIORITY_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
+
+        requireActivity().supportFragmentManager.setFragmentResultListener(
+            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, viewLifecycleOwner,
+            { requestKey, result ->
+                if (result.getString(PermissionExplanationDialog.EXTRA_PERMISSION) == ACCESS_NOTIFICATION_POLICY) {
+                    if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
+                        val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                    }
+                    else {
+                        callback?.onFragmentReplace(EditProfileActivity.PROFILE_FRAGMENT)
+                    }
+                }
+            })
+        requireActivity().supportFragmentManager.setFragmentResultListener(PRIORITY_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
             onPriorityResult(bundle)
         }
-        fragmentManager?.setFragmentResultListener(EFFECTS_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
+        requireActivity().supportFragmentManager.setFragmentResultListener(EFFECTS_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
             onSuppressedEffectsResult(bundle)
         }
+    }
+
+    override fun onDestroyView() {
+        callback = null
+        super.onDestroyView()
     }
 
     @TargetApi(Build.VERSION_CODES.R)
@@ -180,6 +217,13 @@ class InterruptionFilterFragment: Fragment() {
             }
         }
         popupMenu.show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!profileUtil.isNotificationPolicyAccessGranted()) {
+            ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
+        }
     }
 
     private fun showPopupWindow(category: Int): Unit {

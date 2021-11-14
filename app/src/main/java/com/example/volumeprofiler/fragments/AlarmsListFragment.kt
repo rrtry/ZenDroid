@@ -4,15 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.recyclerview.widget.ListAdapter
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -35,14 +31,13 @@ import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.fragments.dialogs.WarningDialog
 import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
+import com.example.volumeprofiler.interfaces.PermissionRequestCallback
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
-import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.AlarmRelation
-import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.TextUtil
+import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.animations.AnimUtil
-import com.example.volumeprofiler.util.sortByLocalTime
 import com.example.volumeprofiler.viewmodels.AlarmsListViewModel
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,6 +48,8 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.time.LocalDateTime
 import javax.inject.Inject
+import android.Manifest.permission.*
+import android.widget.Toast
 
 @AndroidEntryPoint
 class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
@@ -71,11 +68,20 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
 
-    @Inject lateinit var alarmUtil: AlarmUtil
-    @Inject lateinit var eventBus: EventBus
+    private var callback: PermissionRequestCallback? = null
+
+    @Inject
+    lateinit var alarmUtil: AlarmUtil
+
+    @Inject
+    lateinit var eventBus: EventBus
+
+    @Inject
+    lateinit var profileUtil: ProfileUtil
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
+        callback = requireActivity() as PermissionRequestCallback
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
                 val alarm: Alarm = it.data?.getParcelableExtra(EditAlarmActivity.EXTRA_ALARM)!!
@@ -91,6 +97,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
     override fun onDetach() {
         super.onDetach()
+        callback = null
         activityResultLauncher.unregister()
     }
 
@@ -101,7 +108,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
     ): View {
         _binding = AlarmsFragmentBinding.inflate(inflater, container, false)
         val view: View = binding.root
-        binding.fab.setOnClickListener {
+        binding.createAlarmButton.setOnClickListener {
             if (!showDialog) {
                 startDetailsActivity()
             }
@@ -120,9 +127,8 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.alarmsFlow.map {
-                        sortByLocalTime(it)
+                        AlarmUtil.sortAlarms(it)
                     }.collect {
-                        Log.i("AlarmsListFragment", "collecting flow")
                         updateUI(it)
                     }
                 }
@@ -193,6 +199,12 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         activityResultLauncher.launch(intent)
     }
 
+    private fun updateAlarmState(position:Int, scheduled: Int): Unit {
+        alarmAdapter.notifyItemChanged(position, Bundle().apply {
+            putInt(EXTRA_DIFF_SCHEDULED, scheduled)
+        })
+    }
+
     private fun updateUI(alarms: List<AlarmRelation>) {
         if (alarms.isEmpty()) {
             binding.hintScheduler.visibility = View.VISIBLE
@@ -203,9 +215,10 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         alarmAdapter.submitList(alarms.toMutableList())
     }
 
-    private fun scheduleAlarm(alarmRelation: AlarmRelation): Unit {
-        alarmUtil.scheduleAlarm(alarmRelation.alarm, alarmRelation.profile, false)
+    private fun scheduleAlarm(alarmRelation: AlarmRelation, position: Int): Unit {
+        alarmUtil.scheduleAlarm(alarmRelation.alarm, alarmRelation.profile, false, true)
         viewModel.scheduleAlarm(alarmRelation)
+        updateAlarmState(position, 1)
     }
 
     private fun removeAlarm(alarmRelation: AlarmRelation): Unit {
@@ -218,9 +231,13 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
     private fun cancelAlarm(alarmRelation: AlarmRelation): Unit {
         alarmUtil.cancelAlarm(alarmRelation.alarm, alarmRelation.profile)
         viewModel.cancelAlarm(alarmRelation)
+        updateAlarmState(alarmAdapter.getItemPosition(alarmRelation.alarm.id)!!, 0)
     }
 
-    private inner class AlarmViewHolder(private val binding: AlarmItemViewBinding) : RecyclerView.ViewHolder(binding.root), View.OnClickListener, ViewHolderItemDetailsProvider<Long> {
+    private inner class AlarmViewHolder(private val binding: AlarmItemViewBinding) :
+        RecyclerView.ViewHolder(binding.root),
+        View.OnClickListener,
+        ViewHolderItemDetailsProvider<Long> {
 
         init {
             binding.root.setOnClickListener(this)
@@ -249,14 +266,8 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         }
 
         private fun setListeners(): Unit {
-            binding.scheduleSwitch.setOnCheckedChangeListener { _, isChecked ->
-                val alarmRelation: AlarmRelation = alarmAdapter.getItemAtPosition(bindingAdapterPosition)
-                if (isChecked && binding.scheduleSwitch.isPressed) {
-                    scheduleAlarm(alarmRelation)
-                }
-                else if (!isChecked && binding.scheduleSwitch.isPressed) {
-                    cancelAlarm(alarmRelation)
-                }
+            binding.editAlarmButton.setOnClickListener {
+                startDetailsActivity(alarmAdapter.getItemAtPosition(bindingAdapterPosition))
             }
             binding.deleteAlarmButton.setOnClickListener {
                 removeAlarm(alarmAdapter.getItemAtPosition(bindingAdapterPosition))
@@ -266,7 +277,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         private fun updateTextViews(profile: Profile, alarm: Alarm): Unit {
             binding.timeTextView.text = TextUtil.localizedTimeToString(alarm.localDateTime.toLocalTime())
             binding.occurrencesTextView.text = TextUtil.weekDaysToString(alarm.scheduledDays, alarm.localDateTime)
-            binding.profileName.text = "${profile.title}"
+            binding.profileName.text = profile.title
         }
 
         fun bind(alarmRelation: AlarmRelation) {
@@ -278,7 +289,23 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         }
 
         override fun onClick(v: View?) {
-            startDetailsActivity(alarmAdapter.getItemAtPosition(bindingAdapterPosition))
+            val alarmRelation: AlarmRelation = alarmAdapter.getItemAtPosition(bindingAdapterPosition)
+            val scheduled: Boolean = alarmRelation.alarm.isScheduled == 1
+            if (!scheduled) {
+                when {
+                    profileUtil.grantedRequiredPermissions(alarmRelation.profile) -> {
+                        scheduleAlarm(alarmRelation, bindingAdapterPosition)
+                    }
+                    profileUtil.shouldRequestPhonePermission(alarmRelation.profile) -> {
+                        callback?.requestProfilePermissions(alarmRelation.profile)
+                    }
+                    else -> {
+                        sendSystemPreferencesAccessNotification(requireContext(), profileUtil)
+                    }
+                }
+            } else {
+                cancelAlarm(alarmRelation)
+            }
         }
     }
 

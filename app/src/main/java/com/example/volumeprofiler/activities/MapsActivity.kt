@@ -1,18 +1,16 @@
 package com.example.volumeprofiler.activities
 
-import android.Manifest
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.app.Activity
 import android.app.SearchManager
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
+import android.content.*
+import android.Manifest.permission.*
 import android.content.res.Configuration
 import android.database.MatrixCursor
 import android.graphics.Color
 import android.location.Address
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
+import android.location.LocationManager
+import android.os.*
 import android.provider.BaseColumns
 import android.util.Log
 import android.view.Gravity
@@ -20,28 +18,32 @@ import android.view.View
 import android.view.animation.BounceInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.appcompat.widget.SearchView
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.transition.Slide
-import androidx.transition.TransitionManager
-import androidx.transition.TransitionSet
+import androidx.transition.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
-import com.example.volumeprofiler.models.LocationRelation
-import com.example.volumeprofiler.util.GeocoderUtil
+import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
+import com.example.volumeprofiler.entities.Location
+import com.example.volumeprofiler.entities.LocationRelation
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.util.*
+import com.example.volumeprofiler.util.animations.Scale
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -51,9 +53,12 @@ import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.OnTokenCanceledListener
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.*
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -64,6 +69,7 @@ class MapsActivity : AppCompatActivity(),
         MapsCoordinatesFragment.Callback,
         OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener,
+        GoogleMap.OnMapLongClickListener,
         GoogleMap.OnMapClickListener,
         GoogleMap.OnCameraMoveStartedListener,
         BottomSheetFragment.Callbacks {
@@ -72,32 +78,154 @@ class MapsActivity : AppCompatActivity(),
 
     private var marker: Marker? = null
     private var circle: Circle? = null
+    private var postPermissionCheckAction: Int = 0
+    private var sheetState: Int = STATE_COLLAPSED
+    private var floatingItemsVisible: Boolean = true
 
+    private lateinit var saveGeofenceButton: FloatingActionButton
+    private lateinit var jumpToRecentLocationButton: FloatingActionButton
+    private lateinit var coordinatorLayout: CoordinatorLayout
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var mMap: GoogleMap
     private lateinit var searchView: SearchView
-
-    private var sheetState: Int = STATE_COLLAPSED
+    private lateinit var permissionLauncher: ActivityResultLauncher<Array<out String>>
+    private lateinit var profilesQuery: List<Profile>
 
     @Inject
     lateinit var geocoderUtil: GeocoderUtil
 
+    @Inject
+    lateinit var geofenceUtil: GeofenceUtil
+
+    @Inject
+    lateinit var profileUtil: ProfileUtil
+
+    private val locationProviderReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
+                Log.i("MapsActivity", "PROVIDERS_CHANGED_ACTION")
+            }
+        }
+    }
+
+    private fun onPermissionResultAction(resolve: Boolean): Unit {
+        when (postPermissionCheckAction) {
+            ACTION_CREATE_GEOFENCE -> {
+                setSuccessfulResult(viewModel.getLocation(profilesQuery), hasParcelableData())
+            }
+            ACTION_DETERMINE_LOCATION -> {
+                when {
+                    checkSelfPermission(this, ACCESS_FINE_LOCATION) -> {
+                        val weakReference: WeakReference<MapsActivity> = WeakReference(this)
+                        geofenceUtil.checkLocationServicesAvailability(this) {
+                            weakReference.get()?.getRecentLocation()
+                        }
+                    }
+                    resolve -> {
+                        requestPermissions()
+                    }
+                    shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) -> {
+                        showSnackbar("Location permission is required", "Grant") {
+                            requestPermissions()
+                        }
+                    }
+                    else -> {
+                        ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.google_maps_activity)
-        searchView = findViewById(R.id.searchView)
-        setSearchableInfo()
-        setSearchViewSuggestions()
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
+        permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            onPermissionResultAction(false)
+        }
+        jumpToRecentLocationButton = findViewById(R.id.jumpToCurrentLocationButton)
+        saveGeofenceButton = findViewById(R.id.saveGeofenceButton)
+        coordinatorLayout = findViewById(R.id.rootLayout)
+        saveGeofenceButton.setOnClickListener {
+            postPermissionCheckAction = ACTION_CREATE_GEOFENCE
+            setSuccessfulResult(
+                viewModel.getLocation(
+                    profilesQuery
+                ), hasParcelableData()
+            )
+        }
+        jumpToRecentLocationButton.setOnClickListener {
+            postPermissionCheckAction = ACTION_DETERMINE_LOCATION
+            if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
+                val weakReference: WeakReference<MapsActivity> = WeakReference(this)
+                geofenceUtil.checkLocationServicesAvailability(this) {
+                    weakReference.get()?.getRecentLocation()
+                }
+            } else {
+                requestPermissions()
+            }
+        }
+        supportFragmentManager.setFragmentResultListener(
+            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, this,
+            { requestKey, result ->
+                val permission: String = result.getString(PermissionExplanationDialog.EXTRA_PERMISSION)!!
+                if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
+                    if (shouldShowRequestPermissionRationale(permission)) {
+                        requestPermissions()
+                    } else {
+                        startActivity(getApplicationSettingsIntent(this))
+                    }
+                }
+            })
+        setSearchConfiguration()
         setBottomSheetBehaviour(savedInstanceState)
         addBottomSheetFragment()
         getMap()
     }
 
+    private fun showSnackbar(text: String, actionText: String, action: () -> Unit): Unit {
+        val snackBar: Snackbar = Snackbar.make(saveGeofenceButton, text, Snackbar.LENGTH_INDEFINITE)
+        snackBar.setAction(actionText) {
+            action()
+        }
+        snackBar.show()
+    }
+
+    private fun setSearchConfiguration(): Unit {
+        searchView = findViewById(R.id.searchView)
+        setSearchableInfo()
+        setSearchViewSuggestions()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(locationProviderReceiver, IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION))
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(locationProviderReceiver)
+    }
+
+    private fun setArgs(): Unit {
+        val locationRelation: LocationRelation? = intent.getParcelableExtra(EXTRA_LOCATION_RELATION)
+        if (locationRelation != null) {
+            viewModel.setLocation(locationRelation)
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(EXTRA_SHEET_STATE, sheetState)
+        outState.putInt(EXTRA_POST_PERMISSION_CHECK_ACTION, postPermissionCheckAction)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        postPermissionCheckAction = savedInstanceState.getInt(EXTRA_POST_PERMISSION_CHECK_ACTION, 0)
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -143,10 +271,10 @@ class MapsActivity : AppCompatActivity(),
         searchView.suggestionsAdapter.changeCursor(matrixCursor)
     }
 
-    private fun executeSearch(query: String): Unit {
+    private fun executeLocationSearch(query: String): Unit {
         lifecycleScope.launch {
             val results: List<Address>? = geocoderUtil.getAddressFromLocationName(query)
-            if (results != null && results.isNotEmpty()) {
+            if (!results.isNullOrEmpty()) {
                 populateCursor(results)
             }
         }
@@ -185,14 +313,14 @@ class MapsActivity : AppCompatActivity(),
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
+                if (query != null && query.length > MIN_LENGTH) {
+                    executeLocationSearch(query)
+                }
+                return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText != null && newText.length > MIN_LENGTH) {
-                    executeSearch(newText)
-                }
-                return true
+                return false
             }
         })
     }
@@ -215,6 +343,7 @@ class MapsActivity : AppCompatActivity(),
         val interpolator = BounceInterpolator()
 
         handler.post(object : Runnable {
+
             override fun run() {
                 val elapsed = SystemClock.uptimeMillis() - start
                 val remainingTime: Float = (1 - interpolator.getInterpolation(elapsed.toFloat() / duration)).coerceAtLeast(0f)
@@ -233,29 +362,31 @@ class MapsActivity : AppCompatActivity(),
     private fun setLocation(latLng: LatLng): Unit {
         addMarker()
         addCircle()
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, getZoomLevel()))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, getZoomFactor()))
         setAddress(latLng)
         bounceInterpolatorAnimation()
     }
 
     private fun setAddress(latLng: LatLng): Unit {
         lifecycleScope.launch {
-            val result: String? = geocoderUtil.getAddressFromLatLng(latLng)
+            val result: Address? = geocoderUtil.getAddressFromLatLng(latLng)
             if (result != null) {
-                viewModel.setAddress(result)
-                marker!!.title = result
+                val addressLine: String = result.getAddressLine(0)
+                viewModel.setAddress(addressLine)
+                viewModel.setLocality(result.locality)
+                marker!!.title = addressLine
             }
         }
     }
 
-    private fun getZoomLevel(): Float {
-        var zoomLevel: Float = 11f
+    private fun getZoomFactor(): Float {
+        var zoomFactor: Float = 11f
         if (circle != null) {
             val radius = circle!!.radius + circle!!.radius / 2
             val scale = radius / 500
-            zoomLevel = (16 - ln(scale) / ln(2.0)).toFloat()
+            zoomFactor = (16 - ln(scale) / ln(2.0)).toFloat()
         }
-        return zoomLevel
+        return zoomFactor
     }
 
     private fun addCircle(): Unit {
@@ -276,7 +407,7 @@ class MapsActivity : AppCompatActivity(),
         marker = mMap.addMarker(MarkerOptions().position(viewModel.getLatLng()!!).title(viewModel.getAddress()))
     }
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    @RequiresPermission(ACCESS_FINE_LOCATION)
     private fun getRecentLocation(): Unit {
         fusedLocationProvider.lastLocation.addOnSuccessListener {
             if (it != null && TimeUnit.MILLISECONDS.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT_MINUTES) {
@@ -287,7 +418,7 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    @RequiresPermission(ACCESS_FINE_LOCATION)
     private fun getCurrentLocation(): Unit {
         fusedLocationProvider.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, object : CancellationToken() {
             override fun isCancellationRequested(): Boolean {
@@ -353,17 +484,32 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun getTransition(): TransitionSet {
-        val transition: TransitionSet = TransitionSet()
-        transition.addTarget(R.id.searchView).addTransition(Slide(Gravity.TOP))
-        return transition
+    private fun setSearchViewVisibility(visibility: Int, animate: Boolean) {
+        if (floatingItemsVisible) {
+            if (animate) {
+                val transition: TransitionSet = TransitionSet()
+                transition.addTarget(R.id.searchView).addTransition(Slide(Gravity.TOP))
+                TransitionManager.beginDelayedTransition(coordinatorLayout, transition)
+            }
+            searchView.visibility = visibility
+        }
     }
 
-    private fun setSearchViewVisibility(visibility: Int, animate: Boolean) {
-        if (animate) {
-            TransitionManager.beginDelayedTransition(findViewById(R.id.rootLayout), getTransition())
-        }
+    private fun setFloatingItemsVisibility(visibility: Int): Unit {
+        floatingItemsVisible = visibility == View.VISIBLE
+
+        val transition: TransitionSet = TransitionSet()
+
+        transition.ordering = TransitionSet.ORDERING_TOGETHER
+        transition.addTarget(R.id.searchView).addTransition(Fade())
+        transition.addTarget(R.id.saveGeofenceButton).addTransition(Scale())
+        transition.addTarget(R.id.jumpToCurrentLocationButton).addTransition(Scale())
+
+        TransitionManager.beginDelayedTransition(coordinatorLayout, transition)
+
         searchView.visibility = visibility
+        saveGeofenceButton.visibility = visibility
+        jumpToRecentLocationButton.visibility = visibility
     }
 
     private fun isNightModeEnabled(): Boolean {
@@ -372,24 +518,26 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        viewModel.profilesLiveData.observe(this, Observer {
+            profilesQuery = it
+            setArgs()
+        })
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.latLng.collect {
                         if (it != null) {
                             setLocation(it)
-                        } else if (ContextCompat.checkSelfPermission(
-                                        this@MapsActivity, Manifest.permission.ACCESS_FINE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED) {
+                        } else if (checkSelfPermission(this@MapsActivity, ACCESS_FINE_LOCATION)) {
                             getRecentLocation()
-                         }
+                        }
                     }
                 }
                 launch {
                     viewModel.radius.collect {
                         circle?.radius = it.toDouble()
                         if (circle != null && marker != null) {
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomLevel()))
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomFactor()))
                         }
                     }
                 }
@@ -398,6 +546,7 @@ class MapsActivity : AppCompatActivity(),
         mMap.setOnMapClickListener(this)
         mMap.setOnCameraMoveStartedListener(this)
         mMap.setOnMarkerDragListener(this)
+        mMap.setOnMapLongClickListener(this)
         if (isNightModeEnabled()) {
             setNightStyle()
         }
@@ -415,6 +564,10 @@ class MapsActivity : AppCompatActivity(),
         updateCoordinates(p0, true)
     }
 
+    override fun onMapLongClick(p0: LatLng) {
+        setFloatingItemsVisibility(if (floatingItemsVisible) View.INVISIBLE else View.VISIBLE)
+    }
+
     override fun setState(state: Int) {
         bottomSheetBehavior.state = state
     }
@@ -428,6 +581,75 @@ class MapsActivity : AppCompatActivity(),
     private fun hideSoftInput(): Unit {
         val inputManager: InputMethodManager = this.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         inputManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
+    }
+
+    private fun hasParcelableData(): Boolean {
+        return intent.extras?.getParcelable<LocationRelation>(EXTRA_LOCATION_RELATION) != null
+    }
+
+    private fun requestPermissions(): Unit {
+        var permissions: Array<String> = arrayOf(
+            ACCESS_FINE_LOCATION,
+            READ_PHONE_STATE
+        )
+        if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
+            permissions += ACCESS_BACKGROUND_LOCATION
+        }
+        permissionLauncher.launch(permissions)
+    }
+
+    @Suppress("MissingPermission")
+    private fun setSuccessfulResult(geofence: Location, updateExisting: Boolean): Unit {
+        if (geofence.enabled == 1.toByte()) {
+            val locationRelation: LocationRelation = viewModel.getLocationRelation(profilesQuery)
+            if (geofence.enabled == 1.toByte()) {
+                when {
+                    !profileUtil.grantedRequiredPermissions(locationRelation) && !geofenceUtil.locationAccessGranted() -> {
+                        Snackbar.make(coordinatorLayout, "Missing required permissions", Snackbar.LENGTH_INDEFINITE)
+                            .setAction("Grant") {
+                                requestPermissions()
+                            }
+                            .show()
+                    }
+                    !geofenceUtil.locationAccessGranted() -> {
+                        ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
+                    }
+                    profileUtil.shouldRequestPhonePermission(locationRelation) -> {
+                        ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
+                    }
+                    !profileUtil.grantedSystemPreferencesAccess() -> {
+                        sendSystemPreferencesAccessNotification(this, profileUtil)
+                    }
+                    else -> {
+                        setResult(geofence, updateExisting)
+                    }
+                }
+            }
+        } else {
+            setResult(geofence, updateExisting)
+        }
+    }
+
+    private fun setResult(geofence: Location, updateExisting: Boolean): Unit {
+        val intent: Intent = Intent().apply {
+            putExtra(EXTRA_LOCATION, geofence)
+            putExtra(FLAG_UPDATE_EXISTING, updateExisting)
+        }
+        setResult(RESULT_OK, intent)
+        finish()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == GeofenceUtil.REQUEST_ENABLE_LOCATION_SERVICES) {
+            if (resultCode != Activity.RESULT_OK) {
+                showSnackbar("Enabling location services is required", "Enable") {
+                    onPermissionResultAction(true)
+                }
+            } else {
+                onPermissionResultAction(true)
+            }
+        }
     }
 
     override fun setPeekHeight(height: Int) {
@@ -455,6 +677,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onMarkerDrag(p0: Marker) {
+
     }
 
     override fun onMarkerDragEnd(p0: Marker) {
@@ -471,16 +694,24 @@ class MapsActivity : AppCompatActivity(),
 
     companion object {
 
+        const val EXTRA_LOCATION: String = "Location"
+        const val FLAG_UPDATE_EXISTING: String = "update_existing"
         private const val DWELL_LIMIT_MINUTES: Byte = 15
-        private const val EXTRA_LOCATION_TRIGGER: String = "location"
+        private const val EXTRA_POST_PERMISSION_CHECK_ACTION: String = "extra_post_permission_check_action"
+        private const val ACTION_CREATE_GEOFENCE: Int = 182
+        private const val ACTION_DETERMINE_LOCATION: Int = 192
+        private const val EXTRA_LOCATION_RELATION: String = "location"
         private const val EXTRA_SHEET_STATE: String = "extra_sheet_state"
         private const val COLUMN_LATITUDE: String = "latitude"
         private const val COLUMN_LONGITUDE: String = "longitude"
         private const val MIN_LENGTH: Int = 10
+        private const val REQUEST_TURN_DEVICE_LOCATION_ON: Int = 4
 
         fun newIntent(context: Context, locationRelation: LocationRelation?): Intent {
             return Intent(context, MapsActivity::class.java).apply {
-                if (locationRelation != null) this.putExtra(EXTRA_LOCATION_TRIGGER, locationRelation)
+                if (locationRelation != null) {
+                    putExtra(EXTRA_LOCATION_RELATION, locationRelation)
+                }
             }
         }
     }

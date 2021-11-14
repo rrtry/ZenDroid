@@ -4,12 +4,14 @@ import android.Manifest
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.Manifest.permission.*
 import android.os.IBinder
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.example.volumeprofiler.database.repositories.LocationRepository
-import com.example.volumeprofiler.models.LocationRelation
+import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.util.GeofenceUtil
+import com.example.volumeprofiler.util.checkSelfPermission
 import com.example.volumeprofiler.util.createGeofenceRegistrationNotification
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
@@ -27,13 +29,17 @@ class GeofenceRegistrationService: Service() {
     @Inject
     lateinit var geofenceUtil: GeofenceUtil
 
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    @RequiresPermission(ACCESS_FINE_LOCATION)
     private suspend fun registerGeofences(): Unit {
         val geofences: List<LocationRelation> = repository.getLocations()
         if (geofences.isNotEmpty()) {
             for (i in geofences) {
                 if (i.location.enabled == 1.toByte()) {
-                    geofenceUtil.addGeofence(i)
+                    geofenceUtil.addGeofence(
+                        i.location,
+                        i.onEnterProfile,
+                        i.onExitProfile
+                    )
                 }
             }
         }
@@ -45,7 +51,7 @@ class GeofenceRegistrationService: Service() {
 
         startForeground(SERVICE_ID, createGeofenceRegistrationNotification(this))
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
             scope.launch {
                 val request = launch {
                     registerGeofences()

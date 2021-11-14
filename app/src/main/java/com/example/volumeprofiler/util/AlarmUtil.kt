@@ -8,13 +8,15 @@ import android.os.Build
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
+import android.widget.Toast
 import com.example.volumeprofiler.Application
-import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.models.AlarmRelation
+import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.broadcastReceivers.AlarmReceiver
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.*
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.ArrayList
@@ -27,21 +29,23 @@ class AlarmUtil @Inject constructor (
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleAlarm(alarm: Alarm, profile: Profile, repeating: Boolean, showToast: Boolean = false): Boolean {
-
-        val scheduledDays: ArrayList<Int> = alarm.scheduledDays
-        val eventTime: LocalDateTime = alarm.localDateTime
-        val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile, true)
+        val pendingIntent: PendingIntent = createPendingIntent(alarm, profile)
         val now: LocalDateTime = LocalDateTime.now()
-        val delay: Long = getDelay(now, eventTime, scheduledDays, repeating)
+        val delay: Long = getDelay(alarm, repeating)
 
         return if (delay >= 0) {
-            setAlarm(now, delay, pendingIntent!!)
+            setAlarm(now, delay, pendingIntent)
+            if (showToast) {
+                Toast.makeText(context, formatRemainingTimeUtilAlarm(alarm), Toast.LENGTH_LONG)
+                    .show()
+            }
             true
         } else {
             false
         }
     }
 
+    @Suppress("obsoleteSdkInt")
     private fun setAlarm(now: LocalDateTime, delay: Long, pendingIntent: PendingIntent): Unit {
         val currentTimeInMillis: Long = toEpochMilli(now)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -52,61 +56,46 @@ class AlarmUtil @Inject constructor (
         }
     }
 
-    private fun getDelay(now: LocalDateTime, eventTime: LocalDateTime, recurringDays: ArrayList<Int>, repeating: Boolean): Long {
-        if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
-                && now.toLocalTime() < eventTime.toLocalTime()) {
-            return localTimeDifference(eventTime.toLocalTime())
-        }
-        else {
-            var nextDay: DayOfWeek? = getNextDayOnSchedule(recurringDays)
-            return if (nextDay != null) {
-                localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute)
-            } else {
-                if (!repeating) {
-                    nextDay = now.dayOfWeek.plus(1)
-                    localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute)
-                } else {
-                    -1
-                }
-            }
-        }
-    }
-
+    /*
     fun delayAlarm(alarmRelation: AlarmRelation): Boolean {
         val alarm: Alarm = alarmRelation.alarm
         val profile: Profile = alarmRelation.profile
-        return if (pendingIntentExists(alarm, profile) && alarm.scheduledDays.isNotEmpty()) {
+        val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile)
+        return if (pendingIntent != null && alarm.scheduledDays.isNotEmpty()) {
             val nextDay: DayOfWeek = getNextDayOnSchedule(alarm.scheduledDays)!!
             val now: LocalDateTime = LocalDateTime.now()
-            setAlarm(now, localDateTimeDifference(nextDay, alarm.localDateTime.hour, alarm.localDateTime.minute), getPendingIntent(alarm, profile, true)!!)
+            setAlarm(now, localDateTimeDifference(nextDay, alarm.localDateTime.hour, alarm.localDateTime.minute), pendingIntent)
             true
         } else {
             false
         }
     }
+     */
 
-    private fun getPendingIntent(alarm: Alarm, profile: Profile, createOrUpdate: Boolean): PendingIntent? {
+    private fun createPendingIntent(alarm: Alarm, profile: Profile): PendingIntent {
         val id: Int = alarm.id.toInt()
         val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             action = Application.ACTION_ALARM_ALERT
             putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
             putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
-        return if (createOrUpdate) {
-            PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-        }
-        else {
-            PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_NO_CREATE)
-        }
+        return PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
-    private fun pendingIntentExists(alarm: Alarm, profile: Profile): Boolean {
-        return getPendingIntent(alarm, profile, false) != null
+    private fun getPendingIntent(alarm: Alarm, profile: Profile): PendingIntent? {
+        val id: Int = alarm.id.toInt()
+        val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = Application.ACTION_ALARM_ALERT
+            putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+        }
+        return PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
     }
 
     fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
-        if (pendingIntentExists(alarm, profile)) {
-            alarmManager.cancel(getPendingIntent(alarm, profile, false))
+        val pendingIntent: PendingIntent? = getPendingIntent(alarm, profile)
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
         }
         else {
             Log.i("AlarmUtil", "failed to cancel alarm")
@@ -119,7 +108,7 @@ class AlarmUtil @Inject constructor (
         }
     }
 
-    fun setAlarms(list: List<AlarmRelation>): Unit {
+    fun setAlarms(list: List<AlarmRelation>, repeating: Boolean = false): Unit {
         for (i in list) {
             scheduleAlarm(i.alarm, i.profile, false)
         }
@@ -127,45 +116,114 @@ class AlarmUtil @Inject constructor (
 
     companion object {
 
-        private const val LOG_TAG: String = "AlarmUtil"
-        const val EXIT_SUCCESS: Long = -1
-
-        // TODO provide implementation
-        fun isDismissAvailable(): Boolean {
-            return false
-        }
-
         private fun toEpochMilli(now: LocalDateTime): Long {
             return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         }
 
-        private fun localDateTimeDifference(nextDay: DayOfWeek, hour: Int, minute: Int): Long {
+        private fun localDateTimeDifference(nextDay: DayOfWeek, hour: Int, minute: Int, second: Int): Long {
             val now: LocalDateTime = LocalDateTime.now()
-            val nextDate: LocalDateTime = now.with(TemporalAdjusters.next(nextDay)).withHour(hour).withMinute(minute).withSecond(0)
+            val nextDate: LocalDateTime = now.with(TemporalAdjusters.next(nextDay)).withHour(hour).withMinute(minute).withSecond(second)
             return ChronoUnit.MILLIS.between(now, nextDate)
         }
 
-        private fun localTimeDifference(nextHour: LocalTime) = ChronoUnit.MILLIS.between(LocalTime.now(), nextHour)
+        private fun getDelay(alarm: Alarm, repeating: Boolean): Long {
+            val now: LocalDateTime = LocalDateTime.now()
+            val recurringDays: ArrayList<Int> = alarm.scheduledDays
+            val eventTime: LocalDateTime = alarm.localDateTime
+            if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
+                && now.toLocalTime() < eventTime.toLocalTime()) {
+                return localTimeDifference(eventTime.toLocalTime())
+            }
+            else {
+                var nextDay: DayOfWeek? = getAlarmNextDay(recurringDays)
+                return if (nextDay != null) {
+                    localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute, 0)
+                } else {
+                    if (!repeating) {
+                        nextDay = now.dayOfWeek.plus(1)
+                        localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute, 0)
+                    } else {
+                        -1
+                    }
+                }
+            }
+        }
 
-        private fun getNextDayOnSchedule(eventOccurrences: ArrayList<Int>): DayOfWeek? {
-            if (eventOccurrences.isEmpty()) {
+        private fun localTimeDifference(localTime: LocalTime): Long {
+            return ChronoUnit.MILLIS.between(LocalTime.now(), localTime)
+        }
+
+        fun sortAlarms(list: List<AlarmRelation>): List<AlarmRelation> {
+            return list.sortedWith { previous, next ->
+                val prevDelay: Long = getDelay(previous.alarm, false)
+                val nextDelay: Long = getDelay(next.alarm, false)
+                when {
+                    prevDelay < nextDelay -> -1
+                    prevDelay == nextDelay -> 0
+                    else -> 1
+                }
+            }
+        }
+
+        private fun formatRemainingTimeUtilAlarm(alarm: Alarm): String {
+
+            var diffMillis: Long = getDelay(alarm, false)
+
+            return if (diffMillis < MILLIS_PER_MINUTE) {
+                "Alarm is set for less than a minute from now"
+            }
+            else {
+                val remainder = diffMillis % MILLIS_PER_MINUTE
+                if (remainder > 0) {
+                    diffMillis += MILLIS_PER_MINUTE - remainder
+                }
+
+                val diffMinutes: Long = ((diffMillis / (1000 * 60)) % 60)
+                val diffHours: Long = ((diffMillis / (1000 * 60 * 60)) % 24)
+                val diffDays: Long = ((diffMillis / (1000 * 60 * 60 * 24)) % 365)
+
+                val showMinutes: Boolean = diffMinutes > 0
+                val showHours: Boolean = diffHours > 0
+                val showDays: Boolean = diffDays > 0
+
+                val templates: Array<String> = arrayOf(
+                    "Alarm set for less than a minute from now",
+                    "Alarm set for %1${'$'}s days from now",
+                    "Alarm set for %2${'$'}s hours from now",
+                    "Alarm set for %1${'$'}s and %2${'$'}s hours from now",
+                    "Alarm set for %3${'$'}s minutes from now",
+                    "Alarm set for %1${'$'}s days and %3${'$'}s minutes from now",
+                    "Alarm set for %2${'$'}s and %3${'$'}s minutes from now",
+                    "Alarm set for %1${'$'}s hours, %2${'$'}s hours, %3${'$'}s minutes"
+                )
+                val index = ((if (showDays) 1 else 0)
+                        or (if (showHours) 2 else 0)
+                        or (if (showMinutes) 4 else 0))
+                String.format(templates[index], diffDays, diffHours, diffMinutes)
+            }
+        }
+
+        private fun getAlarmNextDay(days: ArrayList<Int>): DayOfWeek? {
+            if (days.isEmpty()) {
                 return null
             }
-            if (eventOccurrences.size == 1) {
-                return DayOfWeek.of(eventOccurrences[0])
+            if (days.size == 1) {
+                return DayOfWeek.of(days[0])
             }
             val today = LocalDateTime.now().dayOfWeek.value
-            for (i in eventOccurrences) {
+            for (i in days) {
                 if (i != today && today < i) {
                     return DayOfWeek.of(i)
                 }
             }
-            for (i in eventOccurrences) {
+            for (i in days) {
                 if (i != today) {
                     return DayOfWeek.of(i)
                 }
             }
             return null
         }
+
+        private const val MILLIS_PER_MINUTE: Long = 60000L
     }
 }

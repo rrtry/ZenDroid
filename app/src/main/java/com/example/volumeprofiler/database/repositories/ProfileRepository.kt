@@ -1,11 +1,10 @@
 package com.example.volumeprofiler.database.repositories
 
 import com.example.volumeprofiler.database.dao.ProfileDao
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.entities.Profile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,20 +30,6 @@ class ProfileRepository @Inject constructor(
             profileDao.removeProfile(profile)
         }
     }
-
-    /*
-    suspend fun getProfile(id: UUID): Profile {
-        return withContext(Dispatchers.IO) {
-            profileDao.getProfile(id)
-        }
-    }
-
-    suspend fun getProfiles(): List<Profile> {
-        return withContext(Dispatchers.IO) {
-            profileDao.getProfiles()
-        }
-    }
-     */
 
     fun observeProfiles(): Flow<List<Profile>> {
         return profileDao.observeProfiles()

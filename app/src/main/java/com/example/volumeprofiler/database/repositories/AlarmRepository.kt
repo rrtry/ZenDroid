@@ -2,8 +2,8 @@ package com.example.volumeprofiler.database.repositories
 
 import com.example.volumeprofiler.database.dao.AlarmDao
 import com.example.volumeprofiler.database.dao.AlarmRelationDao
-import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.AlarmRelation
+import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.AlarmRelation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext

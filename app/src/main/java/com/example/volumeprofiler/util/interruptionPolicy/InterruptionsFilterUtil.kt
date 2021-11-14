@@ -28,16 +28,25 @@ fun isNotificationStreamActive(notificationInterruptionFilter: Int, notification
     }
 }
 
-fun isRingerStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean): Boolean =
-        if (!notificationAccessGranted) {
-            true
-        } else {
-            when (interruptionFilter) {
-                INTERRUPTION_FILTER_PRIORITY -> priorityCategories.contains(PRIORITY_CATEGORY_CALLS) || priorityCategories.contains(PRIORITY_CATEGORY_REPEAT_CALLERS)
-                INTERRUPTION_FILTER_ALL -> true
-                INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
-                else -> false
+fun isRingerStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean, streamsUnlinked: Boolean): Boolean {
+    return if (!notificationAccessGranted) {
+        true
+    } else {
+        val state: Boolean = when (interruptionFilter) {
+            INTERRUPTION_FILTER_PRIORITY -> priorityCategories.contains(PRIORITY_CATEGORY_CALLS) || priorityCategories.contains(
+                PRIORITY_CATEGORY_REPEAT_CALLERS
+            )
+            INTERRUPTION_FILTER_ALL -> true
+            INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
+            else -> false
         }
+        if (streamsUnlinked) {
+            state
+        }
+        else {
+            state || isNotificationStreamActive(interruptionFilter, priorityCategories, notificationAccessGranted)
+        }
+    }
 }
 
 fun isAlarmStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean): Boolean {
@@ -54,7 +63,7 @@ fun isAlarmStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, 
     }
 }
 
-fun isCallStreamActive(interruptionFilter: Int): Boolean {
+fun isVoiceCallStreamActive(interruptionFilter: Int): Boolean {
     return interruptionFilter != INTERRUPTION_FILTER_NONE
 }
 

@@ -53,7 +53,6 @@
                 android:layout_width="wrap_content"
                 android:paddingStart="35dp"
                 android:paddingTop="4dp"
-                android:textColor="@color/light_gray"
                 android:textSize="14sp"
                 android:layout_height="wrap_content"
                 android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityCallSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_CALLS)}"/>
@@ -88,7 +87,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingStart="35dp"
-                android:textColor="@color/light_gray"
                 android:paddingTop="4dp"
                 android:text="Contacts"
                 android:textSize="14sp" />
@@ -117,29 +115,30 @@
 
             <TextView
                 android:id="@+id/repeatCallersDescription"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="4dp"
-                android:textColor="@color/light_gray"
-                android:text="If the same person calls second time\nwithin 15 minutes period"
+                android:layout_marginEnd="16dp"
+                android:text="If the same person calls second time within 15 minutes period"
                 android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@+id/repeatCallersSwitch"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/repeatCallersTitle" />
 
             <Switch
                 android:id="@+id/repeatCallersSwitch"
+                callSenders="@{viewModel.priorityCallSenders}"
+                repeatingCallersPriorityCategories="@{viewModel.priorityCategories}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/repeatCallersTitle"
+                android:layout_marginEnd="16dp"
                 android:layout_marginBottom="16dp"
-                repeatingCallersPriorityCategories="@{viewModel.priorityCategories}"
-                callSenders="@{viewModel.priorityCallSenders}"
                 android:layout_toRightOf="@+id/repeatCallersDescription"
                 android:clickable="false"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/repeatCallersDescription"
                 app:layout_constraintTop_toTopOf="@+id/repeatCallersDescription" />
         </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -190,7 +189,6 @@
                 android:layout_height="wrap_content"
                 android:paddingStart="35dp"
                 android:paddingTop="4dp"
-                android:textColor="@color/light_gray"
                 android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -224,7 +222,6 @@
                 android:layout_width="wrap_content"
                 android:paddingStart="35dp"
                 android:paddingTop="4dp"
-                android:textColor="@color/light_gray"
                 android:textSize="14sp"
                 android:layout_height="wrap_content"
                 android:text="Contacts"/>
@@ -276,7 +273,6 @@
                 android:id="@+id/otherInterruptionsDescription"
                 android:layout_width="wrap_content"
                 android:paddingStart="35dp"
-                android:textColor="@color/light_gray"
                 android:paddingTop="4dp"
                 android:textSize="14sp"
                 android:layout_height="wrap_content"

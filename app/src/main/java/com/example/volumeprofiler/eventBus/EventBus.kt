@@ -1,7 +1,7 @@
 package com.example.volumeprofiler.eventBus
 
 import android.util.Log
-import com.example.volumeprofiler.models.Alarm
+import com.example.volumeprofiler.entities.Alarm
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,7 +18,7 @@ class EventBus @Inject constructor() {
         data class UpdateAlarmState(val alarm: Alarm): Event()
     }
 
-    private val mutableEventsFlow: MutableSharedFlow<Event> = MutableSharedFlow(replay = 1, extraBufferCapacity = 5, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val mutableEventsFlow: MutableSharedFlow<Event> = MutableSharedFlow(replay = 1, extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val sharedFlow: SharedFlow<Event> = mutableEventsFlow
 
     fun updateProfilesFragment(id: UUID): Unit {

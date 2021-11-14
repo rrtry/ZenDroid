@@ -72,7 +72,7 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
 
     private fun addFragments(): Unit {
         val coordinatesFragment: Fragment = MapsCoordinatesFragment()
-        val profileSelectionFragment: Fragment = MapsProfileSelectionFragment.buildArgs(null)
+        val profileSelectionFragment: Fragment = MapsProfileSelectionFragment()
         childFragmentManager
                 .beginTransaction()
                 .add(R.id.fragmentContainer, coordinatesFragment, TAG_COORDINATES_FRAGMENT)

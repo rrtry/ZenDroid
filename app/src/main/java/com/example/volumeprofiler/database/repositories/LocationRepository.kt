@@ -2,8 +2,8 @@ package com.example.volumeprofiler.database.repositories
 
 import com.example.volumeprofiler.database.dao.LocationDao
 import com.example.volumeprofiler.database.dao.LocationRelationDao
-import com.example.volumeprofiler.models.Location
-import com.example.volumeprofiler.models.LocationRelation
+import com.example.volumeprofiler.entities.Location
+import com.example.volumeprofiler.entities.LocationRelation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext

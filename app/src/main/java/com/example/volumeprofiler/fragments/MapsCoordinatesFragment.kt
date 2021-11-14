@@ -41,7 +41,8 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         fun getPeekHeight(): Int
     }
 
-    @Inject lateinit var geocoderUtil: GeocoderUtil
+    @Inject
+    lateinit var geocoderUtil: GeocoderUtil
 
     private var _binding: MapsSelectLocationFragmentBinding? = null
     private val binding: MapsSelectLocationFragmentBinding get() = _binding!!

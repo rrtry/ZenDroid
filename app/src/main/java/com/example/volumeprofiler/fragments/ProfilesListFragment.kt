@@ -1,10 +1,10 @@
 package com.example.volumeprofiler.fragments
 
 import android.animation.*
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import android.widget.*
@@ -13,11 +13,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SearchView
 import androidx.collection.ArrayMap
 import androidx.collection.arrayMapOf
-import androidx.core.graphics.drawable.DrawableCompat
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
@@ -35,11 +30,12 @@ import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -49,7 +45,9 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.*
 import javax.inject.Inject
-
+import androidx.fragment.app.*
+import com.example.volumeprofiler.interfaces.PermissionRequestCallback
+import android.Manifest.permission.*
 @AndroidEntryPoint
 class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
@@ -72,19 +70,23 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private var selectedItems: ArrayList<String> = arrayListOf()
     private lateinit var tracker: SelectionTracker<String>
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
+    private lateinit var positionMap: ArrayMap<UUID, Int>
+
+    //private var pendingProfileAction: Pair<Int, Int> = Pair(RecyclerView.NO_POSITION, NO_ACTION)
 
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
-
-    private lateinit var positionMap: ArrayMap<UUID, Int>
 
     private var _binding: ProfilesListFragmentBinding? = null
     private val binding: ProfilesListFragmentBinding get() = _binding!!
 
     private var searchQuery: String? = null
 
+    private var callback: PermissionRequestCallback? = null
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
+        callback = requireActivity() as PermissionRequestCallback
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
                 val profile: Profile = it.data?.getParcelableExtra(EditProfileActivity.EXTRA_PROFILE)!!
@@ -96,6 +98,12 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                 }
             }
         }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback = null
+        activityResultLauncher.unregister()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
@@ -139,11 +147,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.search_menu, menu)
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        activityResultLauncher.unregister()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -211,7 +214,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     @SuppressWarnings("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.fab.setOnClickListener {
+        binding.createProfileButton.setOnClickListener {
             startDetailsActivity(null)
         }
         viewLifecycleOwner.lifecycleScope.launch {
@@ -226,7 +229,11 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                             }
                             is ProfilesListViewModel.Event.RemoveGeofencesEvent -> {
                                 for (i in it.geofences) {
-                                    geofenceUtil.removeGeofence(i)
+                                    geofenceUtil.removeGeofence(
+                                        i.location,
+                                        i.onEnterProfile,
+                                        i.onExitProfile
+                                    )
                                 }
                             }
                         }
@@ -282,79 +289,12 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         if (profileAdapter.getItemAtPosition(position).id == viewModel.lastSelected) {
             viewModel.lastSelected = null
         }
-        if (sharedPreferencesUtil.getEnabledProfileId() == profile.id.toString()) {
-            profileUtil.setDefaults()
-            sharedPreferencesUtil.clearPreferences()
+        if (sharedPreferencesUtil.isProfileEnabled(profile)) {
+            setDefaults()
         }
         positionMap.remove(profile.id)
         viewModel.removeProfile(profile)
     }
-
-    /*
-    private fun setItemTouchHelper(): Unit {
-        val itemTouchCallBack = object: ItemTouchHelper.Callback() {
-
-            override fun isItemViewSwipeEnabled(): Boolean = false
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-
-            }
-
-            private fun swapViews(fromPos: Int, toPos: Int, list: List<Profile>): List<Profile> {
-                val arrayList: ArrayList<Profile> = ArrayList(list)
-                if (fromPos < toPos) {
-                    for (i in fromPos until toPos) {
-                        Collections.swap(arrayList, i, i + 1)
-                    }
-                }
-                else {
-                    for (i in fromPos downTo toPos + 1) {
-                        Collections.swap(arrayList, i, i - 1)
-                    }
-                }
-                return arrayList.toList()
-            }
-
-            override fun getMovementFlags(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder
-            ): Int {
-                return makeMovementFlags(DRAG_FLAGS, SWIPE_FLAGS)
-            }
-
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean {
-                tracker.clearSelection()
-                return true
-            }
-
-            override fun onMoved(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder,
-                                 fromPos: Int, target: RecyclerView.ViewHolder,
-                                 toPos: Int, x: Int, y: Int): Unit {
-                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y)
-                val adapterData: List<Profile> = profileAdapter.currentList
-                positionMap[adapterData[fromPos].id] = toPos
-                positionMap[adapterData[toPos].id] = fromPos
-                if (viewModel.lastActiveProfileIndex == fromPos) {
-                    viewModel.lastActiveProfileIndex = toPos
-                }
-                else if (viewModel.lastActiveProfileIndex == toPos) {
-                    viewModel.lastActiveProfileIndex = fromPos
-                }
-                val modifiedList: List<Profile> = swapViews(fromPos, toPos, adapterData)
-                submitDataToAdapter(modifiedList)
-            }
-
-            override fun isLongPressDragEnabled(): Boolean = true
-        }
-
-        val itemTouchHelper = ItemTouchHelper(itemTouchCallBack)
-        itemTouchHelper.attachToRecyclerView(binding.recyclerView)
-    }
-     */
 
     private fun submitFullListToAdapter(list: List<Profile>, apply: Boolean): Unit {
         profileAdapter.submitFullList(list, apply)
@@ -367,6 +307,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         else {
             binding.placeHolderText.visibility = View.VISIBLE
         }
+
         if (isSearchQueryNotEmpty()) {
             profileAdapter.submitFilteredList(profiles)
             submitFullListToAdapter(profiles, false)
@@ -385,28 +326,37 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         profileAdapter.notifyItemChanged(profileAdapter.getPosition(id), true)
     }
 
-    private fun setProfile(position: Int): Unit {
-        val selectedProfile: Profile = profileAdapter.getItemAtPosition(position)
-        profileUtil.setProfile(selectedProfile)
+    private fun setProfile(profile: Profile) {
+        profileUtil.setProfile(profile)
         updatePreviousPosition()
-        viewModel.lastSelected = selectedProfile.id
+        updateCurrentPosition(profile.id)
+        viewModel.lastSelected = profile.id
     }
 
     private fun setDefaults(): Unit {
-        profileUtil.setDefaults()
+        if (profileUtil.grantedSystemPreferencesAccess()) {
+            profileUtil.setDefaults()
+        } else {
+            Snackbar.make(
+                binding.root,
+                "Failed to restore settings due to missing permissions",
+                Snackbar.LENGTH_LONG)
+                .show()
+        }
+        updatePreviousPosition()
         viewModel.lastSelected = null
     }
 
     private inner class ProfileHolder(view: View):
             RecyclerView.ViewHolder(view),
             ViewHolderItemDetailsProvider<String>,
-            CompoundButton.OnCheckedChangeListener {
+            View.OnClickListener {
 
         private val adapterBinding: ProfileItemViewBinding = profileAdapter.binding
 
         init {
+            adapterBinding.root.setOnClickListener(this)
             adapterBinding.expandableView.visibility = View.GONE
-            adapterBinding.checkBox.setOnCheckedChangeListener(this)
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> {
@@ -468,13 +418,20 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                 }
             }
             adapterBinding.editProfileButton.setOnClickListener {
-                startDetailsActivity(profile)
+                when {
+                    profileUtil.grantedRequiredPermissions(profile) -> {
+                        startDetailsActivity(profile)
+                    }
+                    profileUtil.shouldRequestPhonePermission(profile) -> {
+                        callback?.requestProfilePermissions(profile)
+                    }
+                    else -> {
+                        sendSystemPreferencesAccessNotification(requireContext(), profileUtil)
+                    }
+                }
             }
             adapterBinding.removeProfileButton.setOnClickListener {
                 removeProfile(profile, bindingAdapterPosition)
-            }
-            adapterBinding.headsetButton.setOnClickListener {
-                DrawableCompat.setTint((it as ImageButton).drawable, Color.GRAY)
             }
         }
 
@@ -485,12 +442,21 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             setListeners(profile)
         }
 
-        override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean) {
-            if (buttonView != null && buttonView.isPressed) {
-                if (isChecked) {
-                    setProfile(bindingAdapterPosition)
-                } else {
-                    setDefaults()
+        override fun onClick(v: View?) {
+            val profile: Profile = profileAdapter.getItemAtPosition(bindingAdapterPosition)
+            when {
+                profileUtil.grantedRequiredPermissions(profile) -> {
+                    if (sharedPreferencesUtil.isProfileEnabled(profile)) {
+                        setDefaults()
+                    } else {
+                        setProfile(profile)
+                    }
+                }
+                profileUtil.shouldRequestPhonePermission(profile) -> {
+                    callback?.requestProfilePermissions(profile)
+                }
+                else -> {
+                    sendSystemPreferencesAccessNotification(requireContext(), profileUtil)
                 }
             }
         }
@@ -513,7 +479,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
         lateinit var currentFullItemsList: List<Profile>
 
-        fun getItemAtPosition(position: Int): Profile = getItem(position)
+        fun getItemAtPosition(position: Int): Profile {
+            return getItem(position)
+        }
 
         fun getPosition(id: UUID): Int {
             for ((index, i) in currentList.withIndex()) {
@@ -533,7 +501,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             return ProfileHolder(binding.root)
         }
 
-        override fun onBindViewHolder(holder: ProfileHolder, position: Int) {
+        override fun onBindViewHolder(holder: ProfileHolder, @SuppressLint("RecyclerView") position: Int) {
             val profile = getItem(position)
             if (holder.absoluteAdapterPosition > lastPosition) {
                 lastPosition = position
@@ -604,6 +572,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         private const val EXTRA_SELECTION: String = "extra_selection"
         private const val EXTRA_QUERY: String = "extra_query"
         private const val EXTRA_RV_STATE: String = "abs_position"
+        private const val NO_ACTION: Int = 0x00
+        private const val ACTION_OPEN_EDITOR: Int = 0x01
+        private const val ACTION_APPLY_PROFILE: Int = 0x02
 
     }
 

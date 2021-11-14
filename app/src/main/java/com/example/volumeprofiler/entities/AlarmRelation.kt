@@ -1,8 +1,7 @@
-package com.example.volumeprofiler.models
+package com.example.volumeprofiler.entities
 
 import android.os.Parcelable
 import androidx.room.Embedded
-import androidx.room.Relation
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

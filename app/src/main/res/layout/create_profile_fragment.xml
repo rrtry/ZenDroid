@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:app="http://schemas.android.com/apk/res-auto"
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
@@ -27,13 +28,13 @@
 
             <ImageView
                 android:id="@+id/imageView9"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
                 mediaInterruptionFilter="@{viewModel.interruptionFilter}"
                 mediaPriorityCategories="@{viewModel.priorityCategories}"
-                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 mediaVolume="@{viewModel.mediaVolume}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="27dp"
                 app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
@@ -70,7 +71,7 @@
                 android:id="@+id/imageView10"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="27dp"
                 app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
@@ -85,7 +86,6 @@
                 android:layout_marginEnd="16dp"
                 android:progress="@={viewModel.callVolume}"
                 android:max="5"
-                android:min="1"
                 callInterruptionFilter="@{viewModel.interruptionFilter}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView10"
@@ -102,58 +102,72 @@
                 app:layout_constraintStart_toEndOf="@+id/imageView10"
                 app:layout_constraintTop_toBottomOf="@+id/mediaSeekBar" />
 
-            <ImageView
-                android:id="@+id/notificationIcon"
-                android:layout_width="wrap_content"
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/notificationSliderLayout"
+                android:layout_width="match_parent"
+                streamsUnlinked="@{viewModel.streamsUnlinked}"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                notificationMode="@{viewModel.notificationMode}"
-                notificationInterruptionFilter="@{viewModel.interruptionFilter}"
-                notificationPriorityCategories="@{viewModel.priorityCategories}"
-                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
-                app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
-                app:srcCompat="@drawable/baseline_circle_notifications_deep_purple_300_24dp" />
-
-            <SeekBar
-                android:id="@+id/notificationSeekBar"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
-                android:progress="@={viewModel.notificationVolume}"
-                android:max="7"
-                notificationInterruptionFilter="@{viewModel.interruptionFilter}"
-                notificationPriorityCategories="@{viewModel.priorityCategories}"
-                notificationMode="@{viewModel.notificationMode}"
-                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
-                android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/notificationIcon"
-                app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
+                app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar"
+                android:layout_marginTop="32dp">
 
-            <TextView
-                android:id="@+id/notificationBarTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginTop="32dp"
-                android:text="Notification volume"
-                android:textColor="?android:attr/textColorPrimary"
-                app:layout_constraintStart_toEndOf="@+id/notificationIcon"
-                app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar" />
+                <ImageView
+                    android:id="@+id/notificationIcon"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                    notificationMode="@{viewModel.notificationMode}"
+                    notificationPriorityCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="27dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
+                    app:srcCompat="@drawable/baseline_circle_notifications_deep_purple_300_24dp" />
+
+                <SeekBar
+                    android:id="@+id/notificationSeekBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:progress="@={viewModel.notificationVolume}"
+                    android:max="7"
+                    notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                    notificationPriorityCategories="@{viewModel.priorityCategories}"
+                    notificationMode="@{viewModel.notificationMode}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/notificationIcon"
+                    app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
+
+                <TextView
+                    android:id="@+id/notificationBarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:text="Notification volume"
+                    android:textColor="?android:attr/textColorPrimary"
+                    app:layout_constraintStart_toEndOf="@+id/notificationIcon"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <ImageView
                 android:id="@+id/ringerIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
                 iconRingerMode="@{viewModel.ringerMode}"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 ringerIconInterruptionFilter="@{viewModel.interruptionFilter}"
                 ringerPriorityCategories="@{viewModel.priorityCategories}"
-                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                streamsUnlinked="@{viewModel.streamsUnlinked}"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="27dp"
                 app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
@@ -172,6 +186,7 @@
                 ringerSeekBarInterruptionFilter="@{viewModel.interruptionFilter}"
                 ringerSeekBarPropertyCategories="@{viewModel.priorityCategories}"
                 notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                streamsUnlinked="@{viewModel.streamsUnlinked}"
                 android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/ringerIcon"
@@ -186,13 +201,13 @@
                 android:text="Ring volume"
                 android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/ringerIcon"
-                app:layout_constraintTop_toBottomOf="@+id/notificationSeekBar" />
+                app:layout_constraintTop_toBottomOf="@+id/notificationSliderLayout" />
 
             <ImageView
                 android:id="@+id/imageView13"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="27dp"
                 app:layout_constraintBottom_toBottomOf="@+id/alarmSeekBar"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
@@ -206,7 +221,6 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="16dp"
                 android:max="7"
-                android:min="1"
                 alarmInterruptionFilter="@{viewModel.interruptionFilter}"
                 alarmPriorityCategories="@{viewModel.priorityCategories}"
                 notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
@@ -216,10 +230,50 @@
                 app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/unlinkStreamsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onUnlinkStreamsLayoutClick()}"
+                android:orientation="horizontal"
+                android:visibility="visible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
+
+                <TextView
+                    android:id="@+id/unlinkModeDescription"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="35dp"
+                    android:text="Unlink ringer and notifications"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/unlinkStreamsSwitch" />
+
+                <Switch
+                    android:id="@+id/unlinkStreamsSwitch"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:clickable="false"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/SilentModeLayout"
                 silentModeInterruptionFilter="@{viewModel.interruptionFilter}"
                 silentModePriorityCategories="@{viewModel.priorityCategories}"
                 notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                streamsUnlinked="@{viewModel.streamsUnlinked}"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginTop="8dp"
@@ -229,13 +283,13 @@
                 android:visibility="visible"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/alarmSeekBar">
+                app:layout_constraintTop_toBottomOf="@+id/unlinkStreamsLayout">
 
                 <TextView
                     android:id="@+id/silentModeDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="60dp"
+                    android:layout_marginStart="35dp"
                     android:text="Mute ringer"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
@@ -255,7 +309,8 @@
                     android:clickable="false"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:ignore="UseSwitchCompatOrMaterialXml" />
 
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -286,7 +341,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
-                android:text="Ringtones and notification sounds"
+                android:text="Ringtones and notifications"
                 android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -324,7 +379,6 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@id/doNotDisturbTitle"
                     android:paddingStart="35dp"
-                    android:textColor="@color/light_gray"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
                     android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
@@ -363,7 +417,6 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:textColor="@color/light_gray"
                     android:text="@{viewModel.phoneRingtoneTitle}"
                     android:textSize="14sp" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
@@ -400,7 +453,6 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:textColor="@color/light_gray"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
                     android:text="@{viewModel.notificationRingtoneTitle}"
@@ -439,7 +491,6 @@
                     app:layout_constraintStart_toStartOf="parent"
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
-                    android:textColor="@color/light_gray"
                     android:paddingBottom="8dp"
                     android:text="@{viewModel.alarmRingtoneTitle}"
                     android:textSize="14sp" />
@@ -476,7 +527,6 @@
                     android:paddingStart="35dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="8dp"
-                    android:textColor="@color/light_gray"
                     android:text="@{BindingConverters.interruptionRulesToString(viewModel.notificationPolicyAccessGranted)}"
                     android:textSize="14sp"
                     app:layout_constraintStart_toStartOf="parent"

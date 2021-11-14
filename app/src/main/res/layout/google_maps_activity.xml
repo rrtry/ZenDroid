@@ -8,21 +8,36 @@
     android:layout_width="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.example.volumeprofiler.views.LayoutWrapper
-        android:id="@+id/overlayLayout"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/saveGeofenceButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:translationY="-40dp"
+        android:translationX="-8dp"
+        app:scrimAnimationDuration="0"
+        android:src="@android:drawable/ic_input_add"
+        app:layout_anchor="@id/containerBottomSheet"
+        app:layout_anchorGravity="right"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/jumpToCurrentLocationButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:translationY="-110dp"
+        android:translationX="-8dp"
+        app:scrimAnimationDuration="0"
+        android:src="@drawable/baseline_location_on_black_24dp"
+        app:layout_anchor="@id/containerBottomSheet"
+        app:layout_anchorGravity="right"/>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/map"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            custom:layout_anchor="@+id/map"
-            custom:layout_anchorGravity="center"
-            tools:context=".activities.MapsActivity"/>
-
-    </com.example.volumeprofiler.views.LayoutWrapper>
+        android:layout_height="match_parent"
+        custom:layout_anchor="@+id/map"
+        custom:layout_anchorGravity="center"
+        tools:context=".activities.MapsActivity"/>
 
     <FrameLayout
         app:layout_constraintTop_toBottomOf="parent"
@@ -40,6 +55,6 @@
         android:background="?attr/colorOnPrimary"
         android:elevation="5dp"
         app:iconifiedByDefault="false"
-        app:queryHint="Search"/>
+        app:queryHint="Press enter to perform search"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

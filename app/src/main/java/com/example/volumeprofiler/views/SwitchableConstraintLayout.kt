@@ -6,6 +6,8 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.view.View
+import android.widget.SeekBar
 import androidx.constraintlayout.widget.ConstraintLayout
 
 class SwitchableConstraintLayout @JvmOverloads constructor(

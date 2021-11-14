@@ -23,6 +23,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="CheckBox"
+            android:clickable="false"
+            android:focusable="false"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -55,7 +57,6 @@
             android:id="@+id/expandableView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:animateLayoutChanges="true"
             android:visibility="visible"
             app:layout_constraintTop_toBottomOf="@+id/checkBox">
 

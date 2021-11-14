@@ -9,6 +9,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.MediaStore
+import android.util.Log
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
@@ -48,12 +49,16 @@ class ContentResolverUtil @Inject constructor(
         val actualUri: Uri = if (uri == Uri.EMPTY) RingtoneManager.getActualDefaultRingtoneUri(context, type) else uri
         val contentResolver: ContentResolver = context.contentResolver
         val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
-        var title: String = ""
-        val cursor: Cursor? = contentResolver.query(actualUri, projection, null, null, null)
-        cursor?.use {
-            if (cursor.moveToFirst()) {
-                title = cursor.getString(0)
+        var title: String = "Unknown"
+        try {
+            val cursor: Cursor? = contentResolver.query(actualUri, projection, null, null, null)
+            cursor?.use {
+                if (cursor.moveToFirst()) {
+                    title = cursor.getString(0)
+                }
             }
+        } catch (exception: IllegalArgumentException) {
+            Log.e("ContentResolverUtil", "Unknown column for query", exception)
         }
         return title
     }

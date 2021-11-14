@@ -4,6 +4,7 @@
     package="com.example.volumeprofiler">
 
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -91,7 +92,7 @@
             android:enabled="true"
             tools:targetApi="n">
             <intent-filter>
-                <action android:name="com.example.volumeprofiler.Application.ACTION_GEOFENCE_TRANSITION"/>
+                <action android:name="com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"/>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>

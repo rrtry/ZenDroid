@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.util
 
-import android.Manifest
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -9,17 +8,25 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.*
 import kotlin.collections.ArrayList
+import android.Manifest.permission.*
 
 class TextUtil {
 
     companion object {
 
+        fun formatAddress(string: String): String {
+            val s: List<String> = string.split(",")
+            return "${s[0]}, ${s[1]}"
+        }
+
         fun getPermissionName(permission: String): String {
             return when (permission) {
-                Manifest.permission.READ_PHONE_STATE -> "Phone"
-                Manifest.permission.READ_EXTERNAL_STORAGE -> "Storage"
-                Manifest.permission.ACCESS_FINE_LOCATION -> "Location"
-                else -> ""
+                READ_PHONE_STATE -> "Phone"
+                READ_EXTERNAL_STORAGE -> "Storage"
+                ACCESS_FINE_LOCATION -> "Location"
+                ACCESS_BACKGROUND_LOCATION -> "Background location"
+                ACCESS_NOTIFICATION_POLICY -> "Do not disturb"
+                else -> "System settings"
             }
         }
 

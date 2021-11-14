@@ -44,22 +44,10 @@ object BindingConverters {
     @BindingConversion
     @JvmStatic
     fun suppressedEffectsToString(visualInterruptions: List<Int>): String {
-        if (visualInterruptions.isEmpty()) {
-            return "None of visual effects are suppressed"
+        return if (visualInterruptions.isEmpty()) {
+            "None of visual effects are suppressed"
         } else {
-            val stringBuilder: StringBuilder = java.lang.StringBuilder()
-            for ((index, i) in visualInterruptions.withIndex()) {
-                when (i) {
-                    SUPPRESSED_EFFECT_LIGHTS -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Don't blink notification light, " else "Don't blink notification light")
-                    SUPPRESSED_EFFECT_FULL_SCREEN_INTENT -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Don't turn on the screen, " else "Don't turn on the screen")
-                    SUPPRESSED_EFFECT_AMBIENT -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Don't wake for notification, " else "Don't wake for notifications")
-                    SUPPRESSED_EFFECT_BADGE -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Hide notification dots on app icons, " else "Hide notifications dots on app icons")
-                    SUPPRESSED_EFFECT_STATUS_BAR -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Hide status bar icons at top of the screen, " else "Hide status bar icons at top of the screen")
-                    SUPPRESSED_EFFECT_PEEK, SUPPRESSED_EFFECT_SCREEN_ON -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Don't pop notifications on screen, " else "Don't pop notifications on screen")
-                    SUPPRESSED_EFFECT_NOTIFICATION_LIST -> stringBuilder.append(if (index < visualInterruptions.size - 1) "Hide from notification list, " else "Hide from notification list")
-                }
-            }
-            return stringBuilder.toString()
+            "Partially visible"
         }
     }
 
@@ -97,7 +85,6 @@ object BindingConverters {
     @BindingConversion
     @JvmStatic
     fun interruptionRulesToString(notificationAccessGranted: Boolean): String {
-        Log.i("BindingConverters", "interruptionRulesToString()")
         return if (!notificationAccessGranted) {
             "Notification policy access required"
         } else {

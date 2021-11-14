@@ -1,7 +1,7 @@
 package com.example.volumeprofiler.database.dao
 
 import androidx.room.*
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.entities.Profile
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 

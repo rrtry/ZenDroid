@@ -24,9 +24,9 @@ class GeocoderUtil @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val result = geocoder.getFromLocationName(name, 15)
-                Log.i("GeocoderUtil", "result array size: ${result.size}")
                 result
             } catch (e: IOException) {
+                Log.e("GeocoderUtil", "getAddressFromLocationName", e)
                 null
             }
         }
@@ -38,31 +38,28 @@ class GeocoderUtil @Inject constructor(
                 val addressList: List<Address>? = geocoder.getFromLocationName(address, 15)
                 if (addressList != null && addressList.isNotEmpty()) {
                     val address: Address = addressList[0]
-                    Log.i("GeocoderUtil", "${address.latitude}, ${address.longitude}")
-                    Log.i("GeocoderUtil", "addressList size: ${addressList.size}")
-                    Log.i("GeocoderUtil", address.getAddressLine(0))
                     LatLng(address.latitude, address.longitude)
                 } else {
                     null
                 }
             } catch (e: IOException) {
+                Log.e("GeocoderUtil", "getLatLngFromAddress", e)
                 null
             }
         }
     }
 
-    suspend fun getAddressFromLatLng(latLng: LatLng): String? {
+    suspend fun getAddressFromLatLng(latLng: LatLng): Address? {
         return withContext(Dispatchers.IO) {
             try {
                 val addressList: MutableList<Address>? = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 30)
                 if (addressList != null && addressList.isNotEmpty()) {
-                    val address: Address = addressList[0]
-                    val addressLine: String = address.getAddressLine(0)
-                    addressLine
+                    addressList[0]
                 } else {
                     null
                 }
             } catch (e: IOException) {
+                Log.e("GeocoderUtil", "getAddressFromLatLng", e)
                 null
             }
         }

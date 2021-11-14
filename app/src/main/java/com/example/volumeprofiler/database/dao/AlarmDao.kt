@@ -1,7 +1,7 @@
 package com.example.volumeprofiler.database.dao
 
 import androidx.room.*
-import com.example.volumeprofiler.models.Alarm
+import com.example.volumeprofiler.entities.Alarm
 
 @Dao
 interface AlarmDao {

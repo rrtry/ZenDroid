@@ -1,18 +1,14 @@
 package com.example.volumeprofiler.activities
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageInfo
-import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
-import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
-import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -28,11 +24,9 @@ import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 import com.example.volumeprofiler.fragments.EditProfileFragment
 import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.models.AlarmRelation
-import com.example.volumeprofiler.models.Profile
-import com.example.volumeprofiler.util.AlarmUtil
-import com.example.volumeprofiler.util.ProfileUtil
-import com.example.volumeprofiler.util.SharedPreferencesUtil
+import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import com.google.android.material.appbar.AppBarLayout
@@ -40,16 +34,24 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 import kotlin.math.abs
+import com.example.volumeprofiler.viewmodels.EditProfileViewModel.Event.*
+import android.Manifest.permission.*
+import android.os.Build
+import com.google.android.material.snackbar.Snackbar
 
 @AndroidEntryPoint
 class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, ActivityCompat.OnRequestPermissionsResultCallback {
 
-    @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
-    @Inject lateinit var profileUtil: ProfileUtil
-    @Inject lateinit var alarmUtil: AlarmUtil
+    @Inject
+    lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+
+    @Inject
+    lateinit var profileUtil: ProfileUtil
+
+    @Inject
+    lateinit var alarmUtil: AlarmUtil
 
     private var elapsedTime: Long = 0
 
@@ -57,10 +59,31 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
 
     private val viewModel by viewModels<EditProfileViewModel>()
 
+    private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<out String>>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            val profile: Profile = viewModel.getProfile()
+            when {
+                !checkSelfPermission(this, READ_EXTERNAL_STORAGE) && !profileUtil.grantedRequiredPermissions(profile)-> {
+                    Snackbar.make(binding.root, "Missing required permissions", Snackbar.LENGTH_LONG).show()
+                }
+                !checkSelfPermission(this, READ_EXTERNAL_STORAGE) -> {
+                    ViewUtil.showStoragePermissionExplanation(supportFragmentManager)
+                }
+                profileUtil.shouldRequestPhonePermission(profile) -> {
+                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
+                }
+                !profileUtil.grantedSystemPreferencesAccess() -> {
+                    sendSystemPreferencesAccessNotification(this, profileUtil)
+                }
+                else -> {
+                    saveProfile(profile, viewModel.shouldUpdateProfile(), false)
+                }
+            }
+        }
         setArgs()
-        setNotificationPolicyProperty()
         setBinding()
         setContentView(binding.root)
         addFragment()
@@ -74,32 +97,13 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
         lifecycleScope.launch {
             viewModel.activityEventsFlow.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED).onEach {
                 when (it) {
-                    is EditProfileViewModel.Event.ShowDialogFragment -> {
+                    is ShowDialogFragment -> {
                         if (it.dialogType == EditProfileViewModel.DialogType.TITLE) {
                             showTitleInputDialog()
                         }
                     }
-                    is EditProfileViewModel.Event.SaveChangesEvent -> {
-                        var granted: Boolean = true
-
-                        if (!profileUtil.arePermissionsGranted()) {
-                            granted = false
-                            requestPermissions()
-                        }
-                        if (!profileUtil.isNotificationPolicyAccessGranted() && granted) {
-                            granted = false
-                            startNotificationPolicyActivity()
-                        }
-                        if (!profileUtil.canWriteSettings() && granted) {
-                            granted = false
-                            startWriteSettingsActivity()
-                        }
-
-                        if (granted) {
-                            updateAlarms(it.profile)
-                            applyProfileIfEnabled(it.profile)
-                            setSuccessfulResult(it.profile, it.shouldUpdate)
-                        }
+                    is SaveChangesEvent -> {
+                        saveProfile(it.profile, it.shouldUpdate)
                     }
                     else -> Log.i("EditProfileActivity", "unknown event")
                 }
@@ -107,26 +111,33 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
         }
     }
 
-    private fun requestPermissions(): Unit {
-        ActivityCompat.requestPermissions(this@EditProfileActivity, arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.READ_PHONE_STATE
-        ), 0)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (grantResults[0] == 1) {
-            viewModel.storagePermissionGranted.value = true
+    private fun requestPermissions(profile: Profile): Unit {
+        var permissions: Array<String> = arrayOf(READ_EXTERNAL_STORAGE)
+        if (profile.streamsUnlinked) {
+            permissions += READ_PHONE_STATE
         }
+        permissionRequestLauncher.launch(permissions)
     }
 
-    private fun startNotificationPolicyActivity(): Unit {
-        startActivity(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-    }
-
-    private fun startWriteSettingsActivity(): Unit {
-        startActivity(Intent(ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:$packageName")))
+    private fun saveProfile(profile: Profile, update: Boolean, resolveMissingPermissions: Boolean = true): Unit {
+        when {
+            profileUtil.grantedRequiredPermissions(
+                true,
+                viewModel.usesUnlinkedStreams()
+            ) -> {
+                applyProfileIfEnabled(profile)
+                updateAlarms(profile)
+                setSuccessfulResult(profile, update)
+            }
+            !checkSelfPermission(this, READ_EXTERNAL_STORAGE) || profileUtil.shouldRequestPhonePermission(profile) -> {
+                if (resolveMissingPermissions) {
+                    requestPermissions(profile)
+                }
+            }
+            else -> {
+                sendSystemPreferencesAccessNotification(this, profileUtil)
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -137,10 +148,6 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         elapsedTime = savedInstanceState.getLong(KEY_ELAPSED_TIME, 0)
-    }
-
-    private fun setNotificationPolicyProperty(): Unit {
-        viewModel.notificationPolicyAccessGranted.value = profileUtil.isNotificationPolicyAccessGranted()
     }
 
     private fun setSuccessfulResult(profile: Profile, updateFlag: Boolean): Unit {
@@ -175,14 +182,12 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
                 if (binding.menuSaveChangesButton.visibility != View.VISIBLE) {
                     revealToolbarItems()
                 }
-                if (abs(verticalOffset) == appBarLayout.totalScrollRange) {
-                    if (binding.menuEditNameButton.visibility == View.GONE || binding.menuEditNameButton.visibility == View.INVISIBLE) {
-                        AnimUtil.scaleAnimation(binding.menuEditNameButton, true)
-                    }
-                } else if (verticalOffset == 0) {
-                    if (binding.menuEditNameButton.visibility == View.VISIBLE) {
-                        AnimUtil.scaleAnimation(binding.menuEditNameButton, false)
-                    }
+                if (abs(verticalOffset) == appBarLayout.totalScrollRange &&
+                    binding.menuEditNameButton.visibility == View.INVISIBLE) {
+                    AnimUtil.scaleAnimation(binding.menuEditNameButton, true)
+                }
+                else if (verticalOffset == 0 && binding.menuEditNameButton.visibility == View.VISIBLE) {
+                    AnimUtil.scaleAnimation(binding.menuEditNameButton, false)
                 }
             }
         })
@@ -263,10 +268,16 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
     }
 
     override fun onFragmentReplace(fragment: Int): Unit {
-        if (fragment == DND_PREFERENCES_FRAGMENT) {
-            replaceFragment(InterruptionFilterFragment())
-            hideToolbarItems()
-            changeFragmentTag(TAG_INTERRUPTIONS_FRAGMENT)
+        when (fragment) {
+            DND_PREFERENCES_FRAGMENT -> {
+                replaceFragment(InterruptionFilterFragment())
+                hideToolbarItems()
+                changeFragmentTag(TAG_INTERRUPTIONS_FRAGMENT)
+            }
+            else -> {
+                popFromBackStack()
+                changeFragmentTag(TAG_PROFILE_FRAGMENT)
+            }
         }
     }
 
@@ -275,7 +286,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
             if (elapsedTime + TIME_INTERVAL > System.currentTimeMillis()) {
                 setCancelledResult()
             } else {
-                Toast.makeText(this, "Press back button again to exit", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Press back button again to exit", Toast.LENGTH_LONG).show()
             }
             elapsedTime = System.currentTimeMillis()
         }
@@ -323,7 +334,8 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
         const val EXTRA_SHOULD_UPDATE: String = "extra_should_update"
         const val INPUT_TITLE_REQUEST_KEY: String = "input_title_request_key"
         const val EXTRA_TITLE: String = "extra_title"
-        const val DND_PREFERENCES_FRAGMENT: Int = 0
+        const val DND_PREFERENCES_FRAGMENT: Int = 0x00
+        const val PROFILE_FRAGMENT: Int = 0x01
 
         fun newIntent(context: Context, profile: Profile?): Intent {
             val intent = Intent(context, EditProfileActivity::class.java)

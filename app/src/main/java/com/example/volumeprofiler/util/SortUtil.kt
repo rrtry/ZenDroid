@@ -1,8 +1,8 @@
 package com.example.volumeprofiler.util
 
 import androidx.collection.ArrayMap
-import com.example.volumeprofiler.models.AlarmRelation
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.entities.Profile
 import java.time.LocalTime
 import java.util.*
 

@@ -1,7 +1,7 @@
 package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.*
-import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.AlarmRelation
+import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow

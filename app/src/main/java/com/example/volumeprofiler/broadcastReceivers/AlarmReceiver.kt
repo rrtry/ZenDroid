@@ -1,16 +1,13 @@
 package com.example.volumeprofiler.broadcastReceivers
 
-import android.app.job.JobInfo
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.PowerManager
-import androidx.core.content.ContextCompat.getSystemService
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.eventBus.EventBus
-import com.example.volumeprofiler.models.Alarm
-import com.example.volumeprofiler.models.Profile
+import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.services.AlarmCancellationService
 import com.example.volumeprofiler.util.*
 import dagger.hilt.android.AndroidEntryPoint
@@ -42,21 +39,20 @@ class AlarmReceiver: BroadcastReceiver() {
                 startService(context!!, alarm.id, profile.title)
             }
 
-            if (profileUtil.canSetProfile()) {
+            if (profileUtil.grantedRequiredPermissions(profile)) {
                 profileUtil.setProfile(profile)
                 eventBus.updateProfilesFragment(profile.id)
                 postNotification(context!!, createAlarmAlertNotification(context, profile.title, alarm.localDateTime.toLocalTime()), ID_SCHEDULER)
             } else {
                 notifyAboutDeniedPermissions(context!!)
             }
-            eventBus.updateAlarmState(alarm)
         }
     }
 
     private fun notifyAboutDeniedPermissions(context: Context): Unit {
         val missingPermissions: List<String> = profileUtil.getMissingPermissions()
         if (missingPermissions.isNotEmpty()) {
-            postNotification(context, createMissingPermissionsNotification(context, missingPermissions), ID_PERMISSIONS)
+            postNotification(context, createMissingPermissionNotification(context, missingPermissions), ID_PERMISSIONS)
         }
         if (!profileUtil.canWriteSettings()) {
             postNotification(context, createSystemSettingsNotification(context), ID_SYSTEM_SETTINGS)

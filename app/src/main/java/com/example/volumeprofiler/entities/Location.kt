@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.models
+package com.example.volumeprofiler.entities
 
 import android.os.Parcelable
 import androidx.room.ColumnInfo
@@ -15,10 +15,11 @@ data class Location(
 
         @PrimaryKey(autoGenerate = true)
         @ColumnInfo (name = "location_id")
-        val id: Int = 0,
+        var id: Int = 0,
 
         var latitude: Double,
         var longitude: Double,
+        var locality: String,
         var address: String,
         var radius: Float = 100f,
         var enabled: Byte = 0,

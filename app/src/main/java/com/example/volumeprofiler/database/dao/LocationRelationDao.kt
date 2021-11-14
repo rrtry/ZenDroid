@@ -3,7 +3,7 @@ package com.example.volumeprofiler.database.dao
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
-import com.example.volumeprofiler.models.LocationRelation
+import com.example.volumeprofiler.entities.LocationRelation
 import kotlinx.coroutines.flow.Flow
 import java.util.*
 
