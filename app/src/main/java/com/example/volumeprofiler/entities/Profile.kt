@@ -8,7 +8,7 @@ import android.media.AudioManager
 import android.app.NotificationManager.*
 import android.os.Parcelable
 import kotlinx.parcelize.*
-
+import android.media.AudioManager.*
 @Parcelize
 @androidx.room.Entity
 data class Profile(var title: String,
@@ -28,8 +28,8 @@ data class Profile(var title: String,
                    var streamsUnlinked: Boolean = false,
 
                    var interruptionFilter: Int = INTERRUPTION_FILTER_PRIORITY,
-                   var ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
-                   var notificationMode: Int = AudioManager.RINGER_MODE_NORMAL,
+                   var ringerMode: Int = RINGER_MODE_NORMAL,
+                   var notificationMode: Int = RINGER_MODE_NORMAL,
                    var isVibrateForCallsActive: Int = 0,
 
                    var priorityCategories: ArrayList<Int> = arrayListOf(PRIORITY_CATEGORY_CALLS, PRIORITY_CATEGORY_MESSAGES),

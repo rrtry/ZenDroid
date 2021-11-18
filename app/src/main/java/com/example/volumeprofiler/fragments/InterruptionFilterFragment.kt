@@ -60,7 +60,7 @@ class InterruptionFilterFragment: Fragment() {
     private fun disableNestedScrolling(): Unit {
         val appBar: AppBarLayout = requireActivity().findViewById(R.id.app_bar)
         appBar.setExpanded(false, true)
-        ViewCompat.setNestedScrollingEnabled(requireView().findViewById(R.id.rootElement), false)
+        ViewCompat.setNestedScrollingEnabled(binding.rootElement, false)
     }
 
     private fun startFavoriteContactsActivity(): Unit {

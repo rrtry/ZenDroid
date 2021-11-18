@@ -1,13 +1,10 @@
 package com.example.volumeprofiler.services
 
-import android.Manifest
 import android.app.Service
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.Manifest.permission.*
 import android.os.IBinder
 import androidx.annotation.RequiresPermission
-import androidx.core.content.ContextCompat
 import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.util.GeofenceUtil
@@ -53,10 +50,8 @@ class GeofenceRegistrationService: Service() {
 
         if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
             scope.launch {
-                val request = launch {
-                    registerGeofences()
-                }
-                request.join()
+                registerGeofences()
+            }.invokeOnCompletion {
                 stopService()
             }
         } else {
@@ -67,7 +62,7 @@ class GeofenceRegistrationService: Service() {
 
     private fun stopService(): Unit {
         stopForeground(true)
-        stopSelf(SERVICE_ID)
+        stopSelf()
     }
 
     override fun onDestroy() {

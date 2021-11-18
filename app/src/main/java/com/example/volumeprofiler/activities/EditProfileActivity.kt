@@ -65,6 +65,9 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
         super.onCreate(savedInstanceState)
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             val profile: Profile = viewModel.getProfile()
+            if (checkSelfPermission(this, READ_EXTERNAL_STORAGE)) {
+                viewModel.updateSoundUris()
+            }
             when {
                 !checkSelfPermission(this, READ_EXTERNAL_STORAGE) && !profileUtil.grantedRequiredPermissions(profile)-> {
                     Snackbar.make(binding.root, "Missing required permissions", Snackbar.LENGTH_LONG).show()

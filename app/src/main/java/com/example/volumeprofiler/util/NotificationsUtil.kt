@@ -22,8 +22,8 @@ private const val GEOFENCE_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_GEOFENC
 
 private const val SERVICE_NOTIFICATION_CHANNEL_NAME: String = "Background processing"
 private const val PERMISSIONS_NOTIFICATION_CHANNEL_NAME: String = "Permission reminders"
-private const val SCHEDULER_NOTIFICATION_CHANNEL_NAME: String = "Firing alarms"
-private const val GEOFENCE_NOTIFICATION_CHANNEL_NAME: String = "Geofence transitions"
+private const val SCHEDULER_NOTIFICATION_CHANNEL_NAME: String = "Alarms"
+private const val GEOFENCE_NOTIFICATION_CHANNEL_NAME: String = "Geofences"
 
 const val ID_SYSTEM_SETTINGS: Int = 1072
 const val ID_INTERRUPTION_POLICY: Int = 2073
@@ -64,7 +64,7 @@ private fun getAppDetailsPendingIntent(context: Context): PendingIntent {
 }
 
 fun sendSystemPreferencesAccessNotification(context: Context, profileUtil: ProfileUtil): Unit {
-    if (!profileUtil.canWriteSettings()) {
+    if (!profileUtil.canModifySystemPreferences()) {
         postNotification(context, createSystemSettingsNotification(context), ID_SYSTEM_SETTINGS)
     }
     if (!profileUtil.isNotificationPolicyAccessGranted()) {
@@ -194,6 +194,24 @@ fun createGeofenceRegistrationNotification(context: Context): Notification {
                 SERVICE_NOTIFICATION_CHANNEL_ID,
                 SERVICE_NOTIFICATION_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_MIN).also {
+            builder.setChannelId(it.id)
+        }
+    }
+    return builder.build()
+}
+
+fun createAlarmUpdateNotification(context: Context, title: String): Notification {
+    val builder = NotificationCompat.Builder(context, SERVICE_NOTIFICATION_CHANNEL_ID)
+        .setContentTitle("Updating alarms")
+        .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
+        .setOngoing(true)
+        .setSilent(true)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        createNotificationChannel(
+            context,
+            SERVICE_NOTIFICATION_CHANNEL_ID,
+            SERVICE_NOTIFICATION_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_MIN).also {
             builder.setChannelId(it.id)
         }
     }

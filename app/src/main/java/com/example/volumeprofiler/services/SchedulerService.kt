@@ -3,14 +3,14 @@ package com.example.volumeprofiler.services
 import android.app.*
 import android.content.Intent
 import android.os.IBinder
-import android.util.Log
 import com.example.volumeprofiler.database.repositories.AlarmRepository
+import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import javax.inject.Inject
-import com.example.volumeprofiler.util.createSchedulerNotification
 import java.time.LocalDateTime
 
 @AndroidEntryPoint
@@ -25,17 +25,33 @@ class SchedulerService: Service() {
     @Inject
     lateinit var alarmUtil: AlarmUtil
 
+    @Inject
+    lateinit var profileUtil: ProfileUtil
+
+    private suspend fun cancelAlarm(alarm: Alarm): Unit {
+        alarm.isScheduled = 0
+        repository.updateAlarm(alarm)
+    }
+
     private suspend fun scheduleAlarms(): Unit {
         val alarms: List<AlarmRelation>? = repository.getEnabledAlarms()
+        val now: LocalDateTime = LocalDateTime.now()
         if (!alarms.isNullOrEmpty()) {
-            for (i in alarms) {
-                val scheduled: Boolean = alarmUtil.scheduleAlarm(i.alarm, i.profile, true)
+
+            for (i in AlarmUtil.sortAlarms(alarms)) {
+
+                val alarm: Alarm = i.alarm
+                val profile: Profile = i.profile
+
+                if (alarm.localDateTime < now) {
+                    profileUtil.setProfile(profile)
+                    postNotification(this, createAlarmAlertNotification(this, profile.title, alarm.localDateTime.toLocalTime()), ID_SCHEDULER)
+                }
+
+                val scheduled: Boolean = alarmUtil.scheduleAlarm(alarm, profile, true)
                 if (!scheduled) {
                     alarmUtil.cancelAlarm(i.alarm, i.profile)
-                    repository.removeAlarm(i.alarm)
-                } else {
-                    Log.i("SchedulerService", "alarm is scheduled: ${i.alarm.localDateTime}")
-                    Log.i("ScheduledService", "now: ${LocalDateTime.now()}")
+                    cancelAlarm(i.alarm)
                 }
             }
         }
@@ -47,10 +63,8 @@ class SchedulerService: Service() {
         startForeground(SERVICE_ID, createSchedulerNotification(this))
 
         scope.launch {
-            val request = launch {
-                scheduleAlarms()
-            }
-            request.join()
+            scheduleAlarms()
+        }.invokeOnCompletion {
             stopService()
         }
         return START_STICKY
@@ -58,7 +72,7 @@ class SchedulerService: Service() {
 
     private fun stopService(): Unit {
         stopForeground(true)
-        stopSelf(SERVICE_ID)
+        stopSelf()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -66,8 +80,8 @@ class SchedulerService: Service() {
     }
 
     override fun onDestroy() {
-        job.cancel()
         super.onDestroy()
+        job.cancel()
     }
 
     companion object {

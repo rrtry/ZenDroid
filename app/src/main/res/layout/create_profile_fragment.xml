@@ -247,6 +247,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="35dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp"
                     android:text="Unlink ringer and notifications"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
@@ -270,13 +272,12 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/SilentModeLayout"
+                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 silentModeInterruptionFilter="@{viewModel.interruptionFilter}"
                 silentModePriorityCategories="@{viewModel.priorityCategories}"
-                notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 streamsUnlinked="@{viewModel.streamsUnlinked}"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onSilentModeLayoutClick()}"
                 android:orientation="horizontal"
@@ -300,6 +301,7 @@
                 <Switch
                     android:id="@+id/silentModeSwitch"
                     ringerMode="@{viewModel.ringerMode}"
+                    ringerStreamsUnlinked="@{viewModel.streamsUnlinked}"
                     ringerSwitchInterruptionFilter="@{viewModel.interruptionFilter}"
                     ringerSwitchPriorityCategories="@{viewModel.priorityCategories}"
                     notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
@@ -311,7 +313,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     tools:ignore="UseSwitchCompatOrMaterialXml" />
-
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <TextView

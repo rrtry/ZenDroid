@@ -14,9 +14,9 @@ import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.broadcastReceivers.AlarmReceiver
+import com.example.volumeprofiler.services.AlarmService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.*
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.ArrayList
@@ -74,22 +74,30 @@ class AlarmUtil @Inject constructor (
 
     private fun createPendingIntent(alarm: Alarm, profile: Profile): PendingIntent {
         val id: Int = alarm.id.toInt()
-        val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
+        val intent: Intent = Intent(context, AlarmService::class.java).apply {
             action = Application.ACTION_ALARM_ALERT
-            putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
-            putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+            putExtra(AlarmService.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
-        return PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        return if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
+            PendingIntent.getForegroundService(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        } else {
+            PendingIntent.getService(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        }
     }
 
     private fun getPendingIntent(alarm: Alarm, profile: Profile): PendingIntent? {
         val id: Int = alarm.id.toInt()
-        val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
+        val intent: Intent = Intent(context, AlarmService::class.java).apply {
             action = Application.ACTION_ALARM_ALERT
-            putExtra(AlarmReceiver.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
-            putExtra(AlarmReceiver.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+            putExtra(AlarmService.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
-        return PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        return if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
+            PendingIntent.getForegroundService(context, id, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        } else {
+            PendingIntent.getService(context, id, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        }
     }
 
     fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
@@ -120,28 +128,51 @@ class AlarmUtil @Inject constructor (
             return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         }
 
-        private fun localDateTimeDifference(nextDay: DayOfWeek, hour: Int, minute: Int, second: Int): Long {
-            val now: LocalDateTime = LocalDateTime.now()
+        private fun localDateTimeDifference(now: LocalDateTime, nextDay: DayOfWeek, hour: Int, minute: Int, second: Int): Long {
             val nextDate: LocalDateTime = now.with(TemporalAdjusters.next(nextDay)).withHour(hour).withMinute(minute).withSecond(second)
             return ChronoUnit.MILLIS.between(now, nextDate)
+        }
+
+        private fun localTimeDifference(now: LocalTime, localTime: LocalTime): Long {
+            return ChronoUnit.MILLIS.between(now, localTime)
+        }
+
+        private fun getAdjustedLocalDateTime(nextDay: DayOfWeek, hour: Int, minute: Int): LocalDateTime {
+            val now: LocalDateTime = LocalDateTime.now()
+            return now.with(TemporalAdjusters.next(nextDay)).withHour(hour).withMinute(minute).withSecond(0)
+        }
+
+        fun getAlarmNextDate(localTime: LocalTime, recurringDays: ArrayList<Int>): LocalDateTime {
+            val now: LocalDateTime = LocalDateTime.now()
+            return if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
+                && now.toLocalTime() < localTime) {
+                now.withHour(localTime.hour).withMinute(localTime.minute).withSecond(0)
+            } else {
+                val nextDay: DayOfWeek? = getAlarmNextDay(recurringDays)
+                if (nextDay != null) {
+                    getAdjustedLocalDateTime(nextDay, localTime.hour, localTime.minute)
+                } else {
+                    getAdjustedLocalDateTime(now.dayOfWeek.plus(1), localTime.hour, localTime.minute)
+                }
+            }
         }
 
         private fun getDelay(alarm: Alarm, repeating: Boolean): Long {
             val now: LocalDateTime = LocalDateTime.now()
             val recurringDays: ArrayList<Int> = alarm.scheduledDays
-            val eventTime: LocalDateTime = alarm.localDateTime
+            val alarmLocalDateTime: LocalDateTime = alarm.localDateTime
             if ((recurringDays.contains(now.dayOfWeek.value) || recurringDays.isEmpty())
-                && now.toLocalTime() < eventTime.toLocalTime()) {
-                return localTimeDifference(eventTime.toLocalTime())
+                && now.toLocalTime() < alarmLocalDateTime.toLocalTime()) {
+                return localTimeDifference(now.toLocalTime(), alarmLocalDateTime.toLocalTime())
             }
             else {
                 var nextDay: DayOfWeek? = getAlarmNextDay(recurringDays)
                 return if (nextDay != null) {
-                    localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute, 0)
+                    localDateTimeDifference(now, nextDay, alarmLocalDateTime.hour, alarmLocalDateTime.minute, 0)
                 } else {
                     if (!repeating) {
                         nextDay = now.dayOfWeek.plus(1)
-                        localDateTimeDifference(nextDay, eventTime.hour, eventTime.minute, 0)
+                        localDateTimeDifference(now, nextDay, alarmLocalDateTime.hour, alarmLocalDateTime.minute, 0)
                     } else {
                         -1
                     }
@@ -149,17 +180,13 @@ class AlarmUtil @Inject constructor (
             }
         }
 
-        private fun localTimeDifference(localTime: LocalTime): Long {
-            return ChronoUnit.MILLIS.between(LocalTime.now(), localTime)
-        }
-
         fun sortAlarms(list: List<AlarmRelation>): List<AlarmRelation> {
             return list.sortedWith { previous, next ->
-                val prevDelay: Long = getDelay(previous.alarm, false)
-                val nextDelay: Long = getDelay(next.alarm, false)
+                val prevAlarm: Alarm = previous.alarm
+                val nextAlarm: Alarm = next.alarm
                 when {
-                    prevDelay < nextDelay -> -1
-                    prevDelay == nextDelay -> 0
+                    prevAlarm.localDateTime < nextAlarm.localDateTime -> -1
+                    prevAlarm.localDateTime == nextAlarm.localDateTime -> 0
                     else -> 1
                 }
             }

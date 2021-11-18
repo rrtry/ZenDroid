@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.activities
 
-import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.Manifest.permission.*
@@ -20,7 +19,7 @@ import com.example.volumeprofiler.*
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.fragments.TimePickerFragment
-import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_DATE_TIME
+import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_TIME
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScheduledDaysPickerDialog
 import com.example.volumeprofiler.viewmodels.EditAlarmViewModel.DialogType
@@ -32,7 +31,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
+import java.time.LocalTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -190,19 +189,19 @@ class EditAlarmActivity: AppCompatActivity() {
             PermissionExplanationDialog.PERMISSION_REQUEST_KEY, this,
             { requestKey, result ->
                 if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
-                    if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
-                        phonePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                    if (shouldShowRequestPermissionRationale(READ_PHONE_STATE)) {
+                        phonePermissionLauncher.launch(READ_PHONE_STATE)
                     } else {
                         startActivity(getApplicationSettingsIntent(this))
                     }
-                } else if (!shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+                } else if (!shouldShowRequestPermissionRationale(READ_PHONE_STATE)) {
                     Snackbar.make(binding.root, "You can always grant permissions in settings", Snackbar.LENGTH_LONG).show()
                 }
             })
         supportFragmentManager.setFragmentResultListener(TIME_REQUEST_KEY, this) { _, bundle ->
-            val localDateTime: LocalDateTime? = bundle.getSerializable(EXTRA_LOCAL_DATE_TIME) as? LocalDateTime
-            if (localDateTime != null) {
-                viewModel.startTime.value = localDateTime
+            val localTime: LocalTime? = bundle.getSerializable(EXTRA_LOCAL_TIME) as? LocalTime
+            if (localTime != null) {
+                viewModel.localTime.value = localTime
             }
         }
         supportFragmentManager.setFragmentResultListener(SCHEDULED_DAYS_REQUEST_KEY, this) {_, bundle ->
@@ -239,7 +238,7 @@ class EditAlarmActivity: AppCompatActivity() {
     }
 
     private fun showTimePickerDialog(): Unit {
-        val fragment: TimePickerFragment = TimePickerFragment.newInstance(viewModel.startTime.value)
+        val fragment: TimePickerFragment = TimePickerFragment.newInstance(viewModel.localTime.value)
         fragment.show(supportFragmentManager, null)
     }
 

@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.app.NotificationManager
 import android.media.RingtoneManager
 import android.net.Uri
 import androidx.lifecycle.*
@@ -12,12 +11,10 @@ import kotlinx.coroutines.channels.*
 import android.app.NotificationManager.Policy.*
 import kotlin.collections.ArrayList
 import android.media.AudioManager.*
-import android.util.Log
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.util.ContentResolverUtil
-import com.example.volumeprofiler.util.interruptionPolicy.isNotificationStreamActive
-import com.example.volumeprofiler.util.interruptionPolicy.isRingerStreamActive
+import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsRingerStream
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -29,10 +26,11 @@ class EditProfileViewModel @Inject constructor(
 ): ViewModel() {
 
     var areArgsSet: Boolean = false
+    var hasVibrationSupport: Boolean = false
+    var previousStreamVolume = 3
 
     sealed class Event {
 
-        object NavigateToPreviousFragment: Event()
         object NavigateToNextFragment: Event()
         object StoragePermissionRequestEvent: Event()
         object NotificationPolicyRequestEvent: Event()
@@ -93,10 +91,10 @@ class EditProfileViewModel @Inject constructor(
 
     val ringerMode: MutableLiveData<Int> = MutableLiveData(RINGER_MODE_NORMAL)
     val notificationMode: MutableLiveData<Int> = MutableLiveData(RINGER_MODE_NORMAL)
-    var previousStreamVolume = 3
 
     private val activityEventChannel: Channel<Event> = Channel(Channel.BUFFERED)
     private val eventChannel: Channel<Event> = Channel(Channel.BUFFERED)
+
     val fragmentEventsFlow: Flow<Event> = eventChannel.receiveAsFlow()
     val activityEventsFlow: Flow<Event> = activityEventChannel.receiveAsFlow()
 
@@ -142,12 +140,7 @@ class EditProfileViewModel @Inject constructor(
     }
 
     private fun setActualRingerMode(): Unit {
-        if (!isNotificationStreamActive(interruptionFilter.value!!, priorityCategories.value!!, notificationPolicyAccessGranted.value!!)) {
-            notificationMode.value = RINGER_MODE_SILENT
-        }
-        if (!isRingerStreamActive(interruptionFilter.value!!, priorityCategories.value!!, notificationPolicyAccessGranted.value!!, streamsUnlinked.value!!)) {
-            ringerMode.value = RINGER_MODE_SILENT
-        }
+
     }
 
     fun getProfile(): Profile {
@@ -177,17 +170,24 @@ class EditProfileViewModel @Inject constructor(
     }
 
     fun onSilentModeLayoutClick(): Unit {
-        if (ringerMode.value == RINGER_MODE_SILENT) {
-            if (previousStreamVolume == 0) {
-                onStreamMuted(STREAM_RING, showToast = false, vibrate = false)
+        if (interruptionPolicyAllowsRingerStream(
+                interruptionFilter.value!!,
+                priorityCategories.value!!,
+                notificationPolicyAccessGranted.value!!,
+                streamsUnlinked.value!!
+        )) {
+            if (ringerMode.value == RINGER_MODE_SILENT) {
+                if (previousStreamVolume == 0) {
+                    onStreamMuted(STREAM_RING, showToast = false, vibrate = true)
+                } else {
+                    ringerMode.value = RINGER_MODE_NORMAL
+                }
+                ringVolume.value = previousStreamVolume
             } else {
-                ringerMode.value = RINGER_MODE_NORMAL
+                previousStreamVolume = ringVolume.value!!
+                ringVolume.value = 0
+                ringerMode.value = RINGER_MODE_SILENT
             }
-            ringVolume.value = previousStreamVolume
-        } else {
-            previousStreamVolume = ringVolume.value!!
-            ringVolume.value = 0
-            ringerMode.value = RINGER_MODE_SILENT
         }
     }
 
@@ -298,15 +298,7 @@ class EditProfileViewModel @Inject constructor(
         if (fromUser) {
             when {
                 value == 0 -> {
-                    if (streamType == STREAM_VOICE_CALL) {
-                        callVolume.value = 1
-                    }
-                    else if (streamType == STREAM_ALARM) {
-                        alarmVolume.value = 1
-                    }
-                    else {
-                        onStreamMuted(streamType, showToast = true, vibrate = true)
-                    }
+                    onStreamMuted(streamType, showToast = true, vibrate = true)
                 }
                 streamType == STREAM_NOTIFICATION && notificationMode.value != RINGER_MODE_NORMAL -> {
                     notificationMode.value = RINGER_MODE_NORMAL

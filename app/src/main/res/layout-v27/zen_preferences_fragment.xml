@@ -155,7 +155,7 @@
                 android:id="@+id/separator2"
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
                 android:background="#cfcfcf"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -311,90 +311,87 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/separator4" />
 
-            <RadioGroup
-                app:layout_constraintStart_toStartOf="parent"
+            <RelativeLayout
                 app:layout_constraintTop_toBottomOf="@+id/textView12"
+                android:background="?attr/selectableItemBackground"
+                android:id="@+id/blockWhenScreenIsOnLayout"
+                android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_ON)}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <RelativeLayout
-                    android:background="?attr/selectableItemBackground"
-                    android:id="@+id/blockWhenScreenIsOnLayout"
-                    android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_ON)}"
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOnTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginLeft="35dp"
+                    android:text="Block when screen is on"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOnDescription"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/blockWhenScreenIsOnTitle"
+                    android:layout_marginLeft="35dp"
+                    android:layout_marginTop="8dp"
+                    android:text="Prevent notifications \n from peeking or popping on screen"
+                    android:textSize="14sp" />
+
+                <Switch
+                    android:id="@+id/blockWhenScreenIsOnSwitch"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:clickable="false"
+                    android:layout_marginRight="16dp"
+                    suppressedEffectScreenOn="@{viewModel.screenOnVisualEffects}"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/blockWhenScreenIsOnDescription"
+                    android:layout_below="@id/blockWhenScreenIsOnTitle"/>
 
-                    <TextView
-                        android:id="@+id/blockWhenScreenIsOnTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginLeft="35dp"
-                        android:text="Block when screen is on"
-                        android:textColor="#000000"
-                        android:textSize="16sp" />
+            </RelativeLayout>
 
-                    <TextView
-                        android:id="@+id/blockWhenScreenIsOnDescription"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@id/blockWhenScreenIsOnTitle"
-                        android:layout_marginLeft="35dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Prevent notifications \n from peeking or popping on screen"
-                        android:textSize="14sp" />
+            <RelativeLayout
+                app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOnLayout"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_marginBottom="32dp"
+                android:id="@+id/blockWhenScreenIsOffLayout"
+                android:layout_width="match_parent"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_OFF)}"
+                android:layout_height="wrap_content">
 
-                    <Switch
-                        android:id="@+id/blockWhenScreenIsOnSwitch"
-                        android:layout_width="match_parent"
-                        android:clickable="false"
-                        android:layout_marginRight="16dp"
-                        suppressedEffectScreenOn="@{viewModel.screenOnVisualEffects}"
-                        android:layout_height="wrap_content"
-                        android:layout_toRightOf="@+id/blockWhenScreenIsOnDescription"
-                        android:layout_below="@id/blockWhenScreenIsOnTitle"/>
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOffTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginLeft="35dp"
+                    android:text="Block when screen is off"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
 
-                </RelativeLayout>
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOffDescription"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/blockWhenScreenIsOffTitle"
+                    android:layout_marginLeft="35dp"
+                    android:layout_marginTop="8dp"
+                    android:text="Prevent notifications \n from turning on the screen"
+                    android:textSize="14sp" />
 
-                <RelativeLayout
-                    android:id="@+id/blockWhenScreenIsOffLayout"
+                <Switch
+                    android:id="@+id/blockWhenScreenIsOffSwitch"
                     android:layout_width="match_parent"
-                    android:background="?attr/selectableItemBackground"
-                    android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_OFF)}"
-                    android:layout_height="wrap_content">
+                    android:layout_marginRight="16dp"
+                    android:clickable="false"
+                    suppressedEffectScreenOff="@{viewModel.screenOffVisualEffects}"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/blockWhenScreenIsOffDescription"
+                    android:layout_below="@id/blockWhenScreenIsOffTitle"/>
 
-                    <TextView
-                        android:id="@+id/blockWhenScreenIsOffTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginLeft="35dp"
-                        android:text="Block when screen is off"
-                        android:textColor="#000000"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/blockWhenScreenIsOffDescription"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@id/blockWhenScreenIsOffTitle"
-                        android:layout_marginLeft="35dp"
-                        android:layout_marginTop="8dp"
-                        android:text="Prevent notifications \n from turning on the screen"
-                        android:textSize="14sp" />
-
-                    <Switch
-                        android:id="@+id/blockWhenScreenIsOffSwitch"
-                        android:layout_width="match_parent"
-                        android:layout_marginRight="16dp"
-                        android:clickable="false"
-                        suppressedEffectScreenOff="@{viewModel.screenOffVisualEffects}"
-                        android:layout_height="wrap_content"
-                        android:layout_toRightOf="@+id/blockWhenScreenIsOffDescription"
-                        android:layout_below="@id/blockWhenScreenIsOffTitle"/>
-
-                </RelativeLayout>
-            </RadioGroup>
+            </RelativeLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 </layout>

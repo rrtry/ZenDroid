@@ -45,7 +45,6 @@
         <receiver
             android:name=".broadcastReceivers.BootCompletedReceiver"
             android:directBootAware="true"
-            android:enabled="true"
             tools:targetApi="n">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
@@ -68,7 +67,6 @@
         <receiver
             android:name=".broadcastReceivers.PhoneStateReceiver"
             android:directBootAware="true"
-            android:enabled="true"
             tools:targetApi="n">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
@@ -104,10 +102,15 @@
             tools:targetApi="n" />
 
         <service
-            android:name=".services.AlarmCancellationService"
+            android:name=".services.AlarmService"
             android:directBootAware="true"
             android:enabled="true"
-            tools:targetApi="n" />
+            tools:targetApi="n">
+            <intent-filter>
+                <action android:name="com.example.volumeprofiler.ACTION_TRIGGER_ALARM" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
         <activity
             android:name=".activities.EditProfileActivity"

@@ -17,6 +17,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import android.Manifest.permission.*
 import android.annotation.SuppressLint
+import android.content.Context
+import android.media.AudioManager
 import android.os.Build
 import android.util.Log
 import com.example.volumeprofiler.entities.LocationRelation

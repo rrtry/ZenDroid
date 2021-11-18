@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.recyclerview.widget.ListAdapter
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
@@ -47,9 +48,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.time.LocalDateTime
+import java.time.LocalTime
 import javax.inject.Inject
-import android.Manifest.permission.*
-import android.widget.Toast
 
 @AndroidEntryPoint
 class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
@@ -129,6 +129,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
                     viewModel.alarmsFlow.map {
                         AlarmUtil.sortAlarms(it)
                     }.collect {
+                        Log.i("AlarmsListFragment", it.map { it.alarm.localDateTime.toLocalTime() }.toString())
                         updateUI(it)
                     }
                 }
@@ -144,7 +145,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
                             if (id != null) {
                                 alarmAdapter.notifyItemChanged(id, Bundle().apply {
                                     putSerializable(EXTRA_DIFF_SCHEDULED_DAYS, it.alarm.scheduledDays)
-                                    putSerializable(EXTRA_DIFF_START_TIME, it.alarm.localDateTime)
+                                    putSerializable(EXTRA_DIFF_LOCAL_TIME, it.alarm.localDateTime)
                                 })
                             }
                         }
@@ -244,7 +245,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         }
 
         fun bindLocalTimeTextView(payload: Bundle): Unit {
-            binding.timeTextView.text = TextUtil.localizedTimeToString((payload.getSerializable(EXTRA_DIFF_START_TIME)!! as LocalDateTime).toLocalTime())
+            binding.timeTextView.text = TextUtil.localizedTimeToString((payload.getSerializable(EXTRA_DIFF_LOCAL_TIME)!! as LocalTime))
         }
 
         fun bindProfileTextView(payload: Bundle): Unit {
@@ -254,7 +255,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
         fun bindScheduledDaysTextView(payload: Bundle): Unit {
             binding.occurrencesTextView.text = TextUtil.weekDaysToString(
                     payload.getIntegerArrayList(EXTRA_DIFF_SCHEDULED_DAYS)!!,
-                    payload.getSerializable(EXTRA_DIFF_START_TIME)!! as LocalDateTime)
+                    payload.getSerializable(EXTRA_DIFF_LOCAL_TIME)!! as LocalTime)
         }
 
         fun bindSwitch(payload: Bundle): Unit {
@@ -276,7 +277,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
         private fun updateTextViews(profile: Profile, alarm: Alarm): Unit {
             binding.timeTextView.text = TextUtil.localizedTimeToString(alarm.localDateTime.toLocalTime())
-            binding.occurrencesTextView.text = TextUtil.weekDaysToString(alarm.scheduledDays, alarm.localDateTime)
+            binding.occurrencesTextView.text = TextUtil.weekDaysToString(alarm.scheduledDays, alarm.localDateTime.toLocalTime())
             binding.profileName.text = profile.title
         }
 
@@ -324,23 +325,26 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
             val diffBundle: Bundle = Bundle()
 
-            if (oldItem.alarm.localDateTime != newItem.alarm.localDateTime) {
+            val oldAlarm: Alarm = oldItem.alarm
+            val newAlarm: Alarm = newItem.alarm
+
+            if (oldAlarm.localDateTime.toLocalTime() != newAlarm.localDateTime.toLocalTime()) {
                 putTimePayload(diffBundle, newItem)
             }
-            if (oldItem.alarm.profileUUID != newItem.alarm.profileUUID) {
+            if (oldAlarm.profileUUID != oldAlarm.profileUUID) {
                 putProfileNamePayload(diffBundle, newItem)
             }
-            if (oldItem.alarm.scheduledDays != newItem.alarm.scheduledDays) {
+            if (oldAlarm.scheduledDays != newAlarm.scheduledDays) {
                 putScheduledDaysPayload(diffBundle, newItem)
             }
-            if (oldItem.alarm.isScheduled != newItem.alarm.isScheduled) {
+            if (oldAlarm.isScheduled != newAlarm.isScheduled) {
                 putScheduledPayload(diffBundle, newItem)
             }
             return diffBundle
         }
 
         private fun putTimePayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putSerializable(EXTRA_DIFF_START_TIME, newItem.alarm.localDateTime)
+            diffBundle.putSerializable(EXTRA_DIFF_LOCAL_TIME, newItem.alarm.localDateTime.toLocalTime())
         }
 
         private fun putScheduledPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
@@ -353,7 +357,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
 
         private fun putScheduledDaysPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
             diffBundle.putIntegerArrayList(EXTRA_DIFF_SCHEDULED_DAYS, newItem.alarm.scheduledDays)
-            diffBundle.putSerializable(EXTRA_DIFF_START_TIME, newItem.alarm.localDateTime)
+            diffBundle.putSerializable(EXTRA_DIFF_LOCAL_TIME, newItem.alarm.localDateTime.toLocalTime())
         }
 
     }), ListAdapterItemProvider<Long> {
@@ -387,7 +391,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
                                 EXTRA_DIFF_SCHEDULED_DAYS -> {
                                     holder.bindScheduledDaysTextView(payload)
                                 }
-                                EXTRA_DIFF_START_TIME -> {
+                                EXTRA_DIFF_LOCAL_TIME -> {
                                     holder.bindLocalTimeTextView(payload)
                                 }
                                 EXTRA_DIFF_SCHEDULED -> {
@@ -427,7 +431,7 @@ class AlarmsListFragment: Fragment(), ActionModeProvider<Long> {
     companion object {
 
         private const val SELECTION_ID: String = "ALARM"
-        private const val EXTRA_DIFF_START_TIME: String = "extra_start_time"
+        private const val EXTRA_DIFF_LOCAL_TIME: String = "extra_start_time"
         private const val EXTRA_DIFF_SCHEDULED_DAYS: String = "extra_scheduled_days"
         private const val EXTRA_DIFF_PROFILE_TITLE: String = "extra_profile_id"
         private const val EXTRA_DIFF_SCHEDULED: String = "extra_scheduled"

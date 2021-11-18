@@ -4,7 +4,6 @@ import android.annotation.TargetApi
 import android.app.NotificationManager
 import android.app.NotificationManager.*
 import android.content.Context
-import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.Manifest.permission.*
 import com.example.volumeprofiler.entities.Profile
@@ -15,12 +14,13 @@ import android.media.AudioManager.*
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.Vibrator
 import android.provider.Settings
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.example.volumeprofiler.entities.LocationRelation
+import java.lang.IllegalArgumentException
 
 @Singleton
 class ProfileUtil @Inject constructor (
@@ -61,7 +61,7 @@ class ProfileUtil @Inject constructor (
                 setRingerMode(STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode)
             }
         } else {
-            setStreamVolume(STREAM_RING, profile.ringVolume, 0)
+            setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
         }
         setInterruptionFilter(profile)
         setRingtoneUri(profile.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)
@@ -72,23 +72,32 @@ class ProfileUtil @Inject constructor (
     }
 
     private fun setSilentMode(streamType: Int): Unit {
+        if (isVibrateHardwarePresent()) {
+            adjustUnmuteStream(streamType)
+        }
         audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, FLAG_ALLOW_RINGER_MODES)
     }
 
     private fun setVibrateMode(streamType: Int): Unit {
-        toggleMuteState(streamType)
-        audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES)
+        if (isVibrateHardwarePresent()) {
+            adjustUnmuteStream(streamType)
+            audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES)
+        }
     }
 
     private fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
-        toggleMuteState(streamType)
         audioManager.setStreamVolume(streamType, index, flags)
     }
 
-    private fun toggleMuteState(streamType: Int): Unit {
+    private fun adjustUnmuteStream(streamType: Int): Unit {
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_UNMUTE, 0)
         }
+    }
+
+    private fun isVibrateHardwarePresent(): Boolean {
+        val vibratorService: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        return vibratorService.hasVibrator()
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -163,14 +172,19 @@ class ProfileUtil @Inject constructor (
     }
 
     private fun setVibrateWhenRingingBehaviour(state: Int): Unit {
-        if (canWriteSettings()) {
-            Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
+        if (canModifySystemPreferences()) {
+            try {
+                Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
+            } catch (e: IllegalArgumentException) {
+                Log.e("ProfileUtil", "Failed to change system settings", e)
+            }
         } else {
             Log.e("ProfileUtil", "Not allowed to modify system settings", SecurityException())
         }
     }
 
-    fun canWriteSettings(): Boolean {
+    @TargetApi(Build.VERSION_CODES.M)
+    fun canModifySystemPreferences(): Boolean {
         return Settings.System.canWrite(context)
     }
 
@@ -201,7 +215,7 @@ class ProfileUtil @Inject constructor (
     }
 
     fun grantedSystemPreferencesAccess(): Boolean {
-        return isNotificationPolicyAccessGranted() && canWriteSettings()
+        return isNotificationPolicyAccessGranted() && canModifySystemPreferences()
     }
 
     fun grantedRequiredPermissions(profile: Profile?): Boolean {
@@ -240,6 +254,8 @@ class ProfileUtil @Inject constructor (
     }
 
     companion object {
+
+        const val RINGER_MODE_BLOCKED: Int = -1
 
         private fun bitmaskOfListContents(list: List<Int>): Int {
             var temp: Int = 0

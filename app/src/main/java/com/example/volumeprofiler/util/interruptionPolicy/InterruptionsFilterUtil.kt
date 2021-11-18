@@ -4,11 +4,15 @@ import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 
-fun isNotificationStreamActive(notificationInterruptionFilter: Int, notificationPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Boolean {
+fun interruptionPolicyAllowsNotificationStream(
+    notificationInterruptionFilter: Int,
+    notificationPriorityCategories: List<Int>,
+    notificationAccessGranted: Boolean,
+    streamsUnlinked: Boolean): Boolean {
     return if (!notificationAccessGranted) {
         true
     } else {
-        when (notificationInterruptionFilter) {
+        val state: Boolean = when (notificationInterruptionFilter) {
             INTERRUPTION_FILTER_PRIORITY -> {
                 if (Build.VERSION_CODES.R >= Build.VERSION.SDK_INT) {
                     notificationPriorityCategories.contains(PRIORITY_CATEGORY_MESSAGES) ||
@@ -25,10 +29,19 @@ fun isNotificationStreamActive(notificationInterruptionFilter: Int, notification
             INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
             else -> false
         }
+        if (streamsUnlinked) {
+            state
+        } else {
+            false
+        }
     }
 }
 
-fun isRingerStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean, streamsUnlinked: Boolean): Boolean {
+fun interruptionPolicyAllowsRingerStream(
+    interruptionFilter: Int,
+    priorityCategories: List<Int>,
+    notificationAccessGranted: Boolean,
+    streamsUnlinked: Boolean): Boolean {
     return if (!notificationAccessGranted) {
         true
     } else {
@@ -44,12 +57,14 @@ fun isRingerStreamActive(interruptionFilter: Int, priorityCategories: List<Int>,
             state
         }
         else {
-            state || isNotificationStreamActive(interruptionFilter, priorityCategories, notificationAccessGranted)
+            state || interruptionPolicyAllowsNotificationStream(interruptionFilter, priorityCategories, notificationAccessGranted)
         }
     }
 }
 
-fun isAlarmStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean): Boolean {
+fun interruptionPolicyAllowsAlarmsStream(interruptionFilter: Int,
+                                         priorityCategories: List<Int>,
+                                         notificationAccessGranted: Boolean): Boolean {
     return if (!notificationAccessGranted) {
         true
     } else {
@@ -63,11 +78,9 @@ fun isAlarmStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, 
     }
 }
 
-fun isVoiceCallStreamActive(interruptionFilter: Int): Boolean {
-    return interruptionFilter != INTERRUPTION_FILTER_NONE
-}
-
-fun isMediaStreamActive(interruptionFilter: Int, priorityCategories: List<Int>, notificationAccessGranted: Boolean): Boolean {
+fun interruptionPolicyAllowsMediaStream(interruptionFilter: Int,
+                                        priorityCategories: List<Int>,
+                                        notificationAccessGranted: Boolean): Boolean {
     return if (!notificationAccessGranted) {
         true
     } else {

@@ -22,7 +22,6 @@ class EventBus @Inject constructor() {
     val sharedFlow: SharedFlow<Event> = mutableEventsFlow
 
     fun updateProfilesFragment(id: UUID): Unit {
-        Log.i("EventBus", "updateProfilesFragment")
         mutableEventsFlow.tryEmit(Event.ProfileApplied(id))
     }
 

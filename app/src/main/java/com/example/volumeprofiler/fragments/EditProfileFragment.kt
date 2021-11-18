@@ -29,8 +29,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
-import android.util.DisplayMetrics
-import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
@@ -45,10 +43,10 @@ import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel.Event.*
 import android.media.RingtoneManager.*
 import android.provider.Settings
+import androidx.lifecycle.Observer
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.checkSelfPermission
-import com.example.volumeprofiler.util.getApplicationSettingsIntent
 import com.google.android.material.snackbar.Snackbar
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -219,7 +217,7 @@ class EditProfileFragment: Fragment() {
     }
 
     private fun setCanWriteSettingsProperty(): Unit {
-        viewModel.canWriteSettings.value = profileUtil.canWriteSettings()
+        viewModel.canWriteSettings.value = profileUtil.canModifySystemPreferences()
     }
 
     private fun registerForNotificationPolicyResult(): Unit {
@@ -325,13 +323,8 @@ class EditProfileFragment: Fragment() {
         notificationPolicyCallback.launch(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
     }
 
-    @Suppress("deprecation")
     private fun getDisplayDensity(): Float {
-        val windowManager: WindowManager = requireContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val display: Display = windowManager.defaultDisplay
-        val displayMetrics: DisplayMetrics = DisplayMetrics()
-        display.getRealMetrics(displayMetrics)
-        return displayMetrics.density
+        return resources.displayMetrics.density
     }
 
     private fun removeFromLayout(view: View): Unit {
@@ -375,14 +368,6 @@ class EditProfileFragment: Fragment() {
             changeRingerMode(streamType, RINGER_MODE_VIBRATE)
         } else {
             changeRingerMode(streamType, RINGER_MODE_SILENT)
-        }
-    }
-
-    private fun showToast(streamType: Int): Unit {
-        if (hasVibratorHardware()) {
-            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notifications are set to vibrate" else "Ringer is set to vibrate", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(requireContext(), if (streamType == STREAM_NOTIFICATION) "Notifications are set to silent" else "Ringer is set to silent", Toast.LENGTH_SHORT).show()
         }
     }
 

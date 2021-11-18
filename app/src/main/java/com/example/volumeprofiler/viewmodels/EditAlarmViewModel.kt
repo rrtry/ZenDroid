@@ -5,11 +5,13 @@ import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.util.AlarmUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.util.*
 import javax.inject.Inject
 import kotlin.collections.ArrayList
@@ -25,7 +27,7 @@ class EditAlarmViewModel @Inject constructor(
 
     val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
     val scheduledDays: MutableStateFlow<ArrayList<Int>> = MutableStateFlow(arrayListOf())
-    val startTime: MutableStateFlow<LocalDateTime> = MutableStateFlow(LocalDateTime.now())
+    val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
 
     private var id: Long? = null
     private var isScheduled: Boolean = false
@@ -55,6 +57,14 @@ class EditAlarmViewModel @Inject constructor(
         }
     }
 
+    private fun getNextInstanceDate(): LocalDateTime {
+        return AlarmUtil.getAlarmNextDate(localTime.value, scheduledDays.value)
+    }
+
+    private fun getAlarmState(): Int {
+        return if (isScheduled) 1 else 0
+    }
+
     private fun getProfileUUID(): UUID {
         return profilesLiveData.value!![selectedSpinnerPosition.value].id
     }
@@ -81,10 +91,11 @@ class EditAlarmViewModel @Inject constructor(
 
             selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id)
             scheduledDays.value = alarmRelation.alarm.scheduledDays
-            startTime.value = alarmRelation.alarm.localDateTime
+            localTime.value = alarmRelation.alarm.localDateTime.toLocalTime()
 
             id = alarmRelation.alarm.id
             isScheduled = alarmRelation.alarm.isScheduled == 1
+
             areArgsSet = true
         }
     }
@@ -92,8 +103,8 @@ class EditAlarmViewModel @Inject constructor(
     fun getAlarm(): Alarm {
         val alarm: Alarm =  Alarm(
             profileUUID = getProfileUUID(),
-            localDateTime = startTime.value,
-            isScheduled = if (isScheduled) 1 else 0,
+            localDateTime = getNextInstanceDate(),
+            isScheduled = getAlarmState(),
             scheduledDays = scheduledDays.value
         )
         if (id != null) {

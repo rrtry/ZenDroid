@@ -31,7 +31,7 @@ class TextUtil {
         }
 
         @JvmStatic
-        fun weekDaysToString(scheduledDays: ArrayList<Int>, startTime: LocalDateTime): String {
+        fun weekDaysToString(scheduledDays: ArrayList<Int>, startTime: LocalTime): String {
             val stringBuilder: java.lang.StringBuilder = java.lang.StringBuilder()
             if (scheduledDays.isNotEmpty()) {
                 if (scheduledDays.size == 1) {
@@ -51,7 +51,7 @@ class TextUtil {
                 return stringBuilder.toString()
             }
             else {
-                return if (startTime.toLocalTime() > LocalTime.now()) {
+                return if (startTime > LocalTime.now()) {
                     "Today"
                 } else {
                     "Tomorrow"
