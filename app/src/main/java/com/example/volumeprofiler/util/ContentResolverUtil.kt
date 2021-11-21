@@ -5,7 +5,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.Cursor
-import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.MediaStore
@@ -46,12 +45,11 @@ class ContentResolverUtil @Inject constructor(
             == PackageManager.PERMISSION_DENIED) {
             return "Storage permission required"
         }
-        val actualUri: Uri = if (uri == Uri.EMPTY) RingtoneManager.getActualDefaultRingtoneUri(context, type) else uri
         val contentResolver: ContentResolver = context.contentResolver
         val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
         var title: String = "Unknown"
         try {
-            val cursor: Cursor? = contentResolver.query(actualUri, projection, null, null, null)
+            val cursor: Cursor? = contentResolver.query(uri, projection, null, null, null)
             cursor?.use {
                 if (cursor.moveToFirst()) {
                     title = cursor.getString(0)

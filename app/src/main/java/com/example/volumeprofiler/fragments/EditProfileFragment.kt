@@ -29,7 +29,6 @@ import android.os.Vibrator
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import androidx.constraintlayout.widget.ConstraintSet
-import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.util.ProfileUtil
 import dagger.hilt.android.AndroidEntryPoint
@@ -156,39 +155,36 @@ class EditProfileFragment: Fragment() {
                 launch {
                     viewModel.fragmentEventsFlow.collect {
                         when (it) {
-                            WriteSystemSettingsRequestEvent -> {
-                                startSystemSettingsActivity()
-                            }
-                            NavigateToNextFragment -> {
-                                callbacks?.onFragmentReplace(DND_PREFERENCES_FRAGMENT)
-                            }
-                            StoragePermissionRequestEvent -> {
-                                requestStoragePermission()
-                            }
-                            PhonePermissionRequestEvent -> {
-                                requestPhoneStatePermission()
-                            }
-                            ShowPopupWindowEvent -> {
-                                showPopupMenu()
-                            }
-                            NotificationPolicyRequestEvent -> {
-                                startNotificationPolicyActivity()
-                            }
-                            is ChangeRingtoneEvent -> {
-                                startRingtonePickerActivity(it.ringtoneType)
-                            }
+
+                            is GetDefaultRingtoneUri -> setDefaultRingtoneUri(it.type)
+
                             is ChangeRingerMode -> {
                                 changeRingerMode(it.streamType)
                                 if (it.vibrate) {
                                     createVibrateEffect()
                                 }
                             }
+
+                            is ChangeRingtoneEvent -> startRingtonePickerActivity(it.ringtoneType)
+
+                            WriteSystemSettingsRequestEvent -> startSystemSettingsActivity()
+
+                            NavigateToNextFragment -> callbacks?.onFragmentReplace(DND_PREFERENCES_FRAGMENT)
+
+                            StoragePermissionRequestEvent -> requestStoragePermission()
+
+                            PhonePermissionRequestEvent -> requestPhoneStatePermission()
+
+                            ShowPopupWindowEvent -> showPopupMenu()
+
+                            NotificationPolicyRequestEvent -> startNotificationPolicyActivity()
+
                             else -> Log.i("EditProfileFragment", "unknown event")
                         }
                     }
                 }
                 launch {
-                    viewModel.muteRingStream.collect { policyAllowsStream ->
+                    viewModel.policyAllowsRingerStream.collect { policyAllowsStream ->
                         if (!policyAllowsStream) {
                             viewModel.ringVolume.value = 0
                             viewModel.ringerMode.value = RINGER_MODE_SILENT
@@ -198,7 +194,7 @@ class EditProfileFragment: Fragment() {
                     }
                 }
                 launch {
-                    viewModel.muteNotificationsStream.collect { policyAllowsStream ->
+                    viewModel.policyAllowsNotificationsStream.collect { policyAllowsStream ->
                         if (!policyAllowsStream) {
                             viewModel.notificationVolume.value = 0
                             viewModel.notificationMode.value = RINGER_MODE_SILENT
@@ -217,7 +213,13 @@ class EditProfileFragment: Fragment() {
     }
 
     private fun setStoragePermissionProperty(): Unit {
-        viewModel.storagePermissionGranted.value = checkSelfPermission(requireContext(), READ_EXTERNAL_STORAGE)
+        val granted: Boolean = checkSelfPermission(requireContext(), READ_EXTERNAL_STORAGE)
+        viewModel.storagePermissionGranted.value = granted
+        if (!granted) {
+            viewModel.notificationSoundUri.value = Uri.EMPTY
+            viewModel.alarmSoundUri.value = Uri.EMPTY
+            viewModel.phoneRingtoneUri.value = Uri.EMPTY
+        }
     }
 
     private fun setPhonePermissionProperty(): Unit {
@@ -259,11 +261,36 @@ class EditProfileFragment: Fragment() {
         }
     }
 
+    private fun setDefaultRingtoneUri(type: Int): Unit {
+        val uri: Uri = getActualDefaultRingtoneUri(context, type)
+        when {
+            viewModel.notificationSoundUri.value == Uri.EMPTY && type == TYPE_NOTIFICATION -> {
+                viewModel.notificationSoundUri.value = uri
+            }
+            viewModel.alarmSoundUri.value == Uri.EMPTY && type == TYPE_ALARM -> {
+                viewModel.alarmSoundUri.value = uri
+            }
+            viewModel.phoneRingtoneUri.value == Uri.EMPTY && type == TYPE_RINGTONE -> {
+                viewModel.phoneRingtoneUri.value = uri
+            }
+        }
+    }
+
+    private fun updateRingtoneUris(): Unit {
+        viewModel.notificationSoundUri.value =
+            if (viewModel.notificationUri != Uri.EMPTY) viewModel.notificationUri else getActualDefaultRingtoneUri(context, TYPE_NOTIFICATION)
+        viewModel.phoneRingtoneUri.value =
+            if (viewModel.ringtoneUri != Uri.EMPTY) viewModel.ringtoneUri else getActualDefaultRingtoneUri(context, TYPE_RINGTONE)
+        viewModel.alarmSoundUri.value =
+            if (viewModel.alarmUri != Uri.EMPTY) viewModel.alarmUri else getActualDefaultRingtoneUri(context, TYPE_ALARM)
+    }
+
     private fun registerForStoragePermissionResult(): Unit {
         storagePermissionCallback = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             viewModel.storagePermissionGranted.value = it
             when {
                 it -> {
+                    updateRingtoneUris()
                     Snackbar.make(binding.root,
                         "Storage permission was granted", Snackbar.LENGTH_LONG
                     ).show()
@@ -281,7 +308,6 @@ class EditProfileFragment: Fragment() {
     private fun registerForSystemSettingsResult(): Unit {
         writeSystemSettingsCallback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             val canWriteSettings: Boolean = Settings.System.canWrite(requireContext())
-            Log.i("EditProfileFragment", "writeSystemSettings: $canWriteSettings")
             viewModel.canWriteSettings.value = canWriteSettings
             if (!canWriteSettings) {
                 ViewUtil.showSystemSettingsPermissionExplanation(requireActivity().supportFragmentManager)
@@ -296,12 +322,15 @@ class EditProfileFragment: Fragment() {
                 when (contract.ringtoneType) {
                     TYPE_RINGTONE -> {
                         viewModel.phoneRingtoneUri.value = it
+                        viewModel.ringtoneUri = it
                     }
                     TYPE_NOTIFICATION -> {
                         viewModel.notificationSoundUri.value = it
+                        viewModel.notificationUri = it
                     }
                     TYPE_ALARM -> {
                         viewModel.alarmSoundUri.value = it
+                        viewModel.alarmUri = it
                     }
                     else -> Log.i("EditProfileFragment", "unknown ringtone type")
                 }

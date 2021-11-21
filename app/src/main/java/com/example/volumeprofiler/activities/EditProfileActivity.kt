@@ -38,6 +38,8 @@ import javax.inject.Inject
 import kotlin.math.abs
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel.Event.*
 import android.Manifest.permission.*
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.snackbar.Snackbar
@@ -64,6 +66,24 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
 
     private var scheduledAlarms: List<AlarmRelation>? = null
 
+    private fun updateRingtoneUris(): Unit {
+        viewModel.notificationSoundUri.value =
+            if (viewModel.notificationUri != Uri.EMPTY) viewModel.notificationUri else RingtoneManager.getActualDefaultRingtoneUri(
+                this,
+                RingtoneManager.TYPE_NOTIFICATION
+            )
+        viewModel.phoneRingtoneUri.value =
+            if (viewModel.ringtoneUri != Uri.EMPTY) viewModel.ringtoneUri else RingtoneManager.getActualDefaultRingtoneUri(
+                this,
+                RingtoneManager.TYPE_RINGTONE
+            )
+        viewModel.alarmSoundUri.value =
+            if (viewModel.alarmUri != Uri.EMPTY) viewModel.alarmUri else RingtoneManager.getActualDefaultRingtoneUri(
+                this,
+                RingtoneManager.TYPE_ALARM
+            )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -82,7 +102,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
                     sendSystemPreferencesAccessNotification(this, profileUtil)
                 }
                 else -> {
-                    saveProfile(profile, viewModel.shouldUpdateProfile(), false)
+                    updateRingtoneUris()
                 }
             }
         }

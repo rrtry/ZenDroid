@@ -18,6 +18,7 @@ import javax.inject.Inject
 import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
+import android.util.Log
 import com.example.volumeprofiler.activities.EditProfileActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
@@ -32,10 +33,28 @@ class EditProfileViewModel @Inject constructor(
         private val contentResolverUtil: ContentResolverUtil
 ): ViewModel() {
 
-    var hasVibrationSupport: Boolean = false
-    var areArgsSet: Boolean = false
+    private val activityEventChannel: Channel<Event> = Channel(Channel.BUFFERED)
+    private val eventChannel: Channel<Event> = Channel(Channel.BUFFERED)
+
+    val fragmentEventsFlow: Flow<Event> = eventChannel.receiveAsFlow()
+    val activityEventsFlow: Flow<Event> = activityEventChannel.receiveAsFlow()
+
+    init {
+        viewModelScope.launch {
+            val ringtoneType: List<Int> = listOf(TYPE_ALARM, TYPE_NOTIFICATION, TYPE_RINGTONE)
+            for (i in ringtoneType) {
+                eventChannel.send(Event.GetDefaultRingtoneUri(i))
+            }
+        }
+    }
+
+    private var areArgsSet: Boolean = false
     private var previousRingerVolume: Int = STREAM_RING_DEFAULT_VOLUME
     private var previousNotificationVolume: Int = STREAM_NOTIFICATION_DEFAULT_VOLUME
+
+    var ringtoneUri: Uri = Uri.EMPTY
+    var alarmUri: Uri = Uri.EMPTY
+    var notificationUri: Uri = Uri.EMPTY
 
     sealed class Event {
 
@@ -50,6 +69,7 @@ class EditProfileViewModel @Inject constructor(
         data class SaveChangesEvent(val profile: Profile, val shouldUpdate: Boolean): Event()
         data class ShowDialogFragment(val dialogType: DialogType): Event()
         data class ChangeRingerMode(val streamType: Int, val showToast: Boolean, val vibrate: Boolean): Event()
+        data class GetDefaultRingtoneUri(val type: Int): Event()
         data class ChangeRingtoneEvent(val ringtoneType: Int): Event()
         data class ShowPopupWindow(val category: Int): Event()
     }
@@ -111,7 +131,7 @@ class EditProfileViewModel @Inject constructor(
     val ringerMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_NORMAL)
     val notificationMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_SILENT)
 
-    val muteRingStream: Flow<Boolean> = combine(
+    val policyAllowsRingerStream: Flow<Boolean> = combine(
         interruptionFilter,
         priorityCategories,
         notificationPolicyAccessGranted,
@@ -119,19 +139,13 @@ class EditProfileViewModel @Inject constructor(
             filter, categories, granted, unlinked -> interruptionPolicyAllowsRingerStream(filter, categories, granted, unlinked)
     }
 
-    val muteNotificationsStream: Flow<Boolean> = combine(
+    val policyAllowsNotificationsStream: Flow<Boolean> = combine(
         interruptionFilter,
         priorityCategories,
         notificationPolicyAccessGranted,
         streamsUnlinked) {
             filter, categories, granted, unlinked -> interruptionPolicyAllowsNotificationStream(filter, categories, granted, unlinked)
     }
-
-    private val activityEventChannel: Channel<Event> = Channel(Channel.BUFFERED)
-    private val eventChannel: Channel<Event> = Channel(Channel.BUFFERED)
-
-    val fragmentEventsFlow: Flow<Event> = eventChannel.receiveAsFlow()
-    val activityEventsFlow: Flow<Event> = activityEventChannel.receiveAsFlow()
 
     private fun setBindings(profile: Profile): Unit {
 
@@ -149,6 +163,10 @@ class EditProfileViewModel @Inject constructor(
         phoneRingtoneUri.value = profile.phoneRingtoneUri
         notificationSoundUri.value = profile.notificationSoundUri
         alarmSoundUri.value = profile.alarmSoundUri
+
+        ringtoneUri = profile.phoneRingtoneUri
+        notificationUri = profile.notificationSoundUri
+        alarmUri = profile.alarmSoundUri
 
         streamsUnlinked.value = profile.streamsUnlinked
 
@@ -236,7 +254,7 @@ class EditProfileViewModel @Inject constructor(
 
     fun onSaveChangesButtonClick(): Unit {
         viewModelScope.launch {
-            activityEventChannel.send(Event.SaveChangesEvent(getProfile(),profileUUID.value != null))
+            activityEventChannel.send(Event.SaveChangesEvent(getProfile(),shouldUpdateProfile()))
         }
     }
 
@@ -289,6 +307,7 @@ class EditProfileViewModel @Inject constructor(
     }
 
     fun onAlarmSoundLayoutClick(): Unit {
+        Log.i("EditProfileViewModel", "onAlarmSoundLayoutClick()")
         viewModelScope.launch {
             if (storagePermissionGranted.value) {
                 eventChannel.send(Event.ChangeRingtoneEvent(TYPE_ALARM))
@@ -471,6 +490,18 @@ class EditProfileViewModel @Inject constructor(
         if (!containsPriorityCategory(category)) {
             priorityCategories.value += category
         }
+    }
+
+    fun getPhoneRingtoneUri(): Uri {
+        return ringtoneUri
+    }
+
+    fun getAlarmRingtoneUri(): Uri {
+        return alarmUri
+    }
+
+    fun getNotificationSoundUri(): Uri {
+        return notificationUri
     }
 
     fun removePriorityCategory(category: Int): Unit {

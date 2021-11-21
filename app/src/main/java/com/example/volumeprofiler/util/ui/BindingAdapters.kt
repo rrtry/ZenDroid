@@ -132,7 +132,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("storagePermissionGranted")
     fun bindRingtoneLayout(view: SwitchableConstraintLayout, storagePermissionGranted: Boolean): Unit {
-        setEnabledState(view, storagePermissionGranted)
+        view.disabled = !storagePermissionGranted
     }
 
     @JvmStatic
@@ -275,22 +275,6 @@ object BindingAdapters {
     @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted", requireAll = false)
     fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = interruptionPolicyAllowsAlarmsStream(alarmInterruptionFilter, alarmPriorityCategories, notificationAccessGranted)
-    }
-
-    @JvmStatic
-    @BindingAdapter("ringerMode", "ringerStreamsUnlinked","ringerSwitchInterruptionFilter", "ringerSwitchPriorityCategories", "notificationAccessGranted", requireAll = false)
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
-    fun bindRingerSwitch(view: Switch,
-                         ringerMode: Int,
-                         ringerStreamsUnlinked: Boolean,
-                         ringerInterruptionFilter: Int,
-                         ringerSwitchPriorityCategories: List<Int>,
-                         notificationAccessGranted: Boolean) {
-        if (!interruptionPolicyAllowsRingerStream(ringerInterruptionFilter, ringerSwitchPriorityCategories, notificationAccessGranted, ringerStreamsUnlinked)) {
-            view.isChecked = true
-        } else {
-            view.isChecked = ringerMode == RINGER_MODE_SILENT
-        }
     }
 
     @JvmStatic

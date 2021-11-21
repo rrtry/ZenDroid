@@ -422,11 +422,12 @@
                     android:paddingBottom="8dp"
                     android:text="@{viewModel.phoneRingtoneTitle}"
                     android:textSize="14sp" />
+
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
                 android:id="@+id/notificationSoundLayout"
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -539,7 +540,7 @@
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/vibrateForCallsLayout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:background="?attr/selectableItemBackground"
                 android:orientation="horizontal"
                 android:paddingTop="16dp"
@@ -561,11 +562,15 @@
 
                 <Switch
                     android:id="@+id/vibrateForCallsSwitch"
+                    shouldVibrateForCalls="@{viewModel.vibrateForCalls}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginRight="16dp"
-                    shouldVibrateForCalls="@{viewModel.vibrateForCalls}"
-                    android:clickable="false" />
+                    android:clickable="false"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

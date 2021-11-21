@@ -11,7 +11,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.media.AudioManager.*
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Vibrator
@@ -194,7 +193,7 @@ class ProfileUtil @Inject constructor (
                 Log.e("ProfileUtil", "Failed to change system settings", e)
             }
         } else {
-            Log.e("ProfileUtil", "Not allowed to modify system settings", SecurityException())
+            Log.w("ProfileUtil", "Not allowed to modify system settings", SecurityException())
         }
     }
 
