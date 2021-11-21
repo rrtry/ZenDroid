@@ -22,12 +22,13 @@ class MapsSharedViewModel @Inject constructor(
     val latLng: MutableStateFlow<LatLng?> = MutableStateFlow(null)
     val address: MutableStateFlow<String?> = MutableStateFlow(null)
     val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
-    val locality: MutableStateFlow<String> = MutableStateFlow("")
+    private val locality: MutableStateFlow<String> = MutableStateFlow("")
 
     val toRestoreProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
     val toApplyProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
 
-    val profilesLiveData: LiveData<List<Profile>> = repository.observeProfiles().asLiveData()
+    val profilesStateFlow: StateFlow<List<Profile>> = repository.observeProfiles()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
     private var locationId: Int? = null
     private var isGeofenceEnabled: Boolean = false
@@ -49,7 +50,7 @@ class MapsSharedViewModel @Inject constructor(
 
     private fun getPositions(locationRelation: LocationRelation): Pair {
         val pair: Pair= Pair(0, 0)
-        for ((index, i) in profilesLiveData.value!!.withIndex()) {
+        for ((index, i) in profilesStateFlow.value.withIndex()) {
             when (i.id) {
                 locationRelation.onEnterProfile.id -> {
                     pair.first = index

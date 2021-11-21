@@ -18,7 +18,6 @@ import android.view.View
 import android.view.animation.BounceInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.cursoradapter.widget.SimpleCursorAdapter
@@ -29,7 +28,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.transition.*
@@ -49,8 +47,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.android.gms.tasks.CancellationToken
-import com.google.android.gms.tasks.OnTokenCanceledListener
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -91,6 +88,7 @@ class MapsActivity : AppCompatActivity(),
     private lateinit var searchView: SearchView
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<out String>>
     private lateinit var profilesQuery: List<Profile>
+    private lateinit var taskCancellationSource: CancellationTokenSource
 
     @Inject
     lateinit var geocoderUtil: GeocoderUtil
@@ -124,12 +122,7 @@ class MapsActivity : AppCompatActivity(),
                         }
                     }
                     resolve -> {
-                        requestPermissions()
-                    }
-                    shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) -> {
-                        showSnackbar("Location permission is required", "Grant") {
-                            requestPermissions()
-                        }
+                        requestFineLocationPermission()
                     }
                     else -> {
                         ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
@@ -142,13 +135,16 @@ class MapsActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.google_maps_activity)
+
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
-        permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            onPermissionResultAction(false)
-        }
         jumpToRecentLocationButton = findViewById(R.id.jumpToCurrentLocationButton)
         saveGeofenceButton = findViewById(R.id.saveGeofenceButton)
         coordinatorLayout = findViewById(R.id.rootLayout)
+
+        permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            onPermissionResultAction(false)
+        }
+
         saveGeofenceButton.setOnClickListener {
             postPermissionCheckAction = ACTION_CREATE_GEOFENCE
             setSuccessfulResult(
@@ -157,6 +153,7 @@ class MapsActivity : AppCompatActivity(),
                 ), hasParcelableData()
             )
         }
+
         jumpToRecentLocationButton.setOnClickListener {
             postPermissionCheckAction = ACTION_DETERMINE_LOCATION
             if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
@@ -165,9 +162,10 @@ class MapsActivity : AppCompatActivity(),
                     weakReference.get()?.getRecentLocation()
                 }
             } else {
-                requestPermissions()
+                requestFineLocationPermission()
             }
         }
+
         supportFragmentManager.setFragmentResultListener(
             PermissionExplanationDialog.PERMISSION_REQUEST_KEY, this,
             { requestKey, result ->
@@ -180,10 +178,16 @@ class MapsActivity : AppCompatActivity(),
                     }
                 }
             })
+
         setSearchConfiguration()
         setBottomSheetBehaviour(savedInstanceState)
         addBottomSheetFragment()
         getMap()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        taskCancellationSource = CancellationTokenSource()
     }
 
     private fun showSnackbar(text: String, actionText: String, action: () -> Unit): Unit {
@@ -208,6 +212,7 @@ class MapsActivity : AppCompatActivity(),
     override fun onStop() {
         super.onStop()
         unregisterReceiver(locationProviderReceiver)
+        taskCancellationSource.cancel()
     }
 
     private fun setArgs(): Unit {
@@ -420,16 +425,11 @@ class MapsActivity : AppCompatActivity(),
 
     @RequiresPermission(ACCESS_FINE_LOCATION)
     private fun getCurrentLocation(): Unit {
-        fusedLocationProvider.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, object : CancellationToken() {
-            override fun isCancellationRequested(): Boolean {
-                return true
+        fusedLocationProvider.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, taskCancellationSource.token)
+            .addOnCanceledListener {
+                Log.w("MapsActivity", "Location request was cancelled")
             }
-
-            override fun onCanceledRequested(p0: OnTokenCanceledListener): CancellationToken {
-                return this
-            }
-
-        }).addOnSuccessListener {
+            .addOnSuccessListener {
             if (it != null) {
                 updateCoordinates(LatLng(it.latitude, it.longitude), false)
             } else {
@@ -518,12 +518,14 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        viewModel.profilesLiveData.observe(this, Observer {
-            profilesQuery = it
-            setArgs()
-        })
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.profilesStateFlow.collect {
+                        profilesQuery = it
+                        setArgs()
+                    }
+                }
                 launch {
                     viewModel.latLng.collect {
                         if (it != null) {
@@ -587,13 +589,21 @@ class MapsActivity : AppCompatActivity(),
         return intent.extras?.getParcelable<LocationRelation>(EXTRA_LOCATION_RELATION) != null
     }
 
+    private fun requestFineLocationPermission(): Unit {
+        permissionLauncher.launch(
+            arrayOf(ACCESS_FINE_LOCATION)
+        )
+    }
+
     private fun requestPermissions(): Unit {
         var permissions: Array<String> = arrayOf(
-            ACCESS_FINE_LOCATION,
-            READ_PHONE_STATE
+            ACCESS_FINE_LOCATION
         )
         if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
             permissions += ACCESS_BACKGROUND_LOCATION
+        }
+        if (profileUtil.requiresPhoneStatePermission(viewModel.getLocationRelation(profilesQuery))) {
+            permissions += READ_PHONE_STATE
         }
         permissionLauncher.launch(permissions)
     }
@@ -602,8 +612,7 @@ class MapsActivity : AppCompatActivity(),
     private fun setSuccessfulResult(geofence: Location, updateExisting: Boolean): Unit {
         if (geofence.enabled == 1.toByte()) {
             val locationRelation: LocationRelation = viewModel.getLocationRelation(profilesQuery)
-            if (geofence.enabled == 1.toByte()) {
-                when {
+            when {
                     !profileUtil.grantedRequiredPermissions(locationRelation) && !geofenceUtil.locationAccessGranted() -> {
                         Snackbar.make(coordinatorLayout, "Missing required permissions", Snackbar.LENGTH_INDEFINITE)
                             .setAction("Grant") {
@@ -624,7 +633,6 @@ class MapsActivity : AppCompatActivity(),
                         setResult(geofence, updateExisting)
                     }
                 }
-            }
         } else {
             setResult(geofence, updateExisting)
         }
@@ -694,9 +702,7 @@ class MapsActivity : AppCompatActivity(),
 
     companion object {
 
-        const val EXTRA_LOCATION: String = "Location"
-        const val FLAG_UPDATE_EXISTING: String = "update_existing"
-        private const val DWELL_LIMIT_MINUTES: Byte = 15
+        private const val DWELL_LIMIT_MINUTES: Int = 3 * 60
         private const val EXTRA_POST_PERMISSION_CHECK_ACTION: String = "extra_post_permission_check_action"
         private const val ACTION_CREATE_GEOFENCE: Int = 182
         private const val ACTION_DETERMINE_LOCATION: Int = 192
@@ -706,6 +712,9 @@ class MapsActivity : AppCompatActivity(),
         private const val COLUMN_LONGITUDE: String = "longitude"
         private const val MIN_LENGTH: Int = 10
         private const val REQUEST_TURN_DEVICE_LOCATION_ON: Int = 4
+
+        const val EXTRA_LOCATION: String = "Location"
+        const val FLAG_UPDATE_EXISTING: String = "update_existing"
 
         fun newIntent(context: Context, locationRelation: LocationRelation?): Intent {
             return Intent(context, MapsActivity::class.java).apply {
