@@ -26,8 +26,8 @@ class PriorityInterruptionsSelectionDialog: BaseMultiChoiceDialog<Int>() {
 
     override val title: String = TITLE
 
+    @Suppress("unchecked_cast")
     override fun onApply(arrayList: ArrayList<Int>): Unit {
-        @Suppress("unchecked_cast")
         val callsAndMessagesInterruptions: List<Int>? = (arguments?.getSerializable(ARG_SELECTED_ITEMS) as? ArrayList<Int>)?.filter { !optionsMap.values.contains(it) }
         val mergedPriorityInterruptions: List<Int> = (callsAndMessagesInterruptions as ArrayList<Int>) + arrayList
         val bundle: Bundle = Bundle().apply {

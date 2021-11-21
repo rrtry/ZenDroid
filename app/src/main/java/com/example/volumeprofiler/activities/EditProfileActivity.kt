@@ -39,6 +39,7 @@ import kotlin.math.abs
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel.Event.*
 import android.Manifest.permission.*
 import android.os.Build
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.snackbar.Snackbar
 
 @AndroidEntryPoint
@@ -61,13 +62,12 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
 
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<out String>>
 
+    private var scheduledAlarms: List<AlarmRelation>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             val profile: Profile = viewModel.getProfile()
-            if (checkSelfPermission(this, READ_EXTERNAL_STORAGE)) {
-                viewModel.updateSoundUris()
-            }
             when {
                 !checkSelfPermission(this, READ_EXTERNAL_STORAGE) && !profileUtil.grantedRequiredPermissions(profile)-> {
                     Snackbar.make(binding.root, "Missing required permissions", Snackbar.LENGTH_LONG).show()
@@ -98,19 +98,28 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
 
     private fun collectEventsFlow(): Unit {
         lifecycleScope.launch {
-            viewModel.activityEventsFlow.flowWithLifecycle(lifecycle, Lifecycle.State.STARTED).onEach {
-                when (it) {
-                    is ShowDialogFragment -> {
-                        if (it.dialogType == EditProfileViewModel.DialogType.TITLE) {
-                            showTitleInputDialog()
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.activityEventsFlow.collect {
+                        when (it) {
+                            is ShowDialogFragment -> {
+                                if (it.dialogType == EditProfileViewModel.DialogType.TITLE) {
+                                    showTitleInputDialog()
+                                }
+                            }
+                            is SaveChangesEvent -> {
+                                saveProfile(it.profile, it.shouldUpdate)
+                            }
+                            else -> Log.i("EditProfileActivity", "unknown event")
                         }
                     }
-                    is SaveChangesEvent -> {
-                        saveProfile(it.profile, it.shouldUpdate)
-                    }
-                    else -> Log.i("EditProfileActivity", "unknown event")
                 }
-            }.collect()
+                launch {
+                    viewModel.alarmsFlow.collect {
+                        scheduledAlarms = it
+                    }
+                }
+            }
         }
     }
 
@@ -198,12 +207,12 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
 
     private fun setFragmentResultListener(): Unit {
         supportFragmentManager.setFragmentResultListener(INPUT_TITLE_REQUEST_KEY, this) { _, bundle: Bundle ->
-            viewModel.title.value = bundle.getString(EXTRA_TITLE)
+            viewModel.title.value = bundle.getString(EXTRA_TITLE)!!
         }
     }
 
     private fun showTitleInputDialog(): Unit {
-        val title: String = viewModel.title.value!!
+        val title: String = viewModel.title.value
         val dialog: DialogFragment = ProfileNameInputDialog.newInstance(title)
         dialog.show(supportFragmentManager, null)
     }
@@ -314,7 +323,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
     }
 
     private fun updateAlarms(profile: Profile): Unit {
-        viewModel.getAlarms().let {
+        scheduledAlarms.let {
             if (!it.isNullOrEmpty()) {
                 setAlarms(it, profile)
             }

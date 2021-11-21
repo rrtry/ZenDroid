@@ -47,7 +47,7 @@ import java.util.*
 import javax.inject.Inject
 import androidx.fragment.app.*
 import com.example.volumeprofiler.interfaces.PermissionRequestCallback
-import android.Manifest.permission.*
+
 @AndroidEntryPoint
 class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
 
@@ -265,7 +265,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onStop() {
         super.onStop()
         if (positionMap.isNotEmpty()) {
-            sharedPreferencesUtil.writeProfilePositions(positionMap)
+            sharedPreferencesUtil.putProfilePositions(positionMap)
         }
         tracker.clearSelection()
     }

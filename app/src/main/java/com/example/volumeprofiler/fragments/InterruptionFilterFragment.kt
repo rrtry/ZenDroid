@@ -162,10 +162,16 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun getFragmentInstance(type: EditProfileViewModel.DialogType): DialogFragment {
         return when (type) {
-            EditProfileViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(viewModel.screenOnVisualEffects.value!!)
-            EditProfileViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(viewModel.screenOffVisualEffects.value!!)
-            EditProfileViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(viewModel.priorityCategories.value!!)
-            else -> ProfileNameInputDialog.newInstance(viewModel.title.value!!)
+            EditProfileViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(
+                ArrayList(viewModel.screenOnVisualEffects.value)
+            )
+            EditProfileViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(
+                ArrayList(viewModel.screenOffVisualEffects.value)
+            )
+            EditProfileViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(
+                ArrayList(viewModel.priorityCategories.value)
+            )
+            else -> ProfileNameInputDialog.newInstance(viewModel.title.value)
         }
     }
 

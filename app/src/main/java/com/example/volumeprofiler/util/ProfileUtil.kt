@@ -21,6 +21,7 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import com.example.volumeprofiler.entities.LocationRelation
 import java.lang.IllegalArgumentException
+import android.media.RingtoneManager.*
 
 @Singleton
 class ProfileUtil @Inject constructor (
@@ -49,13 +50,17 @@ class ProfileUtil @Inject constructor (
 
     fun setProfile(profile: Profile) {
         if (notificationManager.currentInterruptionFilter != INTERRUPTION_FILTER_ALL) {
-            setInterruptionFilter(INTERRUPTION_FILTER_ALL)
+            setInterruptionFilter(INTERRUPTION_FILTER_ALL) // set non-blocking interruption filter to unmute all audio stream
         }
         setStreamVolume(STREAM_MUSIC, profile.mediaVolume, 0)
         setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, 0)
         setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
         if (profile.streamsUnlinked) {
             if (phoneState == TelephonyManager.CALL_STATE_RINGING) {
+                /*
+                   Set ringVolume property as current volume level if profile uses "unlinked streams" feature and phone is ringing
+                   Otherwise, set notificationVolume as current volume level
+                 */
                 setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
             } else {
                 setRingerMode(STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode)
@@ -64,13 +69,16 @@ class ProfileUtil @Inject constructor (
             setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
         }
         setInterruptionFilter(profile)
-        setRingtoneUri(profile.phoneRingtoneUri, RingtoneManager.TYPE_RINGTONE)
-        setRingtoneUri(profile.notificationSoundUri, RingtoneManager.TYPE_NOTIFICATION)
-        setRingtoneUri(profile.alarmSoundUri, RingtoneManager.TYPE_ALARM)
+        setRingtoneUri(profile.phoneRingtoneUri, TYPE_RINGTONE)
+        setRingtoneUri(profile.notificationSoundUri, TYPE_NOTIFICATION)
+        setRingtoneUri(profile.alarmSoundUri, TYPE_ALARM)
         setVibrateWhenRingingBehaviour(profile.isVibrateForCallsActive)
         sharedPreferencesUtil.writeCurrentProfileProperties(profile)
     }
 
+    /*
+       Mute audio stream without altering Do not disturb state
+     */
     private fun setSilentMode(streamType: Int): Unit {
         if (isVibrateHardwarePresent()) {
             adjustUnmuteStream(streamType)
@@ -78,10 +86,16 @@ class ProfileUtil @Inject constructor (
         audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, FLAG_ALLOW_RINGER_MODES)
     }
 
+    /*
+      Mute audio stream and set ringer to vibrate
+      FLAG_ALLOW_RINGER_MODES may also set ringer to silent if the device does not support vibration
+     */
     private fun setVibrateMode(streamType: Int): Unit {
         if (isVibrateHardwarePresent()) {
             adjustUnmuteStream(streamType)
             audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES)
+        } else {
+            Log.w("ProfileUtil", "Vibration is not supported on this device")
         }
     }
 
@@ -115,7 +129,7 @@ class ProfileUtil @Inject constructor (
     }
 
     @Suppress("newApi")
-    private fun createNotificationPolicy(profile: Profile): Policy? {
+    private fun createNotificationPolicy(profile: Profile): Policy {
         return when {
             Build.VERSION_CODES.N > Build.VERSION.SDK_INT -> {
                 Policy (
@@ -161,18 +175,19 @@ class ProfileUtil @Inject constructor (
 
     fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int): Unit {
         when (mode) {
-            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, FLAG_ALLOW_RINGER_MODES)
+            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, 0)
             RINGER_MODE_VIBRATE -> setVibrateMode(streamType)
             RINGER_MODE_SILENT -> setSilentMode(streamType)
         }
     }
 
     private fun setRingtoneUri(uri: Uri, type: Int): Unit {
-        RingtoneManager.setActualDefaultRingtoneUri(context, type, uri)
+        setActualDefaultRingtoneUri(context, type, uri)
     }
 
     private fun setVibrateWhenRingingBehaviour(state: Int): Unit {
         if (canModifySystemPreferences()) {
+            // Bug in android 6.0 prevents applications from writing to system preferences even with permission granted
             try {
                 Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
             } catch (e: IllegalArgumentException) {
@@ -254,8 +269,6 @@ class ProfileUtil @Inject constructor (
     }
 
     companion object {
-
-        const val RINGER_MODE_BLOCKED: Int = -1
 
         private fun bitmaskOfListContents(list: List<Int>): Int {
             var temp: Int = 0

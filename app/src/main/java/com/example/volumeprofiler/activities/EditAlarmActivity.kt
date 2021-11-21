@@ -68,14 +68,10 @@ class EditAlarmActivity: AppCompatActivity() {
                 }
             }
         }
-        val alarm: AlarmRelation? = getAlarmRelation()
         setBinding()
         setActionBar()
         setFragmentResultListeners()
         collectEventsFlow()
-        viewModel.profilesLiveData.observe(this, {
-            viewModel.setArgs(alarm)
-        })
     }
 
     override fun onDestroy() {
@@ -198,12 +194,14 @@ class EditAlarmActivity: AppCompatActivity() {
                     Snackbar.make(binding.root, "You can always grant permissions in settings", Snackbar.LENGTH_LONG).show()
                 }
             })
+
         supportFragmentManager.setFragmentResultListener(TIME_REQUEST_KEY, this) { _, bundle ->
             val localTime: LocalTime? = bundle.getSerializable(EXTRA_LOCAL_TIME) as? LocalTime
             if (localTime != null) {
                 viewModel.localTime.value = localTime
             }
         }
+
         supportFragmentManager.setFragmentResultListener(SCHEDULED_DAYS_REQUEST_KEY, this) {_, bundle ->
             val scheduledDays: ArrayList<Int>? = bundle.getSerializable(ScheduledDaysPickerDialog.EXTRA_SCHEDULED_DAYS) as? ArrayList<Int>
             if (scheduledDays != null) {
@@ -226,6 +224,11 @@ class EditAlarmActivity: AppCompatActivity() {
                                 }
                             }
                         }
+                    }
+                }
+                launch {
+                    viewModel.profilesStateFlow.collect {
+                        viewModel.setArgs(getAlarmRelation())
                     }
                 }
             }

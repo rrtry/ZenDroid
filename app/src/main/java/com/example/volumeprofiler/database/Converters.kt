@@ -6,6 +6,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
+import kotlin.collections.ArrayList
 
 class Converters {
 
@@ -24,7 +25,7 @@ class Converters {
     }
 
     @TypeConverter
-    fun toList(string: String): ArrayList<Int> {
+    fun toArrayList(string: String): ArrayList<Int> {
         return string.split(',').mapNotNull {
             try {
                 it.toInt()
@@ -36,7 +37,24 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromList(list: ArrayList<Int>): String {
+    fun fromArrayList(arrayList: ArrayList<Int>): String {
+        return arrayList.joinToString(",")
+    }
+
+    @TypeConverter
+    fun toList(string: String): List<Int> {
+        return string.split(',').mapNotNull {
+            try {
+                it.toInt()
+            }
+            catch (e: NumberFormatException) {
+                null
+            }
+        }
+    }
+
+    @TypeConverter
+    fun fromList(list: List<Int>): String {
         return list.joinToString(",")
     }
 

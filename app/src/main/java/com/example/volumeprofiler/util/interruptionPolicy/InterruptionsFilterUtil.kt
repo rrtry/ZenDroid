@@ -3,37 +3,53 @@ package com.example.volumeprofiler.util.interruptionPolicy
 import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
+import android.util.Log
+
+fun interruptionFilterAllowsNotifications(notificationInterruptionFilter: Int, notificationPriorityCategories: List<Int>): Boolean {
+    return when (notificationInterruptionFilter) {
+        INTERRUPTION_FILTER_PRIORITY -> {
+            if (Build.VERSION_CODES.R >= Build.VERSION.SDK_INT) {
+                notificationPriorityCategories.contains(PRIORITY_CATEGORY_MESSAGES) ||
+                        notificationPriorityCategories.contains(PRIORITY_CATEGORY_REMINDERS) ||
+                        notificationPriorityCategories.contains(PRIORITY_CATEGORY_EVENTS)
+            } else {
+                notificationPriorityCategories.contains(PRIORITY_CATEGORY_MESSAGES) ||
+                        notificationPriorityCategories.contains(PRIORITY_CATEGORY_REMINDERS) ||
+                        notificationPriorityCategories.contains(PRIORITY_CATEGORY_EVENTS) ||
+                        notificationPriorityCategories.contains(PRIORITY_CATEGORY_CONVERSATIONS)
+            }
+        }
+        INTERRUPTION_FILTER_ALL -> true
+        INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
+        else -> false
+    }
+}
+
+fun interruptionPolicyAllowsNotificationStream(
+    notificationInterruptionFilter: Int,
+    notificationPriorityCategories: List<Int>,
+    notificationAccessGranted: Boolean): Boolean {
+    return if (!notificationAccessGranted) {
+        true
+    } else {
+        return interruptionFilterAllowsNotifications(notificationInterruptionFilter, notificationPriorityCategories)
+    }
+}
 
 fun interruptionPolicyAllowsNotificationStream(
     notificationInterruptionFilter: Int,
     notificationPriorityCategories: List<Int>,
     notificationAccessGranted: Boolean,
     streamsUnlinked: Boolean): Boolean {
-    return if (!notificationAccessGranted) {
-        true
+
+    val state: Boolean = interruptionFilterAllowsNotifications(notificationInterruptionFilter, notificationPriorityCategories)
+
+    return if (!streamsUnlinked) {
+        false
+    } else if (notificationAccessGranted) {
+        state
     } else {
-        val state: Boolean = when (notificationInterruptionFilter) {
-            INTERRUPTION_FILTER_PRIORITY -> {
-                if (Build.VERSION_CODES.R >= Build.VERSION.SDK_INT) {
-                    notificationPriorityCategories.contains(PRIORITY_CATEGORY_MESSAGES) ||
-                            notificationPriorityCategories.contains(PRIORITY_CATEGORY_REMINDERS) ||
-                            notificationPriorityCategories.contains(PRIORITY_CATEGORY_EVENTS)
-                } else {
-                    notificationPriorityCategories.contains(PRIORITY_CATEGORY_MESSAGES) ||
-                            notificationPriorityCategories.contains(PRIORITY_CATEGORY_REMINDERS) ||
-                            notificationPriorityCategories.contains(PRIORITY_CATEGORY_EVENTS) ||
-                            notificationPriorityCategories.contains(PRIORITY_CATEGORY_CONVERSATIONS)
-                }
-            }
-            INTERRUPTION_FILTER_ALL -> true
-            INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
-            else -> false
-        }
-        if (streamsUnlinked) {
-            state
-        } else {
-            false
-        }
+        true
     }
 }
 

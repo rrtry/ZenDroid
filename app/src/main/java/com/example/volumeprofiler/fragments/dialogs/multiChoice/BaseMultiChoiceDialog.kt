@@ -65,7 +65,7 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
         if (!shouldSetArgs) {
             val args: ArrayList<Int> = arguments?.getSerializable(ARG_SELECTED_ITEMS) as ArrayList<Int>
             if (args.isNotEmpty()) {
-                for ((index, value) in args.withIndex()) {
+                for (value in args) {
                     val key: Int? = getKey(value)
                     if (key != null) {
                         selectedItems.add(key)
@@ -88,16 +88,15 @@ abstract class BaseMultiChoiceDialog <T>: DialogFragment() {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
             builder.setTitle(title)
-                    .setMultiChoiceItems(arrayRes, null,
-                            DialogInterface.OnMultiChoiceClickListener { dialog, which, isChecked ->
-                                if (isChecked) {
-                                    selectedItems.add(which)
-                                }
-                                else if (selectedItems.contains(which)) {
-                                    selectedItems.remove(which)
-                                }
-                            })
-                    .setPositiveButton(R.string.apply
+                    .setMultiChoiceItems(arrayRes, null
+                    ) { dialog, which, isChecked ->
+                        if (isChecked) {
+                            selectedItems.add(which)
+                        } else if (selectedItems.contains(which)) {
+                            selectedItems.remove(which)
+                        }
+                    }
+                .setPositiveButton(R.string.apply
                     ) { _, _ ->
                         onApply(getArrayList())
                     }

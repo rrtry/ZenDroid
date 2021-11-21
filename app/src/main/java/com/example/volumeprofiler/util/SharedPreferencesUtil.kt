@@ -34,7 +34,7 @@ class SharedPreferencesUtil @Inject constructor (
         )
     }
 
-    fun writeProfilePositions(positionMap: ArrayMap<UUID, Int>): Unit {
+    fun putProfilePositions(positionMap: ArrayMap<UUID, Int>): Unit {
         val gson: Gson = Gson()
         val str: String = gson.toJson(positionMap)
         val editor: SharedPreferences.Editor = sharedPreferences.edit()
@@ -52,14 +52,24 @@ class SharedPreferencesUtil @Inject constructor (
         editor.putString(PREFS_PROFILE_ID, id.toString())
         editor.putInt(PREFS_RINGER_MODE, profile.ringerMode)
         editor.putInt(PREFS_NOTIFICATION_MODE, profile.notificationMode)
+        editor.putInt(PREFS_INTERRUPTION_FILTER, profile.interruptionFilter)
+        editor.putString(PREFS_PRIORITY_CATEGORIES, fromList(profile.priorityCategories))
+        editor.putBoolean(PREFS_STREAMS_UNLINKED, profile.streamsUnlinked)
         editor.apply()
     }
 
-    /*
-    fun getEnabledProfileTitle(): String? {
-        return sharedPreferences.getString(PREFS_PROFILE_TITLE, "Select profile")
+    fun getPriorityCategories(): List<Int> {
+        val categories: String? = sharedPreferences.getString(PREFS_PRIORITY_CATEGORIES, "")
+        return if (categories != null) {
+            toList(categories)
+        } else {
+            listOf()
+        }
     }
-     */
+
+    fun getStreamsUnlinked(): Boolean {
+        return sharedPreferences.getBoolean(PREFS_STREAMS_UNLINKED, false)
+    }
 
     fun getRingerMode(): Int {
         return sharedPreferences.getInt(PREFS_RINGER_MODE, -1)
@@ -71,6 +81,10 @@ class SharedPreferencesUtil @Inject constructor (
 
     fun getNotificationStreamVolume(): Int {
         return sharedPreferences.getInt(PREFS_PROFILE_STREAM_NOTIFICATION, -1)
+    }
+
+    fun getInterruptionFilter(): Int {
+        return sharedPreferences.getInt(PREFS_INTERRUPTION_FILTER, -1)
     }
 
     fun getRingStreamVolume(): Int {
@@ -94,17 +108,22 @@ class SharedPreferencesUtil @Inject constructor (
         return sharedPreferences.getString(PREFS_PROFILE_ID, null)
     }
 
-    fun setPermissionResult(permission: String): Unit {
-        val editor: SharedPreferences.Editor = sharedPreferences.edit()
-        editor.putBoolean(permission, true)
-        editor.apply()
-    }
-
-    fun wasPermissionAskedBefore(permission: String): Boolean {
-        return sharedPreferences.getBoolean(permission, false)
-    }
-
     companion object {
+
+        fun fromList(list: List<Int>): String {
+            return list.joinToString(",")
+        }
+
+        fun toList(string: String): List<Int> {
+            return string.split(',').mapNotNull {
+                try {
+                    it.toInt()
+                }
+                catch (e: NumberFormatException) {
+                    null
+                }
+            }
+        }
 
         const val SHARED_PREFS: String = "volumeprofiler_shared_prefs"
         const val PREFS_PROFILE_ID = "prefs_profile_id"
@@ -113,11 +132,10 @@ class SharedPreferencesUtil @Inject constructor (
         const val PREFS_PROFILE_TITLE = "prefs_profile_title"
         const val PREFS_RINGER_MODE: String = "prefs_ringer_mode"
         const val PREFS_NOTIFICATION_MODE: String = "prefs_notification_mode"
+        const val PREFS_INTERRUPTION_FILTER: String = "prefs_interruption_filter"
+        const val PREFS_PRIORITY_CATEGORIES: String = "priority_categories"
+        const val PREFS_STREAMS_UNLINKED: String = "prefs_streams_unlinked"
 
         private const val PREFS_POSITIONS_MAP: String = "prefs_positions_map"
-        private const val PREFS_STORAGE_PERMISSION: String = Manifest.permission.READ_EXTERNAL_STORAGE
-        private const val PREFS_PHONE_PERMISSION: String = Manifest.permission.READ_PHONE_STATE
-        private const val PREFS_LOCATION_PERMISSION: String = Manifest.permission.ACCESS_FINE_LOCATION
-        private const val PREFS_BACKGROUND_LOCATION_PERMISSION: String = Manifest.permission.ACCESS_BACKGROUND_LOCATION
     }
 }

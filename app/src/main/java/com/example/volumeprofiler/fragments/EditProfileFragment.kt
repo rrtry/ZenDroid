@@ -14,7 +14,6 @@ import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
 import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import com.example.volumeprofiler.entities.Profile
@@ -30,20 +29,18 @@ import android.os.Vibrator
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import androidx.constraintlayout.widget.ConstraintSet
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.flowWithLifecycle
 import com.example.volumeprofiler.activities.EditProfileActivity
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.util.ProfileUtil
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.EditProfileViewModel.Event.*
 import android.media.RingtoneManager.*
 import android.provider.Settings
-import androidx.lifecycle.Observer
+import androidx.lifecycle.*
+import com.example.volumeprofiler.activities.EditProfileActivity.Companion.DND_PREFERENCES_FRAGMENT
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.checkSelfPermission
@@ -155,48 +152,63 @@ class EditProfileFragment: Fragment() {
                 }
             })
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
-                when (it) {
-
-                    WriteSystemSettingsRequestEvent -> {
-                        startSystemSettingsActivity()
-                    }
-
-                    NavigateToNextFragment -> {
-                        callbacks?.onFragmentReplace(EditProfileActivity.DND_PREFERENCES_FRAGMENT)
-                    }
-
-                    StoragePermissionRequestEvent -> {
-                        requestStoragePermission()
-                    }
-
-                    PhonePermissionRequestEvent -> {
-                        requestPhoneStatePermission()
-                    }
-
-                    ShowPopupWindowEvent -> {
-                        showPopupMenu()
-                    }
-
-                    NotificationPolicyRequestEvent -> {
-                        startNotificationPolicyActivity()
-                    }
-
-                    is ChangeRingtoneEvent -> {
-                        startRingtonePickerActivity(it.ringtoneType)
-                    }
-
-                    is ChangeRingerMode -> {
-                        changeRingerMode(it.streamType)
-                        if (it.vibrate) {
-                            createVibrateEffect()
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.fragmentEventsFlow.collect {
+                        when (it) {
+                            WriteSystemSettingsRequestEvent -> {
+                                startSystemSettingsActivity()
+                            }
+                            NavigateToNextFragment -> {
+                                callbacks?.onFragmentReplace(DND_PREFERENCES_FRAGMENT)
+                            }
+                            StoragePermissionRequestEvent -> {
+                                requestStoragePermission()
+                            }
+                            PhonePermissionRequestEvent -> {
+                                requestPhoneStatePermission()
+                            }
+                            ShowPopupWindowEvent -> {
+                                showPopupMenu()
+                            }
+                            NotificationPolicyRequestEvent -> {
+                                startNotificationPolicyActivity()
+                            }
+                            is ChangeRingtoneEvent -> {
+                                startRingtonePickerActivity(it.ringtoneType)
+                            }
+                            is ChangeRingerMode -> {
+                                changeRingerMode(it.streamType)
+                                if (it.vibrate) {
+                                    createVibrateEffect()
+                                }
+                            }
+                            else -> Log.i("EditProfileFragment", "unknown event")
                         }
                     }
-                    else -> Log.i("EditProfileFragment", "unknown event")
                 }
-            }.collect()
+                launch {
+                    viewModel.muteRingStream.collect { policyAllowsStream ->
+                        if (!policyAllowsStream) {
+                            viewModel.ringVolume.value = 0
+                            viewModel.ringerMode.value = RINGER_MODE_SILENT
+                        } else {
+                            viewModel.adjustUnmuteStream(STREAM_RING)
+                        }
+                    }
+                }
+                launch {
+                    viewModel.muteNotificationsStream.collect { policyAllowsStream ->
+                        if (!policyAllowsStream) {
+                            viewModel.notificationVolume.value = 0
+                            viewModel.notificationMode.value = RINGER_MODE_SILENT
+                        } else {
+                            viewModel.adjustUnmuteStream(STREAM_NOTIFICATION)
+                        }
+                    }
+                }
+            }
         }
-        removeFromLayout(binding.SilentModeLayout)
     }
 
     override fun onDestroyView() {
@@ -252,7 +264,6 @@ class EditProfileFragment: Fragment() {
             viewModel.storagePermissionGranted.value = it
             when {
                 it -> {
-                    viewModel.updateSoundUris()
                     Snackbar.make(binding.root,
                         "Storage permission was granted", Snackbar.LENGTH_LONG
                     ).show()
@@ -306,13 +317,13 @@ class EditProfileFragment: Fragment() {
         val contract: RingtonePickerContract = ringtoneActivityCallback.contract as RingtonePickerContract
         when (type) {
             TYPE_RINGTONE -> {
-                contract.existingUri = viewModel.phoneRingtoneUri.value!!
+                contract.existingUri = viewModel.phoneRingtoneUri.value
             }
             TYPE_NOTIFICATION -> {
-                contract.existingUri = viewModel.notificationSoundUri.value!!
+                contract.existingUri = viewModel.notificationSoundUri.value
             }
             TYPE_ALARM -> {
-                contract.existingUri = viewModel.alarmSoundUri.value!!
+                contract.existingUri = viewModel.alarmSoundUri.value
             }
             else -> Log.i("EditProfileFragment", "unknown ringtone type")
         }

@@ -23,7 +23,8 @@ class EditAlarmViewModel @Inject constructor(
 
     private var areArgsSet: Boolean = false
 
-    val profilesLiveData: LiveData<List<Profile>> = profileRepository.observeProfiles().asLiveData()
+    val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
     val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
     val scheduledDays: MutableStateFlow<ArrayList<Int>> = MutableStateFlow(arrayListOf())
@@ -66,11 +67,11 @@ class EditAlarmViewModel @Inject constructor(
     }
 
     private fun getProfileUUID(): UUID {
-        return profilesLiveData.value!![selectedSpinnerPosition.value].id
+        return profilesStateFlow.value[selectedSpinnerPosition.value].id
     }
 
     fun getProfile(): Profile {
-        return profilesLiveData.value!![selectedSpinnerPosition.value]
+        return profilesStateFlow.value[selectedSpinnerPosition.value]
     }
 
     fun getAlarmId(): Long? {
@@ -78,7 +79,7 @@ class EditAlarmViewModel @Inject constructor(
     }
 
     private fun getPosition(uuid: UUID): Int {
-        for ((index, i) in profilesLiveData.value!!.withIndex()) {
+        for ((index, i) in profilesStateFlow.value.withIndex()) {
             if (i.id == uuid) {
                 return index
             }
