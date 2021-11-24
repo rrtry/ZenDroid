@@ -156,6 +156,24 @@ class EditProfileFragment: Fragment() {
                     viewModel.fragmentEventsFlow.collect {
                         when (it) {
 
+                            is AdjustStreamMinVolume -> {
+
+                                if (it.streamType == STREAM_ALARM) {
+                                    if (it.volume < profileUtil.getAlarmStreamMinVolume()) {
+                                        viewModel.alarmVolume.value++
+                                    } else {
+                                        viewModel.alarmVolume.value = it.volume
+                                    }
+                                }
+                                else if (it.streamType == STREAM_VOICE_CALL) {
+                                    if (it.volume < profileUtil.getVoiceCallStreamMinVolume()) {
+                                        viewModel.callVolume.value++
+                                    } else {
+                                        viewModel.callVolume.value = it.volume
+                                    }
+                                }
+                            }
+
                             is GetDefaultRingtoneUri -> setDefaultRingtoneUri(it.type)
 
                             is ChangeRingerMode -> {
@@ -188,8 +206,6 @@ class EditProfileFragment: Fragment() {
                         if (!policyAllowsStream) {
                             viewModel.ringVolume.value = 0
                             viewModel.ringerMode.value = RINGER_MODE_SILENT
-                        } else {
-                            viewModel.adjustUnmuteStream(STREAM_RING)
                         }
                     }
                 }
@@ -198,8 +214,6 @@ class EditProfileFragment: Fragment() {
                         if (!policyAllowsStream) {
                             viewModel.notificationVolume.value = 0
                             viewModel.notificationMode.value = RINGER_MODE_SILENT
-                        } else {
-                            viewModel.adjustUnmuteStream(STREAM_NOTIFICATION)
                         }
                     }
                 }
@@ -385,7 +399,7 @@ class EditProfileFragment: Fragment() {
     private fun createVibrateEffect(): Unit {
         if (hasVibratorHardware()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                hapticService!!.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                hapticService!!.vibrate(VibrationEffect.createOneShot(100, 155))
             } else {
                 hapticService!!.vibrate(100)
             }

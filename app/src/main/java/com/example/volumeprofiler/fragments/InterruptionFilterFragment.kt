@@ -266,6 +266,7 @@ class InterruptionFilterFragment: Fragment() {
     }
 
     companion object {
+
         const val EFFECTS_REQUEST_KEY: String = "request_key"
         const val PRIORITY_REQUEST_KEY: String = "priority_request_key"
         const val PRIORITY_CATEGORIES_KEY: String = "priority_categories_key"

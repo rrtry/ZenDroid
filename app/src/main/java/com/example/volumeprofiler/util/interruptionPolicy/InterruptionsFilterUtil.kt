@@ -109,3 +109,17 @@ fun interruptionPolicyAllowsMediaStream(interruptionFilter: Int,
         } else interruptionFilter == INTERRUPTION_FILTER_ALL || interruptionFilter == INTERRUPTION_FILTER_ALARMS
     }
 }
+
+fun canMuteAlarmStream(index: Int): Boolean {
+    return when {
+        index > 0 -> {
+            false
+        }
+        Build.VERSION_CODES.P <= Build.VERSION.SDK_INT -> {
+            false
+        }
+        else -> {
+            true
+        }
+    }
+}

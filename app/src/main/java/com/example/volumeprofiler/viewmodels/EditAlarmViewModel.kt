@@ -29,6 +29,11 @@ class EditAlarmViewModel @Inject constructor(
     val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
     val scheduledDays: MutableStateFlow<ArrayList<Int>> = MutableStateFlow(arrayListOf())
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
+    val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
+
+    val shouldScheduleTimer: Flow<Boolean> = combine(localTime, scheduledDays) {
+        localTime, scheduledDays -> scheduledDays.isEmpty() && localTime > LocalTime.now()
+    }
 
     private var id: Long? = null
     private var isScheduled: Boolean = false

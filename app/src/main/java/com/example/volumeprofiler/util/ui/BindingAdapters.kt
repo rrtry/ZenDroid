@@ -20,6 +20,15 @@ import com.google.android.material.appbar.CollapsingToolbarLayout
 
 object BindingAdapters {
 
+    private const val DRAWABLE_ALARM_ON: Int = R.drawable.baseline_alarm_deep_purple_300_24dp
+    private const val DRAWABLE_ALARM_OFF: Int = R.drawable.baseline_alarm_off_deep_purple_500_24dp
+    private const val DRAWABLE_NOTIFICATIONS_OFF: Int = R.drawable.baseline_notifications_off_black_24dp
+    private const val DRAWABLE_RINGER_VIBRATE: Int = R.drawable.baseline_vibration_black_24dp
+    private const val DRAWABLE_NOTIFICATIONS_ON: Int = R.drawable.baseline_circle_notifications_deep_purple_300_24dp
+    private const val DRAWABLE_MUSIC_OFF: Int = R.drawable.baseline_music_off_black_24dp
+    private const val DRAWABLE_MUSIC_ON : Int = R.drawable.baseline_music_note_deep_purple_300_24dp
+    private const val DRAWABLE_RINGER_NORMAL: Int = R.drawable.baseline_notifications_active_black_24dp
+
     @JvmStatic
     private fun setEnabledState(layout: ViewGroup, enabled: Boolean): Unit {
         layout.isEnabled = enabled
@@ -27,33 +36,53 @@ object BindingAdapters {
     }
 
     @JvmStatic
+    private fun setAlarmIcon(imageView: ImageView, enabled: Boolean): Unit {
+        imageView.setImageDrawable(ResourcesCompat.getDrawable(
+            imageView.context.resources, if (enabled) DRAWABLE_ALARM_ON else DRAWABLE_ALARM_OFF, imageView.context.theme))
+    }
+
+    @JvmStatic
     private fun setSilentIcon(icon: ImageView): Unit {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_notifications_off_black_24dp, icon.context.theme))
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_NOTIFICATIONS_OFF, icon.context.theme))
     }
 
     @JvmStatic
     private fun setVibrateIcon(icon: ImageView): Unit {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_vibration_black_24dp, icon.context.theme))
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_RINGER_VIBRATE, icon.context.theme))
     }
 
     @JvmStatic
     private fun setNormalNotificationIcon(icon: ImageView): Unit {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_circle_notifications_deep_purple_300_24dp, icon.context.theme))
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_NOTIFICATIONS_ON, icon.context.theme))
     }
 
     @JvmStatic
     private fun setMediaOffIcon(icon: ImageView): Unit {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_music_off_black_24dp, icon.context.theme))
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_MUSIC_OFF, icon.context.theme))
     }
 
     @JvmStatic
     private fun setMediaOnIcon(icon: ImageView): Unit {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_music_note_deep_purple_300_24dp, icon.context.theme))
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_MUSIC_ON, icon.context.theme))
     }
 
     @JvmStatic
     private fun setNormalRingerIcon(icon: ImageView): Unit {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, R.drawable.baseline_notifications_active_black_24dp, icon.context.theme))
+        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_RINGER_NORMAL, icon.context.theme))
+    }
+
+    @JvmStatic
+    @BindingAdapter("alarmInterruptionFilter", "priorityCategories", "policyAccessGranted", "index")
+    fun bindAlarmIcon(
+        imageView: ImageView,
+        alarmInterruptionFilter: Int,
+        priorityCategories: List<Int>,
+        policyAccessGranted: Boolean,
+        index: Int)
+    : Unit {
+        setAlarmIcon(imageView, interruptionPolicyAllowsAlarmsStream(
+            alarmInterruptionFilter, priorityCategories, policyAccessGranted
+        ) && !canMuteAlarmStream(index))
     }
 
     @JvmStatic
@@ -104,7 +133,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted", "mediaVolume", requireAll = false)
+    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted", "mediaVolume")
     fun bindMediaIcon(
         imageView: ImageView,
         mediaInterruptionFilter: Int,
@@ -136,14 +165,14 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @Suppress("deprecation")
+    @Suppress("deprecation", "newApi")
     @BindingAdapter("suppressedEffectScreenOn")
     fun bindSuppressedEffectScreenOnSwitch(view: Switch, suppressedEffectScreenOn: List<Int>): Unit {
         view.isChecked = suppressedEffectScreenOn.contains(SUPPRESSED_EFFECT_SCREEN_ON)
     }
 
     @JvmStatic
-    @Suppress("deprecation")
+    @Suppress("deprecation", "newApi")
     @BindingAdapter("suppressedEffectScreenOff")
     fun bindSuppressedEffectScreenOffSwitch(view: Switch, suppressedEffectScreenOff: List<Int>): Unit {
         view.isChecked = suppressedEffectScreenOff.contains(SUPPRESSED_EFFECT_SCREEN_OFF)
@@ -151,7 +180,11 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("rootViewGroup", "prioritySenders", "priorityCategories", "categoryType")
-    fun bindStarredContactsLayout(view: View, rootViewGroup: ViewGroup, prioritySenders: Int, priorityCategories: List<Int>, categoryType: Int): Unit {
+    fun bindStarredContactsLayout(
+        view: View, rootViewGroup:
+        ViewGroup, prioritySenders: Int,
+        priorityCategories: List<Int>,
+        categoryType: Int): Unit {
         val transition: AutoTransition = AutoTransition().apply {
             excludeChildren(R.id.exceptionsCallsLayout, true)
             excludeChildren(R.id.exceptionsMessagesLayout, true)
@@ -210,7 +243,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("iconRingerMode", "ringerIconInterruptionFilter", "ringerPriorityCategories", "notificationAccessGranted", "streamsUnlinked", requireAll = false)
+    @BindingAdapter("iconRingerMode", "ringerIconInterruptionFilter", "ringerPriorityCategories", "notificationAccessGranted", "streamsUnlinked")
     fun bindRingerIcon(
         icon: ImageView,
         ringerMode: Int,
@@ -230,7 +263,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("notificationMode", "notificationInterruptionFilter", "notificationPriorityCategories", "notificationAccessGranted", "streamsUnlinked", requireAll = false)
+    @BindingAdapter("notificationMode", "notificationInterruptionFilter", "notificationPriorityCategories", "notificationAccessGranted", "streamsUnlinked")
     fun bindNotificationIcon(
         icon: ImageView,
         notificationMode: Int,
@@ -256,7 +289,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("ringerMode", "ringerSeekBarInterruptionFilter", "ringerSeekBarPropertyCategories", "notificationAccessGranted", "streamsUnlinked",requireAll = false)
+    @BindingAdapter("ringerMode", "ringerSeekBarInterruptionFilter", "ringerSeekBarPropertyCategories", "notificationAccessGranted", "streamsUnlinked")
     fun bindRingSeekBar(
         view: SeekBar,
         ringerMode: Int,
@@ -272,7 +305,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted", requireAll = false)
+    @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted")
     fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = interruptionPolicyAllowsAlarmsStream(alarmInterruptionFilter, alarmPriorityCategories, notificationAccessGranted)
     }
@@ -291,7 +324,7 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("preferencesInterruptionFilter", "notificationPolicyAccess", requireAll = false)
+    @BindingAdapter("preferencesInterruptionFilter", "notificationPolicyAccess")
     fun bindInterruptionPreferencesLayout(viewGroup: ViewGroup, interruptionFilter: Int, notificationPolicyAccess: Boolean): Unit {
         if (notificationPolicyAccess) {
             setEnabledState(viewGroup, interruptionFilter == INTERRUPTION_FILTER_PRIORITY)

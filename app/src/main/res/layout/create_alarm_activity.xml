@@ -127,7 +127,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
             android:onClick="@{() -> viewModel.onDaysSelectButtonClick()}"
-            android:text="@{TextUtil.weekDaysToString(viewModel.scheduledDays, viewModel.localTime)}"
+            android:text="@{TextUtil.weekDaysToString(viewModel.scheduledDays, viewModel.weekDaysLocalTime)}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/imageView"
             app:layout_constraintTop_toBottomOf="@+id/textView3" />

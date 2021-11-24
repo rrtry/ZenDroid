@@ -200,42 +200,6 @@ fun createGeofenceRegistrationNotification(context: Context): Notification {
     return builder.build()
 }
 
-fun createAlarmUpdateNotification(context: Context, title: String): Notification {
-    val builder = NotificationCompat.Builder(context, SERVICE_NOTIFICATION_CHANNEL_ID)
-        .setContentTitle("Updating alarms")
-        .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
-        .setOngoing(true)
-        .setSilent(true)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        createNotificationChannel(
-            context,
-            SERVICE_NOTIFICATION_CHANNEL_ID,
-            SERVICE_NOTIFICATION_CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_MIN).also {
-            builder.setChannelId(it.id)
-        }
-    }
-    return builder.build()
-}
-
-fun createAlarmCancelNotification(context: Context, title: String): Notification {
-    val builder = NotificationCompat.Builder(context, SERVICE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Disabling scheduled activation for $title")
-            .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
-            .setOngoing(true)
-            .setSilent(true)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        createNotificationChannel(
-                context,
-                SERVICE_NOTIFICATION_CHANNEL_ID,
-                SERVICE_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_MIN).also {
-            builder.setChannelId(it.id)
-        }
-    }
-    return builder.build()
-}
-
 fun createSchedulerNotification(context: Context): Notification {
     val builder = NotificationCompat.Builder(context, SERVICE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Scheduling alarms")

@@ -18,7 +18,6 @@ import javax.inject.Inject
 import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
-import android.util.Log
 import com.example.volumeprofiler.activities.EditProfileActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
@@ -72,6 +71,7 @@ class EditProfileViewModel @Inject constructor(
         data class GetDefaultRingtoneUri(val type: Int): Event()
         data class ChangeRingtoneEvent(val ringtoneType: Int): Event()
         data class ShowPopupWindow(val category: Int): Event()
+        data class AdjustStreamMinVolume(val streamType: Int, val volume: Int): Event()
     }
 
     enum class DialogType {
@@ -92,7 +92,7 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    val title: MutableStateFlow<String> = MutableStateFlow("New profile")
+    val title: MutableStateFlow<String> = MutableStateFlow("")
     val currentFragmentTag: MutableStateFlow<String> = MutableStateFlow(TAG_PROFILE_FRAGMENT)
     val mediaVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_MUSIC_DEFAULT_VOLUME)
     val callVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_VOICE_CALL_DEFAULT_VOLUME)
@@ -221,11 +221,12 @@ class EditProfileViewModel @Inject constructor(
         )
     }
 
+    /*
     fun adjustUnmuteStream(streamType: Int): Unit {
         when (streamType) {
             STREAM_NOTIFICATION -> {
                 notificationVolume.value = previousNotificationVolume
-                if (previousNotificationVolume == 0) {
+                if (previousNotificationVolume <= 0) {
                     onStreamMuted(STREAM_NOTIFICATION, showToast = false, vibrate = true)
                 }
                 else {
@@ -234,7 +235,7 @@ class EditProfileViewModel @Inject constructor(
             }
             STREAM_RING -> {
                 ringVolume.value = previousRingerVolume
-                if (previousRingerVolume == 0) {
+                if (previousRingerVolume <= 0) {
                     onStreamMuted(STREAM_RING, showToast = false, vibrate = true)
                 }
                 else {
@@ -243,8 +244,9 @@ class EditProfileViewModel @Inject constructor(
             }
         }
     }
+     */
 
-    fun shouldUpdateProfile(): Boolean {
+    private fun shouldUpdateProfile(): Boolean {
         return profileUUID.value != null
     }
 
@@ -307,12 +309,27 @@ class EditProfileViewModel @Inject constructor(
     }
 
     fun onAlarmSoundLayoutClick(): Unit {
-        Log.i("EditProfileViewModel", "onAlarmSoundLayoutClick()")
         viewModelScope.launch {
             if (storagePermissionGranted.value) {
                 eventChannel.send(Event.ChangeRingtoneEvent(TYPE_ALARM))
             } else {
                 eventChannel.send(Event.StoragePermissionRequestEvent)
+            }
+        }
+    }
+
+    fun onAlarmStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
+        if (fromUser) {
+            viewModelScope.launch {
+                eventChannel.send(Event.AdjustStreamMinVolume(STREAM_ALARM, index))
+            }
+        }
+    }
+
+    fun onVoiceCallStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
+        if (fromUser) {
+            viewModelScope.launch {
+                eventChannel.send(Event.AdjustStreamMinVolume(STREAM_VOICE_CALL, index))
             }
         }
     }
@@ -330,7 +347,7 @@ class EditProfileViewModel @Inject constructor(
     fun onRingerIconClick(): Unit {
         if (ringerStreamAllowed()) {
             if (ringerMode.value == RINGER_MODE_SILENT) {
-                if (previousRingerVolume == 0) {
+                if (previousRingerVolume <= 0) {
                     onStreamMuted(STREAM_RING, showToast = false, vibrate = true)
                 }
                 else {
@@ -349,8 +366,8 @@ class EditProfileViewModel @Inject constructor(
     fun onNotificationIconClick(): Unit {
         if (notificationsStreamAllowed()) {
             if (notificationMode.value == RINGER_MODE_SILENT) {
-                if (previousNotificationVolume == 0) {
-                    onStreamMuted(STREAM_RING, showToast = false, vibrate = true)
+                if (previousNotificationVolume <= 0) {
+                    onStreamMuted(STREAM_NOTIFICATION, showToast = false, vibrate = true)
                 } else {
                     notificationMode.value = RINGER_MODE_NORMAL
                 }
@@ -361,6 +378,16 @@ class EditProfileViewModel @Inject constructor(
                 notificationMode.value = RINGER_MODE_SILENT
             }
         }
+    }
+
+    private fun setSilentRinger(): Unit {
+        ringVolume.value = 0
+        ringerMode.value = RINGER_MODE_SILENT
+    }
+
+    private fun setSilentNotifications(): Unit {
+        notificationVolume.value = 0
+        notificationMode.value = RINGER_MODE_SILENT
     }
 
     fun onPreferencesLayoutClick(): Unit {
@@ -383,7 +410,7 @@ class EditProfileViewModel @Inject constructor(
         if (fromUser) {
             when {
                 value == 0 -> {
-                    onStreamMuted(streamType, showToast = true, vibrate = true)
+                    onStreamMuted(streamType, showToast = false, vibrate = true)
                 }
                 streamType == STREAM_NOTIFICATION && notificationMode.value != RINGER_MODE_NORMAL -> {
                     notificationMode.value = RINGER_MODE_NORMAL
@@ -490,18 +517,6 @@ class EditProfileViewModel @Inject constructor(
         if (!containsPriorityCategory(category)) {
             priorityCategories.value += category
         }
-    }
-
-    fun getPhoneRingtoneUri(): Uri {
-        return ringtoneUri
-    }
-
-    fun getAlarmRingtoneUri(): Uri {
-        return alarmUri
-    }
-
-    fun getNotificationSoundUri(): Uri {
-        return notificationUri
     }
 
     fun removePriorityCategory(category: Int): Unit {

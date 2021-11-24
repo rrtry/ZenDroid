@@ -41,10 +41,14 @@ class PhoneStateReceiver: BroadcastReceiver() {
                 val notificationMode: Int = sharedPreferencesUtil.getNotificationMode()
 
                 if (phoneState == EXTRA_STATE_RINGING && ringVolume >= 0) {
-                    profileUtil.setRingerMode(STREAM_RING, ringVolume, ringerMode)
+                    profileUtil.setRingerMode(STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES)
+                    if (notificationMode == 0 && ringVolume > 0) {
+                        profileUtil.playRingtone()
+                    }
                 }
                 else if ((phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) && notificationVolume >= 0) {
-                    profileUtil.setRingerMode(STREAM_NOTIFICATION, notificationVolume, notificationMode)
+                    profileUtil.stopPreviousRingtone()
+                    profileUtil.setRingerMode(STREAM_NOTIFICATION, notificationVolume, notificationMode, FLAG_ALLOW_RINGER_MODES)
                 }
             }
         }

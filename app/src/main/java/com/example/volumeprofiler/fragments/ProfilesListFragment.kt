@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
@@ -72,8 +73,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var positionMap: ArrayMap<UUID, Int>
 
-    //private var pendingProfileAction: Pair<Int, Int> = Pair(RecyclerView.NO_POSITION, NO_ACTION)
-
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
@@ -91,6 +90,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             if (it.resultCode == Activity.RESULT_OK) {
                 val profile: Profile = it.data?.getParcelableExtra(EditProfileActivity.EXTRA_PROFILE)!!
                 val update: Boolean = it.data?.getBooleanExtra(EditProfileActivity.EXTRA_SHOULD_UPDATE, false)!!
+                Log.i("ProfilesListFragment", "ringerMode: ${profile.ringerMode}")
                 if (update) {
                     viewModel.updateProfile(profile)
                 } else {

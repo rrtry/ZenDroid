@@ -4,6 +4,10 @@ import android.app.Activity
 import android.content.Intent
 import android.Manifest.permission.*
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.util.LogPrinter
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.*
@@ -33,6 +37,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 
 @AndroidEntryPoint
 class EditAlarmActivity: AppCompatActivity() {
@@ -42,12 +47,18 @@ class EditAlarmActivity: AppCompatActivity() {
 
     private lateinit var binding: CreateAlarmActivityBinding
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
+    private var runnableInQueue: Boolean = false
 
     @Inject
     lateinit var alarmUtil: AlarmUtil
 
     @Inject
     lateinit var profileUtil: ProfileUtil
+
+    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val localTimeUpdateRunnable: Runnable = Runnable {
+        viewModel.weekDaysLocalTime.value = LocalTime.now()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +88,7 @@ class EditAlarmActivity: AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         phonePermissionLauncher.unregister()
+        handler.removeCallbacks(localTimeUpdateRunnable)
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
@@ -194,14 +206,13 @@ class EditAlarmActivity: AppCompatActivity() {
                     Snackbar.make(binding.root, "You can always grant permissions in settings", Snackbar.LENGTH_LONG).show()
                 }
             })
-
         supportFragmentManager.setFragmentResultListener(TIME_REQUEST_KEY, this) { _, bundle ->
             val localTime: LocalTime? = bundle.getSerializable(EXTRA_LOCAL_TIME) as? LocalTime
             if (localTime != null) {
                 viewModel.localTime.value = localTime
+                viewModel.weekDaysLocalTime.value = localTime
             }
         }
-
         supportFragmentManager.setFragmentResultListener(SCHEDULED_DAYS_REQUEST_KEY, this) {_, bundle ->
             val scheduledDays: ArrayList<Int>? = bundle.getSerializable(ScheduledDaysPickerDialog.EXTRA_SCHEDULED_DAYS) as? ArrayList<Int>
             if (scheduledDays != null) {
@@ -231,8 +242,28 @@ class EditAlarmActivity: AppCompatActivity() {
                         viewModel.setArgs(getAlarmRelation())
                     }
                 }
+                launch {
+                    viewModel.shouldScheduleTimer.collect {
+                        if (it && !runnableInQueue) {
+                            postRunnable()
+                        } else {
+                            removeCallbacks()
+                        }
+                        handler.dump(LogPrinter(Log.DEBUG, "Handler"), "MessageQueue: ")
+                    }
+                }
             }
         }
+    }
+
+    private fun postRunnable(): Unit {
+        handler.postDelayed(localTimeUpdateRunnable, AlarmUtil.getLocalTimeUpdateTaskDelay())
+        runnableInQueue = true
+    }
+
+    private fun removeCallbacks(): Unit {
+        handler.removeCallbacks(localTimeUpdateRunnable)
+        runnableInQueue = false
     }
 
     private fun showDaysPickerDialog(): Unit {
@@ -272,6 +303,8 @@ class EditAlarmActivity: AppCompatActivity() {
 
         private const val TIME_INTERVAL: Int = 2000
         private const val LOG_TAG: String = "EditEventActivity"
+        private const val EXTRA_IN_MESSAGE_QUEUE: String = "extra_in_message_queue"
+
         const val EXTRA_UPDATE_FLAG: String = "extra_update_flag"
         const val TIME_REQUEST_KEY: String = "time_request_key"
         const val SCHEDULED_DAYS_REQUEST_KEY: String = "scheduled_days_request_key"

@@ -6,11 +6,14 @@ import android.app.NotificationManager.*
 import android.content.Context
 import android.media.AudioManager
 import android.Manifest.permission.*
+import android.media.AudioAttributes
 import com.example.volumeprofiler.entities.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.media.AudioManager.*
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Vibrator
@@ -27,11 +30,15 @@ class ProfileUtil @Inject constructor (
         @ApplicationContext private val context: Context
         ) {
 
-    @Inject lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+    @Inject
+    lateinit var sharedPreferencesUtil: SharedPreferencesUtil
 
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val telephonyManager: TelephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+    private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+
+    private var ringtone: Ringtone? = null
 
     private val phoneStateListener: PhoneStateListener = object : PhoneStateListener() {
 
@@ -56,10 +63,6 @@ class ProfileUtil @Inject constructor (
         setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
         if (profile.streamsUnlinked) {
             if (phoneState == TelephonyManager.CALL_STATE_RINGING) {
-                /*
-                   Set ringVolume property as current volume level if profile uses "unlinked streams" feature and phone is ringing
-                   Otherwise, set notificationVolume as current volume level
-                 */
                 setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
             } else {
                 setRingerMode(STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode)
@@ -75,31 +78,41 @@ class ProfileUtil @Inject constructor (
         sharedPreferencesUtil.writeCurrentProfileProperties(profile)
     }
 
-    /*
-       Mute audio stream without altering Do not disturb state
-     */
-    private fun setSilentMode(streamType: Int): Unit {
+    private fun setSilentMode(streamType: Int, flags: Int = 0): Unit {
         if (isVibrateHardwarePresent()) {
             adjustUnmuteStream(streamType)
         }
-        audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, FLAG_ALLOW_RINGER_MODES)
+        audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, flags)
     }
 
-    /*
-      Mute audio stream and set ringer to vibrate
-      FLAG_ALLOW_RINGER_MODES may also set ringer to silent if the device does not support vibration
-     */
-    private fun setVibrateMode(streamType: Int): Unit {
+    private fun setVibrateMode(streamType: Int, flags: Int = 0): Unit {
         if (isVibrateHardwarePresent()) {
             adjustUnmuteStream(streamType)
-            audioManager.setStreamVolume(streamType, 0, FLAG_ALLOW_RINGER_MODES)
+            audioManager.setStreamVolume(streamType, 0, flags)
         } else {
             Log.w("ProfileUtil", "Vibration is not supported on this device")
         }
     }
 
     private fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
+        adjustUnmuteStream(streamType)
         audioManager.setStreamVolume(streamType, index, flags)
+    }
+
+    fun getAlarmStreamMinVolume(): Int {
+        return if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
+            audioManager.getStreamMinVolume(STREAM_ALARM)
+        } else {
+            0
+        }
+    }
+
+    fun getVoiceCallStreamMinVolume(): Int {
+        return if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
+            audioManager.getStreamMinVolume(STREAM_VOICE_CALL)
+        } else {
+            1
+        }
     }
 
     private fun adjustUnmuteStream(streamType: Int): Unit {
@@ -109,8 +122,7 @@ class ProfileUtil @Inject constructor (
     }
 
     private fun isVibrateHardwarePresent(): Boolean {
-        val vibratorService: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        return vibratorService.hasVibrator()
+        return vibrator.hasVibrator()
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -172,12 +184,24 @@ class ProfileUtil @Inject constructor (
         notificationManager.setInterruptionFilter(interruptionFilter)
     }
 
-    fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int): Unit {
+    fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int, flags: Int = 0): Unit {
         when (mode) {
-            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, 0)
-            RINGER_MODE_VIBRATE -> setVibrateMode(streamType)
-            RINGER_MODE_SILENT -> setSilentMode(streamType)
+            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, flags)
+            RINGER_MODE_VIBRATE -> setVibrateMode(streamType, flags)
+            RINGER_MODE_SILENT -> setSilentMode(streamType, flags)
         }
+    }
+
+    fun playRingtone(): Unit {
+        if (ringtone == null) {
+            ringtone = getRingtone(context, getActualDefaultRingtoneUri(context, TYPE_RINGTONE))
+            ringtone?.play()
+        }
+    }
+
+    fun stopPreviousRingtone(): Unit {
+        ringtone?.stop()
+        ringtone = null
     }
 
     private fun setRingtoneUri(uri: Uri, type: Int): Unit {
@@ -186,7 +210,6 @@ class ProfileUtil @Inject constructor (
 
     private fun setVibrateWhenRingingBehaviour(state: Int): Unit {
         if (canModifySystemPreferences()) {
-            // Bug in android 6.0 prevents applications from writing to system preferences even with permission granted
             try {
                 Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
             } catch (e: IllegalArgumentException) {
@@ -268,6 +291,12 @@ class ProfileUtil @Inject constructor (
     }
 
     companion object {
+
+        @JvmStatic
+        fun getMaxStreamVolume(context: Context, streamType: Int): Int {
+            val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            return audioManager.getStreamMaxVolume(streamType)
+        }
 
         private fun bitmaskOfListContents(list: List<Int>): Int {
             var temp: Int = 0

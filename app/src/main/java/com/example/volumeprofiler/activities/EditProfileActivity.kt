@@ -246,6 +246,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
     private fun setArgs(): Unit {
         if (intent.extras != null) {
             val arg: Profile = intent.extras!!.getParcelable(EXTRA_PROFILE)!!
+            Log.i("EditProfileActivity", arg.ringerMode.toString())
             viewModel.setArgs(arg, true)
         } else {
             viewModel.setArgs(Profile("New profile"), false)

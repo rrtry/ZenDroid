@@ -13,10 +13,10 @@ import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.broadcastReceivers.AlarmReceiver
 import com.example.volumeprofiler.services.AlarmService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.*
+import java.time.temporal.ChronoField
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.ArrayList
@@ -124,6 +124,17 @@ class AlarmUtil @Inject constructor (
 
     companion object {
 
+        fun getLocalTimeUpdateTaskDelay(): Long {
+
+            val now: LocalTime = LocalTime.now()
+            val adjusted: LocalTime = now.withMinute(now.minute + 1).withSecond(0)
+
+            val currentMillis: Int = now.get(ChronoField.MILLI_OF_DAY)
+            val adjustedMillis: Int = adjusted.get(ChronoField.MILLI_OF_DAY)
+
+            return (adjustedMillis - currentMillis).toLong()
+        }
+
         private fun toEpochMilli(now: LocalDateTime): Long {
             return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         }
@@ -217,10 +228,10 @@ class AlarmUtil @Inject constructor (
                     "Alarm set for less than a minute from now",
                     "Alarm set for %1${'$'}s days from now",
                     "Alarm set for %2${'$'}s hours from now",
-                    "Alarm set for %1${'$'}s and %2${'$'}s hours from now",
+                    "Alarm set for %1${'$'}s days and %2${'$'}s hours from now",
                     "Alarm set for %3${'$'}s minutes from now",
                     "Alarm set for %1${'$'}s days and %3${'$'}s minutes from now",
-                    "Alarm set for %2${'$'}s and %3${'$'}s minutes from now",
+                    "Alarm set for %2${'$'}s hours and %3${'$'}s minutes from now",
                     "Alarm set for %1${'$'}s hours, %2${'$'}s hours, %3${'$'}s minutes"
                 )
                 val index = ((if (showDays) 1 else 0)

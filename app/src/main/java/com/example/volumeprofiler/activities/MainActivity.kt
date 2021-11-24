@@ -20,6 +20,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.media.AudioManager
 import android.os.Build
+import android.media.AudioManager.*
 import android.util.Log
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.EXTRA_PERMISSION
@@ -55,6 +56,13 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         viewPager = findViewById(R.id.pager)
         viewPager.adapter = pagerAdapter
         setupTabLayout()
+
+        val audioManager: AudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, 0, FLAG_REMOVE_SOUND_AND_VIBRATE)
+        Log.i("MainActivity", "max stream volume STREAM_ALARM: ${audioManager.getStreamMaxVolume(STREAM_ALARM)}")
+        Log.i("MainActivity", "min stream volume STREAM_MUSIC: ${audioManager.getStreamMinVolume(STREAM_ALARM)}")
+        Log.i("MainActivity", "max stream volume STREAM_VOICE_CALL: ${audioManager.getStreamMaxVolume(STREAM_VOICE_CALL)}")
+        Log.i("MainActivity", "min stream volume STREAM_VOICE_CALL: ${audioManager.getStreamMinVolume(STREAM_VOICE_CALL)}")
 
         supportFragmentManager.setFragmentResultListener(PERMISSION_REQUEST_KEY, this,
             { requestKey, result ->

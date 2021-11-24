@@ -9,11 +9,11 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.util.Log
-import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
 import java.lang.StringBuilder
 import javax.inject.Inject
+import android.Manifest.permission.*
 
 @ViewModelScoped
 class ContentResolverUtil @Inject constructor(
@@ -21,7 +21,7 @@ class ContentResolverUtil @Inject constructor(
 ) {
 
     fun queryStarredContacts(): String {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_DENIED) {
+        if (!checkSelfPermission(context, READ_CONTACTS)) {
             return "Contacts permission required"
         }
         val contentResolver: ContentResolver = context.contentResolver
@@ -41,8 +41,7 @@ class ContentResolverUtil @Inject constructor(
     }
 
     fun getRingtoneTitle(uri: Uri, type: Int): String {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
-            == PackageManager.PERMISSION_DENIED) {
+        if (!checkSelfPermission(context, READ_EXTERNAL_STORAGE)) {
             return "Storage permission required"
         }
         val contentResolver: ContentResolver = context.contentResolver
