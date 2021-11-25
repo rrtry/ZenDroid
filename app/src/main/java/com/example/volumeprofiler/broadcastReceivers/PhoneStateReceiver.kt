@@ -10,7 +10,6 @@ import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
 import android.app.NotificationManager.*
-import android.app.NotificationManager.Policy.*
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
@@ -22,6 +21,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
     lateinit var profileUtil: ProfileUtil
 
     override fun onReceive(context: Context?, intent: Intent?) {
+
         if (intent?.action == ACTION_PHONE_STATE_CHANGED && intent.extras != null) {
 
             val streamsUnlinked: Boolean = sharedPreferencesUtil.getStreamsUnlinked()
@@ -30,7 +30,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
 
             val isPriorityFilter: Boolean = interruptionFilter == INTERRUPTION_FILTER_PRIORITY
             val includesCallsPriority: Boolean = isPriorityFilter && priorityCategories.contains(
-                PRIORITY_CATEGORY_REPEAT_CALLERS) || priorityCategories.contains(PRIORITY_CATEGORY_CALLS)
+                Policy.PRIORITY_CATEGORY_REPEAT_CALLERS) || priorityCategories.contains(Policy.PRIORITY_CATEGORY_CALLS)
 
             if (streamsUnlinked && (includesCallsPriority || interruptionFilter == INTERRUPTION_FILTER_ALL)) {
                 val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
@@ -40,15 +40,15 @@ class PhoneStateReceiver: BroadcastReceiver() {
                 val ringerMode: Int = sharedPreferencesUtil.getRingerMode()
                 val notificationMode: Int = sharedPreferencesUtil.getNotificationMode()
 
-                if (phoneState == EXTRA_STATE_RINGING && ringVolume >= 0) {
-                    profileUtil.setRingerMode(STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES)
-                    if (notificationMode == 0 && ringVolume > 0) {
-                        profileUtil.playRingtone()
-                    }
+                if (phoneState == EXTRA_STATE_RINGING && ringVolume != -1) {
+                    profileUtil.setRingerMode(
+                        STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES
+                    )
                 }
                 else if ((phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) && notificationVolume >= 0) {
-                    profileUtil.stopPreviousRingtone()
-                    profileUtil.setRingerMode(STREAM_NOTIFICATION, notificationVolume, notificationMode, FLAG_ALLOW_RINGER_MODES)
+                    profileUtil.setRingerMode(
+                        STREAM_NOTIFICATION,
+                        notificationVolume, notificationMode, FLAG_ALLOW_RINGER_MODES)
                 }
             }
         }

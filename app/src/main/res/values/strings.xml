@@ -55,7 +55,8 @@
     <string name="title_activity_maps">Map</string>
     <string name="phone_permission_explanation">
         Separating ringer and notification streams requires phone permission.
-        The app won\'t be able to read call log</string>
+        The app won\'t be able to read call log
+        Warning: this feature is experimental and may not work on some devices</string>
     <string name="location_permission_explanation">
         To determine your current location, the app needs location permission
     </string>

@@ -33,6 +33,6 @@ class Application: Application(), LifecycleObserver {
 
         const val ACTION_GEOFENCE_TRANSITION: String = "com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"
         const val ACTION_ALARM_ALERT: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
-        const val ACTION_UPDATE_ALARM_STATE: String = "com.example.volumeprofiler.ACTION_UPDATE_ALARM_STATE"
+        const val ACTION_RINGER_MODE_CHANGE: String = "com.example.volumeprofiler.ACTION_RINGER_MODE_CHANGE"
     }
 }

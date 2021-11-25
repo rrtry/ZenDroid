@@ -38,31 +38,15 @@ class ProfileUtil @Inject constructor (
     private val telephonyManager: TelephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
     private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
-    private var ringtone: Ringtone? = null
-
-    private val phoneStateListener: PhoneStateListener = object : PhoneStateListener() {
-
-        override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-            super.onCallStateChanged(state, phoneNumber)
-            phoneState = state
-        }
-    }
-
-    init {
-        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
-    }
-
-    private var phoneState: Int = TelephonyManager.CALL_STATE_IDLE
-
     fun setProfile(profile: Profile) {
         if (notificationManager.currentInterruptionFilter != INTERRUPTION_FILTER_ALL) {
-            setInterruptionFilter(INTERRUPTION_FILTER_ALL) // set non-blocking interruption filter to unmute all audio stream
+            setInterruptionFilter(INTERRUPTION_FILTER_ALL)
         }
         setStreamVolume(STREAM_MUSIC, profile.mediaVolume, 0)
         setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, 0)
         setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
         if (profile.streamsUnlinked) {
-            if (phoneState == TelephonyManager.CALL_STATE_RINGING) {
+            if (telephonyManager.callState == TelephonyManager.CALL_STATE_RINGING) {
                 setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
             } else {
                 setRingerMode(STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode)
@@ -190,18 +174,6 @@ class ProfileUtil @Inject constructor (
             RINGER_MODE_VIBRATE -> setVibrateMode(streamType, flags)
             RINGER_MODE_SILENT -> setSilentMode(streamType, flags)
         }
-    }
-
-    fun playRingtone(): Unit {
-        if (ringtone == null) {
-            ringtone = getRingtone(context, getActualDefaultRingtoneUri(context, TYPE_RINGTONE))
-            ringtone?.play()
-        }
-    }
-
-    fun stopPreviousRingtone(): Unit {
-        ringtone?.stop()
-        ringtone = null
     }
 
     private fun setRingtoneUri(uri: Uri, type: Int): Unit {

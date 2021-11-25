@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -72,6 +74,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private lateinit var tracker: SelectionTracker<String>
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var positionMap: ArrayMap<UUID, Int>
+    private lateinit var audioManager: AudioManager
 
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
@@ -86,6 +89,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as PermissionRequestCallback
+        audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
                 val profile: Profile = it.data?.getParcelableExtra(EditProfileActivity.EXTRA_PROFILE)!!
