@@ -303,7 +303,6 @@ class EditAlarmActivity: AppCompatActivity() {
 
         private const val TIME_INTERVAL: Int = 2000
         private const val LOG_TAG: String = "EditEventActivity"
-        private const val EXTRA_IN_MESSAGE_QUEUE: String = "extra_in_message_queue"
 
         const val EXTRA_UPDATE_FLAG: String = "extra_update_flag"
         const val TIME_REQUEST_KEY: String = "time_request_key"

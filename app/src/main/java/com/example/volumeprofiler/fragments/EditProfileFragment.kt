@@ -21,6 +21,7 @@ import android.app.NotificationManager.*
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.*
 import android.media.AudioManager.*
 import android.net.Uri
 import android.os.Build
@@ -64,6 +65,9 @@ class EditProfileFragment: Fragment() {
     private lateinit var writeSystemSettingsCallback: ActivityResultLauncher<Intent>
     private lateinit var phonePermissionCallback: ActivityResultLauncher<String>
 
+    private var currentStreamType: Int = -1
+    private var currentMediaPlayerUri: Uri = Uri.EMPTY
+
     private var notificationPolicyReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -74,6 +78,7 @@ class EditProfileFragment: Fragment() {
     }
 
     private var hapticService: Vibrator? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -95,9 +100,25 @@ class EditProfileFragment: Fragment() {
         phonePermissionCallback.unregister()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (mediaPlayer != null && mediaPlayer!!.isPlaying) {
+            outState.putParcelable(EXTRA_CURRENT_MEDIA_URI, currentMediaPlayerUri)
+            outState.putInt(EXTRA_CURRENT_AUDIO_STREAM, currentStreamType)
+            mediaPlayer?.currentPosition?.let { outState.putInt(EXTRA_CURRENT_POSITION, it) }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         hapticService = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (savedInstanceState != null) {
+            val position: Int = savedInstanceState.getInt(EXTRA_CURRENT_POSITION)
+            currentStreamType = savedInstanceState.getInt(EXTRA_CURRENT_POSITION)
+            currentMediaPlayerUri = savedInstanceState.getParcelable(EXTRA_CURRENT_MEDIA_URI)!!
+
+            resumeRingtonePlayback(currentMediaPlayerUri, currentStreamType, position)
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -122,9 +143,21 @@ class EditProfileFragment: Fragment() {
         setPhonePermissionProperty()
     }
 
+    private fun getUsageAttribute(streamType: Int): Int {
+        return when (streamType) {
+            STREAM_MUSIC -> AudioAttributes.USAGE_MEDIA
+            STREAM_VOICE_CALL -> AudioAttributes.USAGE_VOICE_COMMUNICATION
+            STREAM_NOTIFICATION -> AudioAttributes.USAGE_NOTIFICATION
+            STREAM_RING -> AudioAttributes.USAGE_NOTIFICATION_RINGTONE
+            STREAM_ALARM ->  AudioAttributes.USAGE_ALARM
+            else -> AudioAttributes.USAGE_UNKNOWN
+        }
+    }
+
     override fun onStop() {
         super.onStop()
         requireContext().unregisterReceiver(notificationPolicyReceiver)
+        releaseMediaPlayer()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -156,22 +189,37 @@ class EditProfileFragment: Fragment() {
                     viewModel.fragmentEventsFlow.collect {
                         when (it) {
 
-                            is AdjustStreamMinVolume -> {
+                            is StopRingtonePlayback -> {
+                                mediaPlayer?.stop()
+                                viewModel.setPlaybackState(it.streamType, false)
+                            }
 
+                            is StartRingtonePlayback -> {
+                                if (viewModel.getStreamVolume(it.streamType) > 0) {
+                                    startRingtonePlayback(it.streamType, it.volume)
+                                    viewModel.setPlaybackState(it.streamType, true)
+                                }
+                            }
+
+                            is StreamVolumeChanged -> {
+                                changePlaybackVolume(it.streamType, it.volume)
+                            }
+
+                            is AlarmStreamVolumeChanged -> {
                                 if (it.streamType == STREAM_ALARM) {
                                     if (it.volume < profileUtil.getAlarmStreamMinVolume()) {
                                         viewModel.alarmVolume.value++
                                     } else {
                                         viewModel.alarmVolume.value = it.volume
                                     }
-                                }
-                                else if (it.streamType == STREAM_VOICE_CALL) {
+                                } else if (it.streamType == STREAM_VOICE_CALL) {
                                     if (it.volume < profileUtil.getVoiceCallStreamMinVolume()) {
                                         viewModel.callVolume.value++
                                     } else {
                                         viewModel.callVolume.value = it.volume
                                     }
                                 }
+                                changePlaybackVolume(it.streamType, it.volume)
                             }
 
                             is GetDefaultRingtoneUri -> setDefaultRingtoneUri(it.type)
@@ -206,6 +254,10 @@ class EditProfileFragment: Fragment() {
                         if (!policyAllowsStream) {
                             viewModel.ringVolume.value = 0
                             viewModel.ringerMode.value = RINGER_MODE_SILENT
+                            if (currentStreamType == STREAM_RING) {
+                                releaseMediaPlayer()
+                                viewModel.setPlaybackState(STREAM_RING, false)
+                            }
                         }
                     }
                 }
@@ -214,6 +266,26 @@ class EditProfileFragment: Fragment() {
                         if (!policyAllowsStream) {
                             viewModel.notificationVolume.value = 0
                             viewModel.notificationMode.value = RINGER_MODE_SILENT
+                            if (currentStreamType == STREAM_NOTIFICATION) {
+                                releaseMediaPlayer()
+                                viewModel.setPlaybackState(STREAM_NOTIFICATION, false)
+                            }
+                        }
+                    }
+                }
+                launch {
+                    viewModel.policyAllowsMediaStream.collect {
+                        if (!it && currentStreamType == STREAM_MUSIC) {
+                            mediaPlayer?.stop()
+                            viewModel.setPlaybackState(STREAM_MUSIC, false)
+                        }
+                    }
+                }
+                launch {
+                    viewModel.policyAllowsAlarmStream.collect {
+                        if (!it && currentStreamType == STREAM_ALARM) {
+                            mediaPlayer?.stop()
+                            viewModel.setPlaybackState(STREAM_ALARM, false)
                         }
                     }
                 }
@@ -399,11 +471,85 @@ class EditProfileFragment: Fragment() {
     private fun createVibrateEffect(): Unit {
         if (hasVibratorHardware()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                hapticService!!.vibrate(VibrationEffect.createOneShot(100, 155))
+                hapticService?.vibrate(VibrationEffect.createOneShot(100, 155))
             } else {
-                hapticService!!.vibrate(100)
+                hapticService?.vibrate(100)
             }
         }
+    }
+
+    private fun getRingtoneUri(type: Int): Uri {
+        val uri: Uri = viewModel.getRingtoneUri(type)
+        return if (uri == Uri.EMPTY) {
+            profileUtil.getDefaultRingtoneUri(type)
+        } else {
+            uri
+        }
+    }
+
+    private fun releaseMediaPlayer(): Unit {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
+
+    private fun changePlaybackVolume(streamType: Int, vol: Int): Unit {
+        if (mediaPlayer?.isPlaying == true && streamType == currentStreamType) {
+            if (vol > 0) {
+                profileUtil.setStreamVolume(streamType, vol, 0)
+            } else {
+                mediaPlayer?.stop()
+                viewModel.setPlaybackState(streamType, false)
+            }
+        }
+    }
+
+    private fun prepareMediaPlayer(uri: Uri, streamType: Int): Unit {
+        mediaPlayer?.reset()
+        mediaPlayer = MediaPlayer().apply {
+            setAudioAttributes(AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(getUsageAttribute(streamType))
+                .build()
+            )
+            setVolume(1f, 1f)
+            setDataSource(requireContext(), uri)
+            prepare()
+        }
+    }
+
+    private fun resumeRingtonePlayback(uri: Uri, streamType: Int, position: Int): Unit {
+        prepareMediaPlayer(uri, streamType)
+        mediaPlayer?.setOnCompletionListener {
+            viewModel.setPlaybackState(streamType, false)
+            releaseMediaPlayer()
+        }
+        mediaPlayer?.seekTo(position)
+        mediaPlayer?.start()
+        viewModel.setPlaybackState(streamType, true)
+    }
+
+    private fun startRingtonePlayback(streamType: Int, volume: Int): Unit {
+
+        profileUtil.setStreamVolume(streamType, volume, 0)
+
+        val ringtoneMap: Map<Int, Int> = mapOf(
+            STREAM_ALARM to TYPE_ALARM,
+            STREAM_NOTIFICATION to TYPE_NOTIFICATION,
+            STREAM_RING to TYPE_RINGTONE,
+            STREAM_MUSIC to TYPE_RINGTONE,
+            STREAM_VOICE_CALL to TYPE_RINGTONE
+        )
+
+        currentMediaPlayerUri = getRingtoneUri(ringtoneMap[streamType]!!)
+        prepareMediaPlayer(currentMediaPlayerUri, streamType)
+
+        mediaPlayer?.setOnCompletionListener {
+            viewModel.setPlaybackState(streamType, false)
+            releaseMediaPlayer()
+        }
+        mediaPlayer?.start()
+        currentStreamType = streamType
     }
 
     private fun changeRingerMode(streamType: Int, mode: Int): Unit {
@@ -463,7 +609,10 @@ class EditProfileFragment: Fragment() {
     companion object {
 
         private const val EXTRA_PROFILE = "profile"
+        private const val EXTRA_CURRENT_POSITION: String = "position"
         private const val LOG_TAG = "EditProfileFragment"
+        private const val EXTRA_CURRENT_AUDIO_STREAM: String = "audio_stream"
+        private const val EXTRA_CURRENT_MEDIA_URI: String = "uri"
 
         fun newInstance(profile: Profile?): EditProfileFragment {
             val args: Bundle = Bundle()

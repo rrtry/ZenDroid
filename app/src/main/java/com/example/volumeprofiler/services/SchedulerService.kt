@@ -43,7 +43,6 @@ class SchedulerService: Service() {
                 val alarm: Alarm = i.alarm
                 val profile: Profile = i.profile
 
-                //Check if alarm has already fired off while device was powered off
                 if (alarm.localDateTime < now) {
                     profileUtil.setProfile(profile)
                     postNotification(this, createAlarmAlertNotification(this, profile.title, alarm.localDateTime.toLocalTime()), ID_SCHEDULER)

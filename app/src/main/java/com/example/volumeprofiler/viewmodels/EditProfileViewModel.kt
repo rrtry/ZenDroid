@@ -18,13 +18,17 @@ import javax.inject.Inject
 import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
+import android.util.Log
 import com.example.volumeprofiler.activities.EditProfileActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
+import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsAlarmsStream
+import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsMediaStream
 import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsNotificationStream
+import kotlinx.coroutines.FlowPreview
 
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
@@ -65,13 +69,16 @@ class EditProfileViewModel @Inject constructor(
         object StartContactsActivity: Event()
         object WriteSystemSettingsRequestEvent: Event()
 
+        data class StartRingtonePlayback(val streamType: Int, val volume: Int): Event()
+        data class StopRingtonePlayback(val streamType: Int): Event()
         data class SaveChangesEvent(val profile: Profile, val shouldUpdate: Boolean): Event()
         data class ShowDialogFragment(val dialogType: DialogType): Event()
         data class ChangeRingerMode(val streamType: Int, val showToast: Boolean, val vibrate: Boolean): Event()
         data class GetDefaultRingtoneUri(val type: Int): Event()
         data class ChangeRingtoneEvent(val ringtoneType: Int): Event()
         data class ShowPopupWindow(val category: Int): Event()
-        data class AdjustStreamMinVolume(val streamType: Int, val volume: Int): Event()
+        data class AlarmStreamVolumeChanged(val streamType: Int, val volume: Int): Event()
+        data class StreamVolumeChanged(val streamType: Int, val volume: Int): Event()
     }
 
     enum class DialogType {
@@ -84,6 +91,8 @@ class EditProfileViewModel @Inject constructor(
     val isNew: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     private val profileUUID = MutableStateFlow<UUID?>(null)
+
+    @FlowPreview
     val alarmsFlow: Flow<List<AlarmRelation>?> = profileUUID.flatMapConcat {
         if (it != null) {
             alarmRepository.observeAlarmsByProfileId(it)
@@ -104,14 +113,20 @@ class EditProfileViewModel @Inject constructor(
     val notificationSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
     val alarmSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
 
+    val phoneRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val phoneRingtoneTitle: StateFlow<String> = phoneRingtoneUri.map { uri ->  contentResolverUtil.getRingtoneTitle(uri, TYPE_RINGTONE) }
         .stateIn(viewModelScope, WhileSubscribed(1000), "")
 
+    val notificationRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationRingtoneTitle: StateFlow<String> = notificationSoundUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION) }
         .stateIn(viewModelScope, WhileSubscribed(1000), "")
 
+    val alarmRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, TYPE_ALARM) }
         .stateIn(viewModelScope, WhileSubscribed(1000), "")
+
+    val voiceCallRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val musicRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val streamsUnlinked: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
@@ -130,6 +145,20 @@ class EditProfileViewModel @Inject constructor(
 
     val ringerMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_NORMAL)
     val notificationMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_SILENT)
+
+    val policyAllowsMediaStream: Flow<Boolean> = combine(
+        interruptionFilter,
+        priorityCategories,
+        notificationPolicyAccessGranted) {
+        filter, categories, granted -> interruptionPolicyAllowsMediaStream(filter, categories, granted)
+    }
+
+    val policyAllowsAlarmStream: Flow<Boolean> = combine(
+        interruptionFilter,
+        priorityCategories,
+        notificationPolicyAccessGranted) {
+            filter, categories, granted -> interruptionPolicyAllowsAlarmsStream(filter, categories, granted)
+    }
 
     val policyAllowsRingerStream: Flow<Boolean> = combine(
         interruptionFilter,
@@ -197,54 +226,29 @@ class EditProfileViewModel @Inject constructor(
 
     fun getProfile(): Profile {
         return Profile(
-                title.value,
-                if (profileUUID.value == null) UUID.randomUUID() else profileUUID.value!!,
-                mediaVolume.value,
-                callVolume.value,
-                notificationVolume.value,
-                ringVolume.value,
-                alarmVolume.value,
-                phoneRingtoneUri.value,
-                notificationSoundUri.value,
-                alarmSoundUri.value,
-                streamsUnlinked.value,
-                interruptionFilter.value,
-                ringerMode.value,
-                notificationMode.value,
-                vibrateForCalls.value,
-                priorityCategories.value,
-                priorityCallSenders.value,
-                priorityMessageSenders.value,
-                screenOnVisualEffects.value,
-                screenOffVisualEffects.value,
-                primaryConversationSenders.value
+            title.value,
+            if (profileUUID.value == null) UUID.randomUUID() else profileUUID.value!!,
+            mediaVolume.value,
+            callVolume.value,
+            notificationVolume.value,
+            ringVolume.value,
+            alarmVolume.value,
+            phoneRingtoneUri.value,
+            notificationSoundUri.value,
+            alarmSoundUri.value,
+            streamsUnlinked.value,
+            interruptionFilter.value,
+            ringerMode.value,
+            notificationMode.value,
+            vibrateForCalls.value,
+            priorityCategories.value,
+            priorityCallSenders.value,
+            priorityMessageSenders.value,
+            screenOnVisualEffects.value,
+            screenOffVisualEffects.value,
+            primaryConversationSenders.value
         )
     }
-
-    /*
-    fun adjustUnmuteStream(streamType: Int): Unit {
-        when (streamType) {
-            STREAM_NOTIFICATION -> {
-                notificationVolume.value = previousNotificationVolume
-                if (previousNotificationVolume <= 0) {
-                    onStreamMuted(STREAM_NOTIFICATION, showToast = false, vibrate = true)
-                }
-                else {
-                    notificationMode.value = RINGER_MODE_NORMAL
-                }
-            }
-            STREAM_RING -> {
-                ringVolume.value = previousRingerVolume
-                if (previousRingerVolume <= 0) {
-                    onStreamMuted(STREAM_RING, showToast = false, vibrate = true)
-                }
-                else {
-                    ringerMode.value = RINGER_MODE_NORMAL
-                }
-            }
-        }
-    }
-     */
 
     private fun shouldUpdateProfile(): Boolean {
         return profileUUID.value != null
@@ -288,6 +292,87 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
+    private fun isRingtonePlaying(streamType: Int): Boolean {
+        return when (streamType) {
+            STREAM_MUSIC -> {
+                musicRingtonePlaying.value
+            }
+            STREAM_VOICE_CALL -> {
+                voiceCallRingtonePlaying.value
+            }
+            STREAM_NOTIFICATION -> {
+                notificationRingtonePlaying.value
+            }
+            STREAM_RING -> {
+                phoneRingtonePlaying.value
+            }
+            STREAM_ALARM -> {
+                alarmRingtonePlaying.value
+            }
+            else -> false
+        }
+    }
+
+    fun getStreamVolume(streamType: Int): Int {
+        return when (streamType) {
+            STREAM_MUSIC -> {
+                mediaVolume.value
+            }
+            STREAM_VOICE_CALL -> {
+                callVolume.value
+            }
+            STREAM_NOTIFICATION -> {
+                notificationVolume.value
+            }
+            STREAM_RING -> {
+                ringVolume.value
+            }
+            STREAM_ALARM -> {
+                alarmVolume.value
+            }
+            else -> -1
+        }
+    }
+
+    fun setPlaybackState(streamType: Int, playing: Boolean): Unit {
+        when (streamType) {
+            STREAM_MUSIC -> musicRingtonePlaying.value = playing
+            STREAM_VOICE_CALL -> voiceCallRingtonePlaying.value = playing
+            STREAM_NOTIFICATION -> notificationRingtonePlaying.value = playing
+            STREAM_RING -> phoneRingtonePlaying.value = playing
+            STREAM_ALARM -> alarmRingtonePlaying.value = playing
+        }
+    }
+
+    private fun getPlayingRingtone(): Int {
+        val properties: Map<Int, Boolean> = mapOf(
+            STREAM_MUSIC to musicRingtonePlaying.value,
+            STREAM_VOICE_CALL to voiceCallRingtonePlaying.value,
+            STREAM_NOTIFICATION to notificationRingtonePlaying.value,
+            STREAM_RING to phoneRingtonePlaying.value,
+            STREAM_ALARM to alarmRingtonePlaying.value
+        )
+        for (i in properties.entries) {
+            if (i.value) {
+                return i.key
+            }
+        }
+        return -1
+    }
+
+    fun onPlayRingtoneButtonClick(streamType: Int): Unit {
+        if (isRingtonePlaying(streamType)) {
+            viewModelScope.launch {
+                eventChannel.send(Event.StopRingtonePlayback(streamType))
+            }
+        } else {
+            viewModelScope.launch {
+                eventChannel.send(Event.StopRingtonePlayback(getPlayingRingtone()))
+                eventChannel.send(Event.StartRingtonePlayback(streamType, getStreamVolume(streamType)))
+            }
+        }
+    }
+
     fun onRingtoneLayoutClick(): Unit {
         viewModelScope.launch {
             if (storagePermissionGranted.value) {
@@ -318,10 +403,19 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
+    fun onMediaStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
+        if (fromUser) {
+            viewModelScope.launch {
+                eventChannel.send(Event.StreamVolumeChanged(STREAM_MUSIC, index))
+            }
+        }
+        mediaVolume.value = index
+    }
+
     fun onAlarmStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
         if (fromUser) {
             viewModelScope.launch {
-                eventChannel.send(Event.AdjustStreamMinVolume(STREAM_ALARM, index))
+                eventChannel.send(Event.AlarmStreamVolumeChanged(STREAM_ALARM, index))
             }
         }
     }
@@ -329,7 +423,7 @@ class EditProfileViewModel @Inject constructor(
     fun onVoiceCallStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
         if (fromUser) {
             viewModelScope.launch {
-                eventChannel.send(Event.AdjustStreamMinVolume(STREAM_VOICE_CALL, index))
+                eventChannel.send(Event.AlarmStreamVolumeChanged(STREAM_VOICE_CALL, index))
             }
         }
     }
@@ -380,16 +474,6 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    private fun setSilentRinger(): Unit {
-        ringVolume.value = 0
-        ringerMode.value = RINGER_MODE_SILENT
-    }
-
-    private fun setSilentNotifications(): Unit {
-        notificationVolume.value = 0
-        notificationMode.value = RINGER_MODE_SILENT
-    }
-
     fun onPreferencesLayoutClick(): Unit {
         viewModelScope.launch {
             if (notificationPolicyAccessGranted.value) {
@@ -401,21 +485,28 @@ class EditProfileViewModel @Inject constructor(
     }
 
     private fun onStreamMuted(streamType: Int, showToast: Boolean, vibrate: Boolean): Unit {
+        if (streamType == STREAM_NOTIFICATION) {
+            notificationVolume.value = 0
+        } else if (streamType == STREAM_RING) {
+            ringVolume.value = 0
+        }
         viewModelScope.launch {
             eventChannel.send(Event.ChangeRingerMode(streamType, showToast, vibrate))
         }
     }
 
-    fun onStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int): Unit {
+    fun onAlertStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int): Unit {
         if (fromUser) {
             when {
                 value == 0 -> {
                     onStreamMuted(streamType, showToast = false, vibrate = true)
                 }
-                streamType == STREAM_NOTIFICATION && notificationMode.value != RINGER_MODE_NORMAL -> {
+                streamType == STREAM_NOTIFICATION -> {
+                    notificationVolume.value = value
                     notificationMode.value = RINGER_MODE_NORMAL
                 }
-                streamType == STREAM_RING && ringerMode.value != RINGER_MODE_NORMAL -> {
+                streamType == STREAM_RING -> {
+                    ringVolume.value = value
                     ringerMode.value = RINGER_MODE_NORMAL
                 }
             }
@@ -424,6 +515,9 @@ class EditProfileViewModel @Inject constructor(
 
             } else if (streamType == STREAM_RING) {
                 previousRingerVolume = value
+            }
+            viewModelScope.launch {
+                eventChannel.send(Event.StreamVolumeChanged(streamType, value))
             }
         }
     }
@@ -439,6 +533,21 @@ class EditProfileViewModel @Inject constructor(
             removePriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)
         } else {
             addPriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)
+        }
+    }
+
+    fun getRingtoneUri(type: Int): Uri {
+        return when (type) {
+            TYPE_RINGTONE -> {
+                phoneRingtoneUri.value
+            }
+            TYPE_NOTIFICATION -> {
+                notificationSoundUri.value
+            }
+            TYPE_ALARM -> {
+                alarmSoundUri.value
+            }
+            else -> Uri.EMPTY
         }
     }
 

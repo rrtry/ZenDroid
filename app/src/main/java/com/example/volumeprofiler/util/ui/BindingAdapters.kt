@@ -7,6 +7,8 @@ import com.example.volumeprofiler.views.SwitchableConstraintLayout
 import android.media.AudioManager.*
 import android.app.NotificationManager.Policy.*
 import android.app.NotificationManager.*
+import android.content.Context
+import android.graphics.drawable.Drawable
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.view.View
@@ -28,6 +30,8 @@ object BindingAdapters {
     private const val DRAWABLE_MUSIC_OFF: Int = R.drawable.baseline_music_off_black_24dp
     private const val DRAWABLE_MUSIC_ON : Int = R.drawable.baseline_music_note_deep_purple_300_24dp
     private const val DRAWABLE_RINGER_NORMAL: Int = R.drawable.baseline_notifications_active_black_24dp
+    private const val DRAWABLE_START_PLAYBACK: Int = R.drawable.ic_baseline_play_arrow_24
+    private const val DRAWABLE_STOP_PLAYBACK: Int = R.drawable.ic_baseline_pause_24
 
     @JvmStatic
     private fun setEnabledState(layout: ViewGroup, enabled: Boolean): Unit {
@@ -228,6 +232,18 @@ object BindingAdapters {
     @BindingAdapter("callInterruptionFilter")
     fun bindCallSeekBar(view: SeekBar, callInterruptionFilter: Int): Unit {
 
+    }
+
+    @JvmStatic
+    @BindingAdapter("playing")
+    fun bindPlayButton(imageButton: ImageButton, playing: Boolean): Unit {
+        val context: Context = imageButton.context
+        val drawable: Drawable? = ResourcesCompat.getDrawable(
+            context.resources,
+            if (playing) DRAWABLE_STOP_PLAYBACK else DRAWABLE_START_PLAYBACK,
+            context.theme
+        )
+        imageButton.setImageDrawable(drawable)
     }
 
     @JvmStatic

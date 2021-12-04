@@ -6,19 +6,16 @@ import android.app.NotificationManager.*
 import android.content.Context
 import android.media.AudioManager
 import android.Manifest.permission.*
-import android.media.AudioAttributes
 import com.example.volumeprofiler.entities.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.media.AudioManager.*
 import android.media.Ringtone
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Vibrator
 import android.provider.Settings
-import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.util.Log
 import com.example.volumeprofiler.entities.LocationRelation
@@ -78,7 +75,7 @@ class ProfileUtil @Inject constructor (
         }
     }
 
-    private fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
+    fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
         adjustUnmuteStream(streamType)
         audioManager.setStreamVolume(streamType, index, flags)
     }
@@ -180,6 +177,18 @@ class ProfileUtil @Inject constructor (
         setActualDefaultRingtoneUri(context, type, uri)
     }
 
+    fun getDefaultRingtoneUri(type: Int): Uri {
+        return getActualDefaultRingtoneUri(context, type)
+    }
+
+    fun getStreamMaxVolume(streamType: Int): Int {
+        return audioManager.getStreamMaxVolume(streamType)
+    }
+
+    fun getStreamVolume(streamType: Int): Int {
+        return audioManager.getStreamVolume(streamType)
+    }
+
     private fun setVibrateWhenRingingBehaviour(state: Int): Unit {
         if (canModifySystemPreferences()) {
             try {
@@ -265,7 +274,7 @@ class ProfileUtil @Inject constructor (
     companion object {
 
         @JvmStatic
-        fun getMaxStreamVolume(context: Context, streamType: Int): Int {
+        fun getStreamMaxVolume(context: Context, streamType: Int): Int {
             val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             return audioManager.getStreamMaxVolume(streamType)
         }

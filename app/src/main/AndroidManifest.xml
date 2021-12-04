@@ -54,17 +54,6 @@
         </receiver>
 
         <receiver
-            android:name=".broadcastReceivers.AlarmReceiver"
-            android:directBootAware="true"
-            android:enabled="true"
-            tools:targetApi="n">
-            <intent-filter>
-                <action android:name="com.example.volumeprofiler.ACTION_TRIGGER_ALARM" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".broadcastReceivers.PhoneStateReceiver"
             android:directBootAware="true"
             tools:targetApi="n">

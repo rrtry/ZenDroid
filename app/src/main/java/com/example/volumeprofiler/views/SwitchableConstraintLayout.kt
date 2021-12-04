@@ -6,6 +6,7 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.view.MotionEvent
 import androidx.constraintlayout.widget.ConstraintLayout
 
 class SwitchableConstraintLayout @JvmOverloads constructor(
@@ -27,33 +28,37 @@ class SwitchableConstraintLayout @JvmOverloads constructor(
                         0.33f, 0.33f, 0.33f, 0f, 0f,
                         0.33f, 0.33f, 0.33f, 0f, 0f,
                         0.33f, 0.33f, 0.33f, 0f, 0f,
-                        0.0f, 0.0f, 0.0f, ALPHA, 0f
+                        0.0f, 0.0f, 0.0f, 0.75f, 0f
                 )
         )
         paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
     }
 
-    override fun dispatchDraw(canvas: Canvas?) {
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return disabled
+    }
+
+    private fun drawToOffScreenBuffer(canvas: Canvas?): Unit {
         if (disabled) {
             canvas?.saveLayer(null, paint)
         }
-        super.dispatchDraw(canvas)
+    }
+
+    private fun restoreFromOffScreenBuffer(canvas: Canvas?): Unit {
         if (disabled) {
             canvas?.restore()
         }
+    }
+
+    override fun dispatchDraw(canvas: Canvas?) {
+        drawToOffScreenBuffer(canvas)
+        super.dispatchDraw(canvas)
+        restoreFromOffScreenBuffer(canvas)
     }
 
     override fun draw(canvas: Canvas?) {
-        if (disabled) {
-            canvas?.saveLayer(null, paint)
-        }
+        drawToOffScreenBuffer(canvas)
         super.draw(canvas)
-        if (disabled) {
-            canvas?.restore()
-        }
-    }
-
-    companion object {
-        private const val ALPHA: Float = 0.75F
+        restoreFromOffScreenBuffer(canvas)
     }
 }

@@ -55,17 +55,17 @@
 
                 <SeekBar
                     android:id="@+id/mediaSeekBar"
+                    mediaInterruptionFilter="@{viewModel.interruptionFilter}"
+                    mediaPriorityCategories="@{viewModel.priorityCategories}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:layout_marginEnd="16dp"
-                    android:progress="@={viewModel.mediaVolume}"
-                    android:max="@{ProfileUtil.getMaxStreamVolume(context, AudioManager.STREAM_MUSIC)}"
-                    mediaInterruptionFilter="@{viewModel.interruptionFilter}"
-                    mediaPriorityCategories="@{viewModel.priorityCategories}"
-                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_MUSIC)}"
+                    android:onProgressChanged="@{(seekbar, index, fromUser) -> viewModel.onMediaStreamVolumeChanged(index, fromUser)}"
+                    android:progress="@{viewModel.mediaVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playMediaRingtone"
                     app:layout_constraintStart_toEndOf="@+id/imageView9"
                     app:layout_constraintTop_toBottomOf="@+id/mediaBarTitle" />
 
@@ -78,6 +78,20 @@
                     android:textColor="?android:attr/textColorPrimary"
                     app:layout_constraintStart_toEndOf="@+id/imageView9"
                     app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/playMediaRingtone"
+                    android:layout_width="40dp"
+                    playing="@{viewModel.musicRingtonePlaying}"
+                    android:duplicateParentState="true"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@null"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_MUSIC)}"
+                    app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -93,16 +107,15 @@
 
             <SeekBar
                 android:id="@+id/phoneSeekBar"
+                callInterruptionFilter="@{viewModel.interruptionFilter}"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
-                android:progress="@{viewModel.callVolume}"
+                android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
                 android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser)}"
-                android:max="@{ProfileUtil.getMaxStreamVolume(context, AudioManager.STREAM_VOICE_CALL)}"
-                callInterruptionFilter="@{viewModel.interruptionFilter}"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:progress="@{viewModel.callVolume}"
+                app:layout_constraintEnd_toStartOf="@+id/playCallRingtone"
                 app:layout_constraintStart_toEndOf="@+id/imageView10"
                 app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
 
@@ -148,20 +161,19 @@
 
                 <SeekBar
                     android:id="@+id/notificationSeekBar"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                    notificationMode="@{viewModel.notificationMode}"
+                    notificationPriorityCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:layout_marginEnd="16dp"
-                    android:progress="@={viewModel.notificationVolume}"
-                    android:max="@{ProfileUtil.getMaxStreamVolume(context, AudioManager.STREAM_NOTIFICATION)}"
-                    notificationInterruptionFilter="@{viewModel.interruptionFilter}"
-                    notificationPriorityCategories="@{viewModel.priorityCategories}"
-                    notificationMode="@{viewModel.notificationMode}"
-                    streamsUnlinked="@{viewModel.streamsUnlinked}"
-                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
-                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_NOTIFICATION)}"
+                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
+                    android:progress="@{viewModel.notificationVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playNotificationRingtone"
                     app:layout_constraintStart_toEndOf="@+id/notificationIcon"
                     app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
 
@@ -174,6 +186,20 @@
                     android:textColor="?android:attr/textColorPrimary"
                     app:layout_constraintStart_toEndOf="@+id/notificationIcon"
                     app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/playNotificationRingtone"
+                    android:layout_width="40dp"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_NOTIFICATION)}"
+                    android:layout_height="40dp"
+                    playing="@{viewModel.notificationRingtonePlaying}"
+                    android:duplicateParentState="true"
+                    android:background="@null"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -208,20 +234,19 @@
 
                 <SeekBar
                     android:id="@+id/ringerSeekBar"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    ringerMode="@{viewModel.ringerMode}"
+                    ringerSeekBarInterruptionFilter="@{viewModel.interruptionFilter}"
+                    ringerSeekBarPropertyCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:layout_marginEnd="16dp"
-                    android:max="@{ProfileUtil.getMaxStreamVolume(context, AudioManager.STREAM_RING)}"
-                    android:progress="@={viewModel.ringVolume}"
-                    ringerMode="@{viewModel.ringerMode}"
-                    ringerSeekBarInterruptionFilter="@{viewModel.interruptionFilter}"
-                    ringerSeekBarPropertyCategories="@{viewModel.priorityCategories}"
-                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
-                    streamsUnlinked="@{viewModel.streamsUnlinked}"
-                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_RING)}"
+                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
+                    android:progress="@{viewModel.ringVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playIncomingCallRingtone"
                     app:layout_constraintStart_toEndOf="@+id/ringerIcon"
                     app:layout_constraintTop_toBottomOf="@+id/ringerBarTitle" />
 
@@ -236,13 +261,27 @@
                     app:layout_constraintStart_toEndOf="@+id/ringerIcon"
                     app:layout_constraintTop_toBottomOf="@+id/notificationSliderLayout" />
 
+                <ImageButton
+                    android:id="@+id/playIncomingCallRingtone"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_RING)}"
+                    android:background="@null"
+                    playing="@{viewModel.phoneRingtonePlaying}"
+                    android:duplicateParentState="true"
+                    app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/unlinkStreamsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onUnlinkStreamsLayoutClick()}"
                 android:orientation="horizontal"
@@ -261,7 +300,7 @@
                     android:text="Unlink ringer and notifications"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
-                    app:layout_constraintBottom_toBottomOf="@+id/silentModeSwitch"
+                    app:layout_constraintBottom_toBottomOf="@+id/playSoundSwitch"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/unlinkStreamsSwitch" />
 
@@ -318,20 +357,33 @@
 
                 <SeekBar
                     android:id="@+id/alarmSeekBar"
+                    alarmInterruptionFilter="@{viewModel.interruptionFilter}"
+                    alarmPriorityCategories="@{viewModel.priorityCategories}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
-                    android:layout_marginEnd="16dp"
-                    android:max="@{ProfileUtil.getMaxStreamVolume(context, AudioManager.STREAM_ALARM)}"
-                    alarmInterruptionFilter="@{viewModel.interruptionFilter}"
-                    alarmPriorityCategories="@{viewModel.priorityCategories}"
-                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
-                    android:progress="@{viewModel.alarmVolume}"
+                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
                     android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser)}"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    android:progress="@{viewModel.alarmVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playAlarmRingtone"
                     app:layout_constraintStart_toEndOf="@+id/alarmIcon"
                     app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
+
+                <ImageButton
+                    android:id="@+id/playAlarmRingtone"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@null"
+                    playing="@{viewModel.alarmRingtonePlaying}"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_ALARM)}"
+                    android:duplicateParentState="true"
+                    app:layout_constraintBottom_toBottomOf="@+id/alarmSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -525,7 +577,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="35dp"
-                    android:text="Do Not Disturb preferences"
+                    android:text="Priority only allows"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -579,6 +631,20 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <ImageButton
+                android:id="@+id/playCallRingtone"
+                android:layout_width="40dp"
+                android:duplicateParentState="true"
+                android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_VOICE_CALL)}"
+                android:layout_height="40dp"
+                playing="@{viewModel.voiceCallRingtonePlaying}"
+                android:layout_marginEnd="16dp"
+                android:background="@null"
+                app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
+                app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>

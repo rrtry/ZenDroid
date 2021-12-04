@@ -10,6 +10,7 @@ import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
 import android.app.NotificationManager.*
+import android.util.Log
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
@@ -21,7 +22,6 @@ class PhoneStateReceiver: BroadcastReceiver() {
     lateinit var profileUtil: ProfileUtil
 
     override fun onReceive(context: Context?, intent: Intent?) {
-
         if (intent?.action == ACTION_PHONE_STATE_CHANGED && intent.extras != null) {
 
             val streamsUnlinked: Boolean = sharedPreferencesUtil.getStreamsUnlinked()
@@ -40,7 +40,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
                 val ringerMode: Int = sharedPreferencesUtil.getRingerMode()
                 val notificationMode: Int = sharedPreferencesUtil.getNotificationMode()
 
-                if (phoneState == EXTRA_STATE_RINGING && ringVolume != -1) {
+                if (phoneState == EXTRA_STATE_RINGING && ringVolume >= 0) {
                     profileUtil.setRingerMode(
                         STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES
                     )

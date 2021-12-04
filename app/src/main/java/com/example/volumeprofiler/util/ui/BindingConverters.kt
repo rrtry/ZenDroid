@@ -88,7 +88,7 @@ object BindingConverters {
         return if (!notificationAccessGranted) {
             "Notification policy access required"
         } else {
-            "Priority interruption rules"
+            "Define your own do not disturb rules"
         }
     }
 

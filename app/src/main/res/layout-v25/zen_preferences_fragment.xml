@@ -336,7 +336,7 @@
                     android:layout_below="@id/blockWhenScreenIsOnTitle"
                     android:layout_marginLeft="35dp"
                     android:layout_marginTop="8dp"
-                    android:text="Prevent notifications \n from peeking or popping on screen"
+                    android:text="Prevent notifications \nfrom peeking or popping on screen"
                     android:textSize="14sp" />
 
                 <Switch
@@ -378,7 +378,7 @@
                     android:layout_below="@id/blockWhenScreenIsOffTitle"
                     android:layout_marginLeft="35dp"
                     android:layout_marginTop="8dp"
-                    android:text="Prevent notifications \n from turning on the screen"
+                    android:text="Prevent notifications \nfrom turning on the screen"
                     android:textSize="14sp" />
 
                 <Switch

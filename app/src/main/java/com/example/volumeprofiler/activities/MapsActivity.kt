@@ -190,14 +190,6 @@ class MapsActivity : AppCompatActivity(),
         taskCancellationSource = CancellationTokenSource()
     }
 
-    private fun showSnackbar(text: String, actionText: String, action: () -> Unit): Unit {
-        val snackBar: Snackbar = Snackbar.make(saveGeofenceButton, text, Snackbar.LENGTH_INDEFINITE)
-        snackBar.setAction(actionText) {
-            action()
-        }
-        snackBar.show()
-    }
-
     private fun setSearchConfiguration(): Unit {
         searchView = findViewById(R.id.searchView)
         setSearchableInfo()
@@ -651,9 +643,11 @@ class MapsActivity : AppCompatActivity(),
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == GeofenceUtil.REQUEST_ENABLE_LOCATION_SERVICES) {
             if (resultCode != Activity.RESULT_OK) {
-                showSnackbar("Enabling location services is required", "Enable") {
+                val snackBar: Snackbar = Snackbar.make(saveGeofenceButton, "Enable location services", Snackbar.LENGTH_LONG)
+                snackBar.setAction("Enable") {
                     onPermissionResultAction(true)
                 }
+                snackBar.show()
             } else {
                 onPermissionResultAction(true)
             }
