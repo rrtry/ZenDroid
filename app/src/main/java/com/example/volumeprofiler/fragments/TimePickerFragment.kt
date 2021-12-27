@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
-import com.example.volumeprofiler.activities.EditAlarmActivity.Companion.TIME_REQUEST_KEY
+import com.example.volumeprofiler.activities.AlarmDetailsActivity.Companion.TIME_REQUEST_KEY
 import java.time.LocalTime
 
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {

@@ -1,18 +1,40 @@
 package com.example.volumeprofiler.util
 
-import java.time.DayOfWeek
-import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.*
 import kotlin.collections.ArrayList
 import android.Manifest.permission.*
+import android.content.Context
+import android.text.format.DateFormat
+import com.example.volumeprofiler.R
+import com.example.volumeprofiler.entities.Event
+import com.google.android.gms.maps.model.LatLng
+import java.time.*
+import java.time.temporal.TemporalAccessor
+import java.time.temporal.TemporalAdjusters
 
 class TextUtil {
 
     companion object {
+
+        fun formatEventTimestamp(context: Context, event: Event, millis: Long): String {
+            val diff: Long = event.currentInstanceEndTime - event.currentInstanceStartTime
+            val diffDays: Long = ((diff / (1000 * 60 * 60 * 24)) % 365)
+            val pattern: String = if (diffDays > 0) {
+                "d MMM HH:mm a"
+            } else {
+                "HH:mm a"
+            }
+            if (DateFormat.is24HourFormat(context)) {
+                pattern.replace("HH", "hh")
+            }
+            val instant: Instant = Instant.ofEpochMilli(millis)
+            val zonedDateTime: ZonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.systemDefault())
+            val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern(pattern)
+            return formatter.format(zonedDateTime)
+        }
 
         fun formatAddress(string: String): String {
             val s: List<String> = string.split(",")

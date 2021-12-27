@@ -17,7 +17,7 @@ import javax.inject.Inject
 import kotlin.collections.ArrayList
 
 @HiltViewModel
-class EditAlarmViewModel @Inject constructor(
+class AlarmDetailsViewModel @Inject constructor(
         private val profileRepository: ProfileRepository,
 ): ViewModel() {
 
@@ -26,7 +26,7 @@ class EditAlarmViewModel @Inject constructor(
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
-    val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
+    val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(-1)
     val scheduledDays: MutableStateFlow<ArrayList<Int>> = MutableStateFlow(arrayListOf())
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
@@ -34,6 +34,7 @@ class EditAlarmViewModel @Inject constructor(
     val shouldScheduleTimer: Flow<Boolean> = combine(localTime, scheduledDays) {
         localTime, scheduledDays -> scheduledDays.isEmpty() && localTime > LocalTime.now()
     }
+    val readCalendarPermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     private var id: Long? = null
     private var isScheduled: Boolean = false
@@ -44,6 +45,9 @@ class EditAlarmViewModel @Inject constructor(
     sealed class Event {
 
         data class ShowDialogEvent(val dialogType: DialogType): Event()
+
+        object QueryAvailableCalendarsEvent : Event()
+        object RequestReadCalendarPermission: Event()
     }
 
     enum class DialogType {
@@ -63,8 +67,18 @@ class EditAlarmViewModel @Inject constructor(
         }
     }
 
+    fun onQueryCalendarButtonClick(): Unit {
+        viewModelScope.launch {
+            if (readCalendarPermissionGranted.value) {
+                channel.send(Event.QueryAvailableCalendarsEvent)
+            } else {
+                channel.send(Event.RequestReadCalendarPermission)
+            }
+        }
+    }
+
     private fun getNextInstanceDate(): LocalDateTime {
-        return AlarmUtil.getAlarmNextDate(localTime.value, scheduledDays.value)
+        return AlarmUtil.getNextAlarmTime(scheduledDays.value, localTime.value)
     }
 
     private fun getAlarmState(): Int {
@@ -83,8 +97,8 @@ class EditAlarmViewModel @Inject constructor(
         return this.id
     }
 
-    private fun getPosition(uuid: UUID): Int {
-        for ((index, i) in profilesStateFlow.value.withIndex()) {
+    private fun getPosition(uuid: UUID, profiles: List<Profile>): Int {
+        for ((index, i) in profiles.withIndex()) {
             if (i.id == uuid) {
                 return index
             }
@@ -92,12 +106,12 @@ class EditAlarmViewModel @Inject constructor(
         return 0
     }
 
-    fun setArgs(alarmRelation: AlarmRelation?): Unit {
+    fun setArgs(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
         if (!areArgsSet && alarmRelation != null) {
 
-            selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id)
+            selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)
             scheduledDays.value = alarmRelation.alarm.scheduledDays
-            localTime.value = alarmRelation.alarm.localDateTime.toLocalTime()
+            localTime.value = alarmRelation.alarm.instanceStartTime.toLocalTime()
 
             id = alarmRelation.alarm.id
             isScheduled = alarmRelation.alarm.isScheduled == 1
@@ -107,9 +121,9 @@ class EditAlarmViewModel @Inject constructor(
     }
 
     fun getAlarm(): Alarm {
-        val alarm: Alarm =  Alarm(
+        val alarm: Alarm = Alarm(
             profileUUID = getProfileUUID(),
-            localDateTime = getNextInstanceDate(),
+            instanceStartTime = getNextInstanceDate(),
             isScheduled = getAlarmState(),
             scheduledDays = scheduledDays.value
         )

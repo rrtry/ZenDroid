@@ -4,7 +4,7 @@
         android:id="@+id/location_tab"
         android:enabled="true"
         android:icon="@android:drawable/ic_menu_mylocation"
-        android:title="Edit coordinates"/>
+        android:title="Edit geofence"/>
     <item
         android:id="@+id/profile_tab"
         android:enabled="true"

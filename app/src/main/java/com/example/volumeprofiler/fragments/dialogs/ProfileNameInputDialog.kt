@@ -12,8 +12,7 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.EditProfileActivity.Companion.INPUT_TITLE_REQUEST_KEY
-import com.example.volumeprofiler.fragments.EditProfileFragment
+import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.INPUT_TITLE_REQUEST_KEY
 
 class ProfileNameInputDialog: DialogFragment() {
 

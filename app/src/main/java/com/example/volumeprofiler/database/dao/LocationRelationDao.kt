@@ -16,9 +16,9 @@ interface LocationRelationDao {
 
     @Transaction
     @Query("SELECT * FROM Location WHERE Location.onExitProfileId = (:id) OR Location.onEnterProfileId = (:id)")
-    fun getLocationsByProfileId(id: UUID): List<LocationRelation>
+    suspend fun getLocationsByProfileId(id: UUID): List<LocationRelation>
 
     @Transaction
     @Query("SELECT * FROM Location")
-    fun getLocations(): List<LocationRelation>
+    suspend fun getLocations(): List<LocationRelation>
 }

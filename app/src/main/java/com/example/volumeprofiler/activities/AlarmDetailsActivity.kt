@@ -26,11 +26,11 @@ import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_TIME
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScheduledDaysPickerDialog
-import com.example.volumeprofiler.viewmodels.EditAlarmViewModel.DialogType
+import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.viewmodels.EditAlarmViewModel
+import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
@@ -38,34 +38,41 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import javax.inject.Inject
 import kotlin.collections.ArrayList
-
+import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.Event.*
 @AndroidEntryPoint
-class EditAlarmActivity: AppCompatActivity() {
+class AlarmDetailsActivity: AppCompatActivity() {
 
-    private val viewModel: EditAlarmViewModel by viewModels()
+    private val detailsViewModel: AlarmDetailsViewModel by viewModels()
     private var elapsedTime: Long = 0
 
     private lateinit var binding: CreateAlarmActivityBinding
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var calendarPermissionLauncher: ActivityResultLauncher<String>
     private var runnableInQueue: Boolean = false
 
     @Inject
     lateinit var alarmUtil: AlarmUtil
 
     @Inject
+    lateinit var contentUtil: ContentUtil
+
+    @Inject
     lateinit var profileUtil: ProfileUtil
 
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val localTimeUpdateRunnable: Runnable = Runnable {
-        viewModel.weekDaysLocalTime.value = LocalTime.now()
+        detailsViewModel.weekDaysLocalTime.value = LocalTime.now()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        calendarPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            detailsViewModel.readCalendarPermissionGranted.value = it
+        }
         phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             when {
                 it -> {
-                    saveAlarm()
+                    onSaveChangesItemClick()
                 }
                 shouldShowRequestPermissionRationale(READ_PHONE_STATE) -> {
                     Snackbar.make(binding.root, "Phone permission is required", Snackbar.LENGTH_LONG).apply {
@@ -88,6 +95,7 @@ class EditAlarmActivity: AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         phonePermissionLauncher.unregister()
+        calendarPermissionLauncher.unregister()
         handler.removeCallbacks(localTimeUpdateRunnable)
     }
 
@@ -95,7 +103,7 @@ class EditAlarmActivity: AppCompatActivity() {
         super.onPrepareOptionsMenu(menu)
         if (menu != null) {
             val item: MenuItem = menu.findItem(R.id.saveChangesButton)
-            return if (!areExtrasEmpty()) {
+            return if (intent.extras != null) {
                 setSaveIcon(item)
                 true
             } else {
@@ -128,18 +136,18 @@ class EditAlarmActivity: AppCompatActivity() {
                 true
             }
             R.id.saveChangesButton -> {
-                saveAlarm()
+                onSaveChangesItemClick()
                 true
             }
             else -> false
         }
     }
 
-    private fun saveAlarm(): Unit {
-        val alarm: Alarm = viewModel.getAlarm()
-        val shouldUpdateAlarm: Boolean = viewModel.getAlarmId() != null
+    private fun onSaveChangesItemClick(): Unit {
+        val alarm: Alarm = detailsViewModel.getAlarm()
+        val updateAlarm: Boolean = detailsViewModel.getAlarmId() != null
         val profile: Profile? = getAlarmRelation()?.profile
-        if (shouldUpdateAlarm && alarm.isScheduled == 1) {
+        if (updateAlarm && alarm.isScheduled == 1) {
             when {
                 profileUtil.grantedRequiredPermissions(profile) -> {
                     scheduleAlarm()
@@ -160,7 +168,7 @@ class EditAlarmActivity: AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         super.onCreateOptionsMenu(menu)
         return if (menu != null) {
-            menuInflater.inflate(R.menu.action_menu_save_alarm, menu)
+            menuInflater.inflate(R.menu.action_menu_scheduler, menu)
             true
         }
         else {
@@ -168,24 +176,20 @@ class EditAlarmActivity: AppCompatActivity() {
         }
     }
 
-    private fun areExtrasEmpty(): Boolean {
-        return intent.extras == null
-    }
-
     private fun setBinding(): Unit {
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
-        binding.viewModel = viewModel
+        binding.viewModel = detailsViewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
     }
 
     private fun scheduleAlarm(): Unit {
-        alarmUtil.scheduleAlarm(viewModel.getAlarm(), viewModel.getProfile(), repeating = false, showToast = true)
+        alarmUtil.scheduleAlarm(detailsViewModel.getAlarm(), detailsViewModel.getProfile(), repeating = false, showToast = true)
     }
 
     private fun setActionBar(): Unit {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        if (areExtrasEmpty()) {
+        if (intent.extras == null) {
             supportActionBar?.title = "Create alarm"
         } else {
             supportActionBar?.title = "Edit alarm"
@@ -209,14 +213,14 @@ class EditAlarmActivity: AppCompatActivity() {
         supportFragmentManager.setFragmentResultListener(TIME_REQUEST_KEY, this) { _, bundle ->
             val localTime: LocalTime? = bundle.getSerializable(EXTRA_LOCAL_TIME) as? LocalTime
             if (localTime != null) {
-                viewModel.localTime.value = localTime
-                viewModel.weekDaysLocalTime.value = localTime
+                detailsViewModel.localTime.value = localTime
+                detailsViewModel.weekDaysLocalTime.value = localTime
             }
         }
         supportFragmentManager.setFragmentResultListener(SCHEDULED_DAYS_REQUEST_KEY, this) {_, bundle ->
             val scheduledDays: ArrayList<Int>? = bundle.getSerializable(ScheduledDaysPickerDialog.EXTRA_SCHEDULED_DAYS) as? ArrayList<Int>
             if (scheduledDays != null) {
-                viewModel.scheduledDays.value = scheduledDays
+                detailsViewModel.scheduledDays.value = scheduledDays
             }
         }
     }
@@ -225,25 +229,35 @@ class EditAlarmActivity: AppCompatActivity() {
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.eventsFlow.collect {
+                    detailsViewModel.eventsFlow.collect {
                         when (it) {
-                            is EditAlarmViewModel.Event.ShowDialogEvent -> {
+                            is ShowDialogEvent -> {
                                 if (it.dialogType == DialogType.DAYS_SELECTION) {
                                     showDaysPickerDialog()
                                 } else if (it.dialogType == DialogType.TIME_SELECTION) {
                                     showTimePickerDialog()
                                 }
                             }
+
+                            QueryAvailableCalendarsEvent -> {
+                                Log.i("EditAlarmActivity", "QueryAvailableCalendarsEvent")
+                            }
+
+                            RequestReadCalendarPermission -> {
+                                calendarPermissionLauncher.launch(READ_CALENDAR)
+                            }
                         }
                     }
                 }
                 launch {
-                    viewModel.profilesStateFlow.collect {
-                        viewModel.setArgs(getAlarmRelation())
+                    detailsViewModel.profilesStateFlow.collect {
+                        if (it.isNotEmpty()) {
+                            detailsViewModel.setArgs(getAlarmRelation(), it)
+                        }
                     }
                 }
                 launch {
-                    viewModel.shouldScheduleTimer.collect {
+                    detailsViewModel.shouldScheduleTimer.collect {
                         if (it && !runnableInQueue) {
                             postRunnable()
                         } else {
@@ -267,19 +281,19 @@ class EditAlarmActivity: AppCompatActivity() {
     }
 
     private fun showDaysPickerDialog(): Unit {
-        val fragment: ScheduledDaysPickerDialog = ScheduledDaysPickerDialog.newInstance(viewModel.scheduledDays.value)
+        val fragment: ScheduledDaysPickerDialog = ScheduledDaysPickerDialog.newInstance(detailsViewModel.scheduledDays.value)
         fragment.show(supportFragmentManager, null)
     }
 
     private fun showTimePickerDialog(): Unit {
-        val fragment: TimePickerFragment = TimePickerFragment.newInstance(viewModel.localTime.value)
+        val fragment: TimePickerFragment = TimePickerFragment.newInstance(detailsViewModel.localTime.value)
         fragment.show(supportFragmentManager, null)
     }
 
     private fun setSuccessfulResult(): Unit {
         val intent: Intent = Intent().apply {
-            putExtra(EXTRA_ALARM, viewModel.getAlarm())
-            putExtra(EXTRA_UPDATE_FLAG, viewModel.getAlarmId() != null)
+            putExtra(EXTRA_ALARM, detailsViewModel.getAlarm())
+            putExtra(EXTRA_UPDATE_FLAG, detailsViewModel.getAlarmId() != null)
         }
         setResult(Activity.RESULT_OK, intent)
         finish()
@@ -291,7 +305,7 @@ class EditAlarmActivity: AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (elapsedTime + TIME_INTERVAL > System.currentTimeMillis()) {
+        if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
             setCancelledResult()
         } else {
             Toast.makeText(this, "Press back button again to dismiss changes", Toast.LENGTH_SHORT).show()
@@ -301,7 +315,7 @@ class EditAlarmActivity: AppCompatActivity() {
 
     companion object {
 
-        private const val TIME_INTERVAL: Int = 2000
+        private const val CURSOR_LOADER_ID: Int = 1
         private const val LOG_TAG: String = "EditEventActivity"
 
         const val EXTRA_UPDATE_FLAG: String = "extra_update_flag"

@@ -8,7 +8,7 @@
         <import type="android.app.NotificationManager.Policy"/>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
+            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
     </data>
 
     <ScrollView

@@ -21,7 +21,7 @@ class EventBus @Inject constructor() {
     private val mutableEventsFlow: MutableSharedFlow<Event> = MutableSharedFlow(replay = 1, extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val sharedFlow: SharedFlow<Event> = mutableEventsFlow
 
-    fun updateProfilesFragment(id: UUID): Unit {
+    fun onProfileSet(id: UUID): Unit {
         mutableEventsFlow.tryEmit(Event.ProfileApplied(id))
     }
 

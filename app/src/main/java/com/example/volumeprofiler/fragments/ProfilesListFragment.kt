@@ -5,9 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -22,7 +20,7 @@ import androidx.recyclerview.widget.*
 import androidx.recyclerview.widget.ListAdapter
 import androidx.transition.*
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.activities.ProfileDetailsActivity
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelectionObserver
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
 import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
@@ -35,7 +33,7 @@ import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.util.animations.AnimUtil
+import com.example.volumeprofiler.util.ui.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -74,7 +72,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     private lateinit var tracker: SelectionTracker<String>
     private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var positionMap: ArrayMap<UUID, Int>
-    private lateinit var audioManager: AudioManager
 
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
@@ -89,11 +86,10 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as PermissionRequestCallback
-        audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
-                val profile: Profile = it.data?.getParcelableExtra(EditProfileActivity.EXTRA_PROFILE)!!
-                val update: Boolean = it.data?.getBooleanExtra(EditProfileActivity.EXTRA_SHOULD_UPDATE, false)!!
+                val profile: Profile = it.data?.getParcelableExtra(ProfileDetailsActivity.EXTRA_PROFILE)!!
+                val update: Boolean = it.data?.getBooleanExtra(ProfileDetailsActivity.EXTRA_SHOULD_UPDATE, false)!!
                 Log.i("ProfilesListFragment", "ringerMode: ${profile.ringerMode}")
                 if (update) {
                     viewModel.updateProfile(profile)
@@ -170,9 +166,9 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     }
 
     private fun startDetailsActivity(profile: Profile?): Unit {
-        val intent: Intent = Intent(requireContext(), EditProfileActivity::class.java)
+        val intent: Intent = Intent(requireContext(), ProfileDetailsActivity::class.java)
         if (profile != null) {
-            intent.putExtra(EditProfileActivity.EXTRA_PROFILE, profile)
+            intent.putExtra(ProfileDetailsActivity.EXTRA_PROFILE, profile)
         }
         activityResultLauncher.launch(intent)
     }

@@ -6,28 +6,18 @@
     xmlns:custom="http://schemas.android.com/apk/res-auto"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
+    android:focusableInTouchMode="true"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/saveGeofenceButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:translationY="-40dp"
-        android:translationX="-8dp"
-        app:scrimAnimationDuration="0"
-        android:src="@android:drawable/ic_input_add"
-        app:layout_anchor="@id/containerBottomSheet"
-        app:layout_anchorGravity="right"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/jumpToCurrentLocationButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:translationY="-110dp"
-        android:translationX="-8dp"
-        app:scrimAnimationDuration="0"
+        android:translationY="-65dp"
         android:src="@drawable/baseline_location_on_black_24dp"
         app:layout_anchor="@id/containerBottomSheet"
+        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"
         app:layout_anchorGravity="right"/>
 
     <androidx.fragment.app.FragmentContainerView
@@ -39,13 +29,14 @@
         custom:layout_anchorGravity="center"
         tools:context=".activities.MapsActivity"/>
 
-    <FrameLayout
-        app:layout_constraintTop_toBottomOf="parent"
-        android:id="@+id/containerBottomSheet"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:behavior_hideable="true"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/saveGeofenceButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_input_add"
+        app:layout_anchor="@id/containerBottomSheet"
+        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"
+        app:layout_anchorGravity="right"/>
 
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchView"
@@ -55,6 +46,13 @@
         android:background="?attr/colorOnPrimary"
         android:elevation="5dp"
         app:iconifiedByDefault="false"
-        app:queryHint="Press enter to perform search"/>
+        app:queryHint="Press enter"/>
+
+    <FrameLayout
+        android:id="@+id/containerBottomSheet"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:behavior_hideable="false"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

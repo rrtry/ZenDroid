@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.util.animations
+package com.example.volumeprofiler.util.ui.animations
 
 import android.animation.*
 import android.view.View

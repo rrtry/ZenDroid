@@ -16,7 +16,6 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
@@ -27,25 +26,23 @@ import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.util.animations.AnimUtil
-import com.example.volumeprofiler.viewmodels.EditProfileViewModel
+import com.example.volumeprofiler.util.ui.animations.AnimUtil
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import com.google.android.material.appbar.AppBarLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
-import com.example.volumeprofiler.viewmodels.EditProfileViewModel.Event.*
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.Event.*
 import android.Manifest.permission.*
 import android.media.RingtoneManager
 import android.net.Uri
-import android.os.Build
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.snackbar.Snackbar
 
 @AndroidEntryPoint
-class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, ActivityCompat.OnRequestPermissionsResultCallback {
+class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks, ActivityCompat.OnRequestPermissionsResultCallback {
 
     @Inject
     lateinit var sharedPreferencesUtil: SharedPreferencesUtil
@@ -60,7 +57,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
 
     private lateinit var binding: CreateProfileActivityBinding
 
-    private val viewModel by viewModels<EditProfileViewModel>()
+    private val viewModel by viewModels<ProfileDetailsViewModel>()
 
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<out String>>
 
@@ -123,7 +120,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
                     viewModel.activityEventsFlow.collect {
                         when (it) {
                             is ShowDialogFragment -> {
-                                if (it.dialogType == EditProfileViewModel.DialogType.TITLE) {
+                                if (it.dialogType == ProfileDetailsViewModel.DialogType.TITLE) {
                                     showTitleInputDialog()
                                 }
                             }
@@ -371,7 +368,7 @@ class EditProfileActivity: AppCompatActivity(), EditProfileActivityCallbacks, Ac
         const val PROFILE_FRAGMENT: Int = 0x01
 
         fun newIntent(context: Context, profile: Profile?): Intent {
-            val intent = Intent(context, EditProfileActivity::class.java)
+            val intent = Intent(context, ProfileDetailsActivity::class.java)
             if (profile != null) {
                 intent.putExtra(EXTRA_PROFILE, profile)
             }

@@ -5,6 +5,7 @@ import androidx.room.TypeConverter
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -69,8 +70,8 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromDate(date: LocalDateTime?): Long? {
-        return date?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
+    fun fromDate(date: LocalDateTime): Long {
+        return date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 
     @TypeConverter

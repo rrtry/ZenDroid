@@ -17,6 +17,7 @@ data class Location(
         @ColumnInfo (name = "location_id")
         var id: Int = 0,
 
+        var title: String = "",
         var latitude: Double,
         var longitude: Double,
         var locality: String,

@@ -10,7 +10,7 @@ import kotlinx.coroutines.channels.*
 import android.app.NotificationManager.Policy.*
 import android.media.AudioManager.*
 import com.example.volumeprofiler.database.repositories.AlarmRepository
-import com.example.volumeprofiler.util.ContentResolverUtil
+import com.example.volumeprofiler.util.ContentUtil
 import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsRingerStream
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -18,8 +18,7 @@ import javax.inject.Inject
 import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
-import android.util.Log
-import com.example.volumeprofiler.activities.EditProfileActivity.Companion.TAG_PROFILE_FRAGMENT
+import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
@@ -31,9 +30,9 @@ import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllo
 import kotlinx.coroutines.FlowPreview
 
 @HiltViewModel
-class EditProfileViewModel @Inject constructor(
+class ProfileDetailsViewModel @Inject constructor(
         private val alarmRepository: AlarmRepository,
-        private val contentResolverUtil: ContentResolverUtil
+        private val contentUtil: ContentUtil
 ): ViewModel() {
 
     private val activityEventChannel: Channel<Event> = Channel(Channel.BUFFERED)
@@ -114,15 +113,15 @@ class EditProfileViewModel @Inject constructor(
     val alarmSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
 
     val phoneRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val phoneRingtoneTitle: StateFlow<String> = phoneRingtoneUri.map { uri ->  contentResolverUtil.getRingtoneTitle(uri, TYPE_RINGTONE) }
+    val phoneRingtoneTitle: StateFlow<String> = phoneRingtoneUri.map { uri ->  contentUtil.getRingtoneTitle(uri, TYPE_RINGTONE) }
         .stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val notificationRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val notificationRingtoneTitle: StateFlow<String> = notificationSoundUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION) }
+    val notificationRingtoneTitle: StateFlow<String> = notificationSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION) }
         .stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val alarmRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentResolverUtil.getRingtoneTitle(uri, TYPE_ALARM) }
+    val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM) }
         .stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val voiceCallRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)

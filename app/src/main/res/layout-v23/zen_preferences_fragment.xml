@@ -8,7 +8,7 @@
         <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
+            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
     </data>
 
     <ScrollView

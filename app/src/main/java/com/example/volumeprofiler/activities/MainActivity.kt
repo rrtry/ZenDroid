@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
                     sendSystemPreferencesAccessNotification(this, profileUtil)
                 }
                 else -> {
-                    Snackbar.make(viewPager, "Phone and location permissions granted", Snackbar.LENGTH_LONG)
+                    Snackbar.make(viewPager, "Required permissions were granted", Snackbar.LENGTH_LONG)
                         .show()
                 }
             }

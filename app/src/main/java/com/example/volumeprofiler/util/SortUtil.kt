@@ -28,8 +28,8 @@ fun restoreChangedPositions(list: List<Profile>, positionMap: ArrayMap<UUID, Int
 
 fun sortByLocalTime(list: List<AlarmRelation>): List<AlarmRelation> {
     return list.sortedWith { previous, next ->
-        val prevItem: LocalTime = previous.alarm.localDateTime.toLocalTime()
-        val nextItem: LocalTime = next.alarm.localDateTime.toLocalTime()
+        val prevItem: LocalTime = previous.alarm.instanceStartTime.toLocalTime()
+        val nextItem: LocalTime = next.alarm.instanceStartTime.toLocalTime()
         if (prevItem < nextItem) {
             -1
         } else if (prevItem == nextItem) {

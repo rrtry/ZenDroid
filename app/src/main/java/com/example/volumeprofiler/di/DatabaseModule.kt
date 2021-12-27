@@ -24,6 +24,14 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideEventDao(database: ApplicationDatabase) = database.getEventDao()
+
+    @Provides
+    @Singleton
+    fun provideEventRelationDao(database: ApplicationDatabase) = database.getEventRelationDao()
+
+    @Provides
+    @Singleton
     fun provideProfileDao(database: ApplicationDatabase) = database.getProfileDao()
 
     @Provides

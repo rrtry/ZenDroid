@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/user/AppData/Local/Android/Sdk/platforms/android-30/data/res/layout/simple_list_item_1.xml" value="0.4678442028985507" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/baseline_alarm_deep_purple_300_24dp.xml" value="0.31875" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/baseline_notifications_active_black_24dp.xml" value="0.3171875" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/ic_baseline_alarm_off_24.xml" value="0.5615384615384615" />
@@ -12,6 +13,8 @@
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/ic_baseline_sd_storage_24.xml" value="0.31875" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/ic_baseline_settings_24.xml" value="0.3171875" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/ic_baseline_stop_24.xml" value="0.5268518518518519" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/ic_baseline_title_24.xml" value="0.5703125" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/drawable/popup_window_background.xml" value="0.5911458333333334" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout-v23/zen_preferences_fragment.xml" value="0.5" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout-v24/zen_preferences_fragment.xml" value="0.4995296331138288" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout-v25/zen_preferences_fragment.xml" value="0.5541666666666667" />
@@ -20,21 +23,32 @@
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout-v28/zen_preferences_fragment.xml" value="0.5541666666666667" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout-v29/zen_preferences_fragment.xml" value="0.5541666666666667" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout-v30/zen_preferences_fragment.xml" value="0.67" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/alarm_activity_layout.xml" value="0.75" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/alarm_item_view.xml" value="0.67" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/alarms_fragment.xml" value="0.3" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/bottom_sheet_fragment.xml" value="0.5541666666666667" />
-        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/create_alarm_activity.xml" value="0.3" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/calendar_event_activity_layout.xml" value="0.5" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/calendar_event_item_view.xml" value="0.575" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/calendar_item_view.xml" value="0.4542572463768116" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/create_alarm_activity.xml" value="0.67" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/create_profile_activity.xml" value="0.32447916666666665" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/create_profile_fragment.xml" value="0.40302267002518893" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/event_item_view.xml" value="0.575" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/google_maps_activity.xml" value="0.33177083333333335" />
-        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/location_item_view.xml" value="0.5" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/location_item_view.xml" value="0.67" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/location_suggestion_item_view.xml" value="0.4678442028985507" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/locations_list_fragment.xml" value="0.5541666666666667" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/main_activity.xml" value="0.5541666666666667" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/maps_select_location_fragment.xml" value="0.5541666666666667" />
-        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.26313405797101447" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.5" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/profile_item_view.xml" value="0.5541666666666667" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/profiles_list_fragment.xml" value="0.5541666666666667" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/test_layout.xml" value="0.5144927536231884" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/text_input_dialog.xml" value="0.33645833333333336" />
         <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/layout/zen_preferences_fragment.xml" value="0.5541666666666667" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/menu/action_menu_save_alarm.xml" value="0.575" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/menu/bottom_nav_menu.xml" value="0.32708333333333334" />
+        <entry key="..\:/Users/user/Sound-profile-manager/app/src/main/res/menu/search_menu.xml" value="0.32708333333333334" />
       </map>
     </option>
   </component>

@@ -5,10 +5,11 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.volumeprofiler.database.dao.*
 import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.Event
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.Profile
 
-@Database(entities = [Profile::class, Alarm::class, Location::class], version = 6, exportSchema = true)
+@Database(entities = [Profile::class, Alarm::class, Location::class, Event::class], version = 14, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class ApplicationDatabase: RoomDatabase() {
 
@@ -21,4 +22,8 @@ abstract class ApplicationDatabase: RoomDatabase() {
     abstract fun getLocationDao(): LocationDao
 
     abstract fun getLocationRelationDao(): LocationRelationDao
+
+    abstract fun getEventDao(): EventDao
+
+    abstract fun getEventRelationDao(): EventRelationDao
 }

@@ -16,7 +16,7 @@ import android.widget.*
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.activities.ProfileDetailsActivity
 import com.example.volumeprofiler.util.interruptionPolicy.*
 import com.google.android.material.appbar.CollapsingToolbarLayout
 
@@ -159,7 +159,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("title", "currentFragmentTitle", requireAll = false)
     fun bindToolbarTitle(view: CollapsingToolbarLayout, title: String, currentFragmentTitle: String): Unit {
-        view.title = if (currentFragmentTitle == EditProfileActivity.TAG_PROFILE_FRAGMENT) title else "Do Not Disturb"
+        view.title = if (currentFragmentTitle == ProfileDetailsActivity.TAG_PROFILE_FRAGMENT) title else "Do Not Disturb"
     }
 
     @JvmStatic

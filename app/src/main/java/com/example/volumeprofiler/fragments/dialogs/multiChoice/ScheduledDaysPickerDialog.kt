@@ -5,7 +5,7 @@ import android.app.Dialog
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.EditAlarmActivity
+import com.example.volumeprofiler.activities.AlarmDetailsActivity
 import kotlin.collections.ArrayList
 
 class ScheduledDaysPickerDialog: DialogFragment() {
@@ -76,7 +76,7 @@ class ScheduledDaysPickerDialog: DialogFragment() {
     }
 
     private fun setSuccessfulResult(): Unit {
-        parentFragmentManager.setFragmentResult(EditAlarmActivity.SCHEDULED_DAYS_REQUEST_KEY, Bundle().apply {
+        parentFragmentManager.setFragmentResult(AlarmDetailsActivity.SCHEDULED_DAYS_REQUEST_KEY, Bundle().apply {
             val list: ArrayList<Int> = selectedItems.map { it + 1 } as ArrayList<Int>
             list.sort()
             this.putSerializable(EXTRA_SCHEDULED_DAYS, list)

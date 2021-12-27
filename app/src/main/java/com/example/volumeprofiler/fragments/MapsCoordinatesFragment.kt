@@ -17,9 +17,8 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.MapsSelectLocationFragmentBinding
 import com.example.volumeprofiler.util.GeocoderUtil
 import com.example.volumeprofiler.util.Metrics
-import com.example.volumeprofiler.util.TextUtil
 import com.example.volumeprofiler.util.ViewUtil
-import com.example.volumeprofiler.util.animations.AnimUtil
+import com.example.volumeprofiler.util.ui.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.MapsCoordinatesViewModel
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
@@ -71,12 +70,12 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
     }
 
     private fun setTransitions(): Unit {
-        val exitTransition: Transition = Slide(Gravity.START)
-        val enterTransition: Transition = Slide(Gravity.START)
-
-        enterTransition.startDelay = 200
-        this.exitTransition = exitTransition
-        this.enterTransition = enterTransition
+        val transitionSet: TransitionSet = TransitionSet().apply {
+            addTransition(Fade())
+            addTransition(Slide(Gravity.START))
+        }
+        exitTransition = transitionSet
+        enterTransition = transitionSet
     }
 
     override fun onCreateView(
@@ -88,16 +87,10 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         return binding.root
     }
 
-    private fun addTextObservers(): Unit {
+    private fun attachTextObservers(): Unit {
         binding.latitudeTextInput.addTextChangedListener(getTextWatcher(binding.latitudeTextInputLayout))
         binding.longitudeEditText.addTextChangedListener(getTextWatcher(binding.longitudeTextInputLayout))
-    }
-
-    private fun setTextFilters(): Unit {
-        val coordinatesInputFilter: InputFilter = InputFilter { source, start, end, dest, dstart, dend -> TextUtil.filterCoordinatesInput(source) }
-        val coordinateFilters: Array<InputFilter> = arrayOf(coordinatesInputFilter)
-        binding.latitudeTextInput.filters = coordinateFilters
-        binding.longitudeEditText.filters = coordinateFilters
+        binding.titleEditText.addTextChangedListener(getTextWatcher(binding.titleTextInputLayout))
     }
 
     private fun getTextWatcher(editTextLayout: TextInputLayout?): TextWatcher {
@@ -116,6 +109,9 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
                     R.id.latitudeTextInputLayout -> {
                         viewModel.validateLatitudeInput(s)
                     }
+                    R.id.titleTextInputLayout -> {
+                        sharedViewModel.setTitle(s?.toString())
+                    }
                 }
             }
 
@@ -130,9 +126,18 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
+                    sharedViewModel.title.collect {
+                        if (binding.titleEditText.text == null) {
+                            binding.titleEditText.setText(it)
+                        }
+                    }
+                }
+                launch {
                     sharedViewModel.latLng.collect {
-                        binding.latitudeTextInput.setText(it?.latitude.toString())
-                        binding.longitudeEditText.setText(it?.longitude.toString())
+                        if (it != null) {
+                            binding.latitudeTextInput.setText(it.latitude.toString())
+                            binding.longitudeEditText.setText(it.longitude.toString())
+                        }
                     }
                 }
                 launch {
@@ -157,15 +162,18 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
             override fun onGlobalLayout() {
                 binding.coordinatesTitle.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val parentFragmentView: View = requireParentFragment().requireView()
-                parentActivity?.setHalfExpandedRatio(ViewUtil.calculateHalfExpandedRatio(
+                val ratio: Float = ViewUtil.getHalfExpandedRatio(
                     parentFragmentView.findViewById(R.id.bottomSheetRoot),
-                    binding.coordinatesTitle))
+                    binding.title)
+                parentActivity?.setHalfExpandedRatio(ratio)
             }
         })
+
         binding.metricsSpinner.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             arrayOf(Metrics.METERS, Metrics.KILOMETERS))
+
         binding.metricsSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
@@ -180,30 +188,27 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
             }
         }
-        setTextFilters()
-        addTextObservers()
-        val onClickListener: View.OnClickListener = View.OnClickListener {
-            when (it.id) {
-                binding.setLocationButton.id -> {
-                    var isInputValid: Boolean = true
-                    if (!viewModel.latitudeEditStatus.value) {
-                        isInputValid = false
-                        AnimUtil.shakeAnimation(binding.latitudeTextInputLayout)
-                    }
-                    if (!viewModel.longitudeEditStatus.value) {
-                        isInputValid = false
-                        AnimUtil.shakeAnimation(binding.longitudeTextInputLayout)
-                    }
-                    if (isInputValid) {
-                        val latLng = LatLng(binding.latitudeTextInput.text.toString().toDouble(),
-                                binding.longitudeEditText.text.toString().toDouble())
-                        sharedViewModel.setLatLng(latLng)
-                    }
-                }
+
+        attachTextObservers()
+        setSliderOnChangeListener()
+
+        binding.setLocationButton.setOnClickListener {
+            var isInputValid = true
+            if (!viewModel.latitudeEditStatus.value) {
+                isInputValid = false
+                AnimUtil.shakeAnimation(binding.latitudeTextInputLayout)
+            }
+            if (!viewModel.longitudeEditStatus.value) {
+                isInputValid = false
+                AnimUtil.shakeAnimation(binding.longitudeTextInputLayout)
+            }
+            if (isInputValid) {
+                sharedViewModel.setLatLng(
+                    LatLng(binding.latitudeTextInput.text.toString().toDouble(),
+                        binding.longitudeEditText.text.toString().toDouble())
+                )
             }
         }
-        binding.setLocationButton.setOnClickListener(onClickListener)
-        setSliderOnChangeListener()
     }
 
     private fun updateMetrics(metrics: Metrics): Unit {

@@ -49,7 +49,6 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:text="Sun, Mon, Tue, Sat"
-            android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/imageView4"
             app:layout_constraintTop_toBottomOf="@+id/timeTextView" />
 
@@ -70,7 +69,6 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
             android:text="Profile"
-            android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@+id/imageView3"
             app:layout_constraintTop_toBottomOf="@+id/imageView4" />

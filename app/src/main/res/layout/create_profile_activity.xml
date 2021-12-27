@@ -6,7 +6,7 @@
         <import type="android.R.drawable"/>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.EditProfileViewModel"/>
+            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
     </data>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout

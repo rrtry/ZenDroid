@@ -13,23 +13,28 @@ import android.content.Intent.*
 import android.provider.Settings.*
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.entities.Event
+import com.example.volumeprofiler.entities.Profile
 import java.time.LocalTime
 
 private const val SERVICE_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_SERVICES"
 private const val PERMISSIONS_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_PERMISSIONS"
 private const val SCHEDULER_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_SCHEDULER"
-private const val GEOFENCE_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_GEOFENCES"
+private const val CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_CALENDAR_EVENTS"
+private const val GEOFENCES_NOTIFICATION_CHANNEL_ID: String = "CHANNEL_ID_GEOFENCES"
 
-private const val SERVICE_NOTIFICATION_CHANNEL_NAME: String = "Background processing"
+private const val SERVICES_NOTIFICATION_CHANNEL_NAME: String = "Background processing"
 private const val PERMISSIONS_NOTIFICATION_CHANNEL_NAME: String = "Permission reminders"
 private const val SCHEDULER_NOTIFICATION_CHANNEL_NAME: String = "Alarms"
-private const val GEOFENCE_NOTIFICATION_CHANNEL_NAME: String = "Geofences"
+private const val GEOFENCES_NOTIFICATION_CHANNEL_NAME: String = "Geofences"
+private const val CALENDAR_EVENTS_NOTIFICATION_CHANNEL_NAME: String = "Calendar events"
 
 const val ID_SYSTEM_SETTINGS: Int = 1072
 const val ID_INTERRUPTION_POLICY: Int = 2073
 const val ID_PERMISSIONS: Int = 3074
 const val ID_SCHEDULER: Int = 4075
 const val ID_GEOFENCE: Int = 5076
+const val ID_CALENDAR_EVENT: Int = 6077
 
 private const val REQUEST_GRANT_WRITE_SETTINGS_PERMISSION: Int = 0
 private const val REQUEST_GRANT_NOTIFICATION_POLICY_PERMISSION: Int = 1
@@ -74,7 +79,7 @@ fun sendSystemPreferencesAccessNotification(context: Context, profileUtil: Profi
 
 fun postNotification(context: Context, notification: Notification, id: Int): Unit {
     val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.notify(id,  notification)
+    notificationManager.notify(id, notification)
 }
 
 fun cancelPermissionNotifications(context: Context): Unit {
@@ -147,16 +152,16 @@ fun createInterruptionPolicyNotification(context: Context): Notification {
     return notification
 }
 
-fun createGeofenceExitNotification(context: Context, profileTitle: String, address: String): Notification {
-    val builder = NotificationCompat.Builder(context, GEOFENCE_NOTIFICATION_CHANNEL_ID)
-        .setContentTitle("Profile activation depending on location")
-        .setContentText("Restoring $profileTitle profile")
+fun createGeofenceExitNotification(context: Context, profileTitle: String, locationTitle: String): Notification {
+    val builder = NotificationCompat.Builder(context, GEOFENCES_NOTIFICATION_CHANNEL_ID)
+        .setContentTitle(GEOFENCES_NOTIFICATION_CHANNEL_NAME)
+        .setContentText("Activating profile '$profileTitle'")
         .setSmallIcon(R.drawable.baseline_location_on_black_24dp)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(
             context,
-            GEOFENCE_NOTIFICATION_CHANNEL_ID,
-            GEOFENCE_NOTIFICATION_CHANNEL_NAME,
+            GEOFENCES_NOTIFICATION_CHANNEL_ID,
+            GEOFENCES_NOTIFICATION_CHANNEL_NAME,
             NotificationManager.IMPORTANCE_DEFAULT).also {
             builder.setChannelId(it.id)
         }
@@ -164,16 +169,16 @@ fun createGeofenceExitNotification(context: Context, profileTitle: String, addre
     return builder.build()
 }
 
-fun createGeofenceEnterNotification(context: Context, profileTitle: String, address: String): Notification {
-    val builder = NotificationCompat.Builder(context, GEOFENCE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Profile activation depending on location")
-            .setContentText("$profileTitle in $address")
+fun createGeofenceEnterNotification(context: Context, profileTitle: String, locationTitle: String): Notification {
+    val builder = NotificationCompat.Builder(context, GEOFENCES_NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(GEOFENCES_NOTIFICATION_CHANNEL_NAME)
+            .setContentText("Activating profile '$profileTitle'")
             .setSmallIcon(R.drawable.baseline_location_on_black_24dp)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(
                 context,
-                GEOFENCE_NOTIFICATION_CHANNEL_ID,
-                GEOFENCE_NOTIFICATION_CHANNEL_NAME,
+                GEOFENCES_NOTIFICATION_CHANNEL_ID,
+                GEOFENCES_NOTIFICATION_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_DEFAULT).also {
             builder.setChannelId(it.id)
         }
@@ -183,8 +188,8 @@ fun createGeofenceEnterNotification(context: Context, profileTitle: String, addr
 
 fun createGeofenceRegistrationNotification(context: Context): Notification {
     val builder = NotificationCompat.Builder(context, SERVICE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Registering geofences")
-            .setContentText("Google play services data has been cleared")
+            .setContentTitle(SERVICES_NOTIFICATION_CHANNEL_NAME)
+            .setContentText("Registering geofences")
             .setSmallIcon(R.drawable.baseline_location_on_black_24dp)
             .setOngoing(true)
             .setSilent(true)
@@ -192,7 +197,7 @@ fun createGeofenceRegistrationNotification(context: Context): Notification {
         createNotificationChannel(
                 context,
                 SERVICE_NOTIFICATION_CHANNEL_ID,
-                SERVICE_NOTIFICATION_CHANNEL_NAME,
+                SERVICES_NOTIFICATION_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_MIN).also {
             builder.setChannelId(it.id)
         }
@@ -202,7 +207,8 @@ fun createGeofenceRegistrationNotification(context: Context): Notification {
 
 fun createSchedulerNotification(context: Context): Notification {
     val builder = NotificationCompat.Builder(context, SERVICE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Scheduling alarms")
+            .setContentTitle(SERVICES_NOTIFICATION_CHANNEL_NAME)
+            .setContentText("Scheduling alarms")
             .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
             .setOngoing(true)
             .setSilent(true)
@@ -210,8 +216,30 @@ fun createSchedulerNotification(context: Context): Notification {
         createNotificationChannel(
                 context,
                 SERVICE_NOTIFICATION_CHANNEL_ID,
-                SERVICE_NOTIFICATION_CHANNEL_NAME,
+                SERVICES_NOTIFICATION_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_MIN).also {
+            builder.setChannelId(it.id)
+        }
+    }
+    return builder.build()
+}
+
+fun createCalendarEventNotification(context: Context, event: Event, profile: Profile, state: Event.State): Notification {
+    val contentText: String = if (state == Event.State.STARTED) {
+        "${TextUtil.formatEventTimestamp(context, event, event.currentInstanceStartTime)} - activating ${profile.title}"
+    } else {
+        "${TextUtil.formatEventTimestamp(context, event, event.currentInstanceEndTime)} - restoring ${profile.title}"
+    }
+    val builder = NotificationCompat.Builder(context, CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID)
+        .setContentTitle(event.title)
+        .setContentText(contentText)
+        .setSmallIcon(R.drawable.ic_baseline_calendar_today_24)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        createNotificationChannel(
+            context,
+            CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID,
+            CALENDAR_EVENTS_NOTIFICATION_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_DEFAULT).also {
             builder.setChannelId(it.id)
         }
     }
@@ -220,7 +248,7 @@ fun createSchedulerNotification(context: Context): Notification {
 
 fun createAlarmAlertNotification(context: Context, title: String, localTime: LocalTime): Notification {
     val builder = NotificationCompat.Builder(context, SCHEDULER_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Profile activation on schedule")
+            .setContentTitle("Scheduler")
             .setContentText("$title at ${TextUtil.localizedTimeToString(localTime)}")
             .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

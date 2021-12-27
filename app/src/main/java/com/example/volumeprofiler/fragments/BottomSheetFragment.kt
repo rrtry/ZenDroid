@@ -7,7 +7,6 @@ import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.R
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
-import java.util.*
 
 class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
 
@@ -70,6 +69,10 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
         }
     }
 
+    private fun findFragmentByTag(tag: String): Fragment {
+        return childFragmentManager.findFragmentByTag(tag)!!
+    }
+
     private fun addFragments(): Unit {
         val coordinatesFragment: Fragment = MapsCoordinatesFragment()
         val profileSelectionFragment: Fragment = MapsProfileSelectionFragment()
@@ -83,8 +86,8 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
     private fun replaceFragment(tag: String): Unit {
         childFragmentManager
                 .beginTransaction()
-                .hide(childFragmentManager.findFragmentByTag(activeFragmentTag)!!)
-                .show(childFragmentManager.findFragmentByTag(tag)!!)
+                .hide(findFragmentByTag(activeFragmentTag))
+                .show(findFragmentByTag(tag))
                 .commit()
     }
 

@@ -4,9 +4,9 @@
     package="com.example.volumeprofiler">
 
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -23,7 +23,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.VolumeProfiler">
-        <activity android:name=".activities.WelcomeActivity"/>
+        <activity android:name=".activities.IntroActivity"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -33,8 +33,10 @@
             android:name="com.example.volumeprofiler.activities.MapsActivity"
             android:configChanges="uiMode"
             android:launchMode="singleTop"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar"
-            android:label="@string/title_activity_maps">
+            android:label="@string/title_activity_maps"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
@@ -45,7 +47,8 @@
         <receiver
             android:name=".broadcastReceivers.BootCompletedReceiver"
             android:directBootAware="true"
-            tools:targetApi="n">
+            tools:targetApi="n"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -56,7 +59,8 @@
         <receiver
             android:name=".broadcastReceivers.PhoneStateReceiver"
             android:directBootAware="true"
-            tools:targetApi="n">
+            tools:targetApi="n"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
@@ -66,7 +70,8 @@
             android:name=".broadcastReceivers.PackageDataClearedReceiver"
             android:directBootAware="true"
             android:enabled="true"
-            tools:targetApi="n">
+            tools:targetApi="n"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_DATA_CLEARED"/>
                 <data android:scheme="package" />
@@ -77,10 +82,22 @@
             android:name=".broadcastReceivers.GeofenceReceiver"
             android:directBootAware="true"
             android:enabled="true"
-            tools:targetApi="n">
+            tools:targetApi="n"
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"/>
-                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".services.CalendarProviderSyncJob"
+            android:directBootAware="true"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            tools:targetApi="n"/>
+
+        <receiver android:name=".broadcastReceivers.TimezoneChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -94,25 +111,27 @@
             android:name=".services.AlarmService"
             android:directBootAware="true"
             android:enabled="true"
-            tools:targetApi="n">
+            tools:targetApi="n"
+            android:exported="false">
             <intent-filter>
-                <action android:name="com.example.volumeprofiler.ACTION_TRIGGER_ALARM" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="com.example.volumeprofiler.ACTION_ALARM_TRIGGER" />
+                <action android:name="com.example.volumeprofiler.ACTION_CALENDAR_EVENT_TRIGGER"/>
             </intent-filter>
         </service>
 
         <activity
-            android:name=".activities.EditProfileActivity"
+            android:name=".activities.ProfileDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
-        <activity android:name=".activities.EditAlarmActivity" />
+        <activity android:name=".activities.AlarmDetailsActivity" />
+        <activity android:name=".activities.CalendarEventDetailsActivity"/>
 
-        <activity android:name=".activities.MainActivity">
+        <activity android:name=".activities.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
     </application>
 </manifest>

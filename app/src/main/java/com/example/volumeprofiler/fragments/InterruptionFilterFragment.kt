@@ -31,7 +31,7 @@ import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOnVisualRe
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.util.ViewUtil
-import com.example.volumeprofiler.viewmodels.EditProfileViewModel
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import com.google.android.material.appbar.AppBarLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
@@ -39,9 +39,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.Manifest.permission.*
-import android.content.BroadcastReceiver
-import android.content.Context
-import com.example.volumeprofiler.activities.EditProfileActivity
+import com.example.volumeprofiler.activities.ProfileDetailsActivity
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
@@ -50,7 +48,7 @@ class InterruptionFilterFragment: Fragment() {
     @Inject
     lateinit var profileUtil: ProfileUtil
 
-    private val viewModel: EditProfileViewModel by activityViewModels()
+    private val detailsViewModel: ProfileDetailsViewModel by activityViewModels()
 
     private var _binding: ZenPreferencesFragmentBinding? = null
     private val binding: ZenPreferencesFragmentBinding get() = _binding!!
@@ -72,22 +70,22 @@ class InterruptionFilterFragment: Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = DataBindingUtil.inflate(inflater, R.layout.zen_preferences_fragment, container, false)
-        binding.viewModel = viewModel
+        binding.viewModel = detailsViewModel
         binding.lifecycleOwner = viewLifecycleOwner
         return binding.root
     }
 
     private fun collectEventsFlow(): Unit {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
+            detailsViewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
                 when (it) {
-                    EditProfileViewModel.Event.StartContactsActivity -> {
+                    ProfileDetailsViewModel.Event.StartContactsActivity -> {
                         startFavoriteContactsActivity()
                     }
-                    is EditProfileViewModel.Event.ShowPopupWindow -> {
+                    is ProfileDetailsViewModel.Event.ShowPopupWindow -> {
                         showPopupWindow(it.category)
                     }
-                    is EditProfileViewModel.Event.ShowDialogFragment -> {
+                    is ProfileDetailsViewModel.Event.ShowDialogFragment -> {
                         showDialog(it.dialogType)
                     }
                     else -> {
@@ -116,7 +114,7 @@ class InterruptionFilterFragment: Fragment() {
                         startActivity(intent)
                     }
                     else {
-                        callback?.onFragmentReplace(EditProfileActivity.PROFILE_FRAGMENT)
+                        callback?.onFragmentReplace(ProfileDetailsActivity.PROFILE_FRAGMENT)
                     }
                 }
             })
@@ -139,15 +137,15 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.setOnMenuItemClickListener {
             when (it.itemId) {
                 R.id.all_conversations -> {
-                    viewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_ANYONE
+                    detailsViewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_ANYONE
                     true
                 }
                 R.id.priority_conversations -> {
-                    viewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_IMPORTANT
+                    detailsViewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_IMPORTANT
                     true
                 }
                 R.id.none -> {
-                    viewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_NONE
+                    detailsViewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_NONE
                     true
                 }
                 else -> false
@@ -160,22 +158,22 @@ class InterruptionFilterFragment: Fragment() {
         fragment.show(requireActivity().supportFragmentManager, null)
     }
 
-    private fun getFragmentInstance(type: EditProfileViewModel.DialogType): DialogFragment {
+    private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
         return when (type) {
-            EditProfileViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(
-                ArrayList(viewModel.screenOnVisualEffects.value)
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(
+                ArrayList(detailsViewModel.screenOnVisualEffects.value)
             )
-            EditProfileViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(
-                ArrayList(viewModel.screenOffVisualEffects.value)
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(
+                ArrayList(detailsViewModel.screenOffVisualEffects.value)
             )
-            EditProfileViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(
-                ArrayList(viewModel.priorityCategories.value)
+            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(
+                ArrayList(detailsViewModel.priorityCategories.value)
             )
-            else -> ProfileNameInputDialog.newInstance(viewModel.title.value)
+            else -> ProfileNameInputDialog.newInstance(detailsViewModel.title.value)
         }
     }
 
-    private fun showDialog(type: EditProfileViewModel.DialogType): Unit {
+    private fun showDialog(type: ProfileDetailsViewModel.DialogType): Unit {
         displayDialogWindow(getFragmentInstance(type))
     }
 
@@ -183,40 +181,40 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.inflate(R.menu.dnd_exceptions)
         popupMenu.setOnMenuItemClickListener {
             if (it.itemId != R.id.none) {
-                if (!viewModel.containsPriorityCategory(PRIORITY_CATEGORY_CALLS) && category == PRIORITY_CATEGORY_CALLS) {
-                    viewModel.addPriorityCategory(PRIORITY_CATEGORY_CALLS)
-                } else if (!viewModel.containsPriorityCategory(PRIORITY_CATEGORY_MESSAGES) && category == PRIORITY_CATEGORY_MESSAGES) {
-                    viewModel.addPriorityCategory(PRIORITY_CATEGORY_MESSAGES)
+                if (!detailsViewModel.containsPriorityCategory(PRIORITY_CATEGORY_CALLS) && category == PRIORITY_CATEGORY_CALLS) {
+                    detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_CALLS)
+                } else if (!detailsViewModel.containsPriorityCategory(PRIORITY_CATEGORY_MESSAGES) && category == PRIORITY_CATEGORY_MESSAGES) {
+                    detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_MESSAGES)
                 }
             }
             when (it.itemId) {
                 R.id.starred_contacts -> {
                     if (category == PRIORITY_CATEGORY_MESSAGES) {
-                        viewModel.priorityMessageSenders.value = PRIORITY_SENDERS_STARRED
+                        detailsViewModel.priorityMessageSenders.value = PRIORITY_SENDERS_STARRED
                     } else {
-                        viewModel.priorityCallSenders.value = PRIORITY_SENDERS_STARRED
+                        detailsViewModel.priorityCallSenders.value = PRIORITY_SENDERS_STARRED
                     }
                     true
                 }
                 R.id.contacts -> {
                     if (category == PRIORITY_CATEGORY_MESSAGES) {
-                        viewModel.priorityMessageSenders.value = PRIORITY_SENDERS_CONTACTS
+                        detailsViewModel.priorityMessageSenders.value = PRIORITY_SENDERS_CONTACTS
                     } else {
-                        viewModel.priorityCallSenders.value = PRIORITY_SENDERS_CONTACTS
+                        detailsViewModel.priorityCallSenders.value = PRIORITY_SENDERS_CONTACTS
                     }
                     true
                 }
                 R.id.anyone -> {
                     if (category == PRIORITY_CATEGORY_MESSAGES) {
-                        viewModel.priorityMessageSenders.value = PRIORITY_SENDERS_ANY
+                        detailsViewModel.priorityMessageSenders.value = PRIORITY_SENDERS_ANY
                     } else {
-                        viewModel.addPriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)
-                        viewModel.priorityCallSenders.value = PRIORITY_SENDERS_ANY
+                        detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)
+                        detailsViewModel.priorityCallSenders.value = PRIORITY_SENDERS_ANY
                     }
                     true
                 }
                 R.id.none -> {
-                    viewModel.removePriorityCategory(category)
+                    detailsViewModel.removePriorityCategory(category)
                     true
                 }
                 else -> false
@@ -252,16 +250,16 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun onPriorityResult(bundle: Bundle): Unit {
         val priorityCategories: ArrayList<Int> = bundle.getIntegerArrayList(PRIORITY_CATEGORIES_KEY) as ArrayList<Int>
-        viewModel.priorityCategories.value = priorityCategories
+        detailsViewModel.priorityCategories.value = priorityCategories
     }
 
     private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
         val type: Int = bundle.getInt(EFFECTS_TYPE_KEY)
         val effects: ArrayList<Int> = bundle.getIntegerArrayList(EFFECTS_KEY) as ArrayList<Int>
         if (type == 0) {
-            viewModel.screenOffVisualEffects.value = effects
+            detailsViewModel.screenOffVisualEffects.value = effects
         } else {
-            viewModel.screenOnVisualEffects.value = effects
+            detailsViewModel.screenOnVisualEffects.value = effects
         }
     }
 

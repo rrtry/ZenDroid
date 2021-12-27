@@ -23,6 +23,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.Manifest.permission.*
+import android.annotation.SuppressLint
 
 @Singleton
 class GeofenceUtil @Inject constructor(
@@ -75,7 +76,7 @@ class GeofenceUtil @Inject constructor(
                         location.radius
                 )
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build()
     }
 
@@ -86,6 +87,7 @@ class GeofenceUtil @Inject constructor(
         }.build()
     }
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     private fun createGeofencingPendingIntent(
         location: Location,
         enterProfile: Profile,
@@ -93,19 +95,22 @@ class GeofenceUtil @Inject constructor(
     ): PendingIntent {
         val intent: Intent = Intent(context, GeofenceReceiver::class.java).apply {
             action = ACTION_GEOFENCE_TRANSITION
+            putExtra(GeofenceReceiver.EXTRA_TITLE, location.title)
             putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
         }
-        return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     private fun getGeofencingPendingIntent(location: Location,enterProfile: Profile, exitProfile: Profile): PendingIntent? {
         val intent: Intent = Intent(context, GeofenceReceiver::class.java).apply {
             action = ACTION_GEOFENCE_TRANSITION
-            putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, enterProfile)
-            putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, exitProfile)
+            putExtra(GeofenceReceiver.EXTRA_TITLE, location.title)
+            putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
+            putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
         }
-        return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_NO_CREATE)
     }
 
     fun checkLocationServicesAvailability(context: Context, onCompleteAction: (() -> Unit)?) {

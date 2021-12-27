@@ -1,15 +1,13 @@
-package com.example.volumeprofiler.util.animations
+package com.example.volumeprofiler.util.ui.animations
 
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
-import android.graphics.Color
 import android.util.Log
 import android.view.View
 import android.view.animation.Animation
 import android.view.animation.CycleInterpolator
 import android.view.animation.ScaleAnimation
 import android.view.animation.TranslateAnimation
-import androidx.annotation.ColorInt
 
 class AnimUtil {
 

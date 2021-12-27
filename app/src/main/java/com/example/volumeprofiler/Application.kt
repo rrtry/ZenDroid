@@ -31,8 +31,10 @@ class Application: Application(), LifecycleObserver {
 
         private const val LOG_TAG: String = "Application"
 
-        const val ACTION_GEOFENCE_TRANSITION: String = "com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"
-        const val ACTION_ALARM_ALERT: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
-        const val ACTION_RINGER_MODE_CHANGE: String = "com.example.volumeprofiler.ACTION_RINGER_MODE_CHANGE"
+        internal const val ACTION_UPDATE_CALENDAR_EVENT: String = "com.example.volumeprofiler.ACTION_UPDATE_CALENDAR_EVENT"
+        internal const val ACTION_GEOFENCE_TRANSITION: String = "com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"
+        internal const val ACTION_ALARM_TRIGGER: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
+        internal const val ACTION_CALENDAR_EVENT_TRIGGER: String = "com.example.volumeprofiler.ACTION_CALENDAR_EVENT_TRIGGER"
+        internal const val ACTION_EVENT_END: String = "com.example.volumeprofiler.ACTION_EVENT_END"
     }
 }

@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.volumeprofiler.activities.MapsActivity
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.databinding.LocationsListFragmentBinding
@@ -202,11 +204,10 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
 
             val location: Location = locationRelation.location
 
-            binding.cityName.text = location.locality
+            binding.title.text = location.title
             binding.addressTextView.text = TextUtil.formatAddress(location.address)
             binding.enabledGeofenceSwitch.isChecked = location.enabled == 1.toByte()
-            binding.onEnterProfile.text = locationRelation.onEnterProfile.title
-            binding.onExitProfile.text = locationRelation.onExitProfile.title
+            binding.profiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
 
             binding.editGeofenceButton.setOnClickListener {
                 startMapActivity(locationAdapter.getItemAtPosition(bindingAdapterPosition))

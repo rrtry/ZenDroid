@@ -19,6 +19,7 @@ class MapsSharedViewModel @Inject constructor(
 
     private var areArgsSet: Boolean = false
 
+    val title: MutableStateFlow<String?> = MutableStateFlow(null)
     val latLng: MutableStateFlow<LatLng?> = MutableStateFlow(null)
     val address: MutableStateFlow<String?> = MutableStateFlow(null)
     val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
@@ -40,6 +41,7 @@ class MapsSharedViewModel @Inject constructor(
             toRestoreProfilePosition.value = positionsPair.second
 
             latLng.value = LatLng(locationRelation.location.latitude, locationRelation.location.longitude)
+            title.value = locationRelation.location.title
             address.value = locationRelation.location.address
             radius.value = locationRelation.location.radius
 
@@ -81,6 +83,7 @@ class MapsSharedViewModel @Inject constructor(
 
     fun getLocation(profiles: List<Profile>): Location {
         val location: Location = Location(
+            title = title.value!!,
             latitude = latLng.value!!.latitude,
             longitude = latLng.value!!.longitude,
             address = address.value!!,
@@ -111,12 +114,12 @@ class MapsSharedViewModel @Inject constructor(
         this.latLng.value = latLng
     }
 
-    fun setAddress(addressLine: String): Unit {
-        address.value = addressLine
+    fun setTitle(title: String?): Unit {
+        this.title.value = title
     }
 
-    fun setLocality(locality: String): Unit {
-        this.locality.value = locality
+    fun setAddress(addressLine: String): Unit {
+        address.value = addressLine
     }
 
     fun setRadius(radius: Float): Unit {

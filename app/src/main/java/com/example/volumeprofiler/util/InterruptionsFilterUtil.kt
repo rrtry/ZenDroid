@@ -3,7 +3,6 @@ package com.example.volumeprofiler.util.interruptionPolicy
 import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
-import android.util.Log
 
 fun interruptionFilterAllowsNotifications(notificationInterruptionFilter: Int, notificationPriorityCategories: List<Int>): Boolean {
     return when (notificationInterruptionFilter) {
