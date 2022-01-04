@@ -15,6 +15,6 @@ data class EventRelation(
     var eventStartsProfile: Profile,
 
     @Relation(parentColumn = "eventEndsProfileId", entityColumn = "id")
-    var eventEndsProfile: Profile?,
+    var eventEndsProfile: Profile,
 
 ): Parcelable

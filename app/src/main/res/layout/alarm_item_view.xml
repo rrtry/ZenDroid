@@ -25,6 +25,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:text="8:30"
+            android:transitionName="alarmDetailsTransition"
             android:textSize="35sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -36,6 +37,7 @@
             android:layout_marginTop="28dp"
             android:layout_marginEnd="16dp"
             android:clickable="false"
+            android:transitionName="alarmDetailsTransition"
             android:focusable="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="1.0"
@@ -105,41 +107,5 @@
             app:layout_constraintTop_toTopOf="@+id/deleteAlarmButton"
             app:srcCompat="@drawable/baseline_drive_file_rename_outline_black_24dp" />
 
-        <!--
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/expandableView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:animateLayoutChanges="true"
-        android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/expandView">
-
-        <View
-            android:id="@+id/separatorView"
-            android:layout_width="0dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginStart="16dp"
-            android:layout_height="1.5dp"
-            android:layout_marginTop="8dp"
-            android:background="@android:color/darker_gray"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/deleteAlarmButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            style="?android:attr/selectableItemBackground"
-            android:drawableStart="@drawable/baseline_delete_forever_deep_purple_400_24dp"
-            android:text="Delete"
-            android:layout_marginStart="8dp"
-            app:layout_constraintTop_toBottomOf="@+id/separatorView"
-            app:layout_constraintStart_toStartOf="parent"/>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-    -->
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

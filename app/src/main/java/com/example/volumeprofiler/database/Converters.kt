@@ -2,10 +2,7 @@ package com.example.volumeprofiler.database
 
 import android.net.Uri
 import androidx.room.TypeConverter
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.time.*
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -70,15 +67,33 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromDate(date: LocalDateTime): Long {
-        return date.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    fun fromZoneId(zoneId: ZoneId): String {
+        return zoneId.toString()
     }
 
     @TypeConverter
-    fun toDate(millisSinceEpoch: Long?): LocalDateTime? {
-        return millisSinceEpoch?.let {
-            Instant.ofEpochMilli(millisSinceEpoch).atZone(ZoneId.systemDefault()).toLocalDateTime()
-        }
+    fun toZoneId(string: String): ZoneId {
+        return ZoneId.of(string)
+    }
+
+    @TypeConverter
+    fun fromLocalTime(localTime: LocalTime): String {
+        return localTime.toString()
+    }
+
+    @TypeConverter
+    fun toLocalTime(string: String): LocalTime {
+        return LocalTime.parse(string)
+    }
+
+    @TypeConverter
+    fun fromInstant(instant: Instant): Long {
+        return instant.toEpochMilli()
+    }
+
+    @TypeConverter
+    fun toInstant(millis: Long): Instant {
+        return Instant.ofEpochMilli(millis)
     }
 
     @TypeConverter

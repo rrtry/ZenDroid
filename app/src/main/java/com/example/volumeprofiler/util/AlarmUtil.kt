@@ -31,16 +31,16 @@ class AlarmUtil @Inject constructor (
     fun scheduleAlarm(event: Event, profile: Profile, state: Event.State): Unit {
         val pendingIntent: PendingIntent = getEventPendingIntent(event, profile, state, true)!!
         when (state) {
-            Event.State.STARTED -> {
-                setAlarm(event.currentInstanceStartTime, pendingIntent)
+            Event.State.START -> {
+                setAlarm(event.instanceBeginTime, pendingIntent)
             }
-            Event.State.COMPLETED -> {
-                setAlarm(event.currentInstanceEndTime, pendingIntent)
+            Event.State.END -> {
+                setAlarm(event.instanceEndTime, pendingIntent)
             }
         }
     }
 
-    fun scheduleAlarm(alarm: Alarm, profile: Profile, repeating: Boolean, showToast: Boolean = false): Unit {
+    fun scheduleAlarm(alarm: Alarm, profile: Profile, showToast: Boolean = false): Unit {
         val pendingIntent: PendingIntent = getAlarmPendingIntent(alarm, profile, true)!!
         val timestamp: Long = toEpochMilli(getNextAlarmTime(alarm))
         setAlarm(timestamp, pendingIntent)
@@ -59,29 +59,15 @@ class AlarmUtil @Inject constructor (
         }
     }
 
-    private fun getEventPendingIntent(event: Event, profile: Profile, state: Event.State?, create: Boolean): PendingIntent? {
+    private fun getEventPendingIntent(event: Event, profile: Profile?, state: Event.State?, create: Boolean): PendingIntent? {
         val id: Int = event.id
         val intent: Intent = Intent(context, AlarmService::class.java).apply {
             action = Application.ACTION_CALENDAR_EVENT_TRIGGER
             putExtra(AlarmService.EXTRA_EVENT, ParcelableUtil.toByteArray(event))
-            putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+            if (profile != null) {
+                putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+            }
             putExtra(AlarmService.EXTRA_EVENT_STATE, state)
-        }
-        var flags: Int = if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
-        flags = flags or PendingIntent.FLAG_IMMUTABLE
-        return if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-            PendingIntent.getForegroundService(context, id, intent, flags)
-        } else {
-            PendingIntent.getService(context, id, intent, flags)
-        }
-    }
-
-    private fun getAlarmPendingIntent(alarm: Alarm, profile: Profile, create: Boolean): PendingIntent? {
-        val id: Int = alarm.id.toInt()
-        val intent: Intent = Intent(context, AlarmService::class.java).apply {
-            action = Application.ACTION_ALARM_TRIGGER
-            putExtra(AlarmService.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
-            putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
         }
         var flags: Int = if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
         flags = flags or PendingIntent.FLAG_IMMUTABLE
@@ -92,8 +78,26 @@ class AlarmUtil @Inject constructor (
         }
     }
 
-    fun cancelAlarm(event: Event, profile: Profile): Unit {
-        val pendingIntent: PendingIntent? = getEventPendingIntent(event, profile, null, false)
+    private fun getAlarmPendingIntent(alarm: Alarm, profile: Profile?, create: Boolean): PendingIntent? {
+        val id: Int = alarm.id.toInt()
+        val intent: Intent = Intent(context, AlarmService::class.java).apply {
+            action = Application.ACTION_ALARM_TRIGGER
+            putExtra(AlarmService.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            if (profile != null) {
+                putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+            }
+        }
+        var flags: Int = if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
+        flags = flags or PendingIntent.FLAG_IMMUTABLE
+        return if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
+            PendingIntent.getForegroundService(context, id, intent, flags)
+        } else {
+            PendingIntent.getService(context, id, intent, flags)
+        }
+    }
+
+    fun cancelAlarm(event: Event): Unit {
+        val pendingIntent: PendingIntent? = getEventPendingIntent(event, null, null, false)
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
         } else {
@@ -102,7 +106,7 @@ class AlarmUtil @Inject constructor (
     }
 
     fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
-        val pendingIntent: PendingIntent? = getAlarmPendingIntent(alarm, profile, false)
+        val pendingIntent: PendingIntent? = getAlarmPendingIntent(alarm, null, false)
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
         }
@@ -119,43 +123,53 @@ class AlarmUtil @Inject constructor (
 
     companion object {
 
-        internal fun getNextAlarmTime(recurringDays: List<Int>, localTime: LocalTime): LocalDateTime {
-
-            val now: LocalDateTime = LocalDateTime.now()
-
-            val inclusive: Boolean = localTime > now.toLocalTime()
-            val nextDay: DayOfWeek = getNextAlarmDay(now, recurringDays, inclusive)
-
-            return now.with(getDayOfWeekAdjuster(nextDay, inclusive))
-                .withHour(localTime.hour)
-                .withMinute(localTime.minute)
-                .withSecond(0)
-                .withNano(0)
+        internal fun isAlarmValid(alarm: Alarm): Boolean {
+            return if (alarm.scheduledDays.isEmpty()) {
+                !isAlarmInstanceObsolete(alarm)
+            } else {
+                true
+            }
         }
 
-        internal fun getNextAlarmTime(alarm: Alarm): LocalDateTime {
-
+        internal fun isAlarmInstanceObsolete(alarm: Alarm): Boolean {
             val now: LocalDateTime = LocalDateTime.now()
+            val instanceStartTime: LocalDateTime = alarm.instanceStartTime
+                .atZone(alarm.zoneId)
+                .toLocalDateTime()
+            return now.isAfter(instanceStartTime)
+        }
+
+        internal fun getNextAlarmTime(alarm: Alarm): ZonedDateTime {
+
+            val now: ZonedDateTime = ZonedDateTime.now()
             val recurringDays: List<Int> = alarm.scheduledDays
-            val localTime: LocalTime = alarm.instanceStartTime.toLocalTime()
+            val localTime: LocalTime = alarm.localStartTime
 
             val inclusive: Boolean = localTime > now.toLocalTime()
             val nextDay: DayOfWeek = getNextAlarmDay(now, recurringDays, inclusive)
 
-            val adjusted: LocalDateTime = now.with(getDayOfWeekAdjuster(nextDay, inclusive))
+            val adjusted: ZonedDateTime = now.with(getDayOfWeekAdjuster(nextDay, inclusive))
                 .withHour(localTime.hour)
                 .withMinute(localTime.minute)
                 .withSecond(0)
                 .withNano(0)
-            Log.i("AlarmUtil", "next alarm date: $adjusted")
             return adjusted
         }
 
-        private fun getNextAlarmDay(now: LocalDateTime, days: List<Int>, inclusive: Boolean): DayOfWeek {
+        private fun getDayOfWeekAdjuster(day: DayOfWeek, inclusive: Boolean): TemporalAdjuster {
+            return if (inclusive) {
+                TemporalAdjusters.nextOrSame(day)
+            } else {
+                TemporalAdjusters.next(day)
+            }
+        }
+
+        private fun getNextAlarmDay(now: ZonedDateTime, days: List<Int>, inclusive: Boolean): DayOfWeek {
             val nextDay: DayOfWeek = when {
                 days.isNotEmpty() -> {
-                    DayOfWeek.of(Collections.min(days, Comparator.comparing { dayOfWeekValue -> now.with(getDayOfWeekAdjuster(DayOfWeek.of(dayOfWeekValue), inclusive))
-                    })) // Repeating alarm, set for the next day on schedule
+                    DayOfWeek.of(
+                        Collections.min(days, Comparator.comparing { dayOfWeekValue -> now.with(getDayOfWeekAdjuster(DayOfWeek.of(dayOfWeekValue), inclusive))
+                    })) // Repeating alarm, set for the next scheduled day
                 }
                 inclusive -> {
                     now.dayOfWeek // Alarm's not repeating, set for some time later the same day
@@ -167,16 +181,27 @@ class AlarmUtil @Inject constructor (
             return nextDay
         }
 
-        private fun getDayOfWeekAdjuster(day: DayOfWeek, inclusive: Boolean): TemporalAdjuster {
-            return if (inclusive) {
-                TemporalAdjusters.nextOrSame(day)
-            } else {
-                TemporalAdjusters.next(day)
-            }
-        }
-
         internal fun toEpochMilli(now: LocalDateTime): Long {
             return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }
+
+        internal fun toEpochMilli(zdt: ZonedDateTime): Long {
+            return zdt.toInstant().toEpochMilli()
+        }
+
+        internal fun getNextAlarmTime(recurringDays: List<Int>, localTime: LocalTime): ZonedDateTime {
+
+            val now: ZonedDateTime = ZonedDateTime.now()
+
+            val inclusive: Boolean = localTime > now.toLocalTime()
+            val nextDay: DayOfWeek = getNextAlarmDay(now, recurringDays, inclusive)
+
+            val adjusted: ZonedDateTime = now.with(getDayOfWeekAdjuster(nextDay, inclusive))
+                .withHour(localTime.hour)
+                .withMinute(localTime.minute)
+                .withSecond(0)
+                .withNano(0)
+            return adjusted
         }
 
         private fun formatRemainingTimeUtilAlarm(alarm: Alarm): String {
@@ -222,8 +247,8 @@ class AlarmUtil @Inject constructor (
                 val prevAlarm: Alarm = previous.alarm
                 val nextAlarm: Alarm = next.alarm
                 when {
-                    prevAlarm.instanceStartTime < nextAlarm.instanceStartTime -> -1
-                    prevAlarm.instanceStartTime == nextAlarm.instanceStartTime -> 0
+                    prevAlarm.localStartTime < nextAlarm.localStartTime -> -1
+                    prevAlarm.localStartTime == nextAlarm.localStartTime -> 0
                     else -> 1
                 }
             }
@@ -238,6 +263,14 @@ class AlarmUtil @Inject constructor (
             val adjustedMillis: Int = adjusted.get(ChronoField.MILLI_OF_DAY)
 
             return (adjustedMillis - currentMillis).toLong()
+        }
+
+        internal fun isNextInstanceTomorrow(alarm: Alarm): Boolean {
+            return alarm.scheduledDays.isEmpty() && LocalTime.now() > alarm.localStartTime
+        }
+
+        internal fun isNextInstanceToday(alarm: Alarm): Boolean {
+            return alarm.scheduledDays.isEmpty() && LocalTime.now() < alarm.localStartTime
         }
 
         private const val MILLIS_PER_MINUTE: Long = 60000L

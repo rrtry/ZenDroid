@@ -19,10 +19,9 @@ import javax.inject.Inject
 import com.example.volumeprofiler.Application.Companion.ACTION_ALARM_TRIGGER
 import com.example.volumeprofiler.Application.Companion.ACTION_CALENDAR_EVENT_TRIGGER
 import com.example.volumeprofiler.database.repositories.EventRepository
-import java.time.LocalDateTime
 
 @AndroidEntryPoint
-class AlarmService: Service(), EventInstanceQueryHandler.AsyncQueryCallback {
+class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
 
     private data class QueryCookie(
         var event: Event,
@@ -64,12 +63,15 @@ class AlarmService: Service(), EventInstanceQueryHandler.AsyncQueryCallback {
     }
 
     private suspend fun updateAlarmNextInstanceDate(alarm: Alarm): Unit {
-        alarm.instanceStartTime = AlarmUtil.getNextAlarmTime(alarm)
+        alarm.instanceStartTime = AlarmUtil.getNextAlarmTime(alarm).toInstant()
         alarmRepository.updateAlarm(alarm)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+
+        WakeLock.acquire(this)
+
         when (intent?.action) {
 
             ACTION_ALARM_TRIGGER -> {
@@ -77,26 +79,23 @@ class AlarmService: Service(), EventInstanceQueryHandler.AsyncQueryCallback {
                 alarm = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_ALARM)!!, ParcelableUtil.getParcelableCreator())
                 profile = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_PROFILE)!!, ParcelableUtil.getParcelableCreator())
 
-                startForeground(SERVICE_ID, createAlarmAlertNotification(this, profile.title, alarm.instanceStartTime.toLocalTime()))
+                startForeground(SERVICE_ID, createAlarmAlertNotification(this, profile.title, alarm.localStartTime))
 
-                val reschedule: Boolean = alarm.scheduledDays.isNotEmpty()
                 scope.launch {
                     try {
-                        if (!reschedule) {
+                        if (!AlarmUtil.isAlarmValid(alarm)) {
                             alarmUtil.cancelAlarm(alarm, profile)
                             updateAlarmCancelledState(alarm)
                         } else {
-                            alarmUtil.scheduleAlarm(alarm, profile, false, false)
+                            alarmUtil.scheduleAlarm(alarm, profile)
                             updateAlarmNextInstanceDate(alarm)
                         }
                     } finally {
-                        withContext(NonCancellable) {
-                            if (profileUtil.grantedRequiredPermissions(profile)) {
-                                profileUtil.setProfile(profile)
-                                eventBus.onProfileSet(profile.id)
-                            } else {
-                                sendPermissionDeniedNotifications()
-                            }
+                        if (profileUtil.grantedRequiredPermissions(profile)) {
+                            profileUtil.setProfile(profile)
+                            eventBus.onProfileSet(profile.id)
+                        } else {
+                            sendPermissionDeniedNotifications()
                         }
                     }
                 }.invokeOnCompletion {
@@ -114,22 +113,20 @@ class AlarmService: Service(), EventInstanceQueryHandler.AsyncQueryCallback {
 
                 startForeground(SERVICE_ID, createCalendarEventNotification(this, event, profile, state))
 
-                contentUtil.queryEventInstances(event.id, TOKEN_QUERY_EVENT_INSTANCES, QueryCookie(
-                    event, profile, state
-                ),this)
+                when (state) {
+                    Event.State.END -> {
+                        contentUtil.queryEventNextInstances(event.id, TOKEN_QUERY_EVENT_INSTANCES, QueryCookie(
+                            event, profile, state
+                        ),this)
+                    }
+                    Event.State.START -> {
+                        alarmUtil.scheduleAlarm(event, profile, Event.State.END)
+                        stopService()
+                    }
+                }
             }
         }
         return START_REDELIVER_INTENT
-    }
-
-    private fun stopService(): Unit {
-        if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT) {
-            stopForeground(STOP_FOREGROUND_DETACH)
-        }
-        else {
-            stopForeground(false)
-        }
-        stopSelf()
     }
 
     private fun sendPermissionDeniedNotifications(): Unit {
@@ -149,46 +146,46 @@ class AlarmService: Service(), EventInstanceQueryHandler.AsyncQueryCallback {
         super.onDestroy()
         job.cancel()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            postNotification(this, createAlarmAlertNotification(this, profile.title, alarm.instanceStartTime.toLocalTime()), ID_SCHEDULER)
+            postNotification(this, createAlarmAlertNotification(this, profile.title, alarm.localStartTime), ID_SCHEDULER)
         }
     }
 
-    override fun onQueryComplete(cursor: Cursor?, cookie: Any?) {
+    private fun stopService(): Unit {
+        WakeLock.release()
+        if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT) {
+            stopForeground(STOP_FOREGROUND_DETACH)
+        }
+        else {
+            stopForeground(false)
+        }
+        stopSelf()
+    }
+
+    override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
 
         val queryCookie: QueryCookie = cookie!! as QueryCookie
-        val state: Event.State = queryCookie.state
         val event: Event = queryCookie.event
         val profile: Profile = queryCookie.profile
 
-        when (state) {
-            Event.State.STARTED -> {
-                alarmUtil.scheduleAlarm(event, profile, Event.State.COMPLETED)
-                stopService()
-            }
-            Event.State.COMPLETED -> {
-                var schedule: Boolean = false
-                if (event.endTime > 0 && event.endTime > AlarmUtil.toEpochMilli(LocalDateTime.now())) {
-                    schedule = true
-                    cursor?.use {
-                        if (it.moveToFirst()) {
-                            val begin: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
-                            val end: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
-                            event.currentInstanceStartTime = begin
-                            event.currentInstanceEndTime = end
-                        }
-                    }
-                }
-                scope.launch {
-                    if (schedule) {
-                        eventRepository.updateEvent(event)
-                        alarmUtil.scheduleAlarm(event, profile, Event.State.STARTED)
-                    } else {
-                        Log.i("AlarmService", "cancelling event with an id of ${event.id}")
-                    }
-                }.invokeOnCompletion {
-                    stopService()
+        val eventValid: Boolean = !event.isObsolete()
+        if (eventValid) {
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    event.instanceBeginTime = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
+                    event.instanceEndTime = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
                 }
             }
+        }
+        scope.launch {
+            if (eventValid) {
+                eventRepository.updateEvent(event)
+                alarmUtil.scheduleAlarm(event, profile, Event.State.START)
+            } else {
+                eventRepository.deleteEvent(event)
+                alarmUtil.cancelAlarm(event)
+            }
+        }.invokeOnCompletion {
+            stopService()
         }
     }
 

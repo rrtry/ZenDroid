@@ -97,7 +97,9 @@
         <receiver android:name=".broadcastReceivers.TimezoneChangedReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
             </intent-filter>
         </receiver>
 

@@ -15,71 +15,100 @@
     app:cardCornerRadius="5dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="?attr/colorPrimary">
 
-        <TextView
-            android:id="@+id/title"
+        <ImageView
+            android:id="@+id/locationImageView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:text="Title"
-            android:textAppearance="?attr/textAppearanceHeadline5"
+            android:src="@drawable/ic_baseline_location_on_24"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/addressTextView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp"
-            android:text="Academician Sakharov Avenue"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/editGeofenceButton"
-            app:layout_constraintStart_toStartOf="@+id/profiles"
-            app:layout_constraintTop_toBottomOf="@+id/profiles"
-            app:layout_constraintVertical_bias="1.0" />
-
-        <Switch
-            android:id="@+id/enabledGeofenceSwitch"
+            android:id="@+id/geofenceTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/title" />
+            android:layout_marginStart="8dp"
+            android:layout_toRightOf="@+id/locationImageView"
+            android:text="Home"
+            android:textColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/locationImageView"
+            app:layout_constraintStart_toEndOf="@+id/locationImageView"
+            app:layout_constraintTop_toTopOf="@+id/locationImageView" />
 
-        <ImageButton
-            android:id="@+id/removeGeofenceButton"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintBottom_toBottomOf="@+id/addressTextView"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:background="?android:attr/selectableItemBackground"
-            app:layout_constraintTop_toTopOf="@+id/addressTextView"
-            app:srcCompat="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
+        <ImageView
+            android:id="@+id/profileImageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/locationImageView"
+            android:layout_marginStart="16dp"
+            android:src="@drawable/ic_baseline_volume_up_24"
+            app:layout_constraintBottom_toBottomOf="@+id/geofenceProfiles"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/geofenceProfiles" />
 
         <TextView
-            android:id="@+id/profiles"
+            android:id="@+id/geofenceProfiles"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="TextView"
-            app:layout_constraintStart_toStartOf="@+id/title"
-            app:layout_constraintTop_toBottomOf="@+id/title" />
+            android:layout_below="@+id/geofenceTitle"
+            android:layout_marginStart="8dp"
+            android:layout_toRightOf="@+id/profileImageView"
+            android:text="Priority only - Silent"
+            android:textColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/editGeofenceButton"
+            app:layout_constraintStart_toEndOf="@+id/profileImageView"
+            app:layout_constraintTop_toTopOf="@+id/editGeofenceButton" />
+
+        <Switch
+            android:id="@+id/enableGeofenceSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:clickable="false"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/geofenceTitle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/geofenceTitle" />
 
         <ImageButton
             android:id="@+id/editGeofenceButton"
             android:layout_width="45dp"
             android:layout_height="45dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="8dp"
             android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/baseline_drive_file_rename_outline_grey_400_24dp"
+            app:layout_constraintBottom_toBottomOf="@+id/removeGeofenceButton"
             app:layout_constraintEnd_toStartOf="@+id/removeGeofenceButton"
             app:layout_constraintTop_toTopOf="@+id/removeGeofenceButton"
-            app:srcCompat="@drawable/baseline_drive_file_rename_outline_black_24dp" />
+            tools:ignore="NotSibling" />
+
+        <ImageButton
+            android:id="@+id/removeGeofenceButton"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginTop="8dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/ic_baseline_delete_forever_24"
+            app:layout_constraintEnd_toEndOf="@+id/enableGeofenceSwitch"
+            app:layout_constraintTop_toBottomOf="@+id/enableGeofenceSwitch"
+            tools:ignore="NotSibling" />
+
+
+        <ImageView
+            android:id="@+id/mapSnapshot"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:elevation="50dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/editGeofenceButton" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

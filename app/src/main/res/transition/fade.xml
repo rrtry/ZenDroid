@@ -1,4 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<slide android:duration="@android:integer/config_shortAnimTime"
-    android:slideEdge="left"
+<fade android:duration="@android:integer/config_longAnimTime"
     xmlns:android="http://schemas.android.com/apk/res/android" />

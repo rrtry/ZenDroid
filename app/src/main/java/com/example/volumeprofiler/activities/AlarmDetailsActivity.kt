@@ -3,13 +3,19 @@ package com.example.volumeprofiler.activities
 import android.app.Activity
 import android.content.Intent
 import android.Manifest.permission.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.transition.*
 import android.util.Log
 import android.util.LogPrinter
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.Window
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +27,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
+import com.example.volumeprofiler.databinding.CreateAlarmLayoutBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_TIME
@@ -29,6 +36,8 @@ import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScheduledDaysPic
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_CLOCK
+import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -39,13 +48,14 @@ import java.time.LocalTime
 import javax.inject.Inject
 import kotlin.collections.ArrayList
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.Event.*
+
 @AndroidEntryPoint
 class AlarmDetailsActivity: AppCompatActivity() {
 
     private val detailsViewModel: AlarmDetailsViewModel by viewModels()
     private var elapsedTime: Long = 0
 
-    private lateinit var binding: CreateAlarmActivityBinding
+    private lateinit var binding: CreateAlarmLayoutBinding
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var calendarPermissionLauncher: ActivityResultLauncher<String>
     private var runnableInQueue: Boolean = false
@@ -59,6 +69,13 @@ class AlarmDetailsActivity: AppCompatActivity() {
     @Inject
     lateinit var profileUtil: ProfileUtil
 
+    private val timePreferencesReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context?, intent: Intent?) {
+            detailsViewModel.localTime.value = LocalTime.now()
+        }
+    }
+
     private val handler: Handler = Handler(Looper.getMainLooper())
     private val localTimeUpdateRunnable: Runnable = Runnable {
         detailsViewModel.weekDaysLocalTime.value = LocalTime.now()
@@ -66,6 +83,20 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+        setBinding()
+        with(window) {
+
+            binding.clockView.transitionName = SHARED_TRANSITION_CLOCK
+            binding.enableAlarmSwitch.transitionName = SHARED_TRANSITION_SWITCH
+
+            sharedElementEnterTransition = TransitionSet().apply {
+                addTransition(ChangeBounds())
+            }
+            enterTransition = TransitionSet().apply {
+                addTransition(Fade())
+            }
+        }
         calendarPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             detailsViewModel.readCalendarPermissionGranted.value = it
         }
@@ -86,10 +117,23 @@ class AlarmDetailsActivity: AppCompatActivity() {
                 }
             }
         }
-        setBinding()
         setActionBar()
         setFragmentResultListeners()
         collectEventsFlow()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        registerReceiver(timePreferencesReceiver, IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+            addAction(Intent.ACTION_LOCALE_CHANGED)
+        })
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        unregisterReceiver(timePreferencesReceiver)
     }
 
     override fun onDestroy() {
@@ -177,14 +221,14 @@ class AlarmDetailsActivity: AppCompatActivity() {
     }
 
     private fun setBinding(): Unit {
-        binding = CreateAlarmActivityBinding.inflate(layoutInflater)
+        binding = CreateAlarmLayoutBinding.inflate(layoutInflater)
         binding.viewModel = detailsViewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
     }
 
     private fun scheduleAlarm(): Unit {
-        alarmUtil.scheduleAlarm(detailsViewModel.getAlarm(), detailsViewModel.getProfile(), repeating = false, showToast = true)
+        alarmUtil.scheduleAlarm(detailsViewModel.getAlarm(), detailsViewModel.getProfile(), showToast = true)
     }
 
     private fun setActionBar(): Unit {
@@ -230,21 +274,11 @@ class AlarmDetailsActivity: AppCompatActivity() {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     detailsViewModel.eventsFlow.collect {
-                        when (it) {
-                            is ShowDialogEvent -> {
-                                if (it.dialogType == DialogType.DAYS_SELECTION) {
-                                    showDaysPickerDialog()
-                                } else if (it.dialogType == DialogType.TIME_SELECTION) {
-                                    showTimePickerDialog()
-                                }
-                            }
-
-                            QueryAvailableCalendarsEvent -> {
-                                Log.i("EditAlarmActivity", "QueryAvailableCalendarsEvent")
-                            }
-
-                            RequestReadCalendarPermission -> {
-                                calendarPermissionLauncher.launch(READ_CALENDAR)
+                        if (it is ShowDialogEvent) {
+                            if (it.dialogType == DialogType.DAYS_SELECTION) {
+                                showDaysPickerDialog()
+                            } else if (it.dialogType == DialogType.TIME_SELECTION) {
+                                showTimePickerDialog()
                             }
                         }
                     }
@@ -257,7 +291,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
                     }
                 }
                 launch {
-                    detailsViewModel.shouldScheduleTimer.collect {
+                    detailsViewModel.scheduleUIUpdates.collect {
                         if (it && !runnableInQueue) {
                             postRunnable()
                         } else {

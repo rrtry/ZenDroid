@@ -53,7 +53,6 @@ class GeofenceUtil @Inject constructor(
                 }
     }
 
-    @RequiresPermission(ACCESS_FINE_LOCATION)
     fun removeGeofence(location: Location, enterProfile: Profile, exitProfile: Profile): Unit {
         val pendingIntent: PendingIntent? = getGeofencingPendingIntent(location, enterProfile, exitProfile)
         if (pendingIntent != null) {

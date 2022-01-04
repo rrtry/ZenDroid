@@ -91,7 +91,7 @@ class MapsSharedViewModel @Inject constructor(
             radius = radius.value,
             onEnterProfileId = getProfileToApply(profiles).id,
             onExitProfileId = getProfileToRestore(profiles).id,
-            enabled = if (isGeofenceEnabled) GEOFENCE_ENABLED else GEOFENCE_DISABLED)
+            enabled = if (isGeofenceEnabled) 1 else 0)
         if (locationId != null) {
             location.id = locationId!!
         }
@@ -128,8 +128,6 @@ class MapsSharedViewModel @Inject constructor(
 
     companion object {
 
-        private const val GEOFENCE_ENABLED: Byte = 1
-        private const val GEOFENCE_DISABLED: Byte = 0
         private const val LOG_TAG: String = "MapsSharedViewModel"
     }
 }

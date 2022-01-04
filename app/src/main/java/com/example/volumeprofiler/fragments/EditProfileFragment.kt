@@ -471,7 +471,7 @@ class EditProfileFragment: Fragment() {
     private fun createVibrateEffect(): Unit {
         if (hasVibratorHardware()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                hapticService?.vibrate(VibrationEffect.createOneShot(100, 155))
+                hapticService?.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 hapticService?.vibrate(100)
             }

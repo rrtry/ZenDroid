@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
+import java.time.*
 import java.util.*
 
 @Entity(foreignKeys = [ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["eventEndsProfileId"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE),
@@ -21,24 +22,60 @@ data class Event(
     var calendarTitle: String,
     var startTime: Long,
     var endTime: Long,
-    var currentInstanceStartTime: Long,
-    var currentInstanceEndTime: Long,
+    var rrule: String?,
+    var instanceBeginTime: Long,
+    var instanceEndTime: Long,
+    var timezoneId: String,
     var scheduled: Boolean = false,
 
     @ColumnInfo(index = true)
     var eventStartsProfileId: UUID,
 
     @ColumnInfo(index = true)
-    var eventEndsProfileId: UUID?,
+    var eventEndsProfileId: UUID,
 
-): Parcelable {
+    ): Parcelable {
+
+    private fun isRepeating(): Boolean {
+        return endTime == 0L
+    }
+
+    fun isInstanceObsolete(millis: Long): Boolean {
+        val zoneId: ZoneId = ZoneId.of(timezoneId)
+        val now: LocalDateTime = LocalDateTime.now()
+        val millisDate: LocalDateTime = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDateTime()
+        return now.isAfter(millisDate)
+    }
+
+    fun isObsolete(): Boolean {
+        return if (isRepeating()) {
+            false
+        } else {
+            return isInstanceObsolete(endTime)
+        }
+    }
 
     override fun toString(): String {
-        return "currentInstanceStartTime: $currentInstanceStartTime\n" +
-                "currentInstanceEndTime: $currentInstanceEndTime\n"
+        return "currentInstanceStartTime: $instanceBeginTime\n" +
+                "currentInstanceEndTime: $instanceEndTime\n"
     }
 
     enum class State {
-        STARTED, COMPLETED
+        START, END
+    }
+
+    companion object {
+
+        fun sortEvents(events: List<EventRelation>): List<EventRelation> {
+            return events.sortedWith { previous, next ->
+                val previousEvent: Event = previous.event
+                val nextEvent: Event = next.event
+                when {
+                    previousEvent.instanceBeginTime > nextEvent.instanceBeginTime -> 1
+                    previousEvent.instanceBeginTime == nextEvent.instanceBeginTime -> 0
+                    else -> -1
+                }
+            }
+        }
     }
 }

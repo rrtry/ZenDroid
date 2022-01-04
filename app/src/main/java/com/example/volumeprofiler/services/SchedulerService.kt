@@ -13,14 +13,16 @@ import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import javax.inject.Inject
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback {
+class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
 
     private val job: Job = Job()
-    private val scope = CoroutineScope(Dispatchers.Main + job)
+    private val serviceScope = CoroutineScope(Dispatchers.Main + job)
 
     @Inject
     lateinit var repository: AlarmRepository
@@ -44,7 +46,7 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
     lateinit var eventBus: EventBus
 
     private suspend fun updateAlarmInstanceTime(alarm: Alarm): Unit {
-        alarm.instanceStartTime = AlarmUtil.getNextAlarmTime(alarm)
+        alarm.instanceStartTime = AlarmUtil.getNextAlarmTime(alarm).toInstant()
         repository.updateAlarm(alarm)
     }
 
@@ -53,22 +55,57 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
         repository.updateAlarm(alarm)
     }
 
-    override fun onQueryComplete(cursor: Cursor?, cookie: Any?) {
+    override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
         val eventRelation: EventRelation = cookie as EventRelation
         val event: Event = eventRelation.event
-        cursor?.use {
-            if (it.moveToFirst()) {
-                event.currentInstanceStartTime = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
-                event.currentInstanceEndTime = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
+        when (token) {
+            QUERY_NEXT_INSTANCES_TOKEN -> {
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        event.instanceBeginTime = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
+                        event.instanceEndTime = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
+                    }
+                }
+                serviceScope.launch {
+                    eventRepository.updateEvent(event)
+                }.ensureActive()
+
+                if (event.isInstanceObsolete(event.instanceBeginTime)) {
+                    alarmUtil.scheduleAlarm(event, eventRelation.eventEndsProfile, Event.State.END)
+                } else {
+                    alarmUtil.scheduleAlarm(event, eventRelation.eventStartsProfile, Event.State.START)
+                }
             }
-        }
-        scope.launch {
-            eventRepository.updateEvent(event)
-        }
-        if (event.currentInstanceStartTime > AlarmUtil.toEpochMilli(LocalDateTime.now())) {
-            alarmUtil.scheduleAlarm(event, eventRelation.eventEndsProfile!!, Event.State.COMPLETED)
-        } else {
-            alarmUtil.scheduleAlarm(event, eventRelation.eventStartsProfile, Event.State.STARTED)
+            QUERY_PREVIOUS_INSTANCES_TOKEN -> {
+                cursor?.use {
+                    Log.i("SchedulerService", "cursor count: ${cursor.count}")
+                    while (it.moveToNext()) {
+                        val begin: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
+                        val end: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
+                        val timezone: String = it.getString(it.getColumnIndex(CalendarContract.Instances.EVENT_TIMEZONE))
+
+                        val now: LocalDateTime = LocalDateTime.now()
+                        val zoneId: ZoneId = ZoneId.of(timezone)
+                        val adjustedBegin: LocalDateTime = Instant.ofEpochMilli(begin).atZone(zoneId).toLocalDateTime()
+                        val adjustedEnd: LocalDateTime = Instant.ofEpochMilli(end).atZone(zoneId).toLocalDateTime()
+
+                        if (adjustedBegin < now) {
+                            profileUtil.setProfile(eventRelation.eventStartsProfile)
+                            eventBus.onProfileSet(eventRelation.eventStartsProfile.id)
+                            postNotification(this, createCalendarEventNotification(
+                                this, event, eventRelation.eventStartsProfile, Event.State.START
+                            ), ID_CALENDAR_EVENT)
+                        }
+                        if (adjustedEnd < now) {
+                            profileUtil.setProfile(eventRelation.eventEndsProfile)
+                            eventBus.onProfileSet(eventRelation.eventEndsProfile.id)
+                            postNotification(this, createCalendarEventNotification(
+                                this, event, eventRelation.eventEndsProfile, Event.State.END
+                            ), ID_CALENDAR_EVENT)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -76,83 +113,16 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
         val events: List<EventRelation> = eventRepository.getEventsByState(true)
         if (events.isNotEmpty()) {
 
-            val now: LocalDateTime = LocalDateTime.now()
-            var lastMissedEvent: Pair<Event.State, EventRelation>? = null
-
-            for (i in events) {
-
-                val millis: Long = AlarmUtil.toEpochMilli(now)
+            for (i in Event.sortEvents(events)) {
                 val event: Event = i.event
-
-                if (event.currentInstanceStartTime < millis) {
-                    lastMissedEvent = Pair(Event.State.STARTED, i)
-                    if (event.currentInstanceEndTime < millis) {
-                        lastMissedEvent = Pair(Event.State.COMPLETED, i)
-                    }
+                if (event.isInstanceObsolete(event.instanceBeginTime)) {
+                    contentUtil.queryMissedEventInstances(event.id, event.instanceBeginTime, QUERY_PREVIOUS_INSTANCES_TOKEN, i, this)
                 }
-                if (event.endTime != 0L && event.endTime < millis) {
-                    event.scheduled = false
-                    eventRepository.updateEvent(event)
+                if (event.isObsolete()) {
+                    eventRepository.deleteEvent(event)
+                    alarmUtil.cancelAlarm(event)
                 } else {
-                    contentUtil.queryEventInstances(event.id, 2, i, this)
-                }
-                if (lastMissedEvent != null) {
-
-                    val state: Event.State = lastMissedEvent.first
-                    val eventRelation: EventRelation = lastMissedEvent.second
-                    when (state) {
-                        Event.State.STARTED -> {
-                            profileUtil.setProfile(eventRelation.eventStartsProfile)
-                            eventBus.onProfileSet(eventRelation.eventStartsProfile.id)
-                            postNotification(
-                                this,
-                                createCalendarEventNotification(this, eventRelation.event, eventRelation.eventStartsProfile, state),
-                                ID_CALENDAR_EVENT)
-                        }
-                        Event.State.COMPLETED -> {
-                            profileUtil.setProfile(eventRelation.eventEndsProfile!!)
-                            eventBus.onProfileSet(eventRelation.eventEndsProfile!!.id)
-                            postNotification(
-                                this,
-                                createCalendarEventNotification(this, eventRelation.event, eventRelation.eventEndsProfile!!, state),
-                                ID_CALENDAR_EVENT)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private suspend fun getAlarmInstances(): Unit {
-        val alarms: List<AlarmRelation>? = repository.getEnabledAlarms()
-        if (!alarms.isNullOrEmpty()) {
-
-            val now: LocalDateTime = LocalDateTime.now()
-            var lastMissedAlarm: AlarmRelation? = null
-
-            for (i in AlarmUtil.sortAlarms(alarms)) {
-                val alarm: Alarm = i.alarm
-                val profile: Profile = i.profile
-
-                Log.i("SchedulerService", "current instance start time: ${alarm.instanceStartTime}")
-                Log.i("SchedulerService", "now: $now")
-
-                if (alarm.instanceStartTime < now) {
-                    Log.i("SchedulerService", "missed alarm: $profile")
-                    lastMissedAlarm = i
-                }
-                if (lastMissedAlarm == null && sharedPreferencesUtil.isProfileEnabled(profile)) {
-                    Log.i("SchedulerService", "restoring previous profile")
-                }
-
-                val schedule: Boolean = (alarm.scheduledDays.isEmpty() && lastMissedAlarm?.alarm?.id != alarm.id) || alarm.scheduledDays.isNotEmpty()
-                if (!schedule) {
-                    Log.i("SchedulerService", "cancelling alarm $profile")
-                } else {
-                    Log.i("SchedulerService", "scheduling alarm $profile")
-                    if (lastMissedAlarm?.alarm?.id == alarm.id) {
-                        Log.i("SchedulerService", "updating instance of $profile")
-                    }
+                    contentUtil.queryEventNextInstances(event.id, QUERY_NEXT_INSTANCES_TOKEN, i, this)
                 }
             }
         }
@@ -162,46 +132,34 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
         val alarms: List<AlarmRelation>? = repository.getEnabledAlarms()
         if (!alarms.isNullOrEmpty()) {
 
-            val now: LocalDateTime = LocalDateTime.now()
-            var lastMissedAlarm: AlarmRelation? = null
-
             for (i in AlarmUtil.sortAlarms(alarms)) {
 
                 val alarm: Alarm = i.alarm
                 val profile: Profile = i.profile
+                var obsolete: Boolean = false
 
-                if (alarm.instanceStartTime < now) {
-                    Log.i("SchedulerService", "missed alarm: $profile")
-                    lastMissedAlarm = i
+                if (AlarmUtil.isAlarmInstanceObsolete(alarm)) {
+                    obsolete = true
+                    profileUtil.setProfile(profile)
+                    eventBus.onProfileSet(profile.id)
+                    postNotification(
+                        this,
+                        createAlarmAlertNotification(this, profile.title, alarm.localStartTime),
+                        ID_SCHEDULER)
                 }
-                if (lastMissedAlarm == null && sharedPreferencesUtil.isProfileEnabled(profile)) {
+                if (!obsolete && sharedPreferencesUtil.isProfileEnabled(profile)) {
                     eventBus.onProfileSet(profile.id)
                     profileUtil.setProfile(profile)
                 }
-
-                val schedule: Boolean = (alarm.scheduledDays.isEmpty() && lastMissedAlarm?.alarm?.id != alarm.id) || alarm.scheduledDays.isNotEmpty()
-                if (!schedule) {
-                    Log.i("SchedulerService", "cancelling alarm $profile")
-                    alarmUtil.cancelAlarm(i.alarm, i.profile)
-                    cancelAlarm(i.alarm)
-                } else {
-                    Log.i("SchedulerService", "scheduling alarm $profile")
-                    alarmUtil.scheduleAlarm(alarm, profile, true)
-                    if (lastMissedAlarm?.alarm?.id == alarm.id) {
-                        Log.i("SchedulerService", "updating instance of $profile")
+                if (AlarmUtil.isAlarmValid(alarm)) {
+                    alarmUtil.scheduleAlarm(alarm, profile)
+                    if (obsolete) {
                         updateAlarmInstanceTime(alarm)
                     }
+                } else {
+                    alarmUtil.cancelAlarm(i.alarm, i.profile)
+                    cancelAlarm(i.alarm)
                 }
-            }
-            if (lastMissedAlarm != null) {
-                val profile: Profile = lastMissedAlarm.profile
-                val alarm: Alarm = lastMissedAlarm.alarm
-                profileUtil.setProfile(profile)
-                eventBus.onProfileSet(profile.id)
-                postNotification(
-                    this,
-                    createAlarmAlertNotification(this, profile.title, alarm.instanceStartTime.toLocalTime()),
-                    ID_SCHEDULER)
             }
         }
     }
@@ -209,12 +167,12 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
+        WakeLock.acquire(this)
         startForeground(SERVICE_ID, createSchedulerNotification(this))
 
-        scope.launch {
-            //scheduleEvents()
-            //scheduleAlarms()
-            getAlarmInstances()
+        serviceScope.launch {
+            scheduleEvents()
+            scheduleAlarms()
         }.invokeOnCompletion {
             stopService()
         }
@@ -222,6 +180,7 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
     }
 
     private fun stopService(): Unit {
+        WakeLock.release()
         stopForeground(true)
         stopSelf()
     }
@@ -237,6 +196,8 @@ class SchedulerService: Service(), EventInstanceQueryHandler.AsyncQueryCallback 
 
     companion object {
 
+        private const val QUERY_PREVIOUS_INSTANCES_TOKEN: Int = 4
+        private const val QUERY_NEXT_INSTANCES_TOKEN: Int = 3
         private const val SERVICE_ID: Int = 162
     }
 }

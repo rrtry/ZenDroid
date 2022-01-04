@@ -22,6 +22,8 @@ import android.media.AudioManager
 import android.os.Build
 import android.media.AudioManager.*
 import android.util.Log
+import android.view.Window
+import android.transition.Fade
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.EXTRA_PERMISSION
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.EXTRA_REQUEST_MULTIPLE_PERMISSIONS
@@ -52,17 +54,15 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        with(window) {
+            requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+            exitTransition = Fade()
+        }
+
         setContentView(R.layout.main_activity)
         viewPager = findViewById(R.id.pager)
         viewPager.adapter = pagerAdapter
         setupTabLayout()
-
-        val audioManager: AudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, 0, FLAG_REMOVE_SOUND_AND_VIBRATE)
-        Log.i("MainActivity", "max stream volume STREAM_ALARM: ${audioManager.getStreamMaxVolume(STREAM_ALARM)}")
-        Log.i("MainActivity", "min stream volume STREAM_MUSIC: ${audioManager.getStreamMinVolume(STREAM_ALARM)}")
-        Log.i("MainActivity", "max stream volume STREAM_VOICE_CALL: ${audioManager.getStreamMaxVolume(STREAM_VOICE_CALL)}")
-        Log.i("MainActivity", "min stream volume STREAM_VOICE_CALL: ${audioManager.getStreamMinVolume(STREAM_VOICE_CALL)}")
 
         supportFragmentManager.setFragmentResultListener(PERMISSION_REQUEST_KEY, this,
             { requestKey, result ->
@@ -150,7 +150,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         }
         for (i in permissions) {
             if (!shouldShowRequestPermissionRationale(i)) {
-                Log.i("MainActivity", i)
                 snackbar.setAction("Open settings") {
                     startActivity(getApplicationSettingsIntent(this))
                 }

@@ -79,14 +79,17 @@ class MapsActivity : AppCompatActivity(),
     private var floatingItemsVisible: Boolean = true
     private var transitionRunning: Boolean = false
 
-    private lateinit var saveGeofenceButton: FloatingActionButton
-    private lateinit var jumpToRecentLocationButton: FloatingActionButton
+    private lateinit var addGeofenceButton: FloatingActionButton
+    private lateinit var recentLocationButton: FloatingActionButton
     private lateinit var coordinatorLayout: CoordinatorLayout
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var mMap: GoogleMap
     private lateinit var searchView: SearchView
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<out String>>
+    private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var backgroundLocationPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var profilesQuery: List<Profile>
     private lateinit var taskCancellationSource: CancellationTokenSource
 
@@ -115,10 +118,10 @@ class MapsActivity : AppCompatActivity(),
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
 
         coordinatorLayout = findViewById(R.id.rootLayout)
-        jumpToRecentLocationButton = findViewById(R.id.jumpToCurrentLocationButton)
-        saveGeofenceButton = findViewById(R.id.saveGeofenceButton)
+        recentLocationButton = findViewById(R.id.jumpToCurrentLocationButton)
+        addGeofenceButton = findViewById(R.id.saveGeofenceButton)
 
-        saveGeofenceButton.setOnClickListener {
+        addGeofenceButton.setOnClickListener {
             pendingAction = ACTION_CREATE_GEOFENCE
             setSuccessfulResult(
                 viewModel.getLocation(
@@ -126,19 +129,17 @@ class MapsActivity : AppCompatActivity(),
                 ), hasParcelableData()
             )
         }
-
-        jumpToRecentLocationButton.setOnClickListener {
+        recentLocationButton.setOnClickListener {
             pendingAction = ACTION_DETERMINE_LOCATION
             if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
-                val weakReference: WeakReference<MapsActivity> = WeakReference(this)
+                val weakReference = WeakReference(this)
                 geofenceUtil.checkLocationServicesAvailability(this) {
-                    weakReference.get()?.getRecentLocation()
+                    weakReference.get()?.getCurrentLocation()
                 }
             } else {
-                requestFineLocationPermission()
+                requestLocationPermission()
             }
         }
-
         permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             onPermissionRequestResult(false)
         }
@@ -160,7 +161,7 @@ class MapsActivity : AppCompatActivity(),
         getMap()
     }
 
-    private fun requestFineLocationPermission(): Unit {
+    private fun requestLocationPermission(): Unit {
         permissionLauncher.launch(
             arrayOf(ACCESS_FINE_LOCATION)
         )
@@ -193,7 +194,7 @@ class MapsActivity : AppCompatActivity(),
                         }
                     }
                     resolve -> {
-                        requestFineLocationPermission()
+                        requestLocationPermission()
                     }
                     else -> {
                         ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
@@ -477,12 +478,12 @@ class MapsActivity : AppCompatActivity(),
                 if (floatingItemsVisible) {
                     if (slideOffset > 0.3f) {
                         setSearchViewVisibility(View.INVISIBLE, true)
-                        jumpToRecentLocationButton.hide()
-                        saveGeofenceButton.hide()
+                        recentLocationButton.hide()
+                        addGeofenceButton.hide()
                     } else {
                         setSearchViewVisibility(View.VISIBLE, true)
-                        jumpToRecentLocationButton.show()
-                        saveGeofenceButton.show()
+                        recentLocationButton.show()
+                        addGeofenceButton.show()
                     }
                 }
             }
@@ -523,11 +524,11 @@ class MapsActivity : AppCompatActivity(),
         searchView.visibility = visibility
 
         if (visibility == View.VISIBLE) {
-            saveGeofenceButton.show()
-            jumpToRecentLocationButton.show()
+            addGeofenceButton.show()
+            recentLocationButton.show()
         } else {
-            saveGeofenceButton.hide()
-            jumpToRecentLocationButton.hide()
+            addGeofenceButton.hide()
+            recentLocationButton.hide()
         }
     }
 
@@ -632,14 +633,19 @@ class MapsActivity : AppCompatActivity(),
             putExtra(FLAG_UPDATE_EXISTING, updateExisting)
         }
         setResult(RESULT_OK, intent)
-        finish()
+        mMap.snapshot {
+            if (it != null) {
+                writeCompressedBitmap(this, geofence.previewImageId, it)
+            }
+            finish()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == GeofenceUtil.REQUEST_ENABLE_LOCATION_SERVICES) {
             if (resultCode != Activity.RESULT_OK) {
-                val snackBar: Snackbar = Snackbar.make(saveGeofenceButton, "Enable location services", Snackbar.LENGTH_LONG)
+                val snackBar: Snackbar = Snackbar.make(addGeofenceButton, "Enable location services", Snackbar.LENGTH_LONG)
                 snackBar.setAction("Enable") {
                     onPermissionRequestResult(true)
                 }

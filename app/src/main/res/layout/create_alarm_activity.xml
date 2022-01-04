@@ -67,7 +67,6 @@
             android:layout_marginStart="60dp"
             android:layout_marginTop="16dp"
             android:text="Profile"
-            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -80,7 +79,6 @@
             android:layout_marginTop="16dp"
             android:text="Start time"
             android:textSize="16sp"
-            android:textColor="?attr/colorPrimary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/itemSeparator" />
 
@@ -91,7 +89,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
-            android:text="@{TextUtil.localizedTimeToString(viewModel.localTime)}"
+            android:text="@{TextUtil.formatLocalTime(context, viewModel.localTime)}"
             android:onClick="@{() -> viewModel.onTimeSelectButtonClick()}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
@@ -115,7 +113,6 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:text="Weekdays"
-            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/imageView"
             app:layout_constraintTop_toBottomOf="@+id/dateRangeButton" />
@@ -133,16 +130,5 @@
             app:layout_constraintStart_toEndOf="@+id/imageView"
             app:layout_constraintTop_toBottomOf="@+id/textView3" />
 
-        <Button
-            android:id="@+id/queryCalendar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            android:text="Query calendar"
-            android:onClick="@{() -> viewModel.onQueryCalendarButtonClick()}"
-            app:layout_constraintEnd_toEndOf="@+id/workingDaysSelectButton"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/workingDaysSelectButton" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

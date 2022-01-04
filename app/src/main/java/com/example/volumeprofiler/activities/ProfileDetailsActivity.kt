@@ -336,7 +336,7 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
 
     private fun setAlarms(relations: List<AlarmRelation>, newProfile: Profile): Unit {
         for (i in relations) {
-            alarmUtil.scheduleAlarm(i.alarm, newProfile, false)
+            alarmUtil.scheduleAlarm(i.alarm, newProfile)
         }
     }
 

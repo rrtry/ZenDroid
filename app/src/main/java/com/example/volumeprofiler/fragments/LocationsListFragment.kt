@@ -40,6 +40,12 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.interfaces.PermissionRequestCallback
+import android.graphics.Bitmap
+import android.widget.Toast
+import androidx.core.content.res.ResourcesCompat
+import com.example.volumeprofiler.R
+import java.util.*
+
 
 @AndroidEntryPoint
 class LocationsListFragment: Fragment(), ActionModeProvider<String> {
@@ -70,10 +76,8 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
                 val geofence: Location = it.data!!.getParcelableExtra(MapsActivity.EXTRA_LOCATION)!!
                 val updateExisting: Boolean = it.data!!.getBooleanExtra(MapsActivity.FLAG_UPDATE_EXISTING, false)
                 if (updateExisting) {
-                    Log.i("LocationsListFragment", "updating existing location")
                     viewModel.updateLocation(geofence)
                 } else {
-                    Log.i("LocationsListFragment", "adding new location")
                     viewModel.addLocation(geofence)
                 }
             }
@@ -148,18 +152,13 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         }
     }
 
-    @Suppress("MissingPermission")
     private fun removeGeofence(locationRelation: LocationRelation): Unit {
-        if (geofenceUtil.locationAccessGranted()) {
-            geofenceUtil.removeGeofence(
-                locationRelation.location,
-                locationRelation.onEnterProfile,
-                locationRelation.onExitProfile
-            )
-            viewModel.removeLocation(locationRelation.location)
-        } else {
-            requestLocationPermission()
-        }
+        geofenceUtil.removeGeofence(
+            locationRelation.location,
+            locationRelation.onEnterProfile,
+            locationRelation.onExitProfile
+        )
+        viewModel.removeLocation(locationRelation.location)
     }
 
     @Suppress("MissingPermission")
@@ -200,19 +199,26 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             binding.root.setOnClickListener(this)
         }
 
+        private fun loadPreviewBitmap(uuid: UUID): Unit {
+            Glide.with(requireContext())
+                .asBitmap()
+                .load(getPreviewBitmapFile(requireContext(), uuid))
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .centerCrop()
+                .into(binding.mapSnapshot)
+        }
+
         fun bind(locationRelation: LocationRelation, isSelected: Boolean): Unit {
-
             val location: Location = locationRelation.location
+            loadPreviewBitmap(location.previewImageId)
 
-            binding.title.text = location.title
-            binding.addressTextView.text = TextUtil.formatAddress(location.address)
-            binding.enabledGeofenceSwitch.isChecked = location.enabled == 1.toByte()
-            binding.profiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
+            binding.geofenceTitle.text = location.title
+            binding.enableGeofenceSwitch.isChecked = location.enabled == 1.toByte()
+            binding.geofenceProfiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
 
             binding.editGeofenceButton.setOnClickListener {
                 startMapActivity(locationAdapter.getItemAtPosition(bindingAdapterPosition))
             }
-
             binding.removeGeofenceButton.setOnClickListener {
                 removeGeofence(locationAdapter.getItemAtPosition(bindingAdapterPosition))
             }

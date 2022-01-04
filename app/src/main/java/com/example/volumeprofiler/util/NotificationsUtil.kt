@@ -225,10 +225,10 @@ fun createSchedulerNotification(context: Context): Notification {
 }
 
 fun createCalendarEventNotification(context: Context, event: Event, profile: Profile, state: Event.State): Notification {
-    val contentText: String = if (state == Event.State.STARTED) {
-        "${TextUtil.formatEventTimestamp(context, event, event.currentInstanceStartTime)} - activating ${profile.title}"
+    val contentText: String = if (state == Event.State.START) {
+        "${TextUtil.formatEventTimestamp(context, event, event.instanceBeginTime)} - setting '${profile.title}'"
     } else {
-        "${TextUtil.formatEventTimestamp(context, event, event.currentInstanceEndTime)} - restoring ${profile.title}"
+        "${TextUtil.formatEventTimestamp(context, event, event.instanceEndTime)} - restoring ${profile.title}"
     }
     val builder = NotificationCompat.Builder(context, CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID)
         .setContentTitle(event.title)
@@ -249,7 +249,7 @@ fun createCalendarEventNotification(context: Context, event: Event, profile: Pro
 fun createAlarmAlertNotification(context: Context, title: String, localTime: LocalTime): Notification {
     val builder = NotificationCompat.Builder(context, SCHEDULER_NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Scheduler")
-            .setContentText("$title at ${TextUtil.localizedTimeToString(localTime)}")
+            .setContentText("$title at ${TextUtil.formatLocalTime(context, localTime)}")
             .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(

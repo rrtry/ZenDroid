@@ -10,8 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.LocalTime
+import java.time.*
 import java.util.*
 import javax.inject.Inject
 import kotlin.collections.ArrayList
@@ -31,7 +30,7 @@ class AlarmDetailsViewModel @Inject constructor(
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
 
-    val shouldScheduleTimer: Flow<Boolean> = combine(localTime, scheduledDays) {
+    val scheduleUIUpdates: Flow<Boolean> = combine(localTime, scheduledDays) {
         localTime, scheduledDays -> scheduledDays.isEmpty() && localTime > LocalTime.now()
     }
     val readCalendarPermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -77,8 +76,9 @@ class AlarmDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun getNextInstanceDate(): LocalDateTime {
+    private fun getNextInstanceDate(): Instant {
         return AlarmUtil.getNextAlarmTime(scheduledDays.value, localTime.value)
+            .toInstant()
     }
 
     private fun getAlarmState(): Int {
@@ -108,10 +108,9 @@ class AlarmDetailsViewModel @Inject constructor(
 
     fun setArgs(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
         if (!areArgsSet && alarmRelation != null) {
-
             selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)
             scheduledDays.value = alarmRelation.alarm.scheduledDays
-            localTime.value = alarmRelation.alarm.instanceStartTime.toLocalTime()
+            localTime.value = alarmRelation.alarm.localStartTime
 
             id = alarmRelation.alarm.id
             isScheduled = alarmRelation.alarm.isScheduled == 1
@@ -123,9 +122,11 @@ class AlarmDetailsViewModel @Inject constructor(
     fun getAlarm(): Alarm {
         val alarm: Alarm = Alarm(
             profileUUID = getProfileUUID(),
+            localStartTime = localTime.value,
             instanceStartTime = getNextInstanceDate(),
             isScheduled = getAlarmState(),
-            scheduledDays = scheduledDays.value
+            scheduledDays = scheduledDays.value,
+            zoneId = ZoneId.systemDefault(),
         )
         if (id != null) {
             alarm.id = this.id!!

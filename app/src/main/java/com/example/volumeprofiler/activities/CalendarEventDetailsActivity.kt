@@ -30,13 +30,14 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
+import java.time.Instant
+import java.time.ZoneId
 import javax.inject.Inject
 import kotlin.IllegalArgumentException
 
 @AndroidEntryPoint
 class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor>,
-    EventInstanceQueryHandler.AsyncQueryCallback {
+    ContentQueryHandler.AsyncQueryCallback {
 
     @Inject
     lateinit var profileUtil: ProfileUtil
@@ -67,13 +68,16 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
             eventsCursor?.moveToPosition(position)
             eventsCursor?.getInt(eventsCursor.getColumnIndex(CalendarContract.Events._ID))?.let {
                 viewModel.setEventId(it)
-                contentUtil.queryEventInstances(it, TOKEN_EVENT_INSTANCE, null,this)
+                contentUtil.queryEventNextInstances(it, TOKEN_EVENT_INSTANCE, null,this)
             }
             eventsCursor?.getLong(eventsCursor.getColumnIndex(CalendarContract.Events.DTSTART))?.let {
                 viewModel.startTime = it
             }
             eventsCursor?.getLong(eventsCursor.getColumnIndex(CalendarContract.Events.DTEND))?.let {
                 viewModel.endTime = it
+            }
+            eventsCursor?.getString(eventsCursor.getColumnIndex(CalendarContract.Events.RRULE))?.let {
+                viewModel.rrule = it
             }
             viewModel.eventTitle = view.findViewById<TextView>(R.id.event_display_name).text.toString()
         }
@@ -115,12 +119,16 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
         startLoader(ID_LOADER_CALENDARS)
     }
 
-    override fun onQueryComplete(cursor: Cursor?, cookie: Any?) {
-        if (cursor != null && cursor.moveToFirst()) {
-            val beginTime: Long = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.BEGIN))
-            val endTime: Long = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.END))
-            viewModel.instanceStartTime = beginTime
-            viewModel.instanceEndTime = endTime
+    override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
+        cursor?.use {
+            if (cursor.moveToFirst()) {
+                val id: Int = cursor.getInt(cursor.getColumnIndex(CalendarContract.Instances.EVENT_ID))
+                val rrule: String? = cursor.getString(cursor.getColumnIndex(CalendarContract.Instances.RRULE))
+                viewModel.timezoneId = cursor.getString(cursor.getColumnIndex(CalendarContract.Instances.EVENT_TIMEZONE))
+                viewModel.instanceStartTime = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.BEGIN))
+                viewModel.instanceEndTime = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.END))
+                Log.i("CalendarActivity", "rrule:$ $rrule")
+            }
         }
     }
 
@@ -348,23 +356,21 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
     }
 
     private fun onSaveChangesItemClick(): Unit {
-
         val event: Event = viewModel.getEvent()
-
-        val now: LocalDateTime = LocalDateTime.now()
-        val currentMillis: Long = AlarmUtil.toEpochMilli(now)
-
+        val currentMillis: Long = System.currentTimeMillis()
         if (event.endTime != 0L && currentMillis >= event.endTime) {
             Snackbar.make(binding.root, "This event has completed", Snackbar.LENGTH_LONG)
                 .show()
             return
         }
-        if (currentMillis > event.currentInstanceStartTime && currentMillis < event.currentInstanceEndTime) {
+        /*
+        if (currentMillis > event.instanceBeginTime && currentMillis < event.instanceEndTime) {
             profileUtil.setProfile(startProfile!!)
-            alarmUtil.scheduleAlarm(event, endProfile!!, Event.State.COMPLETED)
+            alarmUtil.scheduleAlarm(event, endProfile!!, Event.State.END)
         } else {
-            alarmUtil.scheduleAlarm(event, startProfile!!, Event.State.STARTED)
+            alarmUtil.scheduleAlarm(event, startProfile!!, Event.State.START)
         }
+         */
         setSuccessfulResult(event)
     }
 
@@ -376,7 +382,7 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
     private fun setSuccessfulResult(event: Event): Unit {
         setResult(Activity.RESULT_OK, Intent().apply {
             putExtra(EXTRA_EVENT, event)
-            putExtra(EXTRA_UPDATE, false)
+            putExtra(EXTRA_UPDATE, intent.extras != null)
         })
         finish()
     }

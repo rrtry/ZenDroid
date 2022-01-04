@@ -11,8 +11,6 @@ import javax.inject.Inject
 import android.Manifest.permission.*
 import android.content.ContentUris
 import android.provider.CalendarContract
-import androidx.activity.result.contract.ActivityResultContracts
-import com.example.volumeprofiler.activities.CalendarEventDetailsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.*
@@ -23,22 +21,80 @@ class ContentUtil @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    fun queryEventInstances(id: Int, token: Int, cookie: Any?, callback: EventInstanceQueryHandler.AsyncQueryCallback): Unit {
+    private fun buildInstancesUri(startMillis: Long, endMillis: Long? = null): Uri.Builder {
+        val builder: Uri.Builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
+        ContentUris.appendId(builder, startMillis)
+        if (endMillis != null) {
+            ContentUris.appendId(builder, endMillis)
+        }
+        return builder
+    }
+
+    fun queryCurrentEventInstance(
+        id: Int, startMillis: Long,
+        token: Int, cookie: Any?,
+        callback: ContentQueryHandler.AsyncQueryCallback): Unit {
+
+        val builder: Uri.Builder = buildInstancesUri(startMillis)
+        val projection: Array<String> = arrayOf(
+            CalendarContract.Instances.EVENT_ID,
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.EVENT_TIMEZONE
+        )
+        val queryHandler = ContentQueryHandler(context.contentResolver, callback)
+        queryHandler.startQuery(
+            token,
+            cookie,
+            builder.build(),
+            projection,
+            "${CalendarContract.Instances.EVENT_ID} = $id",
+            null, null)
+    }
+
+    fun queryMissedEventInstances(
+        id: Int, startMillis: Long,
+        token: Int, cookie: Any?,
+        callback: ContentQueryHandler.AsyncQueryCallback): Unit {
+
+        val builder: Uri.Builder = buildInstancesUri(startMillis, System.currentTimeMillis())
+        val projection: Array<String> = arrayOf(
+            CalendarContract.Instances.EVENT_ID,
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.EVENT_TIMEZONE
+        )
+        val queryHandler = ContentQueryHandler(context.contentResolver, callback)
+        queryHandler.startQuery(
+            token,
+            cookie,
+            builder.build(),
+            projection,
+            "${CalendarContract.Instances.EVENT_ID} = $id",
+            null, null)
+    }
+
+    fun queryEventNextInstances(id: Int, token: Int, cookie: Any?, callback: ContentQueryHandler.AsyncQueryCallback): Unit {
 
         val now: LocalDateTime = LocalDateTime.now()
         val startMillis: Long = AlarmUtil.toEpochMilli(now)
         val endMillis: Long = AlarmUtil.toEpochMilli(now.plusYears(1))
 
-        val builder: Uri.Builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
-        ContentUris.appendId(builder, startMillis)
-        ContentUris.appendId(builder, endMillis)
-
-        val queryHandler = EventInstanceQueryHandler(context.contentResolver, callback)
+        val builder: Uri.Builder = buildInstancesUri(startMillis, endMillis)
+        val projection: Array<String> = arrayOf(
+            CalendarContract.Instances.EVENT_ID,
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.EVENT_TIMEZONE,
+            CalendarContract.Instances.EVENT_END_TIMEZONE,
+            CalendarContract.Instances.RRULE
+        )
+        val queryHandler = ContentQueryHandler(context.contentResolver, callback)
         queryHandler.startQuery(
             token,
             cookie,
             builder.build(),
-            arrayOf(CalendarContract.Instances.EVENT_ID, CalendarContract.Instances.BEGIN, CalendarContract.Instances.END),
+            projection,
             "${CalendarContract.Instances.EVENT_ID} = $id",
             null, null)
     }
@@ -69,7 +125,7 @@ class ContentUtil @Inject constructor(
             while (it.moveToNext()) {
                 val begin: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
                 val end: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
-                if (AlarmUtil.toEpochMilli(LocalDateTime.now()) < begin) {
+                if (System.currentTimeMillis() < begin) {
                     startTime = begin
                     endTime = end
                     break

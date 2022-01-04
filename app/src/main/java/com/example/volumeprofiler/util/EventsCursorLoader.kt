@@ -24,7 +24,7 @@ class EventsCursorLoader(
         )
 
         val uri: Uri = CalendarContract.Events.CONTENT_URI
-        val currentMillis: Long = AlarmUtil.toEpochMilli(LocalDateTime.now())
+        val currentMillis: Long = System.currentTimeMillis()
 
         var query: String = ""
         var selectionArgs: Array<String>? = null

@@ -41,15 +41,15 @@ class EventDetailsViewModel @Inject constructor(
     private val eventId: MutableStateFlow<Int> = MutableStateFlow(-1)
 
     private var scheduled: Boolean = false
-
     var calendarId: Int = -1
     var calendarTitle: String = ""
-
     var eventTitle: String = ""
-    var startTime: Long = 0L
-    var endTime: Long = 0L
+    var startTime: Long = -1L
+    var endTime: Long = -1L
     var instanceStartTime: Long = -1L
     var instanceEndTime: Long = -1L
+    var timezoneId: String = ""
+    var rrule: String? = null
 
     private var eventSet: Boolean = false
 
@@ -75,17 +75,20 @@ class EventDetailsViewModel @Inject constructor(
             title = eventTitle,
             calendarId = calendarId,
             calendarTitle = calendarTitle,
+            rrule = rrule,
             startTime = startTime,
             endTime = endTime,
+            instanceBeginTime = instanceStartTime,
+            instanceEndTime = instanceEndTime,
+            timezoneId = timezoneId,
             eventStartsProfileId = eventStartsProfile.value!!.id,
             eventEndsProfileId = eventEndsProfile.value!!.id,
             scheduled = true,
-            currentInstanceStartTime = instanceStartTime,
-            currentInstanceEndTime = instanceEndTime,
         )
     }
 
     fun setEvent(event: Event, profiles: List<Profile>): Unit {
+        /*
         eventId.value = event.id
         eventStartsSelectedProfile.value = getProfilePosition(event.eventStartsProfileId, profiles)
         eventEndsSelectedProfile.value = getProfilePosition(event.eventEndsProfileId, profiles)
@@ -93,10 +96,11 @@ class EventDetailsViewModel @Inject constructor(
         startTime = event.startTime
         endTime = event.endTime
         scheduled = event.scheduled
-        instanceStartTime = event.currentInstanceStartTime
-        instanceEndTime = event.currentInstanceEndTime
-
+        instanceStartTime = event.instanceBeginTime
+        instanceEndTime = event.instanceEndTime
         eventSet = true
+
+         */
     }
 
     private fun getProfilePosition(uuid: UUID?, profiles: List<Profile>): Int {
