@@ -25,9 +25,6 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
 import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
-import com.example.volumeprofiler.fragments.dialogs.multiChoice.PriorityInterruptionsSelectionDialog
-import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOffVisualRestrictionsDialog
-import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOnVisualRestrictionsDialog
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
@@ -39,6 +36,7 @@ import javax.inject.Inject
 import android.Manifest.permission.*
 import android.content.Context
 import com.example.volumeprofiler.activities.ProfileDetailsActivity
+import com.example.volumeprofiler.fragments.dialogs.multiChoice.*
 import com.example.volumeprofiler.util.ui.animations.AnimUtil
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -139,15 +137,9 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
         return when (type) {
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(
-                ArrayList(detailsViewModel.screenOnVisualEffects.value)
-            )
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(
-                ArrayList(detailsViewModel.screenOffVisualEffects.value)
-            )
-            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(
-                ArrayList(detailsViewModel.priorityCategories.value)
-            )
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance()
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance()
+            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityCategoriesDialog.newInstance()
             else -> ProfileNameInputDialog.newInstance(detailsViewModel.title.value)
         }
     }
@@ -258,11 +250,14 @@ class InterruptionFilterFragment: Fragment() {
     }
 
     private fun onPriorityResult(bundle: Bundle): Unit {
+        /*
         val priorityCategories: ArrayList<Int> = bundle.getIntegerArrayList(PRIORITY_CATEGORIES_KEY) as ArrayList<Int>
         detailsViewModel.priorityCategories.value = priorityCategories
+         */
     }
 
     private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
+        /*
         val type: Int = bundle.getInt(EFFECTS_TYPE_KEY)
         val effects: ArrayList<Int> = bundle.getIntegerArrayList(EFFECTS_KEY) as ArrayList<Int>
         if (type == 0) {
@@ -270,6 +265,7 @@ class InterruptionFilterFragment: Fragment() {
         } else {
             detailsViewModel.screenOnVisualEffects.value = effects
         }
+         */
     }
 
     companion object {
