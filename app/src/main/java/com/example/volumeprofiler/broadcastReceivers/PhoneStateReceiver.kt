@@ -10,6 +10,7 @@ import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
 import android.app.NotificationManager.*
+import android.app.NotificationManager.Policy.*
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
@@ -25,11 +26,11 @@ class PhoneStateReceiver: BroadcastReceiver() {
 
             val streamsUnlinked: Boolean = sharedPreferencesUtil.getStreamsUnlinked()
             val interruptionFilter: Int = sharedPreferencesUtil.getInterruptionFilter()
-            val priorityCategories: List<Int> = sharedPreferencesUtil.getPriorityCategories()
+            val priorityCategories: Int = sharedPreferencesUtil.getPriorityCategories()
 
             val isPriorityFilter: Boolean = interruptionFilter == INTERRUPTION_FILTER_PRIORITY
-            val includesCallsPriority: Boolean = isPriorityFilter && priorityCategories.contains(
-                Policy.PRIORITY_CATEGORY_REPEAT_CALLERS) || priorityCategories.contains(Policy.PRIORITY_CATEGORY_CALLS)
+            val includesCallsPriority: Boolean = isPriorityFilter && (priorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0
+                    || (priorityCategories and PRIORITY_CATEGORY_CALLS) != 0
 
             if (streamsUnlinked && (includesCallsPriority || interruptionFilter == INTERRUPTION_FILTER_ALL)) {
                 val phoneState: String? = intent.extras?.getString(EXTRA_STATE)

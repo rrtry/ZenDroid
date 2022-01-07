@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.util
 
-import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
@@ -53,18 +52,13 @@ class SharedPreferencesUtil @Inject constructor (
         editor.putInt(PREFS_RINGER_MODE, profile.ringerMode)
         editor.putInt(PREFS_NOTIFICATION_MODE, profile.notificationMode)
         editor.putInt(PREFS_INTERRUPTION_FILTER, profile.interruptionFilter)
-        editor.putString(PREFS_PRIORITY_CATEGORIES, fromList(profile.priorityCategories))
+        editor.putInt(PREFS_PRIORITY_CATEGORIES, profile.priorityCategories)
         editor.putBoolean(PREFS_STREAMS_UNLINKED, profile.streamsUnlinked)
         editor.apply()
     }
 
-    fun getPriorityCategories(): List<Int> {
-        val categories: String? = sharedPreferences.getString(PREFS_PRIORITY_CATEGORIES, "")
-        return if (categories != null) {
-            toList(categories)
-        } else {
-            listOf()
-        }
+    fun getPriorityCategories(): Int {
+        return sharedPreferences.getInt(PREFS_PRIORITY_CATEGORIES, -1)
     }
 
     fun getStreamsUnlinked(): Boolean {

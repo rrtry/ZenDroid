@@ -80,7 +80,7 @@ object BindingAdapters {
     fun bindAlarmIcon(
         imageView: ImageView,
         alarmInterruptionFilter: Int,
-        priorityCategories: List<Int>,
+        priorityCategories: Int,
         policyAccessGranted: Boolean,
         index: Int)
     : Unit {
@@ -94,7 +94,7 @@ object BindingAdapters {
     fun bindMediaSliderLayout(
         viewGroup: SwitchableConstraintLayout,
         mediaInterruptionFilter: Int,
-        mediaPriorityCategories: List<Int>,
+        mediaPriorityCategories: Int,
         policyAccessGranted: Boolean
     ): Unit {
         setEnabledState(viewGroup, interruptionPolicyAllowsMediaStream(
@@ -109,7 +109,7 @@ object BindingAdapters {
     fun bindRingerSliderLayout(
         viewGroup: SwitchableConstraintLayout,
         ringerInterruptionFilter: Int,
-        ringerPriorityCategories: List<Int>,
+        ringerPriorityCategories: Int,
         policyAccessGranted: Boolean,
         streamsUnlinked: Boolean
     ): Unit {
@@ -126,7 +126,7 @@ object BindingAdapters {
     fun bindAlarmSliderLayout(
         viewGroup: SwitchableConstraintLayout,
         alarmInterruptionFilter: Int,
-        alarmPriorityCategories: List<Int>,
+        alarmPriorityCategories: Int,
         policyAccessGranted: Boolean
     ): Unit {
         setEnabledState(viewGroup, interruptionPolicyAllowsAlarmsStream(
@@ -141,7 +141,7 @@ object BindingAdapters {
     fun bindMediaIcon(
         imageView: ImageView,
         mediaInterruptionFilter: Int,
-        mediaPriorityCategories: List<Int>,
+        mediaPriorityCategories: Int,
         notificationAccessGranted: Boolean,
         mediaVolume: Int)
     : Unit {
@@ -169,17 +169,17 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @Suppress("deprecation", "newApi")
+    @Suppress("deprecation")
     @BindingAdapter("suppressedEffectScreenOn")
-    fun bindSuppressedEffectScreenOnSwitch(view: Switch, suppressedEffectScreenOn: List<Int>): Unit {
-        view.isChecked = suppressedEffectScreenOn.contains(SUPPRESSED_EFFECT_SCREEN_ON)
+    fun bindSuppressedEffectScreenOnSwitch(view: Switch, suppressedEffectScreenOn: Int): Unit {
+        view.isChecked = (suppressedEffectScreenOn and SUPPRESSED_EFFECT_SCREEN_ON) != 0
     }
 
     @JvmStatic
-    @Suppress("deprecation", "newApi")
+    @Suppress("deprecation")
     @BindingAdapter("suppressedEffectScreenOff")
-    fun bindSuppressedEffectScreenOffSwitch(view: Switch, suppressedEffectScreenOff: List<Int>): Unit {
-        view.isChecked = suppressedEffectScreenOff.contains(SUPPRESSED_EFFECT_SCREEN_OFF)
+    fun bindSuppressedEffectScreenOffSwitch(view: Switch, suppressedEffectScreenOff: Int): Unit {
+        view.isChecked = (suppressedEffectScreenOff and SUPPRESSED_EFFECT_SCREEN_OFF) != 0
     }
 
     @JvmStatic
@@ -187,7 +187,7 @@ object BindingAdapters {
     fun bindStarredContactsLayout(
         view: View, rootViewGroup:
         ViewGroup, prioritySenders: Int,
-        priorityCategories: List<Int>,
+        priorityCategories: Int,
         categoryType: Int): Unit {
         val transition: AutoTransition = AutoTransition().apply {
             excludeChildren(R.id.exceptionsCallsLayout, true)
@@ -195,19 +195,19 @@ object BindingAdapters {
             excludeChildren(R.id.otherInterruptionsLayout, true)
         }
         TransitionManager.beginDelayedTransition(rootViewGroup, transition)
-        view.isVisible = prioritySenders == PRIORITY_SENDERS_STARRED && priorityCategories.contains(categoryType)
+        view.isVisible = prioritySenders == PRIORITY_SENDERS_STARRED && (priorityCategories and categoryType) != 0
     }
 
     @JvmStatic
     @BindingAdapter("repeatingCallersPriorityCategories", "callSenders", requireAll = false)
-    fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: List<Int>, callSenders: Int): Unit {
-        view.isChecked = repeatingCallersPriorityCategories.contains(PRIORITY_CATEGORY_REPEAT_CALLERS)
+    fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: Int, callSenders: Int): Unit {
+        view.isChecked = (repeatingCallersPriorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0
     }
 
     @JvmStatic
     @BindingAdapter("callSenders", "priorityCategories", requireAll = false)
-    fun bindRepeatingCallersLayout(view: SwitchableConstraintLayout, callSenders: Int, priorityCategories: List<Int>): Unit {
-        setEnabledState(view, callSenders != PRIORITY_SENDERS_ANY || !priorityCategories.contains(PRIORITY_CATEGORY_CALLS))
+    fun bindRepeatingCallersLayout(view: SwitchableConstraintLayout, callSenders: Int, priorityCategories: Int): Unit {
+        setEnabledState(view, callSenders != PRIORITY_SENDERS_ANY || priorityCategories and PRIORITY_CATEGORY_CALLS == 0)
     }
 
     @JvmStatic
@@ -215,7 +215,7 @@ object BindingAdapters {
     fun notificationLayoutTransition(
         view: SwitchableConstraintLayout,
         interruptionFilter: Int,
-        priorityCategories: List<Int>,
+        priorityCategories: Int,
         policyAccessGranted: Boolean,
         streamsUnlinked: Boolean)
     : Unit {
@@ -224,7 +224,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted",requireAll = false)
-    fun bindMediaSeekBar(view: SeekBar, mediaInterruptionFilter: Int, mediaPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
+    fun bindMediaSeekBar(view: SeekBar, mediaInterruptionFilter: Int, mediaPriorityCategories: Int, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = interruptionPolicyAllowsMediaStream(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)
     }
 
@@ -251,7 +251,7 @@ object BindingAdapters {
     fun bindNotificationSeekBar(
         view: SeekBar,
         notificationInterruptionFilter: Int,
-        notificationPriorityCategories: List<Int>,
+        notificationPriorityCategories: Int,
         notificationMode: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
@@ -264,7 +264,7 @@ object BindingAdapters {
         icon: ImageView,
         ringerMode: Int,
         ringerIconInterruptionFilter: Int,
-        ringerPriorityCategories: List<Int>,
+        ringerPriorityCategories: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
         if (!interruptionPolicyAllowsRingerStream(ringerIconInterruptionFilter, ringerPriorityCategories, notificationAccessGranted, streamsUnlinked)) {
@@ -284,7 +284,7 @@ object BindingAdapters {
         icon: ImageView,
         notificationMode: Int,
         notificationInterruptionFilter: Int,
-        notificationPriorityCategories: List<Int>,
+        notificationPriorityCategories: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
         if (!interruptionPolicyAllowsNotificationStream(notificationInterruptionFilter, notificationPriorityCategories, notificationAccessGranted, streamsUnlinked)) {
@@ -310,7 +310,7 @@ object BindingAdapters {
         view: SeekBar,
         ringerMode: Int,
         ringerSeekBarInterruptionFilter: Int,
-        ringerSeekBarPropertyCategories: List<Int>,
+        ringerSeekBarPropertyCategories: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
         if (notificationAccessGranted) {
@@ -322,7 +322,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted")
-    fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: List<Int>, notificationAccessGranted: Boolean): Unit {
+    fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: Int, notificationAccessGranted: Boolean): Unit {
         view.isEnabled = interruptionPolicyAllowsAlarmsStream(alarmInterruptionFilter, alarmPriorityCategories, notificationAccessGranted)
     }
 
@@ -361,7 +361,7 @@ object BindingAdapters {
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     fun bindRingerSilentModeLayout(viewGroup: ViewGroup,
                                    interruptionFilterRinger: Int,
-                                   silentModePriorityCategories: List<Int>,
+                                   silentModePriorityCategories: Int,
                                    notificationAccessGranted: Boolean,
                                    streamsUnlinked: Boolean): Unit {
         if (!notificationAccessGranted) {

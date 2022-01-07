@@ -37,6 +37,8 @@ import android.Manifest.permission.*
 import android.content.Context
 import com.example.volumeprofiler.activities.ProfileDetailsActivity
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.*
+import com.example.volumeprofiler.util.interruptionPolicy.MODE_SCREEN_OFF
+import com.example.volumeprofiler.util.interruptionPolicy.MODE_SCREEN_ON
 import com.example.volumeprofiler.util.ui.animations.AnimUtil
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -80,7 +82,7 @@ class InterruptionFilterFragment: Fragment() {
 
         requireActivity().supportFragmentManager.setFragmentResultListener(
             PermissionExplanationDialog.PERMISSION_REQUEST_KEY, viewLifecycleOwner,
-            { requestKey, result ->
+            { _, result ->
                 if (result.getString(PermissionExplanationDialog.EXTRA_PERMISSION) == ACCESS_NOTIFICATION_POLICY) {
                     if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
                         startNotificationPolicySettingsActivity()
@@ -137,9 +139,9 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
         return when (type) {
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance()
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance()
-            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityCategoriesDialog.newInstance()
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance(detailsViewModel.getProfile())
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance(detailsViewModel.getProfile())
+            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityCategoriesDialog.newInstance(detailsViewModel.getProfile())
             else -> ProfileNameInputDialog.newInstance(detailsViewModel.title.value)
         }
     }
@@ -250,30 +252,24 @@ class InterruptionFilterFragment: Fragment() {
     }
 
     private fun onPriorityResult(bundle: Bundle): Unit {
-        /*
-        val priorityCategories: ArrayList<Int> = bundle.getIntegerArrayList(PRIORITY_CATEGORIES_KEY) as ArrayList<Int>
-        detailsViewModel.priorityCategories.value = priorityCategories
-         */
+        detailsViewModel.priorityCategories.value = bundle.getInt(BasePolicyPreferencesDialog.EXTRA_CATEGORIES)
     }
 
     private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
-        /*
-        val type: Int = bundle.getInt(EFFECTS_TYPE_KEY)
-        val effects: ArrayList<Int> = bundle.getIntegerArrayList(EFFECTS_KEY) as ArrayList<Int>
-        if (type == 0) {
-            detailsViewModel.screenOffVisualEffects.value = effects
-        } else {
-            detailsViewModel.screenOnVisualEffects.value = effects
+        val effectsMask: Int = bundle.getInt(BasePolicyPreferencesDialog.EXTRA_CATEGORIES)
+        when (bundle.getInt(BasePolicyPreferencesDialog.EXTRA_MODE)) {
+            MODE_SCREEN_OFF -> {
+                detailsViewModel.screenOffVisualEffects.value = effectsMask
+            }
+            MODE_SCREEN_ON -> {
+                detailsViewModel.screenOnVisualEffects.value = effectsMask
+            }
         }
-         */
     }
 
     companion object {
 
         const val EFFECTS_REQUEST_KEY: String = "request_key"
         const val PRIORITY_REQUEST_KEY: String = "priority_request_key"
-        const val PRIORITY_CATEGORIES_KEY: String = "priority_categories_key"
-        const val EFFECTS_KEY: String = "effects_key"
-        const val EFFECTS_TYPE_KEY: String = "effects_type_key"
     }
 }

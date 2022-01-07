@@ -5,6 +5,7 @@ import android.app.NotificationManager.Policy.*
 import android.os.Build
 import android.os.Bundle
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 
 @TargetApi(Build.VERSION_CODES.P)
@@ -28,10 +29,12 @@ class SuppressedEffectsOffDialog : BasePolicyPreferencesDialog() {
 
     companion object {
 
-        const val EXTRA_MODE: String = "extra_mode"
-
-        fun newInstance(): SuppressedEffectsOffDialog {
-            return SuppressedEffectsOffDialog()
+        fun newInstance(profile: Profile): SuppressedEffectsOffDialog {
+            return SuppressedEffectsOffDialog().apply {
+                arguments = Bundle().apply {
+                    putInt(EXTRA_CATEGORIES, profile.screenOffVisualEffects)
+                }
+            }
         }
     }
 }

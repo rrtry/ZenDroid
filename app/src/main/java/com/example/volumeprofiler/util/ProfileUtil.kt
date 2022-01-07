@@ -62,7 +62,7 @@ class ProfileUtil @Inject constructor (
     }
 
     fun getDefaultProfile(): Profile {
-        return Profile(
+        val profile: Profile = Profile(
             "New profile",
                 UUID.randomUUID(),
                 audioManager.getStreamVolume(STREAM_MUSIC),
@@ -78,12 +78,19 @@ class ProfileUtil @Inject constructor (
                 audioManager.ringerMode,
                 audioManager.ringerMode,
                 0,
-                extractPriorityCategories(notificationManager.notificationPolicy.priorityCategories),
-                extractPrioritySenders(notificationManager.notificationPolicy.priorityCallSenders),
-                extractPrioritySenders(notificationManager.notificationPolicy.priorityMessageSenders),
-                extractSuppressedEffects(notificationManager.notificationPolicy.suppressedVisualEffects, MODE_SCREEN_ON),
-                extractSuppressedEffects(notificationManager.notificationPolicy.suppressedVisualEffects, MODE_SCREEN_OFF),
+                notificationManager.notificationPolicy.priorityCategories,
+                notificationManager.notificationPolicy.priorityCallSenders,
+                notificationManager.notificationPolicy.priorityMessageSenders,
+                0, 0, 0
         )
+        if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT) {
+            profile.screenOnVisualEffects = notificationManager.notificationPolicy.suppressedVisualEffects
+            profile.screenOffVisualEffects = notificationManager.notificationPolicy.suppressedVisualEffects
+        }
+        if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
+            profile.primaryConversationSenders = notificationManager.notificationPolicy.priorityConversationSenders
+        }
+        return profile
     }
 
     private fun setSilentMode(streamType: Int, flags: Int = 0): Unit {
@@ -152,25 +159,25 @@ class ProfileUtil @Inject constructor (
         return when {
             Build.VERSION_CODES.N > Build.VERSION.SDK_INT -> {
                 Policy (
-                    bitmaskOf(profile.priorityCategories),
+                    profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders
                 )
             }
             Build.VERSION_CODES.N <= Build.VERSION.SDK_INT && Build.VERSION_CODES.R > Build.VERSION.SDK_INT -> {
                 Policy (
-                    bitmaskOf(profile.priorityCategories),
+                    profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
-                    bitmaskOf(profile.screenOnVisualEffects + profile.screenOffVisualEffects)
+                    profile.screenOnVisualEffects or profile.screenOffVisualEffects
                 )
             }
             else -> {
                 Policy (
-                    bitmaskOf(profile.priorityCategories),
+                    profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
-                    bitmaskOf(profile.screenOnVisualEffects + profile.screenOffVisualEffects),
+                    profile.screenOnVisualEffects or profile.screenOffVisualEffects,
                     profile.primaryConversationSenders
                 )
             }

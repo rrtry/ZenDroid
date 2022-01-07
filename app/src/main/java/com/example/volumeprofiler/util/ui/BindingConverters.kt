@@ -2,40 +2,28 @@ package com.example.volumeprofiler.util.ui
 
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
-import android.content.ContentResolver
-import android.content.Context
-import android.database.Cursor
-import android.media.RingtoneManager
-import android.net.Uri
-import android.provider.ContactsContract
-import android.provider.MediaStore
 import android.util.Log
 import androidx.databinding.BindingConversion
-import java.time.DayOfWeek
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.time.format.TextStyle
-import java.util.*
-import kotlin.collections.ArrayList
+import com.example.volumeprofiler.util.interruptionPolicy.extractPriorityCategories
+import com.example.volumeprofiler.util.interruptionPolicy.maskContainsBit
+import kotlin.text.StringBuilder
 
 object BindingConverters {
 
     @JvmStatic
-    fun prioritySendersToString(prioritySenders: Int, priorityCategories: List<Int>, categoryType: Int): String {
+    fun prioritySendersToString(prioritySenders: Int, priorityCategories: Int, categoryType: Int): String {
         return if (categoryType == PRIORITY_CATEGORY_CALLS) {
             when (prioritySenders) {
-                PRIORITY_SENDERS_ANY -> if (priorityCategories.contains(PRIORITY_CATEGORY_CALLS)) "From anyone" else "Don't allow any calls"
-                PRIORITY_SENDERS_STARRED -> if (priorityCategories.contains(PRIORITY_CATEGORY_CALLS)) "From starred contacts only" else "Don't allow any calls"
-                PRIORITY_SENDERS_CONTACTS -> if (priorityCategories.contains(PRIORITY_CATEGORY_CALLS)) "From contacts only" else "Don't allow any calls"
+                PRIORITY_SENDERS_ANY -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_CALLS)) "From anyone" else "Don't allow any calls"
+                PRIORITY_SENDERS_STARRED -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_CALLS)) "From starred contacts only" else "Don't allow any calls"
+                PRIORITY_SENDERS_CONTACTS -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_CALLS)) "From contacts only" else "Don't allow any calls"
                 else -> "Unknown"
             }
         } else {
             when (prioritySenders) {
-                PRIORITY_SENDERS_ANY -> if (priorityCategories.contains(PRIORITY_CATEGORY_MESSAGES)) "From anyone" else "Don't allow any messages"
-                PRIORITY_SENDERS_STARRED -> if (priorityCategories.contains(PRIORITY_CATEGORY_MESSAGES)) "From starred contacts only" else "Don't allow any messages"
-                PRIORITY_SENDERS_CONTACTS -> if (priorityCategories.contains(PRIORITY_CATEGORY_MESSAGES)) "From contacts only" else "Don't allow any messages"
+                PRIORITY_SENDERS_ANY -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_MESSAGES)) "From anyone" else "Don't allow any messages"
+                PRIORITY_SENDERS_STARRED -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_MESSAGES)) "From starred contacts only" else "Don't allow any messages"
+                PRIORITY_SENDERS_CONTACTS -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_MESSAGES)) "From contacts only" else "Don't allow any messages"
                 else -> "Unknown"
             }
         }
@@ -43,8 +31,8 @@ object BindingConverters {
 
     @BindingConversion
     @JvmStatic
-    fun suppressedEffectsToString(visualInterruptions: List<Int>): String {
-        return if (visualInterruptions.isEmpty()) {
+    fun suppressedEffectsToString(visualInterruptions: Int): String {
+        return if (visualInterruptions == 0) {
             "None of visual effects are suppressed"
         } else {
             "Partially visible"
@@ -53,32 +41,24 @@ object BindingConverters {
 
     @BindingConversion
     @JvmStatic
-    fun priorityCategoriesToString(categories: List<Int>): String {
-        val otherInterruptions: List<Int> = listOf(
-                PRIORITY_CATEGORY_REMINDERS,
-                PRIORITY_CATEGORY_EVENTS,
-                PRIORITY_CATEGORY_SYSTEM,
-                PRIORITY_CATEGORY_ALARMS,
-                PRIORITY_CATEGORY_MEDIA,
-                PRIORITY_CATEGORY_CONVERSATIONS
-        )
-        val filteredCategories: List<Int> = categories.filter { otherInterruptions.contains(it) }
-        if (filteredCategories.isEmpty()) {
-            return "No interruptions are allowed"
-        } else {
-            val stringBuilder: StringBuilder = java.lang.StringBuilder()
+    fun priorityCategoriesToString(categories: Int): String {
+        val categoriesList: List<Int> = extractPriorityCategories(categories)
+        if (categoriesList.isNotEmpty()) {
+            val stringBuilder: StringBuilder = StringBuilder()
             stringBuilder.append("Allow ")
-            for ((index, i) in categories.withIndex()) {
+            for ((index, i) in categoriesList.withIndex()) {
                 when (i) {
-                    PRIORITY_CATEGORY_REMINDERS -> stringBuilder.append(if (index < categories.size - 1) "reminders, " else "reminders")
-                    PRIORITY_CATEGORY_EVENTS -> stringBuilder.append(if (index < categories.size - 1) "events, " else "events")
-                    PRIORITY_CATEGORY_SYSTEM -> stringBuilder.append(if (index < categories.size - 1) "touch sounds, " else "touch sounds")
-                    PRIORITY_CATEGORY_ALARMS -> stringBuilder.append(if (index < categories.size - 1) "alarms, " else "alarms")
-                    PRIORITY_CATEGORY_MEDIA -> stringBuilder.append(if (index < categories.size - 1) "media, " else "media")
-                    PRIORITY_CATEGORY_CONVERSATIONS -> stringBuilder.append(if (index < categories.size - 1) "conversations, " else "conversations")
+                    PRIORITY_CATEGORY_REMINDERS -> stringBuilder.append(if (index < categoriesList.size - 1) "reminders, " else "reminders")
+                    PRIORITY_CATEGORY_EVENTS -> stringBuilder.append(if (index < categoriesList.size - 1) "events, " else "events")
+                    PRIORITY_CATEGORY_SYSTEM -> stringBuilder.append(if (index < categoriesList.size - 1) "touch sounds, " else "touch sounds")
+                    PRIORITY_CATEGORY_ALARMS -> stringBuilder.append(if (index < categoriesList.size - 1) "alarms, " else "alarms")
+                    PRIORITY_CATEGORY_MEDIA -> stringBuilder.append(if (index < categoriesList.size - 1) "media, " else "media")
+                    PRIORITY_CATEGORY_CONVERSATIONS -> stringBuilder.append(if (index < categoriesList.size - 1) "conversations, " else "conversations")
                 }
             }
             return stringBuilder.toString()
+        } else {
+            return "No interruptions are allowed"
         }
     }
 

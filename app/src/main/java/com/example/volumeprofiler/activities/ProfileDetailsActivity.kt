@@ -131,10 +131,10 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
 
     private fun setProfile(): Unit {
         if (intent.extras != null) {
-            val arg: Profile = intent.extras!!.getParcelable(EXTRA_PROFILE)!!
-            viewModel.setArgs(arg, true)
+            val profile: Profile = intent.extras!!.getParcelable(EXTRA_PROFILE)!!
+            viewModel.setArgs(profile, true)
         } else {
-            viewModel.setArgs(Profile("New profile"), false)
+            viewModel.setArgs(profileUtil.getDefaultProfile(), false)
         }
     }
 

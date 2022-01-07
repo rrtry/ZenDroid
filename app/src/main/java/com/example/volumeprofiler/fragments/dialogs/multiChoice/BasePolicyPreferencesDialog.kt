@@ -77,6 +77,7 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
 
     companion object {
 
+        const val EXTRA_MODE: String = "extra_mode"
         const val EXTRA_CATEGORIES: String = "extra_categories"
         const val EXTRA_SET_ARGUMENTS: String = "extra_set_arguments"
 

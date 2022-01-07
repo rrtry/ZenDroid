@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Bundle
 import com.example.volumeprofiler.R
 import android.app.NotificationManager.Policy.*
+import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 
 class PriorityCategoriesDialog: BasePolicyPreferencesDialog() {
@@ -40,8 +41,12 @@ class PriorityCategoriesDialog: BasePolicyPreferencesDialog() {
 
     companion object {
 
-        fun newInstance(): PriorityCategoriesDialog {
-            return PriorityCategoriesDialog()
+        fun newInstance(profile: Profile): PriorityCategoriesDialog {
+            return PriorityCategoriesDialog().apply {
+                arguments = Bundle().apply {
+                    putInt(EXTRA_CATEGORIES, profile.priorityCategories)
+                }
+            }
         }
     }
 }

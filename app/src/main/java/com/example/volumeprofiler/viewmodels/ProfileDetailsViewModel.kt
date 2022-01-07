@@ -130,11 +130,11 @@ class ProfileDetailsViewModel @Inject constructor(
     val streamsUnlinked: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val interruptionFilter: MutableStateFlow<Int> = MutableStateFlow(INTERRUPTION_FILTER_PRIORITY)
-    val priorityCategories: MutableStateFlow<List<Int>> = MutableStateFlow(listOf(PRIORITY_CATEGORY_CALLS, PRIORITY_CATEGORY_MESSAGES, PRIORITY_CATEGORY_REPEAT_CALLERS))
+    val priorityCategories: MutableStateFlow<Int> = MutableStateFlow(0)
     val priorityCallSenders: MutableStateFlow<Int> = MutableStateFlow(PRIORITY_SENDERS_ANY)
     val priorityMessageSenders: MutableStateFlow<Int> = MutableStateFlow(PRIORITY_SENDERS_ANY)
-    val screenOnVisualEffects: MutableStateFlow<List<Int>> = MutableStateFlow(listOf())
-    val screenOffVisualEffects: MutableStateFlow<List<Int>> = MutableStateFlow(listOf())
+    val screenOnVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
+    val screenOffVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
     val primaryConversationSenders: MutableStateFlow<Int> = MutableStateFlow(CONVERSATION_SENDERS_ANYONE)
 
     val storagePermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -592,40 +592,40 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     fun containsPriorityCategory(category: Int): Boolean {
-        return priorityCategories.value.contains(category)
+        return (priorityCategories.value and category) != 0
     }
 
     private fun containsSuppressedEffect(effect: Int): Boolean {
-        return if (effect == SUPPRESSED_EFFECT_SCREEN_ON) screenOnVisualEffects.value.contains(effect)
-        else screenOffVisualEffects.value.contains(effect)
+        return if (effect == SUPPRESSED_EFFECT_SCREEN_ON) (screenOnVisualEffects.value and effect) != 0
+        else (screenOffVisualEffects.value and effect) != 0
     }
 
     private fun addSuppressedEffect(effect: Int): Unit {
         if (!containsSuppressedEffect(effect)) {
             if (effect == SUPPRESSED_EFFECT_SCREEN_ON) {
-                screenOnVisualEffects.value += effect
+                screenOnVisualEffects.value = screenOnVisualEffects.value or effect
             } else {
-                screenOffVisualEffects.value += effect
+                screenOffVisualEffects.value = screenOffVisualEffects.value or effect
             }
         }
     }
 
     private fun removeSuppressedEffect(effect: Int): Unit {
         if (effect == SUPPRESSED_EFFECT_SCREEN_ON) {
-            screenOnVisualEffects.value -= effect
+            screenOnVisualEffects.value = screenOnVisualEffects.value and effect.inv()
         } else {
-            screenOffVisualEffects.value -= effect
+            screenOffVisualEffects.value = screenOffVisualEffects.value and effect.inv()
         }
     }
 
     fun addPriorityCategory(category: Int): Unit {
         if (!containsPriorityCategory(category)) {
-            priorityCategories.value += category
+            priorityCategories.value = priorityCategories.value or category
         }
     }
 
     fun removePriorityCategory(category: Int): Unit {
-        priorityCategories.value -= category
+        priorityCategories.value = priorityCategories.value and category.inv()
     }
 
     private fun notificationsStreamAllowed(): Boolean {
