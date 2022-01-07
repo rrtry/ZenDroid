@@ -66,10 +66,10 @@
                 android:id="@+id/repeatTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Repeat"
                 android:clickable="false"
-                android:textSize="16sp"
-                android:textColor="?attr/colorPrimary" />
+                android:text="Repeat"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -101,7 +101,7 @@
             android:layout_marginTop="16dp"
             android:text="Profile"
             android:textColor="?attr/colorPrimary"
-            android:textSize="16sp"
+            android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/separator2"
             app:layout_constraintTop_toBottomOf="@+id/separator2" />
 

@@ -41,6 +41,7 @@ import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.interfaces.PermissionRequestCallback
 import android.graphics.Bitmap
+import android.view.ViewTreeObserver
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.R
@@ -212,6 +213,8 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             val location: Location = locationRelation.location
             loadPreviewBitmap(location.previewImageId)
 
+            Log.i("LocationsFragment", "width: ${binding.mapSnapshot.measuredWidth}, height: ${binding.mapSnapshot.measuredHeight}")
+
             binding.geofenceTitle.text = location.title
             binding.enableGeofenceSwitch.isChecked = location.enabled == 1.toByte()
             binding.geofenceProfiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
@@ -222,6 +225,13 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             binding.removeGeofenceButton.setOnClickListener {
                 removeGeofence(locationAdapter.getItemAtPosition(bindingAdapterPosition))
             }
+            binding.mapSnapshot.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+
+                override fun onGlobalLayout() {
+                    binding.mapSnapshot.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    Log.i("LocationsFragment", "width: ${binding.mapSnapshot.width}, height: ${binding.mapSnapshot.height}")
+                }
+            })
         }
 
         override fun onClick(v: View?) {
@@ -285,11 +295,6 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {
             val locationRelation: LocationRelation = getItem(position)
             holder.bind(locationRelation, false)
-            /*
-            tracker.let {
-                holder.bind(locationTrigger, it.isSelected(locationTrigger.location.id.toString()))
-            }
-             */
         }
 
         override fun getItemKey(position: Int): String {
@@ -302,13 +307,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
     }
 
     companion object {
-
-        private const val SELECTION_ID: String = "LOCATION"
-        private const val REQUEST_TURN_DEVICE_LOCATION_ON: Int = 2
         private const val PAYLOAD_GEOFENCE_ENABLED: String = "payload_geofence_enabled"
-        private const val ACTION_ENABLE_GEOFENCE: Int = 0x03
-        private const val ACTION_DISABLE_GEOFENCE: Int = 0x04
-        private const val EXTRA_ACTION: String = "extra_action"
     }
 
     override fun onActionItemRemove() {

@@ -104,7 +104,8 @@
         <ImageView
             android:id="@+id/mapSnapshot"
             android:layout_width="match_parent"
-            android:layout_height="100dp"
+            android:layout_height="150dp"
+            android:adjustViewBounds="true"
             android:elevation="50dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

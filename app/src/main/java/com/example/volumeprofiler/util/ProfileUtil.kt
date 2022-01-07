@@ -11,7 +11,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.media.AudioManager.*
-import android.media.Ringtone
 import android.net.Uri
 import android.os.Build
 import android.os.Vibrator
@@ -21,6 +20,9 @@ import android.util.Log
 import com.example.volumeprofiler.entities.LocationRelation
 import java.lang.IllegalArgumentException
 import android.media.RingtoneManager.*
+import com.example.volumeprofiler.util.interruptionPolicy.*
+import java.util.*
+import kotlin.collections.ArrayList
 
 @Singleton
 class ProfileUtil @Inject constructor (
@@ -57,6 +59,31 @@ class ProfileUtil @Inject constructor (
         setRingtoneUri(profile.alarmSoundUri, TYPE_ALARM)
         setVibrateWhenRingingBehaviour(profile.isVibrateForCallsActive)
         sharedPreferencesUtil.writeCurrentProfileProperties(profile)
+    }
+
+    fun getDefaultProfile(): Profile {
+        return Profile(
+            "New profile",
+                UUID.randomUUID(),
+                audioManager.getStreamVolume(STREAM_MUSIC),
+                audioManager.getStreamVolume(STREAM_VOICE_CALL),
+                audioManager.getStreamVolume(STREAM_NOTIFICATION),
+                audioManager.getStreamVolume(STREAM_RING),
+                audioManager.getStreamVolume(STREAM_ALARM),
+                getDefaultRingtoneUri(TYPE_RINGTONE),
+                getDefaultRingtoneUri(TYPE_NOTIFICATION),
+                getDefaultRingtoneUri(TYPE_ALARM),
+                false,
+                notificationManager.currentInterruptionFilter,
+                audioManager.ringerMode,
+                audioManager.ringerMode,
+                0,
+                extractPriorityCategories(notificationManager.notificationPolicy.priorityCategories),
+                extractPrioritySenders(notificationManager.notificationPolicy.priorityCallSenders),
+                extractPrioritySenders(notificationManager.notificationPolicy.priorityMessageSenders),
+                extractSuppressedEffects(notificationManager.notificationPolicy.suppressedVisualEffects, MODE_SCREEN_ON),
+                extractSuppressedEffects(notificationManager.notificationPolicy.suppressedVisualEffects, MODE_SCREEN_OFF),
+        )
     }
 
     private fun setSilentMode(streamType: Int, flags: Int = 0): Unit {
@@ -125,25 +152,25 @@ class ProfileUtil @Inject constructor (
         return when {
             Build.VERSION_CODES.N > Build.VERSION.SDK_INT -> {
                 Policy (
-                    bitmaskOfListContents(profile.priorityCategories),
+                    bitmaskOf(profile.priorityCategories),
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders
                 )
             }
             Build.VERSION_CODES.N <= Build.VERSION.SDK_INT && Build.VERSION_CODES.R > Build.VERSION.SDK_INT -> {
                 Policy (
-                    bitmaskOfListContents(profile.priorityCategories),
+                    bitmaskOf(profile.priorityCategories),
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
-                    bitmaskOfListContents(profile.screenOnVisualEffects + profile.screenOffVisualEffects)
+                    bitmaskOf(profile.screenOnVisualEffects + profile.screenOffVisualEffects)
                 )
             }
             else -> {
                 Policy (
-                    bitmaskOfListContents(profile.priorityCategories),
+                    bitmaskOf(profile.priorityCategories),
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
-                    bitmaskOfListContents(profile.screenOnVisualEffects + profile.screenOffVisualEffects),
+                    bitmaskOf(profile.screenOnVisualEffects + profile.screenOffVisualEffects),
                     profile.primaryConversationSenders
                 )
             }
@@ -279,7 +306,7 @@ class ProfileUtil @Inject constructor (
             return audioManager.getStreamMaxVolume(streamType)
         }
 
-        private fun bitmaskOfListContents(list: List<Int>): Int {
+        private fun bitmaskOf(list: List<Int>): Int {
             var temp: Int = 0
             for (i in list) {
                 temp = temp or i

@@ -30,16 +30,16 @@ import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOffVisualR
 import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScreenOnVisualRestrictionsDialog
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.util.ProfileUtil
-import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
-import com.google.android.material.appbar.AppBarLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.Manifest.permission.*
+import android.content.Context
 import com.example.volumeprofiler.activities.ProfileDetailsActivity
+import com.example.volumeprofiler.util.ui.animations.AnimUtil
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
@@ -55,17 +55,15 @@ class InterruptionFilterFragment: Fragment() {
 
     private var callback: EditProfileActivityCallbacks? = null
 
-    private fun disableNestedScrolling(): Unit {
-        val appBar: AppBarLayout = requireActivity().findViewById(R.id.app_bar)
-        appBar.setExpanded(false, true)
-        ViewCompat.setNestedScrollingEnabled(binding.rootElement, false)
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = requireActivity() as EditProfileActivityCallbacks
+        detailsViewModel.currentFragmentTag.value = ProfileDetailsActivity.TAG_INTERRUPTIONS_FRAGMENT
     }
 
-    private fun startFavoriteContactsActivity(): Unit {
-        val intent: Intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        startActivity(intent)
+    override fun onDetach() {
+        super.onDetach()
+        callback = null
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -73,6 +71,33 @@ class InterruptionFilterFragment: Fragment() {
         binding.viewModel = detailsViewModel
         binding.lifecycleOwner = viewLifecycleOwner
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        collectEventsFlow()
+        disableNestedScrolling()
+        hideToolbarItems()
+
+        requireActivity().supportFragmentManager.setFragmentResultListener(
+            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, viewLifecycleOwner,
+            { requestKey, result ->
+                if (result.getString(PermissionExplanationDialog.EXTRA_PERMISSION) == ACCESS_NOTIFICATION_POLICY) {
+                    if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
+                        startNotificationPolicySettingsActivity()
+                    }
+                    else {
+                        callback?.onFragmentReplace(ProfileDetailsActivity.PROFILE_DETAILS_FRAGMENT)
+                    }
+                }
+            })
+        requireActivity().supportFragmentManager.setFragmentResultListener(PRIORITY_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
+            onPriorityResult(bundle)
+        }
+        requireActivity().supportFragmentManager.setFragmentResultListener(EFFECTS_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
+            onSuppressedEffectsResult(bundle)
+        }
     }
 
     private fun collectEventsFlow(): Unit {
@@ -91,44 +116,44 @@ class InterruptionFilterFragment: Fragment() {
                     else -> {
                         Log.i("EditProfileFragment", "unknown event")
                     }
-
                 }
             }.collect()
         }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        callback = requireActivity() as EditProfileActivityCallbacks
-        collectEventsFlow()
-        disableNestedScrolling()
-
-        requireActivity().supportFragmentManager.setFragmentResultListener(
-            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, viewLifecycleOwner,
-            { requestKey, result ->
-                if (result.getString(PermissionExplanationDialog.EXTRA_PERMISSION) == ACCESS_NOTIFICATION_POLICY) {
-                    if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
-                        val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                        startActivity(intent)
-                    }
-                    else {
-                        callback?.onFragmentReplace(ProfileDetailsActivity.PROFILE_FRAGMENT)
-                    }
-                }
-            })
-        requireActivity().supportFragmentManager.setFragmentResultListener(PRIORITY_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
-            onPriorityResult(bundle)
+    private fun hideToolbarItems(): Unit {
+        val binding = callback?.getBinding()!!
+        if (binding.menuEditNameButton.visibility != View.INVISIBLE) {
+            AnimUtil.scaleAnimation(binding.menuEditNameButton, false)
         }
-        requireActivity().supportFragmentManager.setFragmentResultListener(EFFECTS_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
-            onSuppressedEffectsResult(bundle)
+        if (binding.menuSaveChangesButton.visibility != View.INVISIBLE) {
+            AnimUtil.scaleAnimation(binding.menuSaveChangesButton, false)
         }
     }
 
-    override fun onDestroyView() {
-        callback = null
-        super.onDestroyView()
+    private fun disableNestedScrolling(): Unit {
+        val activityBinding = callback?.getBinding()!!
+        activityBinding.appBar.setExpanded(false, true)
+        ViewCompat.setNestedScrollingEnabled(binding.rootElement, false)
+    }
+
+    private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
+        return when (type) {
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(
+                ArrayList(detailsViewModel.screenOnVisualEffects.value)
+            )
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(
+                ArrayList(detailsViewModel.screenOffVisualEffects.value)
+            )
+            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(
+                ArrayList(detailsViewModel.priorityCategories.value)
+            )
+            else -> ProfileNameInputDialog.newInstance(detailsViewModel.title.value)
+        }
+    }
+
+    private fun showDialog(type: ProfileDetailsViewModel.DialogType): Unit {
+        getFragmentInstance(type).show(requireActivity().supportFragmentManager, null)
     }
 
     @TargetApi(Build.VERSION_CODES.R)
@@ -154,27 +179,22 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.show()
     }
 
-    private fun displayDialogWindow(fragment: DialogFragment): Unit {
-        fragment.show(requireActivity().supportFragmentManager, null)
-    }
-
-    private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
-        return when (type) {
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> ScreenOnVisualRestrictionsDialog.newInstance(
-                ArrayList(detailsViewModel.screenOnVisualEffects.value)
-            )
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> ScreenOffVisualRestrictionsDialog.newInstance(
-                ArrayList(detailsViewModel.screenOffVisualEffects.value)
-            )
-            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityInterruptionsSelectionDialog.newInstance(
-                ArrayList(detailsViewModel.priorityCategories.value)
-            )
-            else -> ProfileNameInputDialog.newInstance(detailsViewModel.title.value)
+    private fun showPopupWindow(category: Int): Unit {
+        val view: View? = when (category) {
+            PRIORITY_CATEGORY_MESSAGES -> binding.exceptionsMessagesLayout
+            PRIORITY_CATEGORY_CALLS -> binding.exceptionsCallsLayout
+            PRIORITY_CATEGORY_CONVERSATIONS -> binding.exceptionsConversationsLayout
+            else -> null
         }
-    }
-
-    private fun showDialog(type: ProfileDetailsViewModel.DialogType): Unit {
-        displayDialogWindow(getFragmentInstance(type))
+        val popupMenu: PopupMenu = PopupMenu(requireContext(), view)
+        if (category == PRIORITY_CATEGORY_CONVERSATIONS) {
+            if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
+                showConversationsPopupWindow(popupMenu)
+            }
+        }
+        else {
+            showExceptionsPopupWindow(popupMenu, category)
+        }
     }
 
     private fun showExceptionsPopupWindow(popupMenu: PopupMenu, category: Int): Unit {
@@ -223,29 +243,18 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.show()
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (!profileUtil.isNotificationPolicyAccessGranted()) {
-            ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
+    private fun startFavoriteContactsActivity(): Unit {
+        val intent: Intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
+        startActivity(intent)
     }
 
-    private fun showPopupWindow(category: Int): Unit {
-        val view: View? = when (category) {
-            PRIORITY_CATEGORY_MESSAGES -> binding.exceptionsMessagesLayout
-            PRIORITY_CATEGORY_CALLS -> binding.exceptionsCallsLayout
-            PRIORITY_CATEGORY_CONVERSATIONS -> binding.exceptionsConversationsLayout
-            else -> null
+    private fun startNotificationPolicySettingsActivity(): Unit {
+        val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val popupMenu: PopupMenu = PopupMenu(requireContext(), view)
-        if (category == PRIORITY_CATEGORY_CONVERSATIONS) {
-            if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
-                showConversationsPopupWindow(popupMenu)
-            }
-        }
-        else {
-            showExceptionsPopupWindow(popupMenu, category)
-        }
+        startActivity(intent)
     }
 
     private fun onPriorityResult(bundle: Bundle): Unit {

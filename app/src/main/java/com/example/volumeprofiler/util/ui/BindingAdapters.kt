@@ -159,7 +159,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("title", "currentFragmentTitle", requireAll = false)
     fun bindToolbarTitle(view: CollapsingToolbarLayout, title: String, currentFragmentTitle: String): Unit {
-        view.title = if (currentFragmentTitle == ProfileDetailsActivity.TAG_PROFILE_FRAGMENT) title else "Do Not Disturb"
+        view.title = title
     }
 
     @JvmStatic

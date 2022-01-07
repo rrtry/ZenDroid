@@ -70,7 +70,7 @@ class ProfileDetailsViewModel @Inject constructor(
 
         data class StartRingtonePlayback(val streamType: Int, val volume: Int): Event()
         data class StopRingtonePlayback(val streamType: Int): Event()
-        data class SaveChangesEvent(val profile: Profile, val shouldUpdate: Boolean): Event()
+        data class ApplyChangesEvent(val profile: Profile, val shouldUpdate: Boolean): Event()
         data class ShowDialogFragment(val dialogType: DialogType): Event()
         data class ChangeRingerMode(val streamType: Int, val showToast: Boolean, val vibrate: Boolean): Event()
         data class GetDefaultRingtoneUri(val type: Int): Event()
@@ -100,7 +100,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    val title: MutableStateFlow<String> = MutableStateFlow("")
+    val title: MutableStateFlow<String> = MutableStateFlow("Priority only")
     val currentFragmentTag: MutableStateFlow<String> = MutableStateFlow(TAG_PROFILE_FRAGMENT)
     val mediaVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_MUSIC_DEFAULT_VOLUME)
     val callVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_VOICE_CALL_DEFAULT_VOLUME)
@@ -249,7 +249,7 @@ class ProfileDetailsViewModel @Inject constructor(
         )
     }
 
-    private fun shouldUpdateProfile(): Boolean {
+    private fun updateProfile(): Boolean {
         return profileUUID.value != null
     }
 
@@ -257,14 +257,14 @@ class ProfileDetailsViewModel @Inject constructor(
         return streamsUnlinked.value
     }
 
-    fun onSaveChangesButtonClick(): Unit {
-        viewModelScope.launch {
-            activityEventChannel.send(Event.SaveChangesEvent(getProfile(),shouldUpdateProfile()))
-        }
-    }
-
     private fun setProfileUUID(uuid : UUID) {
         profileUUID.value = uuid
+    }
+
+    fun onSaveChangesButtonClick(): Unit {
+        viewModelScope.launch {
+            activityEventChannel.send(Event.ApplyChangesEvent(getProfile(),updateProfile()))
+        }
     }
 
     fun onVibrateForCallsLayoutClick(): Unit {
@@ -484,10 +484,9 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     private fun onStreamMuted(streamType: Int, showToast: Boolean, vibrate: Boolean): Unit {
-        if (streamType == STREAM_NOTIFICATION) {
-            notificationVolume.value = 0
-        } else if (streamType == STREAM_RING) {
-            ringVolume.value = 0
+        when (streamType) {
+            STREAM_NOTIFICATION -> notificationVolume.value = 0
+            STREAM_RING -> ringVolume.value = 0
         }
         viewModelScope.launch {
             eventChannel.send(Event.ChangeRingerMode(streamType, showToast, vibrate))
@@ -509,11 +508,9 @@ class ProfileDetailsViewModel @Inject constructor(
                     ringerMode.value = RINGER_MODE_NORMAL
                 }
             }
-            if (streamType == STREAM_NOTIFICATION) {
-                previousNotificationVolume = value
-
-            } else if (streamType == STREAM_RING) {
-                previousRingerVolume = value
+            when (streamType) {
+                STREAM_NOTIFICATION -> previousNotificationVolume = value
+                STREAM_RING -> previousRingerVolume = value
             }
             viewModelScope.launch {
                 eventChannel.send(Event.StreamVolumeChanged(streamType, value))

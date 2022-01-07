@@ -3,7 +3,7 @@ package com.example.volumeprofiler.util
 import android.os.Handler
 import android.os.HandlerThread
 
-object DatabaseHandler {
+object DatabaseQueryHandler {
 
     private val sHandlerThread = HandlerThread("DatabaseHandler")
     private val sHandler: Handler

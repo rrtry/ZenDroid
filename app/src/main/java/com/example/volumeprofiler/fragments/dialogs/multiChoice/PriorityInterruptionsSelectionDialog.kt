@@ -20,7 +20,8 @@ class PriorityInterruptionsSelectionDialog: BaseMultiChoiceDialog<Int>() {
         1 to PRIORITY_CATEGORY_MEDIA,
         2 to PRIORITY_CATEGORY_SYSTEM,
         3 to PRIORITY_CATEGORY_REMINDERS,
-        4 to PRIORITY_CATEGORY_EVENTS) else arrayMapOf(
+        4 to PRIORITY_CATEGORY_EVENTS)
+    else arrayMapOf(
         0 to PRIORITY_CATEGORY_REMINDERS,
         1 to PRIORITY_CATEGORY_EVENTS)
 

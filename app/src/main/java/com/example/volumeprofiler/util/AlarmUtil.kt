@@ -42,8 +42,8 @@ class AlarmUtil @Inject constructor (
 
     fun scheduleAlarm(alarm: Alarm, profile: Profile, showToast: Boolean = false): Unit {
         val pendingIntent: PendingIntent = getAlarmPendingIntent(alarm, profile, true)!!
-        val timestamp: Long = toEpochMilli(getNextAlarmTime(alarm))
-        setAlarm(timestamp, pendingIntent)
+        val millis: Long = toEpochMilli(getNextAlarmTime(alarm))
+        setAlarm(millis, pendingIntent)
         if (showToast) {
             Toast.makeText(context, formatRemainingTimeUtilAlarm(alarm), Toast.LENGTH_LONG)
                 .show()
@@ -242,7 +242,7 @@ class AlarmUtil @Inject constructor (
             }
         }
 
-        fun sortAlarms(list: List<AlarmRelation>): List<AlarmRelation> {
+        fun sortInstances(list: List<AlarmRelation>): List<AlarmRelation> {
             return list.sortedWith { previous, next ->
                 val prevAlarm: Alarm = previous.alarm
                 val nextAlarm: Alarm = next.alarm

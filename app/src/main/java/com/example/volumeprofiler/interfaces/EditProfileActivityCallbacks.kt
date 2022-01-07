@@ -6,5 +6,7 @@ interface EditProfileActivityCallbacks {
 
     fun onFragmentReplace(fragment: Int): Unit
 
-    fun onPopBackStack(): Unit
+    fun getBinding(): CreateProfileActivityBinding
+
+    fun updateMediaUris(): Unit
 }

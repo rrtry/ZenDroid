@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.fragments
 
 import android.app.Activity
-import android.app.ActivityOptions
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -61,7 +60,6 @@ class SchedulerFragment: Fragment() {
     private var _binding: AlarmsFragmentBinding? = null
     private val binding: AlarmsFragmentBinding get() = _binding!!
 
-    private lateinit var alarmActivityLauncher: ActivityResultLauncher<Intent>
     private lateinit var calendarActivityLauncher: ActivityResultLauncher<Intent>
 
     private var callback: PermissionRequestCallback? = null
@@ -87,17 +85,6 @@ class SchedulerFragment: Fragment() {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as PermissionRequestCallback
-        alarmActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == Activity.RESULT_OK) {
-                val alarm: Alarm = it.data?.getParcelableExtra(AlarmDetailsActivity.EXTRA_ALARM)!!
-                val shouldUpdate: Boolean = it.data?.getBooleanExtra(AlarmDetailsActivity.EXTRA_UPDATE_FLAG, false)!!
-                if (shouldUpdate) {
-                    viewModel.updateAlarm(alarm)
-                } else {
-                    viewModel.addAlarm(alarm)
-                }
-            }
-        }
         calendarActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
                 val event: Event = it.data?.getParcelableExtra(CalendarEventDetailsActivity.EXTRA_EVENT)!!
@@ -120,7 +107,6 @@ class SchedulerFragment: Fragment() {
     override fun onDetach() {
         super.onDetach()
         callback = null
-        alarmActivityLauncher.unregister()
         calendarActivityLauncher.unregister()
         requireActivity().unregisterReceiver(localeChangeReceiver)
     }
@@ -140,7 +126,7 @@ class SchedulerFragment: Fragment() {
                 showWarningDialog()
             }
         }
-        initRecyclerView()
+        setRecyclerView()
         return view
     }
 
@@ -155,7 +141,7 @@ class SchedulerFragment: Fragment() {
                 }
                 launch {
                     viewModel.alarmsFlow.map {
-                        AlarmUtil.sortAlarms(it)
+                        AlarmUtil.sortInstances(it)
                     }.collect {
                         updateAlarmAdapter(it)
                     }
@@ -167,7 +153,6 @@ class SchedulerFragment: Fragment() {
                 }
                 launch {
                     eventBus.sharedFlow.collectLatest {
-                        /*
                         if (it is EventBus.Event.UpdateAlarmState) {
                             val id: Int? = alarmAdapter.getItemPosition(it.alarm.id)
                             if (id != null) {
@@ -177,8 +162,6 @@ class SchedulerFragment: Fragment() {
                                 })
                             }
                         }
-
-                         */
                     }
                 }
             }
@@ -190,7 +173,7 @@ class SchedulerFragment: Fragment() {
         _binding = null
     }
 
-    private fun initRecyclerView(): Unit {
+    private fun setRecyclerView(): Unit {
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = ConcatAdapter(alarmAdapter, eventAdapter)
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
@@ -201,6 +184,7 @@ class SchedulerFragment: Fragment() {
         val fragmentManager = requireActivity().supportFragmentManager
         fragment.show(fragmentManager, null)
     }
+
     /*
     @Suppress("unchecked_cast")
     private fun initSelectionTracker(savedInstanceState: Bundle?): Unit {
@@ -216,15 +200,12 @@ class SchedulerFragment: Fragment() {
     }
     */
 
-    private fun startAlarmDetailsActivity(
-        alarmRelation: AlarmRelation? = null,
-        activityOptions: ActivityOptionsCompat? = null): Unit {
+    private fun startAlarmDetailsActivity(alarmRelation: AlarmRelation? = null, activityOptions: ActivityOptionsCompat? = null): Unit {
         val intent: Intent = Intent(requireContext(), AlarmDetailsActivity::class.java)
         if (alarmRelation != null) {
             intent.putExtra(AlarmDetailsActivity.EXTRA_ALARM_PROFILE_RELATION, alarmRelation)
         }
-        requireActivity().startActivityFromFragment(
-            this, intent, 1, activityOptions?.toBundle())
+        startActivity(intent, activityOptions?.toBundle())
     }
 
     private fun updateAlarmState(position:Int, scheduled: Int): Unit {

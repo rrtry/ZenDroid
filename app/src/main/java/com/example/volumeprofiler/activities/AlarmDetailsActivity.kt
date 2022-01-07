@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.activities
 
-import android.app.Activity
 import android.content.Intent
 import android.Manifest.permission.*
 import android.content.BroadcastReceiver
@@ -21,12 +20,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.res.ResourcesCompat
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.*
-import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
 import com.example.volumeprofiler.databinding.CreateAlarmLayoutBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.fragments.TimePickerFragment
@@ -83,20 +81,25 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-        setBinding()
         with(window) {
-
-            binding.clockView.transitionName = SHARED_TRANSITION_CLOCK
-            binding.enableAlarmSwitch.transitionName = SHARED_TRANSITION_SWITCH
-
             sharedElementEnterTransition = TransitionSet().apply {
                 addTransition(ChangeBounds())
+                addTransition(ChangeTransform())
             }
             enterTransition = TransitionSet().apply {
+
+                addTransition(Slide(Gravity.BOTTOM))
                 addTransition(Fade())
+
+                excludeTarget(R.id.action_bar_container, true)
+                excludeTarget(android.R.id.statusBarBackground, true)
+                excludeTarget(android.R.id.navigationBarBackground, true)
             }
+            allowEnterTransitionOverlap = true
         }
+
         calendarPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             detailsViewModel.readCalendarPermissionGranted.value = it
         }
@@ -117,6 +120,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
                 }
             }
         }
+        setBinding()
         setActionBar()
         setFragmentResultListeners()
         collectEventsFlow()
@@ -148,10 +152,10 @@ class AlarmDetailsActivity: AppCompatActivity() {
         if (menu != null) {
             val item: MenuItem = menu.findItem(R.id.saveChangesButton)
             return if (intent.extras != null) {
-                setSaveIcon(item)
+                ViewUtil.setActionMenuSaveIcon(this, item)
                 true
             } else {
-                setAddIcon(item)
+                ViewUtil.setActionMenuAddIcon(this, item)
                 true
             }
         }
@@ -160,16 +164,6 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     private fun getAlarmRelation(): AlarmRelation? {
         return intent.getParcelableExtra(EXTRA_ALARM_PROFILE_RELATION) as? AlarmRelation
-    }
-
-    private fun setAddIcon(item: MenuItem): Unit {
-        val drawable = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_add, null)
-        item.icon = drawable
-    }
-
-    private fun setSaveIcon(item: MenuItem): Unit {
-        val drawable = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_menu_save, null)
-        item.icon = drawable
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -194,8 +188,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
         if (updateAlarm && alarm.isScheduled == 1) {
             when {
                 profileUtil.grantedRequiredPermissions(profile) -> {
-                    scheduleAlarm()
-                    setSuccessfulResult()
+                    applyChanges()
                 }
                 profileUtil.shouldRequestPhonePermission(profile) -> {
                     phonePermissionLauncher.launch(READ_PHONE_STATE)
@@ -205,7 +198,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
                 }
             }
         } else {
-            setSuccessfulResult()
+            applyChanges()
         }
     }
 
@@ -224,11 +217,11 @@ class AlarmDetailsActivity: AppCompatActivity() {
         binding = CreateAlarmLayoutBinding.inflate(layoutInflater)
         binding.viewModel = detailsViewModel
         binding.lifecycleOwner = this
-        setContentView(binding.root)
-    }
 
-    private fun scheduleAlarm(): Unit {
-        alarmUtil.scheduleAlarm(detailsViewModel.getAlarm(), detailsViewModel.getProfile(), showToast = true)
+        binding.clockView.transitionName = SHARED_TRANSITION_CLOCK
+        binding.enableAlarmSwitch.transitionName = SHARED_TRANSITION_SWITCH
+
+        setContentView(binding.root)
     }
 
     private fun setActionBar(): Unit {
@@ -324,23 +317,37 @@ class AlarmDetailsActivity: AppCompatActivity() {
         fragment.show(supportFragmentManager, null)
     }
 
-    private fun setSuccessfulResult(): Unit {
-        val intent: Intent = Intent().apply {
-            putExtra(EXTRA_ALARM, detailsViewModel.getAlarm())
-            putExtra(EXTRA_UPDATE_FLAG, detailsViewModel.getAlarmId() != null)
+    private fun applyChanges(): Unit {
+        lifecycleScope.launch {
+            val alarm: Alarm = detailsViewModel.getAlarm()
+            val update: Boolean = detailsViewModel.getAlarmId() != null
+            val scheduled: Boolean = alarm.isScheduled == 1
+            if (update) {
+                detailsViewModel.updateAlarm(detailsViewModel.getAlarm())
+            } else {
+                detailsViewModel.addAlarm(detailsViewModel.getAlarm())
+            }
+            if (scheduled) {
+                scheduleAlarm()
+            }
+        }.invokeOnCompletion {
+            ActivityCompat.finishAfterTransition(this)
         }
-        setResult(Activity.RESULT_OK, intent)
-        finish()
     }
 
-    private fun setCancelledResult(): Unit {
-        setResult(Activity.RESULT_CANCELED)
-        finish()
+    private fun scheduleAlarm(): Unit {
+        alarmUtil.scheduleAlarm(
+            detailsViewModel.getAlarm(),
+            detailsViewModel.getProfile())
+    }
+
+    private fun revertChanges(): Unit {
+        ActivityCompat.finishAfterTransition(this)
     }
 
     override fun onBackPressed() {
         if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
-            setCancelledResult()
+            revertChanges()
         } else {
             Toast.makeText(this, "Press back button again to dismiss changes", Toast.LENGTH_SHORT).show()
         }

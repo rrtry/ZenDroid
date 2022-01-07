@@ -16,12 +16,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import android.Manifest.permission.*
-import android.annotation.SuppressLint
-import android.content.Context
-import android.media.AudioManager
 import android.os.Build
-import android.media.AudioManager.*
-import android.util.Log
 import android.view.Window
 import android.transition.Fade
 import com.example.volumeprofiler.entities.LocationRelation
@@ -34,8 +29,6 @@ import com.example.volumeprofiler.util.*
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), PermissionRequestCallback {
 
-    private lateinit var viewPager: ViewPager2
-
     @Inject
     lateinit var pagerAdapter: MainActivityPagerAdapter
 
@@ -45,19 +38,20 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     @Inject
     lateinit var geofenceUtil: GeofenceUtil
 
+    private lateinit var viewPager: ViewPager2
     private lateinit var profilePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<Array<out String>>
 
     private var profile: Profile? = null
     private var locationRelation: LocationRelation? = null
 
-    @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+        window.exitTransition = Fade(Fade.OUT)
+        window.enterTransition = Fade(Fade.IN)
+
         super.onCreate(savedInstanceState)
-        with(window) {
-            requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-            exitTransition = Fade()
-        }
 
         setContentView(R.layout.main_activity)
         viewPager = findViewById(R.id.pager)
@@ -65,7 +59,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         setupTabLayout()
 
         supportFragmentManager.setFragmentResultListener(PERMISSION_REQUEST_KEY, this,
-            { requestKey, result ->
+            { _, result ->
                 val permission: String = result.getString(EXTRA_PERMISSION, "")
                 val requestMultiplePermissions: Boolean = result.getBoolean(EXTRA_REQUEST_MULTIPLE_PERMISSIONS, false)
                 if (result.getBoolean(EXTRA_RESULT_OK)) {
@@ -85,15 +79,16 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             when {
                 !geofenceUtil.locationAccessGranted() && !profileUtil.grantedRequiredPermissions(locationRelation!!)-> {
 
+                    val snackbar: Snackbar = Snackbar.make(viewPager, "", Snackbar.LENGTH_LONG)
+
                     if (profileUtil.shouldRequestPhonePermission(locationRelation!!)) {
-                        val snackbar: Snackbar = Snackbar.make(viewPager, "Phone and location permissions required", Snackbar.LENGTH_LONG)
+                        snackbar.setText("Phone and location permissions required")
                         setAction(snackbar, true)
-                        snackbar.show()
                     } else {
-                        val snackbar: Snackbar = Snackbar.make(viewPager, "Location permission required", Snackbar.LENGTH_LONG)
+                        snackbar.setText("Location permission required")
                         setAction(snackbar, false)
-                        snackbar.show()
                     }
+                    snackbar.show()
                 }
                 !geofenceUtil.locationAccessGranted() -> {
                     if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
@@ -102,25 +97,14 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
                         ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
                     }
                 }
-                profileUtil.shouldRequestPhonePermission(locationRelation!!) -> {
-                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                }
-                !profileUtil.grantedSystemPreferencesAccess() -> {
-                    sendSystemPreferencesAccessNotification(this, profileUtil)
-                }
-                else -> {
-                    Snackbar.make(viewPager, "Required permissions were granted", Snackbar.LENGTH_LONG)
-                        .show()
-                }
+                profileUtil.shouldRequestPhonePermission(locationRelation!!) -> ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
+                !profileUtil.grantedSystemPreferencesAccess() -> sendSystemPreferencesAccessNotification(this, profileUtil)
             }
         }
         profilePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             when {
                 it -> {
-                    if (profileUtil.grantedSystemPreferencesAccess()) {
-                        Snackbar.make(viewPager, "Phone permission was granted", Snackbar.LENGTH_LONG)
-                            .show()
-                    } else {
+                    if (!profileUtil.grantedSystemPreferencesAccess()) {
                         sendSystemPreferencesAccessNotification(this, profileUtil)
                     }
                 }

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.database.Cursor
 import android.os.IBinder
 import android.provider.CalendarContract
-import android.util.Log
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.database.repositories.EventRepository
 import com.example.volumeprofiler.entities.*
@@ -78,7 +77,6 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
             }
             QUERY_PREVIOUS_INSTANCES_TOKEN -> {
                 cursor?.use {
-                    Log.i("SchedulerService", "cursor count: ${cursor.count}")
                     while (it.moveToNext()) {
                         val begin: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.BEGIN))
                         val end: Long = it.getLong(it.getColumnIndex(CalendarContract.Instances.END))
@@ -132,7 +130,7 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
         val alarms: List<AlarmRelation>? = repository.getEnabledAlarms()
         if (!alarms.isNullOrEmpty()) {
 
-            for (i in AlarmUtil.sortAlarms(alarms)) {
+            for (i in AlarmUtil.sortInstances(alarms)) {
 
                 val alarm: Alarm = i.alarm
                 val profile: Profile = i.profile

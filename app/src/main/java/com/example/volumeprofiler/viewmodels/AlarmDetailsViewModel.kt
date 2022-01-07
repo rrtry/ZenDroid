@@ -1,6 +1,7 @@
 package com.example.volumeprofiler.viewmodels
 
 import androidx.lifecycle.*
+import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
@@ -18,6 +19,7 @@ import kotlin.collections.ArrayList
 @HiltViewModel
 class AlarmDetailsViewModel @Inject constructor(
         private val profileRepository: ProfileRepository,
+        private val alarmRepository: AlarmRepository
 ): ViewModel() {
 
     private var areArgsSet: Boolean = false
@@ -63,16 +65,6 @@ class AlarmDetailsViewModel @Inject constructor(
     fun onDaysSelectButtonClick(): Unit {
         viewModelScope.launch {
             channel.send(Event.ShowDialogEvent(DialogType.DAYS_SELECTION))
-        }
-    }
-
-    fun onQueryCalendarButtonClick(): Unit {
-        viewModelScope.launch {
-            if (readCalendarPermissionGranted.value) {
-                channel.send(Event.QueryAvailableCalendarsEvent)
-            } else {
-                channel.send(Event.RequestReadCalendarPermission)
-            }
         }
     }
 
@@ -137,5 +129,23 @@ class AlarmDetailsViewModel @Inject constructor(
     override fun onCleared(): Unit {
         super.onCleared()
         channel.close()
+    }
+
+    fun addAlarm(alarm: Alarm): Unit {
+        viewModelScope.launch {
+            alarmRepository.addAlarm(alarm)
+        }
+    }
+
+    fun removeAlarm(alarm: Alarm): Unit {
+        viewModelScope.launch {
+            alarmRepository.removeAlarm(alarm)
+        }
+    }
+
+    fun updateAlarm(alarm: Alarm): Unit {
+        viewModelScope.launch {
+            alarmRepository.updateAlarm(alarm)
+        }
     }
 }

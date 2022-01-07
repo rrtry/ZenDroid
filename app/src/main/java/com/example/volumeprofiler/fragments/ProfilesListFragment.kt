@@ -6,7 +6,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
@@ -67,10 +66,14 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     @Inject
     lateinit var eventBus: EventBus
 
-    private val profileAdapter: ProfileAdapter = ProfileAdapter()
+    private val profileAdapter: ProfileAdapter by lazy {
+        ProfileAdapter()
+    }
+
     private var selectedItems: ArrayList<String> = arrayListOf()
+
     private lateinit var tracker: SelectionTracker<String>
-    private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
+    private lateinit var profileActivityLauncher: ActivityResultLauncher<Intent>
     private lateinit var positionMap: ArrayMap<UUID, Int>
 
     private val viewModel: ProfilesListViewModel by viewModels()
@@ -86,11 +89,10 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as PermissionRequestCallback
-        activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        profileActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
                 val profile: Profile = it.data?.getParcelableExtra(ProfileDetailsActivity.EXTRA_PROFILE)!!
-                val update: Boolean = it.data?.getBooleanExtra(ProfileDetailsActivity.EXTRA_SHOULD_UPDATE, false)!!
-                Log.i("ProfilesListFragment", "ringerMode: ${profile.ringerMode}")
+                val update: Boolean = it.data?.getBooleanExtra(ProfileDetailsActivity.EXTRA_UPDATE, false)!!
                 if (update) {
                     viewModel.updateProfile(profile)
                 } else {
@@ -103,7 +105,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onDetach() {
         super.onDetach()
         callback = null
-        activityResultLauncher.unregister()
+        profileActivityLauncher.unregister()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
@@ -165,12 +167,12 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         outState.putParcelable(EXTRA_RV_STATE, binding.recyclerView.layoutManager?.onSaveInstanceState())
     }
 
-    private fun startDetailsActivity(profile: Profile?): Unit {
+    private fun startProfileDetailsActivity(profile: Profile? = null): Unit {
         val intent: Intent = Intent(requireContext(), ProfileDetailsActivity::class.java)
         if (profile != null) {
             intent.putExtra(ProfileDetailsActivity.EXTRA_PROFILE, profile)
         }
-        activityResultLauncher.launch(intent)
+        profileActivityLauncher.launch(intent)
     }
 
     private fun setPositionMap(): Unit {
@@ -215,7 +217,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.createProfileButton.setOnClickListener {
-            startDetailsActivity(null)
+            startProfileDetailsActivity()
         }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -246,8 +248,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
                                 } else {
                                     list
                                 }
-                            }
-                            .onEach { list -> sharedViewModel.showDialog.value = list.isEmpty()
+                            }.onEach { list -> sharedViewModel.showDialog.value = list.isEmpty()
                                 updateUI(list)
                             }.collect()
                 }
@@ -307,7 +308,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         else {
             binding.placeHolderText.visibility = View.VISIBLE
         }
-
         if (isSearchQueryNotEmpty()) {
             profileAdapter.submitFilteredList(profiles)
             submitFullListToAdapter(profiles, false)
@@ -382,7 +382,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             adapterBinding.expandButton.animate().rotation(0f).start()
         }
 
-        private fun setCheckBoxText(profile: Profile): Unit {
+        private fun setProfileTitle(profile: Profile): Unit {
             adapterBinding.checkBox.text = profile.title
         }
 
@@ -420,7 +420,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
             adapterBinding.editProfileButton.setOnClickListener {
                 when {
                     profileUtil.grantedRequiredPermissions(profile) -> {
-                        startDetailsActivity(profile)
+                        startProfileDetailsActivity(profile)
                     }
                     profileUtil.shouldRequestPhonePermission(profile) -> {
                         callback?.requestProfilePermissions(profile)
@@ -438,7 +438,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         fun bind(profile: Profile, isSelected: Boolean, animate: Boolean): Unit {
             setSelectedState(isSelected, animate)
             setEnabledState(profile)
-            setCheckBoxText(profile)
+            setProfileTitle(profile)
             setListeners(profile)
         }
 
@@ -572,9 +572,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String> {
         private const val EXTRA_SELECTION: String = "extra_selection"
         private const val EXTRA_QUERY: String = "extra_query"
         private const val EXTRA_RV_STATE: String = "abs_position"
-        private const val NO_ACTION: Int = 0x00
-        private const val ACTION_OPEN_EDITOR: Int = 0x01
-        private const val ACTION_APPLY_PROFILE: Int = 0x02
 
     }
 

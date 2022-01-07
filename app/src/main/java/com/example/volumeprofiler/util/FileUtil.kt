@@ -1,9 +1,7 @@
 package com.example.volumeprofiler.util
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import android.os.Environment
 import android.util.Log
 import java.io.File
@@ -11,13 +9,13 @@ import java.io.FileOutputStream
 import java.util.*
 
 private fun resolveAbsolutePath(context: Context, uuid: UUID): String {
-    return "${getAppSpecificAlbumStorageDir(context).absolutePath}/$uuid.jpeg"
+    return "${getAppSpecificAlbumStorageDir(context).absolutePath}/$uuid.png"
 }
 
 fun writeCompressedBitmap(context: Context, uuid: UUID, bitmap: Bitmap): Unit {
     val file: File = File(resolveAbsolutePath(context, uuid))
     val out: FileOutputStream = FileOutputStream(file)
-    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, out)
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
     out.flush()
     out.close()
 }

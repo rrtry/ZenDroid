@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.ln
@@ -405,9 +406,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun addCircle(): Unit {
-        if (circle != null) {
-            circle!!.remove()
-        }
+        circle?.remove()
         circle = mMap.addCircle(CircleOptions()
                 .center(viewModel.getLatLng()!!)
                 .radius(viewModel.getRadius().toDouble())
@@ -416,9 +415,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun addMarker(): Unit {
-        if (marker != null) {
-            marker!!.remove()
-        }
+        marker?.remove()
         marker = mMap.addMarker(MarkerOptions().position(viewModel.getLatLng()!!).title(viewModel.getAddress()))
     }
 
@@ -619,23 +616,31 @@ class MapsActivity : AppCompatActivity(),
                         sendSystemPreferencesAccessNotification(this, profileUtil)
                     }
                     else -> {
-                        returnResultToCallingActivity(geofence, updateExisting)
+                        applyChanges(geofence, updateExisting)
                     }
                 }
         } else {
-            returnResultToCallingActivity(geofence, updateExisting)
+            applyChanges(geofence, updateExisting)
         }
     }
 
-    private fun returnResultToCallingActivity(geofence: Location, updateExisting: Boolean): Unit {
+    private fun applyChanges(geofence: Location, updateExisting: Boolean): Unit {
         val intent: Intent = Intent().apply {
             putExtra(EXTRA_LOCATION, geofence)
             putExtra(FLAG_UPDATE_EXISTING, updateExisting)
         }
         setResult(RESULT_OK, intent)
+        takeMapSnapshotAndFinish(geofence.previewImageId)
+    }
+
+    private fun takeMapSnapshotAndFinish(id: UUID): Unit {
+        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(
+            viewModel.getLatLng()!!, getZoomFactor()
+        )))
+        mMap.clear()
         mMap.snapshot {
             if (it != null) {
-                writeCompressedBitmap(this, geofence.previewImageId, it)
+                writeCompressedBitmap(this, id, it)
             }
             finish()
         }
