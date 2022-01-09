@@ -3,7 +3,8 @@ package com.example.volumeprofiler.fragments.dialogs.multiChoice
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
-import android.widget.ListView
+import android.util.Log
+import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
 
@@ -13,7 +14,7 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
     protected abstract val arrayRes: Int
     protected abstract val categories: List<Int>
 
-    private var categoriesMask: Int = 0
+    protected var categoriesMask: Int = 0
     private var argsSet: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +39,7 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
             argsSet = true
         }
 
-        val listView: ListView = (dialog as AlertDialog).listView
+        val listView: ListView = getListView()
         for ((index, category) in categories.withIndex()) {
             if ((categoriesMask and category) != 0) {
                 listView.setItemChecked(index, true)
@@ -60,6 +61,7 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
                     } else if ((categoriesMask and category) != 0) {
                         categoriesMask = categoriesMask and category.inv()
                     }
+                    (getListView().adapter as ArrayAdapter<*>).notifyDataSetChanged()
                 }
                 .setPositiveButton(R.string.apply)
                 { _, _ ->
@@ -73,11 +75,14 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
         } ?: throw IllegalStateException("Activity cannot be null")
     }
 
+    protected fun getListView(): ListView {
+        return (dialog as AlertDialog).listView
+    }
+
     abstract fun applyChanges(mask: Int): Unit
 
     companion object {
 
-        const val EXTRA_MODE: String = "extra_mode"
         const val EXTRA_CATEGORIES: String = "extra_categories"
         const val EXTRA_SET_ARGUMENTS: String = "extra_set_arguments"
 

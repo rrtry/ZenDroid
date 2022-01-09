@@ -4,6 +4,7 @@ import android.annotation.TargetApi
 import android.app.NotificationManager.Policy.*
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.fragments.InterruptionFilterFragment
@@ -23,7 +24,6 @@ class SuppressedEffectsOffDialog : BasePolicyPreferencesDialog() {
         parentFragmentManager.setFragmentResult(
             InterruptionFilterFragment.EFFECTS_REQUEST_KEY, Bundle().apply {
                 putInt(EXTRA_CATEGORIES, mask)
-                putInt(EXTRA_MODE, 0)
             })
     }
 
@@ -32,7 +32,7 @@ class SuppressedEffectsOffDialog : BasePolicyPreferencesDialog() {
         fun newInstance(profile: Profile): SuppressedEffectsOffDialog {
             return SuppressedEffectsOffDialog().apply {
                 arguments = Bundle().apply {
-                    putInt(EXTRA_CATEGORIES, profile.screenOffVisualEffects)
+                    putInt(EXTRA_CATEGORIES, profile.suppressedVisualEffects)
                 }
             }
         }

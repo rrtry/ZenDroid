@@ -341,7 +341,7 @@
 
                 <Switch
                     android:id="@+id/blockWhenScreenIsOnSwitch"
-                    suppressedEffectScreenOn="@{viewModel.screenOnVisualEffects}"
+                    suppressedEffectScreenOn="@{viewModel.suppressedVisualEffects}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/blockWhenScreenIsOnTitle"
@@ -383,7 +383,7 @@
 
                 <Switch
                     android:id="@+id/blockWhenScreenIsOffSwitch"
-                    suppressedEffectScreenOff="@{viewModel.screenOffVisualEffects}"
+                    suppressedEffectScreenOff="@{viewModel.suppressedVisualEffects}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/blockWhenScreenIsOffTitle"

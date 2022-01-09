@@ -20,7 +20,6 @@ import android.util.Log
 import com.example.volumeprofiler.entities.LocationRelation
 import java.lang.IllegalArgumentException
 import android.media.RingtoneManager.*
-import com.example.volumeprofiler.util.interruptionPolicy.*
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -63,8 +62,8 @@ class ProfileUtil @Inject constructor (
 
     fun getDefaultProfile(): Profile {
         val profile: Profile = Profile(
-            "New profile",
                 UUID.randomUUID(),
+            "New profile",
                 audioManager.getStreamVolume(STREAM_MUSIC),
                 audioManager.getStreamVolume(STREAM_VOICE_CALL),
                 audioManager.getStreamVolume(STREAM_NOTIFICATION),
@@ -81,11 +80,10 @@ class ProfileUtil @Inject constructor (
                 notificationManager.notificationPolicy.priorityCategories,
                 notificationManager.notificationPolicy.priorityCallSenders,
                 notificationManager.notificationPolicy.priorityMessageSenders,
-                0, 0, 0
+                0, 0
         )
         if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT) {
-            profile.screenOnVisualEffects = notificationManager.notificationPolicy.suppressedVisualEffects
-            profile.screenOffVisualEffects = notificationManager.notificationPolicy.suppressedVisualEffects
+            profile.suppressedVisualEffects = notificationManager.notificationPolicy.suppressedVisualEffects
         }
         if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
             profile.primaryConversationSenders = notificationManager.notificationPolicy.priorityConversationSenders
@@ -169,7 +167,7 @@ class ProfileUtil @Inject constructor (
                     profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
-                    profile.screenOnVisualEffects or profile.screenOffVisualEffects
+                    profile.suppressedVisualEffects
                 )
             }
             else -> {
@@ -177,7 +175,7 @@ class ProfileUtil @Inject constructor (
                     profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
-                    profile.screenOnVisualEffects or profile.screenOffVisualEffects,
+                    profile.suppressedVisualEffects,
                     profile.primaryConversationSenders
                 )
             }

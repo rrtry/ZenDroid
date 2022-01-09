@@ -10,15 +10,17 @@ import android.media.AudioManager.*
 @Parcelize
 @androidx.room.Entity
 data class Profile(
+
+    @PrimaryKey
+    val id: UUID = UUID.randomUUID(),
+
     var title: String,
 
-    @PrimaryKey val id: UUID = UUID.randomUUID(),
-
-    var mediaVolume: Int = STREAM_MUSIC_DEFAULT_VOLUME,
-    var callVolume: Int = STREAM_VOICE_CALL_DEFAULT_VOLUME,
-    var notificationVolume: Int = STREAM_NOTIFICATION_DEFAULT_VOLUME,
-    var ringVolume: Int = STREAM_RING_DEFAULT_VOLUME,
-    var alarmVolume: Int = STREAM_ALARM_DEFAULT_VOLUME,
+    var mediaVolume: Int = 5,
+    var callVolume: Int = 4,
+    var notificationVolume: Int = 5,
+    var ringVolume: Int = 5,
+    var alarmVolume: Int = 3,
 
     var phoneRingtoneUri: Uri = Uri.EMPTY,
     var notificationSoundUri: Uri = Uri.EMPTY,
@@ -34,8 +36,7 @@ data class Profile(
     var priorityCategories: Int = 0,
     var priorityCallSenders: Int = 0,
     var priorityMessageSenders: Int = 0,
-    var screenOnVisualEffects: Int = 0,
-    var screenOffVisualEffects: Int = 0,
+    var suppressedVisualEffects: Int = 0,
     var primaryConversationSenders: Int = 0): Parcelable {
 
     override fun toString(): String {

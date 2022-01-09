@@ -100,7 +100,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    val title: MutableStateFlow<String> = MutableStateFlow("Priority only")
+    val title: MutableStateFlow<String> = MutableStateFlow("New profile")
     val currentFragmentTag: MutableStateFlow<String> = MutableStateFlow(TAG_PROFILE_FRAGMENT)
     val mediaVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_MUSIC_DEFAULT_VOLUME)
     val callVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_VOICE_CALL_DEFAULT_VOLUME)
@@ -133,7 +133,7 @@ class ProfileDetailsViewModel @Inject constructor(
     val priorityCategories: MutableStateFlow<Int> = MutableStateFlow(0)
     val priorityCallSenders: MutableStateFlow<Int> = MutableStateFlow(PRIORITY_SENDERS_ANY)
     val priorityMessageSenders: MutableStateFlow<Int> = MutableStateFlow(PRIORITY_SENDERS_ANY)
-    val screenOnVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
+    val suppressedVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
     val screenOffVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
     val primaryConversationSenders: MutableStateFlow<Int> = MutableStateFlow(CONVERSATION_SENDERS_ANYONE)
 
@@ -206,8 +206,7 @@ class ProfileDetailsViewModel @Inject constructor(
         priorityCategories.value = profile.priorityCategories
         priorityCallSenders.value = profile.priorityCallSenders
         priorityMessageSenders.value = profile.priorityMessageSenders
-        screenOnVisualEffects.value = profile.screenOnVisualEffects
-        screenOffVisualEffects.value = profile.screenOffVisualEffects
+        suppressedVisualEffects.value = profile.suppressedVisualEffects
         primaryConversationSenders.value = profile.primaryConversationSenders
     }
 
@@ -225,8 +224,8 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun getProfile(): Profile {
         return Profile(
-            title.value,
             if (profileUUID.value == null) UUID.randomUUID() else profileUUID.value!!,
+            title.value,
             mediaVolume.value,
             callVolume.value,
             notificationVolume.value,
@@ -243,8 +242,7 @@ class ProfileDetailsViewModel @Inject constructor(
             priorityCategories.value,
             priorityCallSenders.value,
             priorityMessageSenders.value,
-            screenOnVisualEffects.value,
-            screenOffVisualEffects.value,
+            suppressedVisualEffects.value,
             primaryConversationSenders.value
         )
     }
@@ -596,32 +594,19 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     private fun containsSuppressedEffect(effect: Int): Boolean {
-        return if (effect == SUPPRESSED_EFFECT_SCREEN_ON) (screenOnVisualEffects.value and effect) != 0
-        else (screenOffVisualEffects.value and effect) != 0
+        return suppressedVisualEffects.value and effect != 0
     }
 
     private fun addSuppressedEffect(effect: Int): Unit {
-        if (!containsSuppressedEffect(effect)) {
-            if (effect == SUPPRESSED_EFFECT_SCREEN_ON) {
-                screenOnVisualEffects.value = screenOnVisualEffects.value or effect
-            } else {
-                screenOffVisualEffects.value = screenOffVisualEffects.value or effect
-            }
-        }
+        suppressedVisualEffects.value = suppressedVisualEffects.value or effect
     }
 
     private fun removeSuppressedEffect(effect: Int): Unit {
-        if (effect == SUPPRESSED_EFFECT_SCREEN_ON) {
-            screenOnVisualEffects.value = screenOnVisualEffects.value and effect.inv()
-        } else {
-            screenOffVisualEffects.value = screenOffVisualEffects.value and effect.inv()
-        }
+        suppressedVisualEffects.value = suppressedVisualEffects.value and effect.inv()
     }
 
     fun addPriorityCategory(category: Int): Unit {
-        if (!containsPriorityCategory(category)) {
-            priorityCategories.value = priorityCategories.value or category
-        }
+        priorityCategories.value = priorityCategories.value or category
     }
 
     fun removePriorityCategory(category: Int): Unit {

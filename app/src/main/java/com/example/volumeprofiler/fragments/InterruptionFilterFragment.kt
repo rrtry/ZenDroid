@@ -257,14 +257,7 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
         val effectsMask: Int = bundle.getInt(BasePolicyPreferencesDialog.EXTRA_CATEGORIES)
-        when (bundle.getInt(BasePolicyPreferencesDialog.EXTRA_MODE)) {
-            MODE_SCREEN_OFF -> {
-                detailsViewModel.screenOffVisualEffects.value = effectsMask
-            }
-            MODE_SCREEN_ON -> {
-                detailsViewModel.screenOnVisualEffects.value = effectsMask
-            }
-        }
+        detailsViewModel.suppressedVisualEffects.value = effectsMask
     }
 
     companion object {

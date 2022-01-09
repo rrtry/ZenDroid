@@ -358,7 +358,7 @@
                     android:paddingTop="4dp"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
-                    android:text="@{BindingConverters.suppressedEffectsToString(viewModel.screenOnVisualEffects)}"/>
+                    android:text="@{BindingConverters.suppressedEffectsToString(viewModel.suppressedVisualEffects)}"/>
             </LinearLayout>
 
             <LinearLayout
@@ -390,7 +390,7 @@
                     android:paddingTop="4dp"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
-                    android:text="@{BindingConverters.suppressedEffectsToString(viewModel.screenOffVisualEffects)}"/>
+                    android:text="@{BindingConverters.suppressedEffectsToString(viewModel.suppressedVisualEffects)}"/>
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

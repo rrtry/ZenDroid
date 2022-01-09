@@ -344,7 +344,7 @@
                     android:layout_width="match_parent"
                     android:clickable="false"
                     android:layout_marginRight="16dp"
-                    suppressedEffectScreenOn="@{viewModel.screenOnVisualEffects}"
+                    suppressedEffectScreenOn="@{viewModel.suppressedVisualEffects}"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@+id/blockWhenScreenIsOnDescription"
                     android:layout_below="@id/blockWhenScreenIsOnTitle"/>
@@ -386,7 +386,7 @@
                     android:layout_width="match_parent"
                     android:layout_marginRight="16dp"
                     android:clickable="false"
-                    suppressedEffectScreenOff="@{viewModel.screenOffVisualEffects}"
+                    suppressedEffectScreenOff="@{viewModel.suppressedVisualEffects}"
                     android:layout_height="wrap_content"
                     android:layout_toRightOf="@+id/blockWhenScreenIsOffDescription"
                     android:layout_below="@id/blockWhenScreenIsOffTitle"/>

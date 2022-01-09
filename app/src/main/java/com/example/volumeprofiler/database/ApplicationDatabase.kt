@@ -9,7 +9,7 @@ import com.example.volumeprofiler.entities.Event
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.Profile
 
-@Database(entities = [Profile::class, Alarm::class, Location::class, Event::class], version = 18, exportSchema = true)
+@Database(entities = [Profile::class, Alarm::class, Location::class, Event::class], version = 19, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class ApplicationDatabase: RoomDatabase() {
 
