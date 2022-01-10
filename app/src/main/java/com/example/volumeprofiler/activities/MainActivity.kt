@@ -20,10 +20,10 @@ import android.os.Build
 import android.view.Window
 import android.transition.Fade
 import com.example.volumeprofiler.entities.LocationRelation
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.EXTRA_PERMISSION
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.EXTRA_REQUEST_MULTIPLE_PERMISSIONS
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.EXTRA_RESULT_OK
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog.Companion.PERMISSION_REQUEST_KEY
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.EXTRA_PERMISSION
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.EXTRA_REQUEST_MULTIPLE_PERMISSIONS
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.EXTRA_RESULT_OK
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.PERMISSION_REQUEST_KEY
 import com.example.volumeprofiler.util.*
 
 @AndroidEntryPoint

@@ -29,7 +29,7 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
     private fun setResult(adjustedLocalTime: LocalTime): Unit {
         parentFragmentManager.setFragmentResult(TIME_REQUEST_KEY, Bundle().apply {
-            this.putSerializable(EXTRA_LOCAL_TIME, adjustedLocalTime)
+            putSerializable(EXTRA_LOCAL_TIME, adjustedLocalTime)
         })
     }
 

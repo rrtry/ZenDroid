@@ -4,9 +4,6 @@ import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 
-const val MODE_SCREEN_OFF: Int = 0
-const val MODE_SCREEN_ON: Int = 1
-
 fun maskContainsBit(mask: Int, bit: Int): Boolean {
     return (mask and bit) != 0
 }

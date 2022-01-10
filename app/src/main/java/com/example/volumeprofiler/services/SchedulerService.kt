@@ -150,7 +150,7 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
                     profileUtil.setProfile(profile)
                 }
                 if (AlarmUtil.isAlarmValid(alarm)) {
-                    alarmUtil.scheduleAlarm(alarm, profile)
+                    alarmUtil.scheduleAlarm(alarm, profile, false)
                     if (obsolete) {
                         updateAlarmInstanceTime(alarm)
                     }

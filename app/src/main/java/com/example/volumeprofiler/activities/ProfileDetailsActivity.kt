@@ -21,7 +21,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
 import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 import com.example.volumeprofiler.fragments.ProfileDetailsFragment
-import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
+import com.example.volumeprofiler.fragments.ProfileNameInputDialog
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile

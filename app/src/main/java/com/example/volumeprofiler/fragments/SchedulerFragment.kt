@@ -25,7 +25,6 @@ import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.databinding.EventItemViewBinding
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.eventBus.EventBus
-import com.example.volumeprofiler.fragments.dialogs.WarningDialog
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.PermissionRequestCallback
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider

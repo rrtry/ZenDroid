@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.fragments.dialogs.multiChoice
+package com.example.volumeprofiler.fragments
 
 import android.annotation.TargetApi
 import android.app.NotificationManager.Policy.*
@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.entities.Profile
-import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 
 @TargetApi(Build.VERSION_CODES.P)
 class SuppressedEffectsOnDialog : BasePolicyPreferencesDialog() {

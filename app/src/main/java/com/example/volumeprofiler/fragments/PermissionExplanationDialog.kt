@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.fragments.dialogs
+package com.example.volumeprofiler.fragments
 
 import android.app.AlertDialog
 import android.app.Dialog
@@ -22,8 +22,10 @@ class PermissionExplanationDialog: DialogFragment() {
         val bundle: Bundle = Bundle().apply {
             putBoolean(EXTRA_RESULT_OK, result)
             putString(EXTRA_PERMISSION, requireArguments().getString(EXTRA_PERMISSION)!!)
-            putBoolean(EXTRA_REQUEST_MULTIPLE_PERMISSIONS, requireArguments().getBoolean(
-                EXTRA_REQUEST_MULTIPLE_PERMISSIONS))
+            putBoolean(
+                EXTRA_REQUEST_MULTIPLE_PERMISSIONS, requireArguments().getBoolean(
+                EXTRA_REQUEST_MULTIPLE_PERMISSIONS
+                ))
         }
         parentFragmentManager.setFragmentResult(PERMISSION_REQUEST_KEY, bundle)
     }
@@ -34,7 +36,9 @@ class PermissionExplanationDialog: DialogFragment() {
             val permission: String = requireArguments().getString(EXTRA_PERMISSION)!!
             val permissionDisplayName: String = TextUtil.getPermissionName(permission)
             builder.setTitle("$permissionDisplayName permission is required")
-                .setMessage(resources.getString(requireArguments().getInt(EXTRA_MESSAGE_STRING_RESOURCE)))
+                .setMessage(resources.getString(requireArguments().getInt(
+                    EXTRA_MESSAGE_STRING_RESOURCE
+                )))
                 .setPositiveButton(getActionDescription(permission)) {
                         _, _ ->
                     setResult(true)

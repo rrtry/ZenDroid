@@ -162,7 +162,7 @@ fun createGeofenceExitNotification(context: Context, profileTitle: String, locat
             context,
             GEOFENCES_NOTIFICATION_CHANNEL_ID,
             GEOFENCES_NOTIFICATION_CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_DEFAULT).also {
+            NotificationManager.IMPORTANCE_LOW).also {
             builder.setChannelId(it.id)
         }
     }
@@ -179,7 +179,7 @@ fun createGeofenceEnterNotification(context: Context, profileTitle: String, loca
                 context,
                 GEOFENCES_NOTIFICATION_CHANNEL_ID,
                 GEOFENCES_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT).also {
+                NotificationManager.IMPORTANCE_LOW).also {
             builder.setChannelId(it.id)
         }
     }
@@ -198,7 +198,7 @@ fun createGeofenceRegistrationNotification(context: Context): Notification {
                 context,
                 SERVICE_NOTIFICATION_CHANNEL_ID,
                 SERVICES_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_MIN).also {
+                NotificationManager.IMPORTANCE_LOW).also {
             builder.setChannelId(it.id)
         }
     }
@@ -217,7 +217,7 @@ fun createSchedulerNotification(context: Context): Notification {
                 context,
                 SERVICE_NOTIFICATION_CHANNEL_ID,
                 SERVICES_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_MIN).also {
+                NotificationManager.IMPORTANCE_LOW).also {
             builder.setChannelId(it.id)
         }
     }
@@ -239,7 +239,7 @@ fun createCalendarEventNotification(context: Context, event: Event, profile: Pro
             context,
             CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID,
             CALENDAR_EVENTS_NOTIFICATION_CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_DEFAULT).also {
+            NotificationManager.IMPORTANCE_LOW).also {
             builder.setChannelId(it.id)
         }
     }
@@ -256,7 +256,7 @@ fun createAlarmAlertNotification(context: Context, title: String, localTime: Loc
                 context,
                 SCHEDULER_NOTIFICATION_CHANNEL_ID,
                 SCHEDULER_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT).also {
+                NotificationManager.IMPORTANCE_LOW).also {
             builder.setChannelId(it.id)
         }
     }

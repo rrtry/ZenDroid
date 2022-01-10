@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.fragments.dialogs.multiChoice
+package com.example.volumeprofiler.fragments
 
 import android.app.AlertDialog
 import android.app.Dialog

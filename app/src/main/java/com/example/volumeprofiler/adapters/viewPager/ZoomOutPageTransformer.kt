@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters.viewPager.pageTransformer
+package com.example.volumeprofiler.adapters.viewPager
 
 import android.view.View
 import androidx.viewpager2.widget.ViewPager2

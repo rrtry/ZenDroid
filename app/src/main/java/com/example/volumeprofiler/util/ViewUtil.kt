@@ -15,7 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import androidx.appcompat.content.res.AppCompatResources
 import android.graphics.drawable.Drawable

@@ -29,8 +29,8 @@ import com.example.volumeprofiler.databinding.CreateAlarmLayoutBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_TIME
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
-import com.example.volumeprofiler.fragments.dialogs.multiChoice.ScheduledDaysPickerDialog
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog
+import com.example.volumeprofiler.fragments.ScheduledDaysPickerDialog
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile

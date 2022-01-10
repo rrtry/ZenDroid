@@ -1,11 +1,10 @@
-package com.example.volumeprofiler.fragments.dialogs.multiChoice
+package com.example.volumeprofiler.fragments
 
 import android.os.Build
 import android.os.Bundle
 import com.example.volumeprofiler.R
 import android.app.NotificationManager.Policy.*
 import com.example.volumeprofiler.entities.Profile
-import com.example.volumeprofiler.fragments.InterruptionFilterFragment
 
 class PriorityCategoriesDialog: BasePolicyPreferencesDialog() {
 

@@ -23,8 +23,6 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
-import com.example.volumeprofiler.fragments.dialogs.ProfileNameInputDialog
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.util.ProfileUtil
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
@@ -36,9 +34,6 @@ import javax.inject.Inject
 import android.Manifest.permission.*
 import android.content.Context
 import com.example.volumeprofiler.activities.ProfileDetailsActivity
-import com.example.volumeprofiler.fragments.dialogs.multiChoice.*
-import com.example.volumeprofiler.util.interruptionPolicy.MODE_SCREEN_OFF
-import com.example.volumeprofiler.util.interruptionPolicy.MODE_SCREEN_ON
 import com.example.volumeprofiler.util.ui.animations.AnimUtil
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")

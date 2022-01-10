@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.fragments.dialogs
+package com.example.volumeprofiler.fragments
 
 import android.app.Dialog
 import android.os.Bundle

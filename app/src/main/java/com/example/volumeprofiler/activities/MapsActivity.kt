@@ -34,7 +34,7 @@ import androidx.transition.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
+import com.example.volumeprofiler.fragments.PermissionExplanationDialog
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.Profile

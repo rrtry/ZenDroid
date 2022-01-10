@@ -41,7 +41,6 @@ import android.provider.Settings
 import androidx.lifecycle.*
 import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
 import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.TAG_PROFILE_FRAGMENT
-import com.example.volumeprofiler.fragments.dialogs.PermissionExplanationDialog
 import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.checkSelfPermission
 import com.example.volumeprofiler.util.ui.animations.AnimUtil
