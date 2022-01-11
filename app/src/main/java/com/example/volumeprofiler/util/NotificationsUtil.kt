@@ -69,7 +69,7 @@ private fun getAppDetailsPendingIntent(context: Context): PendingIntent {
 }
 
 fun sendSystemPreferencesAccessNotification(context: Context, profileUtil: ProfileUtil): Unit {
-    if (!profileUtil.canModifySystemPreferences()) {
+    if (!profileUtil.canWriteSettings()) {
         postNotification(context, createSystemSettingsNotification(context), ID_SYSTEM_SETTINGS)
     }
     if (!profileUtil.isNotificationPolicyAccessGranted()) {

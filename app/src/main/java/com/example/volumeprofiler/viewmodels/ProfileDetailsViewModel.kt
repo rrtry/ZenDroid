@@ -551,6 +551,12 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
+    fun onConversationsLayoutClick(): Unit {
+        viewModelScope.launch {
+            eventChannel.send(Event.ShowPopupWindow(PRIORITY_CATEGORY_CONVERSATIONS))
+        }
+    }
+
     fun onMessagesLayoutClick(): Unit {
         viewModelScope.launch {
             eventChannel.send(Event.ShowPopupWindow(PRIORITY_CATEGORY_MESSAGES))
@@ -589,7 +595,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun containsPriorityCategory(category: Int): Boolean {
+    private fun containsPriorityCategory(category: Int): Boolean {
         return (priorityCategories.value and category) != 0
     }
 
@@ -611,6 +617,13 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun removePriorityCategory(category: Int): Unit {
         priorityCategories.value = priorityCategories.value and category.inv()
+    }
+
+    fun setAllowedSenders(category: Int, senders: Int): Unit {
+        when (category) {
+            PRIORITY_CATEGORY_MESSAGES -> priorityMessageSenders.value = senders
+            PRIORITY_CATEGORY_CALLS -> priorityCallSenders.value = senders
+        }
     }
 
     private fun notificationsStreamAllowed(): Boolean {

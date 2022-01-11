@@ -9,7 +9,7 @@ fun maskContainsBit(mask: Int, bit: Int): Boolean {
 }
 
 fun extractPriorityCategories(mask: Int): List<Int> {
-    val categories: MutableList<Int> = mutableListOf(
+    var categories: Array<Int> = arrayOf(
         PRIORITY_CATEGORY_EVENTS,
         PRIORITY_CATEGORY_REMINDERS,
     )

@@ -134,7 +134,7 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
         if (missingPermissions.isNotEmpty()) {
             postNotification(this, createMissingPermissionNotification(this, missingPermissions), ID_PERMISSIONS)
         }
-        if (!profileUtil.canModifySystemPreferences()) {
+        if (!profileUtil.canWriteSettings()) {
             postNotification(this, createSystemSettingsNotification(this), ID_SYSTEM_SETTINGS)
         }
         if (!profileUtil.isNotificationPolicyAccessGranted()) {

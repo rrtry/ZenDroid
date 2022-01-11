@@ -37,7 +37,6 @@ class SuppressedEffectsOnDialog : BasePolicyPreferencesDialog() {
             override fun isEnabled(position: Int): Boolean {
                 val enabled: Boolean = isListItemEnabled(position)
                 if (!enabled) {
-                    // only SUPPRESSED_EFFECT_STATUS_BAR could be disabled
                     listView.setItemChecked(position, true)
                 }
                 return enabled
@@ -53,7 +52,7 @@ class SuppressedEffectsOnDialog : BasePolicyPreferencesDialog() {
             arrayAdapter.add(it)
         }
         listView.adapter = arrayAdapter
-        super.onResume()
+        super.onResume() // always call superclass' implementation
     }
 
     override fun applyChanges(mask: Int) {

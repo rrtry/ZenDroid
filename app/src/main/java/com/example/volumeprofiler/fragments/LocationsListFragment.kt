@@ -41,7 +41,10 @@ import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.interfaces.PermissionRequestCallback
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.ThumbnailUtils
 import android.view.ViewTreeObserver
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.R
@@ -119,8 +122,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == GeofenceUtil.REQUEST_ENABLE_LOCATION_SERVICES &&
-            resultCode != Activity.RESULT_OK) {
+        if (requestCode == GeofenceUtil.REQUEST_ENABLE_LOCATION_SERVICES && resultCode != Activity.RESULT_OK) {
             val snackBar: Snackbar = Snackbar.make(binding.root, "Enabling location services is required", Snackbar.LENGTH_LONG)
             snackBar.setAction("Enable location") {
                 geofenceUtil.checkLocationServicesAvailability(requireActivity(),null)
@@ -173,12 +175,6 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         updateItem(position, 1)
     }
 
-    private fun updateItem(position: Int, enabled: Byte): Unit {
-        locationAdapter.notifyItemChanged(position, Bundle().apply {
-            putByte(PAYLOAD_GEOFENCE_ENABLED, enabled)
-        })
-    }
-
     @Suppress("MissingPermission")
     private fun disableGeofence(locationRelation: LocationRelation, position: Int): Unit {
         if (geofenceUtil.locationAccessGranted()) {
@@ -194,26 +190,21 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         }
     }
 
+    private fun updateItem(position: Int, enabled: Byte): Unit {
+        locationAdapter.notifyItemChanged(position, Bundle().apply {
+            putByte(PAYLOAD_GEOFENCE_ENABLED, enabled)
+        })
+    }
+
     private inner class LocationViewHolder(private val binding: LocationItemViewBinding): RecyclerView.ViewHolder(binding.root), View.OnClickListener {
 
         init {
             binding.root.setOnClickListener(this)
         }
 
-        private fun loadPreviewBitmap(uuid: UUID): Unit {
-            Glide.with(requireContext())
-                .asBitmap()
-                .load(getPreviewBitmapFile(requireContext(), uuid))
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .centerCrop()
-                .into(binding.mapSnapshot)
-        }
-
         fun bind(locationRelation: LocationRelation, isSelected: Boolean): Unit {
-            val location: Location = locationRelation.location
-            loadPreviewBitmap(location.previewImageId)
 
-            Log.i("LocationsFragment", "width: ${binding.mapSnapshot.measuredWidth}, height: ${binding.mapSnapshot.measuredHeight}")
+            val location: Location = locationRelation.location
 
             binding.geofenceTitle.text = location.title
             binding.enableGeofenceSwitch.isChecked = location.enabled == 1.toByte()
@@ -225,13 +216,13 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             binding.removeGeofenceButton.setOnClickListener {
                 removeGeofence(locationAdapter.getItemAtPosition(bindingAdapterPosition))
             }
-            binding.mapSnapshot.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-
-                override fun onGlobalLayout() {
-                    binding.mapSnapshot.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    Log.i("LocationsFragment", "width: ${binding.mapSnapshot.width}, height: ${binding.mapSnapshot.height}")
-                }
-            })
+            binding.mapSnapshot.post {
+                binding.mapSnapshot.setImageBitmap(
+                    ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(resolveAbsolutePath(
+                        requireContext(), location.previewImageId
+                    )), binding.mapSnapshot.width, binding.mapSnapshot.height)
+                )
+            }
         }
 
         override fun onClick(v: View?) {
@@ -241,11 +232,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             } else {
                 when {
                     profileUtil.grantedRequiredPermissions(locationRelation) && geofenceUtil.locationAccessGranted() -> {
-                        val weakReference: WeakReference<LocationsListFragment> = WeakReference(this@LocationsListFragment)
-                        val adapterPosition: Int = bindingAdapterPosition
-                        geofenceUtil.checkLocationServicesAvailability(requireActivity()) {
-                            weakReference.get()?.enableGeofence(locationRelation, adapterPosition)
-                        }
+                        geofenceUtil.checkLocationServicesAvailability(requireActivity(), null)
                     }
                     !geofenceUtil.locationAccessGranted() || profileUtil.shouldRequestPhonePermission(locationRelation) -> {
                         callback?.requestLocationPermissions(locationRelation)

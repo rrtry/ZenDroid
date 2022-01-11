@@ -16,6 +16,14 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
     protected var categoriesMask: Int = 0
     private var argsSet: Boolean = false
 
+    private fun removeCategory(category: Int): Unit {
+        categoriesMask = categoriesMask and category.inv()
+    }
+
+    private fun addCategory(category: Int): Unit {
+        categoriesMask = categoriesMask or category
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) {
@@ -56,9 +64,9 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
                     val category: Int = categories[which]
 
                     if (isChecked) {
-                        categoriesMask = categoriesMask or category
+                        addCategory(category)
                     } else if ((categoriesMask and category) != 0) {
-                        categoriesMask = categoriesMask and category.inv()
+                        removeCategory(category)
                     }
                     (getListView().adapter as ArrayAdapter<*>).notifyDataSetChanged()
                 }

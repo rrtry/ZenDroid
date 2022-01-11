@@ -11,12 +11,12 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.transition.AutoTransition
 import android.transition.TransitionManager
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.ProfileDetailsActivity
 import com.example.volumeprofiler.util.interruptionPolicy.*
 import com.google.android.material.appbar.CollapsingToolbarLayout
 
@@ -199,9 +199,14 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("repeatingCallersPriorityCategories", "callSenders", requireAll = false)
+    @BindingAdapter("repeatingCallersPriorityCategories", "callSenders")
     fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: Int, callSenders: Int): Unit {
-        view.isChecked = (repeatingCallersPriorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0
+        if (callSenders == PRIORITY_SENDERS_ANY
+            && maskContainsBit(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)) {
+            view.isChecked = true
+        } else {
+            view.isChecked = maskContainsBit(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)
+        }
     }
 
     @JvmStatic
@@ -219,7 +224,11 @@ object BindingAdapters {
         policyAccessGranted: Boolean,
         streamsUnlinked: Boolean)
     : Unit {
-        setEnabledState(view, interruptionPolicyAllowsNotificationStream(interruptionFilter, priorityCategories, policyAccessGranted, streamsUnlinked))
+        setEnabledState(view, interruptionPolicyAllowsNotificationStream(
+            interruptionFilter,
+            priorityCategories,
+            policyAccessGranted,
+            streamsUnlinked))
     }
 
     @JvmStatic
@@ -255,7 +264,12 @@ object BindingAdapters {
         notificationMode: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
-        view.isEnabled = interruptionPolicyAllowsNotificationStream(notificationInterruptionFilter, notificationPriorityCategories, notificationAccessGranted, streamsUnlinked)
+
+        view.isEnabled = interruptionPolicyAllowsNotificationStream(
+            notificationInterruptionFilter,
+            notificationPriorityCategories,
+            notificationAccessGranted,
+            streamsUnlinked)
     }
 
     @JvmStatic
@@ -267,7 +281,12 @@ object BindingAdapters {
         ringerPriorityCategories: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
-        if (!interruptionPolicyAllowsRingerStream(ringerIconInterruptionFilter, ringerPriorityCategories, notificationAccessGranted, streamsUnlinked)) {
+
+        if (!interruptionPolicyAllowsRingerStream(
+                ringerIconInterruptionFilter,
+                ringerPriorityCategories,
+                notificationAccessGranted,
+                streamsUnlinked)) {
             setSilentIcon(icon)
         } else {
             when (ringerMode) {
@@ -314,7 +333,11 @@ object BindingAdapters {
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
         if (notificationAccessGranted) {
-            view.isEnabled = interruptionPolicyAllowsRingerStream(ringerSeekBarInterruptionFilter, ringerSeekBarPropertyCategories, notificationAccessGranted, streamsUnlinked)
+            view.isEnabled = interruptionPolicyAllowsRingerStream(
+                ringerSeekBarInterruptionFilter,
+                ringerSeekBarPropertyCategories,
+                notificationAccessGranted,
+                streamsUnlinked)
         } else {
             view.isEnabled = true
         }

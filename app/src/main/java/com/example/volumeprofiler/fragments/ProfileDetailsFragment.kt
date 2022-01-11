@@ -14,7 +14,7 @@ import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import androidx.databinding.DataBindingUtil
-import com.example.volumeprofiler.activities.customContract.RingtonePickerContract
+import com.example.volumeprofiler.activities.contract.RingtonePickerContract
 import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import com.example.volumeprofiler.entities.Profile
 import android.app.NotificationManager.*
@@ -339,7 +339,7 @@ class ProfileDetailsFragment: Fragment() {
     }
 
     private fun setCanWriteSettingsProperty(): Unit {
-        detailsViewModel.canWriteSettings.value = profileUtil.canModifySystemPreferences()
+        detailsViewModel.canWriteSettings.value = profileUtil.canWriteSettings()
     }
 
     private fun registerForStoragePermissionResult(): Unit {

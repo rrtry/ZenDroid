@@ -190,36 +190,19 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.inflate(R.menu.dnd_exceptions)
         popupMenu.setOnMenuItemClickListener {
             if (it.itemId != R.id.none) {
-                if (!detailsViewModel.containsPriorityCategory(PRIORITY_CATEGORY_CALLS) && category == PRIORITY_CATEGORY_CALLS) {
-                    detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_CALLS)
-                } else if (!detailsViewModel.containsPriorityCategory(PRIORITY_CATEGORY_MESSAGES) && category == PRIORITY_CATEGORY_MESSAGES) {
-                    detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_MESSAGES)
-                }
+                detailsViewModel.addPriorityCategory(category)
             }
             when (it.itemId) {
+                R.id.anyone -> {
+                    detailsViewModel.setAllowedSenders(category, PRIORITY_SENDERS_ANY)
+                    true
+                }
                 R.id.starred_contacts -> {
-                    if (category == PRIORITY_CATEGORY_MESSAGES) {
-                        detailsViewModel.priorityMessageSenders.value = PRIORITY_SENDERS_STARRED
-                    } else {
-                        detailsViewModel.priorityCallSenders.value = PRIORITY_SENDERS_STARRED
-                    }
+                    detailsViewModel.setAllowedSenders(category, PRIORITY_SENDERS_STARRED)
                     true
                 }
                 R.id.contacts -> {
-                    if (category == PRIORITY_CATEGORY_MESSAGES) {
-                        detailsViewModel.priorityMessageSenders.value = PRIORITY_SENDERS_CONTACTS
-                    } else {
-                        detailsViewModel.priorityCallSenders.value = PRIORITY_SENDERS_CONTACTS
-                    }
-                    true
-                }
-                R.id.anyone -> {
-                    if (category == PRIORITY_CATEGORY_MESSAGES) {
-                        detailsViewModel.priorityMessageSenders.value = PRIORITY_SENDERS_ANY
-                    } else {
-                        detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)
-                        detailsViewModel.priorityCallSenders.value = PRIORITY_SENDERS_ANY
-                    }
+                    detailsViewModel.setAllowedSenders(category, PRIORITY_SENDERS_CONTACTS)
                     true
                 }
                 R.id.none -> {

@@ -136,7 +136,6 @@ class AlarmUtil @Inject constructor (
             val instanceStartTime: LocalDateTime = alarm.instanceStartTime
                 .atZone(alarm.zoneId)
                 .toLocalDateTime()
-            Log.i("AlarmUtil", instanceStartTime.toString())
             return now.isAfter(instanceStartTime)
         }
 

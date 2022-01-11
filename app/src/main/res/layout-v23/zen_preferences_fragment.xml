@@ -49,7 +49,7 @@
                 <TextView
                     android:id="@+id/exceptionCallsTitle"
                     android:layout_width="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:textSize="16sp"
                     android:layout_height="wrap_content"
                     android:text="Calls"/>
@@ -57,7 +57,7 @@
                 <TextView
                     android:id="@+id/exceptionsCallsDescription"
                     android:layout_width="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
@@ -84,7 +84,7 @@
                     android:id="@+id/CallsStarredContactsTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:text="Starred contacts"
                     android:textSize="16sp" />
 
@@ -92,7 +92,7 @@
                     android:id="@+id/CallsStarredContactsDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
                     android:text="Contacts"
                     android:textSize="14sp" />
@@ -185,7 +185,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:text="Messages"
                     android:textSize="16sp" />
 
@@ -193,7 +193,7 @@
                     android:id="@+id/exceptionsMessagesDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
                     android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"
                     android:textSize="14sp" />
@@ -218,7 +218,7 @@
                 <TextView
                     android:id="@+id/messagesStarredContactsTitle"
                     android:layout_width="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:textSize="16sp"
                     android:layout_height="wrap_content"
                     android:text="Starred contacts"/>
@@ -226,7 +226,7 @@
                 <TextView
                     android:id="@+id/messagesStarredContactsDescription"
                     android:layout_width="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
@@ -272,7 +272,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:text="Other interruptions"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
@@ -281,7 +281,7 @@
                     android:id="@+id/otherInterruptionsDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
                     android:text="@{BindingConverters.priorityCategoriesToString(viewModel.priorityCategories)}"
                     android:textSize="14sp" />

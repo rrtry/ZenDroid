@@ -76,7 +76,7 @@ class ProfileUtil @Inject constructor (
                 notificationManager.currentInterruptionFilter,
                 audioManager.ringerMode,
                 audioManager.ringerMode,
-                0,
+                Settings.System.getInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING),
                 notificationManager.notificationPolicy.priorityCategories,
                 notificationManager.notificationPolicy.priorityCallSenders,
                 notificationManager.notificationPolicy.priorityMessageSenders,
@@ -222,7 +222,7 @@ class ProfileUtil @Inject constructor (
     }
 
     private fun setVibrateWhenRingingBehaviour(state: Int): Unit {
-        if (canModifySystemPreferences()) {
+        if (canWriteSettings()) {
             try {
                 Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
             } catch (e: IllegalArgumentException) {
@@ -234,7 +234,7 @@ class ProfileUtil @Inject constructor (
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    fun canModifySystemPreferences(): Boolean {
+    fun canWriteSettings(): Boolean {
         return Settings.System.canWrite(context)
     }
 
@@ -265,7 +265,7 @@ class ProfileUtil @Inject constructor (
     }
 
     fun grantedSystemPreferencesAccess(): Boolean {
-        return isNotificationPolicyAccessGranted() && canModifySystemPreferences()
+        return isNotificationPolicyAccessGranted() && canWriteSettings()
     }
 
     fun grantedRequiredPermissions(profile: Profile?): Boolean {

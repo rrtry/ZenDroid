@@ -10,22 +10,32 @@ import kotlin.text.StringBuilder
 
 object BindingConverters {
 
+    private fun priorityCategoryToString(category: Int): String {
+        return when (category) {
+            PRIORITY_CATEGORY_CALLS -> "calls"
+            PRIORITY_CATEGORY_MESSAGES -> "messages"
+            PRIORITY_CATEGORY_CONVERSATIONS -> "conversations"
+            else -> throw IllegalArgumentException("Invalid priority category")
+        }
+    }
+
+    @JvmStatic
+    fun conversationSendersToString(senders: Int): String {
+        return when (senders) {
+            CONVERSATION_SENDERS_ANYONE -> "All conversations"
+            CONVERSATION_SENDERS_IMPORTANT -> "Priority conversations"
+            CONVERSATION_SENDERS_NONE -> "None"
+            else -> throw IllegalArgumentException("Invalid interruption rule")
+        }
+    }
+
     @JvmStatic
     fun prioritySendersToString(prioritySenders: Int, priorityCategories: Int, categoryType: Int): String {
-        return if (categoryType == PRIORITY_CATEGORY_CALLS) {
-            when (prioritySenders) {
-                PRIORITY_SENDERS_ANY -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_CALLS)) "From anyone" else "Don't allow any calls"
-                PRIORITY_SENDERS_STARRED -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_CALLS)) "From starred contacts only" else "Don't allow any calls"
-                PRIORITY_SENDERS_CONTACTS -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_CALLS)) "From contacts only" else "Don't allow any calls"
-                else -> "Unknown"
-            }
-        } else {
-            when (prioritySenders) {
-                PRIORITY_SENDERS_ANY -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_MESSAGES)) "From anyone" else "Don't allow any messages"
-                PRIORITY_SENDERS_STARRED -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_MESSAGES)) "From starred contacts only" else "Don't allow any messages"
-                PRIORITY_SENDERS_CONTACTS -> if (maskContainsBit(priorityCategories, PRIORITY_CATEGORY_MESSAGES)) "From contacts only" else "Don't allow any messages"
-                else -> "Unknown"
-            }
+        return when (prioritySenders) {
+            PRIORITY_SENDERS_ANY -> if (maskContainsBit(priorityCategories, categoryType)) "From anyone" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_STARRED -> if (maskContainsBit(priorityCategories, categoryType)) "From starred contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_CONTACTS -> if (maskContainsBit(priorityCategories, categoryType)) "From contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            else -> "Unknown"
         }
     }
 
@@ -53,7 +63,6 @@ object BindingConverters {
                     PRIORITY_CATEGORY_SYSTEM -> stringBuilder.append(if (index < categoriesList.size - 1) "touch sounds, " else "touch sounds")
                     PRIORITY_CATEGORY_ALARMS -> stringBuilder.append(if (index < categoriesList.size - 1) "alarms, " else "alarms")
                     PRIORITY_CATEGORY_MEDIA -> stringBuilder.append(if (index < categoriesList.size - 1) "media, " else "media")
-                    PRIORITY_CATEGORY_CONVERSATIONS -> stringBuilder.append(if (index < categoriesList.size - 1) "conversations, " else "conversations")
                 }
             }
             return stringBuilder.toString()

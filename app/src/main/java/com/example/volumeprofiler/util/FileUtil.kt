@@ -8,7 +8,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.*
 
-private fun resolveAbsolutePath(context: Context, uuid: UUID): String {
+fun resolveAbsolutePath(context: Context, uuid: UUID): String {
     return "${getAppSpecificAlbumStorageDir(context).absolutePath}/$uuid.png"
 }
 
@@ -18,10 +18,6 @@ fun writeCompressedBitmap(context: Context, uuid: UUID, bitmap: Bitmap): Unit {
     bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
     out.flush()
     out.close()
-}
-
-fun getPreviewBitmapFile(context: Context, uuid: UUID): File {
-    return File(resolveAbsolutePath(context, uuid))
 }
 
 fun getAppSpecificAlbumStorageDir(context: Context): File {
