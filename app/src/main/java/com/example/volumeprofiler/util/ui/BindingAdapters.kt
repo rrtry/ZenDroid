@@ -11,7 +11,6 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.transition.AutoTransition
 import android.transition.TransitionManager
-import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.core.content.res.ResourcesCompat
@@ -202,10 +201,10 @@ object BindingAdapters {
     @BindingAdapter("repeatingCallersPriorityCategories", "callSenders")
     fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: Int, callSenders: Int): Unit {
         if (callSenders == PRIORITY_SENDERS_ANY
-            && maskContainsBit(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)) {
+            && isBitSet(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)) {
             view.isChecked = true
         } else {
-            view.isChecked = maskContainsBit(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)
+            view.isChecked = isBitSet(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)
         }
     }
 

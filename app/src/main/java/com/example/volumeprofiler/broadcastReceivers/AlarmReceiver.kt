@@ -17,6 +17,4 @@ class AlarmReceiver: BroadcastReceiver() {
             }
         }
     }
-
-
 }

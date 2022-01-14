@@ -59,6 +59,7 @@ class InterruptionFilterFragment: Fragment() {
     override fun onDetach() {
         super.onDetach()
         callback = null
+        _binding = null
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -230,11 +231,11 @@ class InterruptionFilterFragment: Fragment() {
     }
 
     private fun onPriorityResult(bundle: Bundle): Unit {
-        detailsViewModel.priorityCategories.value = bundle.getInt(BasePolicyPreferencesDialog.EXTRA_CATEGORIES)
+        detailsViewModel.priorityCategories.value = bundle.getInt(BaseDialog.EXTRA_MASK)
     }
 
     private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
-        val effectsMask: Int = bundle.getInt(BasePolicyPreferencesDialog.EXTRA_CATEGORIES)
+        val effectsMask: Int = bundle.getInt(BaseDialog.EXTRA_MASK)
         detailsViewModel.suppressedVisualEffects.value = effectsMask
     }
 

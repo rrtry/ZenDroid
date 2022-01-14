@@ -20,4 +20,4 @@ data class Alarm(@PrimaryKey(autoGenerate = true) @ColumnInfo(name = "eventId") 
                  var localStartTime: LocalTime,
                  var zoneId: ZoneId,
                  var isScheduled: Int,
-                 var scheduledDays: ArrayList<Int>) : Parcelable
+                 var scheduledDays: Int) : Parcelable

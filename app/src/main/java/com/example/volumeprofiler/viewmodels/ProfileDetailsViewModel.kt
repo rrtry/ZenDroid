@@ -134,7 +134,6 @@ class ProfileDetailsViewModel @Inject constructor(
     val priorityCallSenders: MutableStateFlow<Int> = MutableStateFlow(PRIORITY_SENDERS_ANY)
     val priorityMessageSenders: MutableStateFlow<Int> = MutableStateFlow(PRIORITY_SENDERS_ANY)
     val suppressedVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
-    val screenOffVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
     val primaryConversationSenders: MutableStateFlow<Int> = MutableStateFlow(CONVERSATION_SENDERS_ANYONE)
 
     val storagePermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)

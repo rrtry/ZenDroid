@@ -94,15 +94,6 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         mapActivityLauncher.unregister()
     }
 
-    private fun requestLocationPermission(): Unit {
-        /*
-        var permissions: Array<String> = arrayOf(ACCESS_FINE_LOCATION)
-        if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-            permissions += ACCESS_BACKGROUND_LOCATION
-        }
-         */
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -186,7 +177,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             viewModel.disableGeofence(locationRelation.location)
             updateItem(position, 0)
         } else {
-            requestLocationPermission()
+            callback?.requestLocationPermissions(locationRelation)
         }
     }
 
@@ -232,7 +223,9 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             } else {
                 when {
                     profileUtil.grantedRequiredPermissions(locationRelation) && geofenceUtil.locationAccessGranted() -> {
-                        geofenceUtil.checkLocationServicesAvailability(requireActivity(), null)
+                        geofenceUtil.checkLocationServicesAvailability(requireActivity()) {
+                            enableGeofence(locationRelation, bindingAdapterPosition)
+                        }
                     }
                     !geofenceUtil.locationAccessGranted() || profileUtil.shouldRequestPhonePermission(locationRelation) -> {
                         callback?.requestLocationPermissions(locationRelation)

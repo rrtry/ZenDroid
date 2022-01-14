@@ -76,7 +76,7 @@ class SchedulerFragment: Fragment() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_LOCALE_CHANGED) {
-                alarmAdapter.refresh() // forcefully update all items due to locale change
+                alarmAdapter.refresh()
             }
         }
     }
@@ -116,17 +116,16 @@ class SchedulerFragment: Fragment() {
             savedInstanceState: Bundle?
     ): View {
         _binding = AlarmsFragmentBinding.inflate(inflater, container, false)
-        val view: View = binding.root
         binding.createAlarmButton.setOnClickListener {
             if (!showDialog) {
                 startAlarmDetailsActivity()
             }
             else {
-                showWarningDialog()
+                showExplanationDialog()
             }
         }
         setRecyclerView()
-        return view
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -156,7 +155,7 @@ class SchedulerFragment: Fragment() {
                             val id: Int? = alarmAdapter.getItemPosition(it.alarm.id)
                             if (id != null) {
                                 alarmAdapter.notifyItemChanged(id, Bundle().apply {
-                                    putSerializable(EXTRA_DIFF_SCHEDULED_DAYS, it.alarm.scheduledDays)
+                                    putInt(EXTRA_DIFF_SCHEDULED_DAYS, it.alarm.scheduledDays)
                                     putSerializable(EXTRA_DIFF_LOCAL_TIME, it.alarm.instanceStartTime)
                                 })
                             }
@@ -178,10 +177,9 @@ class SchedulerFragment: Fragment() {
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
     }
 
-    private fun showWarningDialog(): Unit {
+    private fun showExplanationDialog(): Unit {
         val fragment: WarningDialog = WarningDialog()
-        val fragmentManager = requireActivity().supportFragmentManager
-        fragment.show(fragmentManager, null)
+        fragment.show(requireActivity().supportFragmentManager, null)
     }
 
     /*
@@ -306,7 +304,7 @@ class SchedulerFragment: Fragment() {
 
         fun bindScheduledDaysTextView(payload: Bundle): Unit {
             binding.occurrencesTextView.text = TextUtil.weekDaysToString(
-                payload.getIntegerArrayList(EXTRA_DIFF_SCHEDULED_DAYS)!!,
+                payload.getInt(EXTRA_DIFF_SCHEDULED_DAYS, 0),
                 payload.getSerializable(EXTRA_DIFF_LOCAL_TIME) as LocalTime
             )
         }
@@ -441,7 +439,7 @@ class SchedulerFragment: Fragment() {
         }
 
         private fun putScheduledDaysPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putIntegerArrayList(EXTRA_DIFF_SCHEDULED_DAYS, newItem.alarm.scheduledDays)
+            diffBundle.putInt(EXTRA_DIFF_SCHEDULED_DAYS, newItem.alarm.scheduledDays)
             diffBundle.putSerializable(EXTRA_DIFF_LOCAL_TIME, newItem.alarm.localStartTime)
         }
 
@@ -523,7 +521,6 @@ class SchedulerFragment: Fragment() {
 
         internal const val SHARED_TRANSITION_CLOCK: String = "ClockViewSharedTransition"
         internal const val SHARED_TRANSITION_SWITCH: String = "SwitchSharedTransition"
-        private const val SELECTION_ID: String = "ALARM"
         private const val EXTRA_DIFF_LOCAL_TIME: String = "extra_start_time"
         private const val EXTRA_DIFF_SCHEDULED_DAYS: String = "extra_scheduled_days"
         private const val EXTRA_DIFF_PROFILE_TITLE: String = "extra_profile_id"

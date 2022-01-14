@@ -28,14 +28,14 @@ class AlarmDetailsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
     val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(-1)
-    val scheduledDays: MutableStateFlow<ArrayList<Int>> = MutableStateFlow(arrayListOf())
+    val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(0)
+    val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
 
     val scheduleUIUpdates: Flow<Boolean> = combine(localTime, scheduledDays) {
-        localTime, scheduledDays -> scheduledDays.isEmpty() && localTime > LocalTime.now()
+        localTime, scheduledDays -> scheduledDays == 0 && localTime > LocalTime.now()
     }
-    val readCalendarPermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     private var id: Long? = null
     private var isScheduled: Boolean = false
@@ -46,9 +46,6 @@ class AlarmDetailsViewModel @Inject constructor(
     sealed class Event {
 
         data class ShowDialogEvent(val dialogType: DialogType): Event()
-
-        object QueryAvailableCalendarsEvent : Event()
-        object RequestReadCalendarPermission: Event()
     }
 
     enum class DialogType {
@@ -74,7 +71,7 @@ class AlarmDetailsViewModel @Inject constructor(
     }
 
     private fun getAlarmState(): Int {
-        return if (isScheduled) 1 else 0
+        return if (scheduled.value) 1 else 0
     }
 
     private fun getProfileUUID(): UUID {
@@ -100,9 +97,11 @@ class AlarmDetailsViewModel @Inject constructor(
 
     fun setArgs(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
         if (!areArgsSet && alarmRelation != null) {
+
             selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)
             scheduledDays.value = alarmRelation.alarm.scheduledDays
             localTime.value = alarmRelation.alarm.localStartTime
+            scheduled.value = alarmRelation.alarm.isScheduled == 1
 
             id = alarmRelation.alarm.id
             isScheduled = alarmRelation.alarm.isScheduled == 1
@@ -113,12 +112,12 @@ class AlarmDetailsViewModel @Inject constructor(
 
     fun getAlarm(): Alarm {
         val alarm: Alarm = Alarm(
-            profileUUID = getProfileUUID(),
             localStartTime = localTime.value,
-            instanceStartTime = getNextInstanceDate(),
-            isScheduled = getAlarmState(),
             scheduledDays = scheduledDays.value,
+            isScheduled = getAlarmState(),
+            instanceStartTime = getNextInstanceDate(),
             zoneId = ZoneId.systemDefault(),
+            profileUUID = getProfileUUID(),
         )
         if (id != null) {
             alarm.id = this.id!!
@@ -134,12 +133,6 @@ class AlarmDetailsViewModel @Inject constructor(
     fun addAlarm(alarm: Alarm): Unit {
         viewModelScope.launch {
             alarmRepository.addAlarm(alarm)
-        }
-    }
-
-    fun removeAlarm(alarm: Alarm): Unit {
-        viewModelScope.launch {
-            alarmRepository.removeAlarm(alarm)
         }
     }
 

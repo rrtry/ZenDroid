@@ -39,11 +39,32 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     lateinit var geofenceUtil: GeofenceUtil
 
     private lateinit var viewPager: ViewPager2
+
     private lateinit var profilePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<Array<out String>>
 
     private var profile: Profile? = null
     private var locationRelation: LocationRelation? = null
+
+    private fun setupTabLayout(): Unit {
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            when (position) {
+                0 -> {
+                    tab.text = resources.getString(R.string.tab_profiles)
+                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[2], theme)
+                }
+                1 -> {
+                    tab.text = resources.getString(R.string.tab_scheduler)
+                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[0], theme)
+                }
+                2 -> {
+                    tab.text = resources.getString(R.string.tab_locations)
+                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[3], theme)
+                }
+            }
+        }.attach()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -97,8 +118,12 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
                         ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
                     }
                 }
-                profileUtil.shouldRequestPhonePermission(locationRelation!!) -> ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                !profileUtil.grantedSystemPreferencesAccess() -> sendSystemPreferencesAccessNotification(this, profileUtil)
+                profileUtil.shouldRequestPhonePermission(locationRelation!!) -> {
+                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
+                }
+                !profileUtil.grantedSystemPreferencesAccess() -> {
+                    sendSystemPreferencesAccessNotification(this, profileUtil)
+                }
             }
         }
         profilePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -122,6 +147,12 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        profilePermissionLauncher.unregister()
+        locationPermissionLauncher.unregister()
+    }
+
     private fun setAction(snackbar: Snackbar, requiresPhonePermission: Boolean): Unit {
         val permissions: MutableList<String> = mutableListOf()
         permissions += if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
@@ -142,26 +173,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         }
     }
 
-    private fun setupTabLayout(): Unit {
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            when (position) {
-                0 -> {
-                    tab.text = resources.getString(R.string.tab_profiles)
-                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[2], theme)
-                }
-                1 -> {
-                    tab.text = resources.getString(R.string.tab_scheduler)
-                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[0], theme)
-                }
-                2 -> {
-                    tab.text = resources.getString(R.string.tab_locations)
-                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[3], theme)
-                }
-            }
-        }.attach()
-    }
-
     override fun onBackPressed() {
         if (viewPager.currentItem == 0) {
             super.onBackPressed()
@@ -169,19 +180,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         else {
             viewPager.currentItem = viewPager.currentItem - 1
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        profilePermissionLauncher.unregister()
-        locationPermissionLauncher.unregister()
-    }
-
-    companion object {
-
-        private val drawables: List<Int> = listOf(android.R.drawable.ic_menu_recent_history,
-                android.R.drawable.ic_menu_sort_by_size,
-                android.R.drawable.ic_lock_silent_mode, android.R.drawable.ic_menu_mylocation)
     }
 
     override fun requestProfilePermissions(profile: Profile) {
@@ -201,5 +199,12 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             permissions += READ_PHONE_STATE
         }
         locationPermissionLauncher.launch(permissions)
+    }
+
+    companion object {
+
+        private val drawables: List<Int> = listOf(android.R.drawable.ic_menu_recent_history,
+                android.R.drawable.ic_menu_sort_by_size,
+                android.R.drawable.ic_lock_silent_mode, android.R.drawable.ic_menu_mylocation)
     }
 }

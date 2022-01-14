@@ -88,9 +88,6 @@ class MapsActivity : AppCompatActivity(),
     private lateinit var mMap: GoogleMap
     private lateinit var searchView: SearchView
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<out String>>
-    private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
-    private lateinit var backgroundLocationPermissionLauncher: ActivityResultLauncher<String>
-    private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var profilesQuery: List<Profile>
     private lateinit var taskCancellationSource: CancellationTokenSource
 

@@ -3,7 +3,7 @@ package com.example.volumeprofiler.util.ui.animations
 import android.animation.*
 import android.view.View
 import android.view.ViewGroup
-import androidx.transition.*
+import android.transition.*
 
 class Scale: Visibility() {
 

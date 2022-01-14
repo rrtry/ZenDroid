@@ -21,22 +21,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.ViewCompat.jumpDrawablesToCurrentState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.*
 import com.example.volumeprofiler.databinding.CreateAlarmLayoutBinding
 import com.example.volumeprofiler.entities.Alarm
-import com.example.volumeprofiler.fragments.TimePickerFragment
 import com.example.volumeprofiler.fragments.TimePickerFragment.Companion.EXTRA_LOCAL_TIME
-import com.example.volumeprofiler.fragments.PermissionExplanationDialog
-import com.example.volumeprofiler.fragments.ScheduledDaysPickerDialog
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.fragments.*
 import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_CLOCK
 import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
 import com.example.volumeprofiler.util.*
+import com.example.volumeprofiler.util.ui.animations.Scale
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -44,7 +45,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 import javax.inject.Inject
-import kotlin.collections.ArrayList
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.Event.*
 
 @AndroidEntryPoint
@@ -55,7 +55,6 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     private lateinit var binding: CreateAlarmLayoutBinding
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
-    private lateinit var calendarPermissionLauncher: ActivityResultLauncher<String>
     private var runnableInQueue: Boolean = false
 
     @Inject
@@ -80,18 +79,18 @@ class AlarmDetailsActivity: AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             sharedElementEnterTransition = TransitionSet().apply {
                 addTransition(ChangeBounds())
-                addTransition(ChangeTransform())
             }
             enterTransition = TransitionSet().apply {
 
+                duration = 350
+                ordering = TransitionSet.ORDERING_TOGETHER
                 addTransition(Slide(Gravity.BOTTOM))
                 addTransition(Fade())
+                addTransition(Scale())
 
                 excludeTarget(R.id.action_bar_container, true)
                 excludeTarget(android.R.id.statusBarBackground, true)
@@ -99,10 +98,13 @@ class AlarmDetailsActivity: AppCompatActivity() {
             }
             allowEnterTransitionOverlap = true
         }
+        super.onCreate(savedInstanceState)
 
-        calendarPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            detailsViewModel.readCalendarPermissionGranted.value = it
-        }
+        setBinding()
+        setActionBar()
+        setFragmentResultListeners()
+        collectEventsFlow()
+
         phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             when {
                 it -> {
@@ -120,10 +122,6 @@ class AlarmDetailsActivity: AppCompatActivity() {
                 }
             }
         }
-        setBinding()
-        setActionBar()
-        setFragmentResultListeners()
-        collectEventsFlow()
     }
 
     override fun onAttachedToWindow() {
@@ -143,7 +141,6 @@ class AlarmDetailsActivity: AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         phonePermissionLauncher.unregister()
-        calendarPermissionLauncher.unregister()
         handler.removeCallbacks(localTimeUpdateRunnable)
     }
 
@@ -188,7 +185,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
         if (updateAlarm && alarm.isScheduled == 1) {
             when {
                 profileUtil.grantedRequiredPermissions(profile) -> {
-                    applyChanges()
+                    updateAlarm()
                 }
                 profileUtil.shouldRequestPhonePermission(profile) -> {
                     phonePermissionLauncher.launch(READ_PHONE_STATE)
@@ -198,7 +195,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
                 }
             }
         } else {
-            applyChanges()
+            updateAlarm()
         }
     }
 
@@ -218,8 +215,8 @@ class AlarmDetailsActivity: AppCompatActivity() {
         binding.viewModel = detailsViewModel
         binding.lifecycleOwner = this
 
-        binding.clockView.transitionName = SHARED_TRANSITION_CLOCK
-        binding.enableAlarmSwitch.transitionName = SHARED_TRANSITION_SWITCH
+        ViewCompat.setTransitionName(binding.clockView, SHARED_TRANSITION_CLOCK)
+        ViewCompat.setTransitionName(binding.enableAlarmSwitch, SHARED_TRANSITION_SWITCH)
 
         setContentView(binding.root)
     }
@@ -255,10 +252,8 @@ class AlarmDetailsActivity: AppCompatActivity() {
             }
         }
         supportFragmentManager.setFragmentResultListener(SCHEDULED_DAYS_REQUEST_KEY, this) {_, bundle ->
-            val scheduledDays: ArrayList<Int>? = bundle.getSerializable(ScheduledDaysPickerDialog.EXTRA_SCHEDULED_DAYS) as? ArrayList<Int>
-            if (scheduledDays != null) {
-                detailsViewModel.scheduledDays.value = scheduledDays
-            }
+            val scheduledDays: Int = bundle.getInt(BaseDialog.EXTRA_MASK, 0)
+            detailsViewModel.scheduledDays.value = scheduledDays
         }
     }
 
@@ -281,6 +276,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
                         if (it.isNotEmpty()) {
                             detailsViewModel.setArgs(getAlarmRelation(), it)
                         }
+                        binding.enableAlarmSwitch.jumpDrawablesToCurrentState()
                     }
                 }
                 launch {
@@ -298,8 +294,10 @@ class AlarmDetailsActivity: AppCompatActivity() {
     }
 
     private fun postRunnable(): Unit {
+        /*
         handler.postDelayed(localTimeUpdateRunnable, AlarmUtil.getLocalTimeUpdateTaskDelay())
         runnableInQueue = true
+         */
     }
 
     private fun removeCallbacks(): Unit {
@@ -308,7 +306,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
     }
 
     private fun showDaysPickerDialog(): Unit {
-        val fragment: ScheduledDaysPickerDialog = ScheduledDaysPickerDialog.newInstance(detailsViewModel.scheduledDays.value)
+        val fragment: WeekDaysPickerDialog = WeekDaysPickerDialog.newInstance(detailsViewModel.scheduledDays.value)
         fragment.show(supportFragmentManager, null)
     }
 
@@ -317,7 +315,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
         fragment.show(supportFragmentManager, null)
     }
 
-    private fun applyChanges(): Unit {
+    private fun updateAlarm(): Unit {
         lifecycleScope.launch {
             val alarm: Alarm = detailsViewModel.getAlarm()
             val update: Boolean = detailsViewModel.getAlarmId() != null
@@ -341,13 +339,9 @@ class AlarmDetailsActivity: AppCompatActivity() {
             detailsViewModel.getProfile())
     }
 
-    private fun revertChanges(): Unit {
-        ActivityCompat.finishAfterTransition(this)
-    }
-
     override fun onBackPressed() {
         if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
-            revertChanges()
+            ActivityCompat.finishAfterTransition(this)
         } else {
             Toast.makeText(this, "Press back button again to dismiss changes", Toast.LENGTH_SHORT).show()
         }
@@ -359,10 +353,8 @@ class AlarmDetailsActivity: AppCompatActivity() {
         private const val CURSOR_LOADER_ID: Int = 1
         private const val LOG_TAG: String = "EditEventActivity"
 
-        const val EXTRA_UPDATE_FLAG: String = "extra_update_flag"
         const val TIME_REQUEST_KEY: String = "time_request_key"
         const val SCHEDULED_DAYS_REQUEST_KEY: String = "scheduled_days_request_key"
         const val EXTRA_ALARM_PROFILE_RELATION: String = "extra_alarm_relation"
-        const val EXTRA_ALARM: String = "extra_alarm"
     }
 }

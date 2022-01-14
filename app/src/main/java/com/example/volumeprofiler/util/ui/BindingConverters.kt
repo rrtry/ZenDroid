@@ -2,10 +2,9 @@ package com.example.volumeprofiler.util.ui
 
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
-import android.util.Log
 import androidx.databinding.BindingConversion
 import com.example.volumeprofiler.util.interruptionPolicy.extractPriorityCategories
-import com.example.volumeprofiler.util.interruptionPolicy.maskContainsBit
+import com.example.volumeprofiler.util.interruptionPolicy.isBitSet
 import kotlin.text.StringBuilder
 
 object BindingConverters {
@@ -32,10 +31,10 @@ object BindingConverters {
     @JvmStatic
     fun prioritySendersToString(prioritySenders: Int, priorityCategories: Int, categoryType: Int): String {
         return when (prioritySenders) {
-            PRIORITY_SENDERS_ANY -> if (maskContainsBit(priorityCategories, categoryType)) "From anyone" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            PRIORITY_SENDERS_STARRED -> if (maskContainsBit(priorityCategories, categoryType)) "From starred contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            PRIORITY_SENDERS_CONTACTS -> if (maskContainsBit(priorityCategories, categoryType)) "From contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            else -> "Unknown"
+            PRIORITY_SENDERS_ANY -> if (isBitSet(priorityCategories, categoryType)) "From anyone" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_STARRED -> if (isBitSet(priorityCategories, categoryType)) "From starred contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_CONTACTS -> if (isBitSet(priorityCategories, categoryType)) "From contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            else -> throw IllegalArgumentException("Invalid sender type")
         }
     }
 
@@ -89,7 +88,7 @@ object BindingConverters {
                 INTERRUPTION_FILTER_ALARMS -> "Alarms only"
                 INTERRUPTION_FILTER_NONE -> "Total silence"
                 INTERRUPTION_FILTER_ALL -> "Allow everything"
-                else -> "You've specified unknown interruption filter"
+                else -> throw IllegalArgumentException("Invalid interruption filter")
             }
         } else {
             "Notification policy access required"

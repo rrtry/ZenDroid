@@ -213,14 +213,6 @@ class ProfileUtil @Inject constructor (
         return getActualDefaultRingtoneUri(context, type)
     }
 
-    fun getStreamMaxVolume(streamType: Int): Int {
-        return audioManager.getStreamMaxVolume(streamType)
-    }
-
-    fun getStreamVolume(streamType: Int): Int {
-        return audioManager.getStreamVolume(streamType)
-    }
-
     private fun setVibrateWhenRingingBehaviour(state: Int): Unit {
         if (canWriteSettings()) {
             try {

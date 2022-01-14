@@ -6,7 +6,7 @@ import com.example.volumeprofiler.R
 import android.app.NotificationManager.Policy.*
 import com.example.volumeprofiler.entities.Profile
 
-class PriorityCategoriesDialog: BasePolicyPreferencesDialog() {
+class PriorityCategoriesDialog: BaseDialog() {
 
     override val title: String = "Priority categories"
     override val arrayRes: Int = if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
@@ -34,7 +34,7 @@ class PriorityCategoriesDialog: BasePolicyPreferencesDialog() {
         parentFragmentManager.setFragmentResult(
             InterruptionFilterFragment.PRIORITY_REQUEST_KEY,
             Bundle().apply {
-                putInt(EXTRA_CATEGORIES, mask)
+                putInt(EXTRA_MASK, mask)
             })
     }
 
@@ -43,7 +43,7 @@ class PriorityCategoriesDialog: BasePolicyPreferencesDialog() {
         fun newInstance(profile: Profile): PriorityCategoriesDialog {
             return PriorityCategoriesDialog().apply {
                 arguments = Bundle().apply {
-                    putInt(EXTRA_CATEGORIES, profile.priorityCategories)
+                    putInt(EXTRA_MASK, profile.priorityCategories)
                 }
             }
         }

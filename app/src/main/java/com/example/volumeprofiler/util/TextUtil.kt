@@ -3,7 +3,6 @@ package com.example.volumeprofiler.util
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
-import kotlin.collections.ArrayList
 import android.Manifest.permission.*
 import android.content.Context
 import android.text.format.DateFormat
@@ -40,7 +39,7 @@ class TextUtil {
             return argsMap
         }
 
-        private fun untilToLocalDate(until: String): LocalDate {
+        private fun parseEndDate(until: String): LocalDate {
             val regex: Regex = Regex("(\\d{4})(\\d{2})(\\d{2})")
             val groupValues: List<Int> = regex.findAll(until).first().groupValues.map { it.toInt() }
             return LocalDate.of(
@@ -59,7 +58,7 @@ class TextUtil {
             if (until != null) {
                 val formatter: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
                     .withLocale(Locale.getDefault())
-                return "until ${untilToLocalDate(until).format(formatter)}"
+                return "until ${parseEndDate(until).format(formatter)}"
             }
             return ""
         }
@@ -139,27 +138,32 @@ class TextUtil {
         }
 
         @JvmStatic
-        fun weekDaysToString(scheduledDays: ArrayList<Int>, startTime: LocalTime): String {
-            val stringBuilder: StringBuilder = StringBuilder()
-            if (scheduledDays.isNotEmpty()) {
-                if (scheduledDays.size == 1) {
-                    return DayOfWeek.of(scheduledDays[0]).getDisplayName(TextStyle.FULL, Locale.getDefault())
-                }
-                else if (scheduledDays.size == 7) {
-                    return "Every day"
-                }
-                for ((index, i) in scheduledDays.withIndex()) {
-                    if (index < scheduledDays.size - 1) {
-                        stringBuilder.append(DayOfWeek.of(i).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
+        fun weekDaysToString(scheduledDays: Int, startTime: LocalTime): String {
+            val stringBuilder = StringBuilder()
+            return if (scheduledDays != 0) {
+                if (scheduledDays == WeekDay.ALL_DAYS) {
+                    "Every day"
+                } else {
+                    val days: List<WeekDay> = listOf(
+                        WeekDay.MONDAY,
+                        WeekDay.TUESDAY,
+                        WeekDay.WEDNESDAY,
+                        WeekDay.THURSDAY,
+                        WeekDay.FRIDAY,
+                        WeekDay.SATURDAY,
+                        WeekDay.SUNDAY
+                    ).filter { (scheduledDays and it.value) != 0 }
+                    for ((index, i) in days.withIndex()) {
+                        if (index < days.size - 1) {
+                            stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
+                        } else {
+                            stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()))
+                        }
                     }
-                    else {
-                        stringBuilder.append(DayOfWeek.of(i).getDisplayName(TextStyle.SHORT, Locale.getDefault()))
-                    }
+                    stringBuilder.toString()
                 }
-                return stringBuilder.toString()
-            }
-            else {
-                return if (startTime > LocalTime.now()) {
+            } else {
+                if (startTime > LocalTime.now()) {
                     "Today"
                 } else {
                     "Tomorrow"

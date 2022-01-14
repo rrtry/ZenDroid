@@ -12,7 +12,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.entities.Profile
 
 @TargetApi(Build.VERSION_CODES.P)
-class SuppressedEffectsOnDialog : BasePolicyPreferencesDialog() {
+class SuppressedEffectsOnDialog : BaseDialog() {
 
     override val title: String = "When screen is on"
     override val arrayRes: Int = R.array.screenIsOn
@@ -58,7 +58,7 @@ class SuppressedEffectsOnDialog : BasePolicyPreferencesDialog() {
     override fun applyChanges(mask: Int) {
         parentFragmentManager.setFragmentResult(
             InterruptionFilterFragment.EFFECTS_REQUEST_KEY, Bundle().apply {
-                putInt(EXTRA_CATEGORIES, mask)
+                putInt(EXTRA_MASK, mask)
             })
     }
 
@@ -67,7 +67,7 @@ class SuppressedEffectsOnDialog : BasePolicyPreferencesDialog() {
         fun newInstance(profile: Profile): SuppressedEffectsOnDialog {
             return SuppressedEffectsOnDialog().apply {
                 arguments = Bundle().apply {
-                    putInt(EXTRA_CATEGORIES, profile.suppressedVisualEffects)
+                    putInt(EXTRA_MASK, profile.suppressedVisualEffects)
                 }
             }
         }

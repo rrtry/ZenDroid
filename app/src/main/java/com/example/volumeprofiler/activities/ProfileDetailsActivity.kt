@@ -36,6 +36,7 @@ import android.Manifest.permission.*
 import android.net.Uri
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.FlowPreview
 
 @AndroidEntryPoint
 class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks, ActivityCompat.OnRequestPermissionsResultCallback {
@@ -67,6 +68,7 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
         elapsedTime = savedInstanceState.getLong(KEY_ELAPSED_TIME, 0)
     }
 
+    @FlowPreview
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -138,6 +140,7 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
         }
     }
 
+    @FlowPreview
     private fun collectEventsFlow(): Unit {
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -150,7 +153,7 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
                                 }
                             }
                             is ApplyChangesEvent -> {
-                                applyChanges(it.profile, it.shouldUpdate)
+                                updateProfile(it.profile, it.shouldUpdate)
                             }
                             else -> Log.i("EditProfileActivity", "unknown event")
                         }
@@ -173,7 +176,7 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
         permissionRequestLauncher.launch(permissions)
     }
 
-    private fun applyChanges(profile: Profile, update: Boolean, resolveMissingPermissions: Boolean = true): Unit {
+    private fun updateProfile(profile: Profile, update: Boolean): Unit {
         when {
             profileUtil.grantedRequiredPermissions(
                 true,
@@ -184,9 +187,7 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
                 setSuccessfulResult(profile, update)
             }
             !checkSelfPermission(this, READ_EXTERNAL_STORAGE) || profileUtil.shouldRequestPhonePermission(profile) -> {
-                if (resolveMissingPermissions) {
-                    requestPermissions(profile)
-                }
+                requestPermissions(profile)
             }
             else -> {
                 sendSystemPreferencesAccessNotification(this, profileUtil)

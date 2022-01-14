@@ -7,7 +7,7 @@ import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
 
-abstract class BasePolicyPreferencesDialog: DialogFragment() {
+abstract class BaseDialog: DialogFragment() {
 
     protected abstract val title: String
     protected abstract val arrayRes: Int
@@ -16,25 +16,25 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
     protected var categoriesMask: Int = 0
     private var argsSet: Boolean = false
 
-    private fun removeCategory(category: Int): Unit {
+    private fun removeBit(category: Int): Unit {
         categoriesMask = categoriesMask and category.inv()
     }
 
-    private fun addCategory(category: Int): Unit {
+    private fun addBit(category: Int): Unit {
         categoriesMask = categoriesMask or category
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) {
-            categoriesMask = savedInstanceState.getInt(EXTRA_CATEGORIES, 0)
+            categoriesMask = savedInstanceState.getInt(EXTRA_MASK, 0)
             argsSet = savedInstanceState.getBoolean(EXTRA_SET_ARGUMENTS, false)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(EXTRA_CATEGORIES, categoriesMask)
+        outState.putInt(EXTRA_MASK, categoriesMask)
         outState.putBoolean(EXTRA_SET_ARGUMENTS, argsSet)
     }
 
@@ -42,7 +42,7 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
         super.onResume()
 
         if (!argsSet) {
-            categoriesMask = requireArguments().getInt(EXTRA_CATEGORIES, 0)
+            categoriesMask = requireArguments().getInt(EXTRA_MASK, 0)
             argsSet = true
         }
 
@@ -64,9 +64,9 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
                     val category: Int = categories[which]
 
                     if (isChecked) {
-                        addCategory(category)
+                        addBit(category)
                     } else if ((categoriesMask and category) != 0) {
-                        removeCategory(category)
+                        removeBit(category)
                     }
                     (getListView().adapter as ArrayAdapter<*>).notifyDataSetChanged()
                 }
@@ -90,7 +90,7 @@ abstract class BasePolicyPreferencesDialog: DialogFragment() {
 
     companion object {
 
-        const val EXTRA_CATEGORIES: String = "extra_categories"
+        const val EXTRA_MASK: String = "extra_mask"
         const val EXTRA_SET_ARGUMENTS: String = "extra_set_arguments"
 
     }

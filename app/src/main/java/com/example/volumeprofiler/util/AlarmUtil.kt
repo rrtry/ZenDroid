@@ -16,10 +16,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.*
 import java.time.temporal.ChronoField
 import java.time.temporal.TemporalAdjuster
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.Comparator
 
 @Singleton
 class AlarmUtil @Inject constructor (
@@ -123,8 +121,80 @@ class AlarmUtil @Inject constructor (
 
     companion object {
 
+        private fun isBitSet(mask: Int, day: Int): Boolean {
+            val bit: Int = WeekDay.fromDay(day)
+            return (mask and bit) != 0
+        }
+
+        internal fun getNextAlarmTime(days: Int, alarmStartTime: LocalTime): ZonedDateTime {
+
+            val now: ZonedDateTime = ZonedDateTime.now()
+            val inclusive: Boolean = now.toLocalTime() < alarmStartTime
+            val nextDay: DayOfWeek = getNextAlarmDay(now, days, inclusive)
+
+            return now.with(getDayOfWeekAdjuster(nextDay, inclusive))
+                .withHour(alarmStartTime.hour)
+                .withMinute(alarmStartTime.minute)
+                .withSecond(0)
+                .withNano(0)
+        }
+
+        private fun getNextAlarmDay(now: ZonedDateTime, days: Int, inclusive: Boolean): DayOfWeek {
+
+            val today: DayOfWeek = now.dayOfWeek
+
+            return when {
+                days != 0 -> {
+                    getNextAlarmDay(today, days, inclusive)
+                }
+                inclusive -> {
+                    today
+                }
+                else -> {
+                    today.plus(1)
+                }
+            }
+        }
+
+        private fun getNextAlarmDay(today: DayOfWeek, days: Int, inclusive: Boolean): DayOfWeek {
+            var nextDay: DayOfWeek = today
+
+            if (inclusive && isBitSet(days, nextDay.value)) {
+                return nextDay
+            }
+            while (true) {
+                nextDay = nextDay.plus(1)
+                if (isBitSet(days, nextDay.value)) {
+                    break
+                }
+            }
+            return nextDay
+        }
+
+        private fun getDayOfWeekAdjuster(day: DayOfWeek, inclusive: Boolean): TemporalAdjuster {
+            return if (inclusive) {
+                TemporalAdjusters.nextOrSame(day)
+            } else {
+                TemporalAdjusters.next(day)
+            }
+        }
+
+        internal fun getNextAlarmTime(alarm: Alarm): ZonedDateTime {
+
+            val now: ZonedDateTime = ZonedDateTime.now()
+            val startTime: LocalTime = alarm.localStartTime
+            val inclusive: Boolean = now.toLocalTime() < startTime
+            val nextDay: DayOfWeek = getNextAlarmDay(now, alarm.scheduledDays, inclusive)
+
+            return now.with(getDayOfWeekAdjuster(nextDay, inclusive))
+                .withHour(startTime.hour)
+                .withMinute(startTime.minute)
+                .withSecond(0)
+                .withNano(0)
+        }
+
         internal fun isAlarmValid(alarm: Alarm): Boolean {
-            return if (alarm.scheduledDays.isEmpty()) {
+            return if (alarm.scheduledDays == 0) {
                 !isAlarmInstanceObsolete(alarm)
             } else {
                 true
@@ -139,69 +209,12 @@ class AlarmUtil @Inject constructor (
             return now.isAfter(instanceStartTime)
         }
 
-        internal fun getNextAlarmTime(alarm: Alarm): ZonedDateTime {
-
-            val now: ZonedDateTime = ZonedDateTime.now()
-            val recurringDays: List<Int> = alarm.scheduledDays
-            val localTime: LocalTime = alarm.localStartTime
-
-            val inclusive: Boolean = localTime > now.toLocalTime()
-            val nextDay: DayOfWeek = getNextAlarmDay(now, recurringDays, inclusive)
-
-            val adjusted: ZonedDateTime = now.with(getDayOfWeekAdjuster(nextDay, inclusive))
-                .withHour(localTime.hour)
-                .withMinute(localTime.minute)
-                .withSecond(0)
-                .withNano(0)
-            return adjusted
-        }
-
-        private fun getDayOfWeekAdjuster(day: DayOfWeek, inclusive: Boolean): TemporalAdjuster {
-            return if (inclusive) {
-                TemporalAdjusters.nextOrSame(day)
-            } else {
-                TemporalAdjusters.next(day)
-            }
-        }
-
-        private fun getNextAlarmDay(now: ZonedDateTime, days: List<Int>, inclusive: Boolean): DayOfWeek {
-            val nextDay: DayOfWeek = when {
-                days.isNotEmpty() -> {
-                    DayOfWeek.of(
-                        Collections.min(days, Comparator.comparing { dayOfWeekValue -> now.with(getDayOfWeekAdjuster(DayOfWeek.of(dayOfWeekValue), inclusive))
-                    })) // Repeating alarm, set for the next scheduled day
-                }
-                inclusive -> {
-                    now.dayOfWeek // Alarm's not repeating, set for some time later the same day
-                }
-                else -> {
-                    now.dayOfWeek.plus(1) // Alarm's not repeating, set for tomorrow
-                }
-            }
-            return nextDay
-        }
-
         internal fun toEpochMilli(now: LocalDateTime): Long {
             return now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         }
 
         internal fun toEpochMilli(zdt: ZonedDateTime): Long {
             return zdt.toInstant().toEpochMilli()
-        }
-
-        internal fun getNextAlarmTime(recurringDays: List<Int>, localTime: LocalTime): ZonedDateTime {
-
-            val now: ZonedDateTime = ZonedDateTime.now()
-
-            val inclusive: Boolean = localTime > now.toLocalTime()
-            val nextDay: DayOfWeek = getNextAlarmDay(now, recurringDays, inclusive)
-
-            val adjusted: ZonedDateTime = now.with(getDayOfWeekAdjuster(nextDay, inclusive))
-                .withHour(localTime.hour)
-                .withMinute(localTime.minute)
-                .withSecond(0)
-                .withNano(0)
-            return adjusted
         }
 
         private fun formatRemainingTimeUtilAlarm(alarm: Alarm): String {
@@ -263,14 +276,6 @@ class AlarmUtil @Inject constructor (
             val adjustedMillis: Int = adjusted.get(ChronoField.MILLI_OF_DAY)
 
             return (adjustedMillis - currentMillis).toLong()
-        }
-
-        internal fun isNextInstanceTomorrow(alarm: Alarm): Boolean {
-            return alarm.scheduledDays.isEmpty() && LocalTime.now() > alarm.localStartTime
-        }
-
-        internal fun isNextInstanceToday(alarm: Alarm): Boolean {
-            return alarm.scheduledDays.isEmpty() && LocalTime.now() < alarm.localStartTime
         }
 
         private const val MILLIS_PER_MINUTE: Long = 60000L
