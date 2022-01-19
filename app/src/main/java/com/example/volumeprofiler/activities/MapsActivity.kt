@@ -634,13 +634,15 @@ class MapsActivity : AppCompatActivity(),
         mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(
             viewModel.getLatLng()!!, getZoomFactor()
         )))
-        mMap.clear()
-        mMap.snapshot {
-            if (it != null) {
-                writeCompressedBitmap(this, id, it)
+        Handler(Looper.getMainLooper()).postDelayed({
+            mMap.clear()
+            mMap.snapshot {
+                if (it != null) {
+                    writePreviewBitmap(this, id, it)
+                }
+                finish()
             }
-            finish()
-        }
+        }, 500)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

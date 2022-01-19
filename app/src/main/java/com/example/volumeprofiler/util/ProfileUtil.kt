@@ -230,12 +230,8 @@ class ProfileUtil @Inject constructor (
         return Settings.System.canWrite(context)
     }
 
-    fun shouldRequestPhonePermission(profile: Profile?): Boolean {
-        return if (profile == null) {
-            false
-        } else {
-            !checkSelfPermission(context, READ_PHONE_STATE) && requiresPhoneStatePermission(profile)
-        }
+    fun shouldRequestPhonePermission(profile: Profile): Boolean {
+        return !checkSelfPermission(context, READ_PHONE_STATE) && requiresPhoneStatePermission(profile)
     }
 
     fun shouldRequestPhonePermission(locationRelation: LocationRelation): Boolean {
@@ -260,16 +256,11 @@ class ProfileUtil @Inject constructor (
         return isNotificationPolicyAccessGranted() && canWriteSettings()
     }
 
-    fun grantedRequiredPermissions(profile: Profile?): Boolean {
-        if (profile != null) {
-            if (requiresPhoneStatePermission(profile) && !checkSelfPermission(context, READ_PHONE_STATE)) {
-                return false
-            }
-            return grantedSystemPreferencesAccess()
-        }
-        else {
+    fun grantedRequiredPermissions(profile: Profile): Boolean {
+        if (requiresPhoneStatePermission(profile) && !checkSelfPermission(context, READ_PHONE_STATE)) {
             return false
         }
+        return grantedSystemPreferencesAccess()
     }
 
     fun grantedRequiredPermissions(

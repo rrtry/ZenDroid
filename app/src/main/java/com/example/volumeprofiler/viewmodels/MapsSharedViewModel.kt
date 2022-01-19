@@ -21,9 +21,10 @@ class MapsSharedViewModel @Inject constructor(
 
     val title: MutableStateFlow<String?> = MutableStateFlow(null)
     val latLng: MutableStateFlow<LatLng?> = MutableStateFlow(null)
-    val address: MutableStateFlow<String?> = MutableStateFlow(null)
     val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
+
     private val locality: MutableStateFlow<String> = MutableStateFlow("")
+    private val address: MutableStateFlow<String?> = MutableStateFlow(null)
 
     val toRestoreProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
     val toApplyProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
@@ -36,6 +37,7 @@ class MapsSharedViewModel @Inject constructor(
 
     fun setLocation(locationRelation: LocationRelation): Unit {
         if (!areArgsSet) {
+
             val positionsPair: Pair = getPositions(locationRelation)
             toApplyProfilePosition.value = positionsPair.first
             toRestoreProfilePosition.value = positionsPair.second

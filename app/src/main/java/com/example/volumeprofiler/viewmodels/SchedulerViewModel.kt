@@ -40,15 +40,9 @@ class SchedulerViewModel @Inject constructor(
         }
     }
 
-    fun updateAlarm(alarm: Alarm) {
+    private fun updateAlarm(alarm: Alarm) {
         viewModelScope.launch {
             alarmRepository.updateAlarm(alarm)
-        }
-    }
-
-    fun addAlarm(alarm: Alarm): Unit {
-        viewModelScope.launch {
-            alarmRepository.addAlarm(alarm)
         }
     }
 

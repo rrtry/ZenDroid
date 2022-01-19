@@ -6,11 +6,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.transition.*
 import android.util.Log
-import android.util.LogPrinter
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
@@ -22,7 +19,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.ViewCompat.jumpDrawablesToCurrentState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -37,7 +33,6 @@ import com.example.volumeprofiler.fragments.*
 import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_CLOCK
 import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.util.ui.animations.Scale
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -66,19 +61,16 @@ class AlarmDetailsActivity: AppCompatActivity() {
     @Inject
     lateinit var profileUtil: ProfileUtil
 
-    private val timePreferencesReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val timeChangeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            detailsViewModel.localTime.value = LocalTime.now()
+            detailsViewModel.weekDaysLocalTime.value = LocalTime.now()
         }
     }
 
-    private val handler: Handler = Handler(Looper.getMainLooper())
-    private val localTimeUpdateRunnable: Runnable = Runnable {
-        detailsViewModel.weekDaysLocalTime.value = LocalTime.now()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             sharedElementEnterTransition = TransitionSet().apply {
@@ -88,9 +80,8 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
                 duration = 350
                 ordering = TransitionSet.ORDERING_TOGETHER
-                addTransition(Slide(Gravity.BOTTOM))
                 addTransition(Fade())
-                addTransition(Scale())
+                addTransition(Slide(Gravity.BOTTOM))
 
                 excludeTarget(R.id.action_bar_container, true)
                 excludeTarget(android.R.id.statusBarBackground, true)
@@ -98,7 +89,6 @@ class AlarmDetailsActivity: AppCompatActivity() {
             }
             allowEnterTransitionOverlap = true
         }
-        super.onCreate(savedInstanceState)
 
         setBinding()
         setActionBar()
@@ -126,7 +116,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        registerReceiver(timePreferencesReceiver, IntentFilter().apply {
+        registerReceiver(timeChangeReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
             addAction(Intent.ACTION_LOCALE_CHANGED)
@@ -135,13 +125,12 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        unregisterReceiver(timePreferencesReceiver)
+        unregisterReceiver(timeChangeReceiver)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         phonePermissionLauncher.unregister()
-        handler.removeCallbacks(localTimeUpdateRunnable)
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
@@ -184,7 +173,7 @@ class AlarmDetailsActivity: AppCompatActivity() {
         val profile: Profile? = getAlarmRelation()?.profile
         if (updateAlarm && alarm.isScheduled == 1) {
             when {
-                profileUtil.grantedRequiredPermissions(profile) -> {
+                profileUtil.grantedRequiredPermissions(profile!!) -> {
                     updateAlarm()
                 }
                 profileUtil.shouldRequestPhonePermission(profile) -> {
@@ -218,6 +207,12 @@ class AlarmDetailsActivity: AppCompatActivity() {
         ViewCompat.setTransitionName(binding.clockView, SHARED_TRANSITION_CLOCK)
         ViewCompat.setTransitionName(binding.enableAlarmSwitch, SHARED_TRANSITION_SWITCH)
 
+        binding.applyButton.setOnClickListener {
+            onSaveChangesItemClick()
+        }
+        binding.cancelButton.setOnClickListener {
+            ActivityCompat.finishAfterTransition(this)
+        }
         setContentView(binding.root)
     }
 
@@ -280,29 +275,25 @@ class AlarmDetailsActivity: AppCompatActivity() {
                     }
                 }
                 launch {
-                    detailsViewModel.scheduleUIUpdates.collect {
-                        if (it && !runnableInQueue) {
-                            postRunnable()
+                    detailsViewModel.updateNextAlarmDay.collect {
+                        if (it) {
+                            registerReceiver(timeChangeReceiver, IntentFilter().apply {
+                                addAction(Intent.ACTION_TIME_CHANGED)
+                                addAction(Intent.ACTION_TIMEZONE_CHANGED)
+                                addAction(Intent.ACTION_LOCALE_CHANGED)
+                                addAction(Intent.ACTION_TIME_TICK)
+                            })
                         } else {
-                            removeCallbacks()
+                            registerReceiver(timeChangeReceiver, IntentFilter().apply {
+                                addAction(Intent.ACTION_TIME_CHANGED)
+                                addAction(Intent.ACTION_TIMEZONE_CHANGED)
+                                addAction(Intent.ACTION_LOCALE_CHANGED)
+                            })
                         }
-                        handler.dump(LogPrinter(Log.DEBUG, "Handler"), "MessageQueue: ")
                     }
                 }
             }
         }
-    }
-
-    private fun postRunnable(): Unit {
-        /*
-        handler.postDelayed(localTimeUpdateRunnable, AlarmUtil.getLocalTimeUpdateTaskDelay())
-        runnableInQueue = true
-         */
-    }
-
-    private fun removeCallbacks(): Unit {
-        handler.removeCallbacks(localTimeUpdateRunnable)
-        runnableInQueue = false
     }
 
     private fun showDaysPickerDialog(): Unit {
@@ -326,17 +317,13 @@ class AlarmDetailsActivity: AppCompatActivity() {
                 detailsViewModel.addAlarm(detailsViewModel.getAlarm())
             }
             if (scheduled) {
-                scheduleAlarm()
+                alarmUtil.scheduleAlarm(
+                    alarm,
+                    detailsViewModel.getProfile())
             }
         }.invokeOnCompletion {
             ActivityCompat.finishAfterTransition(this)
         }
-    }
-
-    private fun scheduleAlarm(): Unit {
-        alarmUtil.scheduleAlarm(
-            detailsViewModel.getAlarm(),
-            detailsViewModel.getProfile())
     }
 
     override fun onBackPressed() {

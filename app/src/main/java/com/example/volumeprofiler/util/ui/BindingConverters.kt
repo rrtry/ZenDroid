@@ -1,10 +1,12 @@
 package com.example.volumeprofiler.util.ui
 
+import android.annotation.TargetApi
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
+import android.os.Build
+import android.util.Log
 import androidx.databinding.BindingConversion
-import com.example.volumeprofiler.util.interruptionPolicy.extractPriorityCategories
-import com.example.volumeprofiler.util.interruptionPolicy.isBitSet
+import com.example.volumeprofiler.util.interruptionPolicy.*
 import kotlin.text.StringBuilder
 
 object BindingConverters {
@@ -38,13 +40,30 @@ object BindingConverters {
         }
     }
 
-    @BindingConversion
+    @TargetApi(Build.VERSION_CODES.P)
     @JvmStatic
-    fun suppressedEffectsToString(visualInterruptions: Int): String {
-        return if (visualInterruptions == 0) {
-            "None of visual effects are suppressed"
+    fun suppressedEffectsToString(mask: Int, screenOn: Boolean): String {
+        val effectsList = if (screenOn) {
+            listOf(
+                SUPPRESSED_EFFECT_BADGE,
+                SUPPRESSED_EFFECT_STATUS_BAR,
+                SUPPRESSED_EFFECT_PEEK,
+                SUPPRESSED_EFFECT_NOTIFICATION_LIST
+            )
         } else {
-            "Partially visible"
+            listOf(
+                SUPPRESSED_EFFECT_LIGHTS,
+                SUPPRESSED_EFFECT_FULL_SCREEN_INTENT,
+                SUPPRESSED_EFFECT_AMBIENT
+            )
+        }
+        val allEffectsMask: Int = if (screenOn) ALL_SCREEN_ON_EFFECTS else ALL_SCREEN_OFF_EFFECTS
+        val effectsMask: Int = createMask(effectsList.filter { isBitSet(mask, it) })
+        Log.i("BindingConverters", "mask: $effectsMask, screenOn: $screenOn")
+        return when (effectsMask) {
+            allEffectsMask -> "All suppressed"
+            0 -> "All visible"
+            else -> "Partially visible"
         }
     }
 

@@ -126,17 +126,6 @@ class TextUtil {
             return formatter.format(zonedDateTime)
         }
 
-        fun getPermissionName(permission: String): String {
-            return when (permission) {
-                READ_PHONE_STATE -> "Phone"
-                READ_EXTERNAL_STORAGE -> "Storage"
-                ACCESS_FINE_LOCATION -> "Location"
-                ACCESS_BACKGROUND_LOCATION -> "Background location"
-                ACCESS_NOTIFICATION_POLICY -> "Do not disturb"
-                else -> "System settings"
-            }
-        }
-
         @JvmStatic
         fun weekDaysToString(scheduledDays: Int, startTime: LocalTime): String {
             val stringBuilder = StringBuilder()
@@ -153,11 +142,15 @@ class TextUtil {
                         WeekDay.SATURDAY,
                         WeekDay.SUNDAY
                     ).filter { (scheduledDays and it.value) != 0 }
-                    for ((index, i) in days.withIndex()) {
-                        if (index < days.size - 1) {
-                            stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
-                        } else {
-                            stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()))
+                    if (days.size == 1) {
+                        stringBuilder.append(DayOfWeek.of(days[0].num).getDisplayName(TextStyle.FULL, Locale.getDefault()))
+                    } else {
+                        for ((index, i) in days.withIndex()) {
+                            if (index < days.size - 1) {
+                                stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
+                            } else {
+                                stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()))
+                            }
                         }
                     }
                     stringBuilder.toString()
@@ -168,6 +161,17 @@ class TextUtil {
                 } else {
                     "Tomorrow"
                 }
+            }
+        }
+
+        fun getPermissionName(permission: String): String {
+            return when (permission) {
+                READ_PHONE_STATE -> "Phone"
+                READ_EXTERNAL_STORAGE -> "Storage"
+                ACCESS_FINE_LOCATION -> "Location"
+                ACCESS_BACKGROUND_LOCATION -> "Background location"
+                ACCESS_NOTIFICATION_POLICY -> "Do not disturb"
+                else -> "System settings"
             }
         }
 

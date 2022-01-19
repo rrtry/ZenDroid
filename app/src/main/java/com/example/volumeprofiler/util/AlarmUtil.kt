@@ -267,17 +267,6 @@ class AlarmUtil @Inject constructor (
             }
         }
 
-        fun getLocalTimeUpdateTaskDelay(): Long {
-
-            val now: LocalTime = LocalTime.now()
-            val adjusted: LocalTime = now.withMinute(now.minute + 1).withSecond(0)
-
-            val currentMillis: Int = now.get(ChronoField.MILLI_OF_DAY)
-            val adjustedMillis: Int = adjusted.get(ChronoField.MILLI_OF_DAY)
-
-            return (adjustedMillis - currentMillis).toLong()
-        }
-
         private const val MILLIS_PER_MINUTE: Long = 60000L
     }
 }

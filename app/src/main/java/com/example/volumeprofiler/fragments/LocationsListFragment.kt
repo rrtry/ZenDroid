@@ -9,25 +9,18 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import android.Manifest.permission.*
-import android.util.Log
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.volumeprofiler.activities.MapsActivity
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.databinding.LocationsListFragmentBinding
-import com.example.volumeprofiler.interfaces.ActionModeProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
@@ -37,22 +30,13 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.interfaces.PermissionRequestCallback
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.ThumbnailUtils
-import android.view.ViewTreeObserver
-import android.widget.ImageView
-import android.widget.Toast
-import androidx.core.content.res.ResourcesCompat
-import com.example.volumeprofiler.R
-import java.util.*
-
 
 @AndroidEntryPoint
-class LocationsListFragment: Fragment(), ActionModeProvider<String> {
+class LocationsListFragment: Fragment() {
 
     @Inject
     lateinit var geofenceUtil: GeofenceUtil
@@ -60,8 +44,9 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
     @Inject
     lateinit var profileUtil: ProfileUtil
 
-    private lateinit var tracker: SelectionTracker<String>
-    private val locationAdapter: LocationAdapter = LocationAdapter()
+    private val locationAdapter: LocationAdapter by lazy {
+        LocationAdapter()
+    }
 
     private var _binding: LocationsListFragmentBinding? = null
     private val binding: LocationsListFragmentBinding get() = _binding!!
@@ -122,12 +107,12 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         }
     }
 
-    private fun initRecyclerView(view: View) {
+    private fun setRecyclerView(view: View) {
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = locationAdapter
     }
 
-    private fun updateUI(list: List<LocationRelation>): Unit {
+    private fun updateAdapterData(list: List<LocationRelation>): Unit {
         if (list.isEmpty()) {
             binding.hintLocations.visibility = View.VISIBLE
         } else {
@@ -138,10 +123,10 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRecyclerView(view)
+        setRecyclerView(view)
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.locationsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).collect {
-                updateUI(it)
+                updateAdapterData(it)
             }
         }
     }
@@ -152,6 +137,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
         )
+        deletePreviewBitmap(requireContext(), locationRelation.location.previewImageId)
         viewModel.removeLocation(locationRelation.location)
     }
 
@@ -166,19 +152,14 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
         updateItem(position, 1)
     }
 
-    @Suppress("MissingPermission")
     private fun disableGeofence(locationRelation: LocationRelation, position: Int): Unit {
-        if (geofenceUtil.locationAccessGranted()) {
-            geofenceUtil.removeGeofence(
-                locationRelation.location,
-                locationRelation.onEnterProfile,
-                locationRelation.onExitProfile
-            )
-            viewModel.disableGeofence(locationRelation.location)
-            updateItem(position, 0)
-        } else {
-            callback?.requestLocationPermissions(locationRelation)
-        }
+        geofenceUtil.removeGeofence(
+            locationRelation.location,
+            locationRelation.onEnterProfile,
+            locationRelation.onExitProfile
+        )
+        viewModel.disableGeofence(locationRelation.location)
+        updateItem(position, 0)
     }
 
     private fun updateItem(position: Int, enabled: Byte): Unit {
@@ -209,7 +190,7 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
             }
             binding.mapSnapshot.post {
                 binding.mapSnapshot.setImageBitmap(
-                    ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(resolveAbsolutePath(
+                    ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(resolvePath(
                         requireContext(), location.previewImageId
                     )), binding.mapSnapshot.width, binding.mapSnapshot.height)
                 )
@@ -288,17 +269,5 @@ class LocationsListFragment: Fragment(), ActionModeProvider<String> {
 
     companion object {
         private const val PAYLOAD_GEOFENCE_ENABLED: String = "payload_geofence_enabled"
-    }
-
-    override fun onActionItemRemove() {
-
-    }
-
-    override fun getTracker(): SelectionTracker<String> {
-        return tracker
-    }
-
-    override fun getFragmentActivity(): FragmentActivity {
-        return requireActivity()
     }
 }

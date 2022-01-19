@@ -52,7 +52,7 @@ class SuppressedEffectsOnDialog : BaseDialog() {
             arrayAdapter.add(it)
         }
         listView.adapter = arrayAdapter
-        super.onResume() // always call superclass' implementation
+        super.onResume()
     }
 
     override fun applyChanges(mask: Int) {

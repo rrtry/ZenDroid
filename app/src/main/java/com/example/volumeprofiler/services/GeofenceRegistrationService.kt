@@ -8,6 +8,7 @@ import androidx.annotation.RequiresPermission
 import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.util.GeofenceUtil
+import com.example.volumeprofiler.util.WakeLock
 import com.example.volumeprofiler.util.checkSelfPermission
 import com.example.volumeprofiler.util.createGeofenceRegistrationNotification
 import dagger.hilt.android.AndroidEntryPoint
@@ -43,9 +44,9 @@ class GeofenceRegistrationService: Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         super.onStartCommand(intent, flags, startId)
 
+        WakeLock.acquire(this)
         startForeground(SERVICE_ID, createGeofenceRegistrationNotification(this))
 
         if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
@@ -61,6 +62,7 @@ class GeofenceRegistrationService: Service() {
     }
 
     private fun stopService(): Unit {
+        WakeLock.release()
         stopForeground(true)
         stopSelf()
     }

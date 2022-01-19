@@ -194,6 +194,7 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
         binding.setLocationButton.setOnClickListener {
             var isInputValid = true
+
             if (!viewModel.latitudeEditStatus.value) {
                 isInputValid = false
                 AnimUtil.shakeAnimation(binding.latitudeTextInputLayout)

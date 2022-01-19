@@ -33,7 +33,7 @@ class AlarmDetailsViewModel @Inject constructor(
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
 
-    val scheduleUIUpdates: Flow<Boolean> = combine(localTime, scheduledDays) {
+    val updateNextAlarmDay: Flow<Boolean> = combine(localTime, scheduledDays) {
         localTime, scheduledDays -> scheduledDays == 0 && localTime > LocalTime.now()
     }
 
@@ -51,6 +51,18 @@ class AlarmDetailsViewModel @Inject constructor(
     enum class DialogType {
         DAYS_SELECTION,
         TIME_SELECTION
+    }
+
+    fun addAlarm(alarm: Alarm): Unit {
+        viewModelScope.launch {
+            alarmRepository.addAlarm(alarm)
+        }
+    }
+
+    fun updateAlarm(alarm: Alarm): Unit {
+        viewModelScope.launch {
+            alarmRepository.updateAlarm(alarm)
+        }
     }
 
     fun onTimeSelectButtonClick(): Unit {
@@ -128,17 +140,5 @@ class AlarmDetailsViewModel @Inject constructor(
     override fun onCleared(): Unit {
         super.onCleared()
         channel.close()
-    }
-
-    fun addAlarm(alarm: Alarm): Unit {
-        viewModelScope.launch {
-            alarmRepository.addAlarm(alarm)
-        }
-    }
-
-    fun updateAlarm(alarm: Alarm): Unit {
-        viewModelScope.launch {
-            alarmRepository.updateAlarm(alarm)
-        }
     }
 }

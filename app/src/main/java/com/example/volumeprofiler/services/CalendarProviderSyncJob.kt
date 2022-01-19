@@ -37,15 +37,6 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
     @Inject
     lateinit var alarmUtil: AlarmUtil
 
-    /*
-    private val handler: Handler = Handler(Looper.getMainLooper())
-    private val worker = Runnable {
-        scheduleJob(this)
-        Log.i("CalendarProviderJob", "performing heavy lifting ...")
-        jobFinished(runningParams, false)
-    }
-     */
-
     override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
         val eventRelation: EventRelation = cookie as EventRelation
         val event: Event = eventRelation.event
@@ -53,20 +44,15 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
         cursor?.use {
             if (it.moveToFirst()) {
                 instanceValid = true
-
-                val begin: Long = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.BEGIN))
-                val end: Long = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.END))
-                val rrule: String? = cursor.getString(cursor.getColumnIndex(CalendarContract.Instances.RRULE))
-
                 event.title = cursor.getString(cursor.getColumnIndex(CalendarContract.Instances.TITLE))
                 event.startTime = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.DTSTART))
                 event.endTime = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.DTEND))
                 event.timezoneId = cursor.getString(cursor.getColumnIndex(CalendarContract.Instances.EVENT_TIMEZONE))
-                event.instanceBeginTime = begin
-                event.instanceEndTime = end
+                event.instanceBeginTime = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.BEGIN))
+                event.instanceEndTime = cursor.getLong(cursor.getColumnIndex(CalendarContract.Instances.END))
+                event.rrule = cursor.getString(cursor.getColumnIndex(CalendarContract.Instances.RRULE))
             }
         }
-
         scope.launch {
             if (instanceValid) {
                 eventRepository.updateEvent(event)
@@ -84,8 +70,8 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
 
     override fun onStartJob(params: JobParameters?): Boolean {
         runningParams = params
-
         scheduleJob(this)
+
         scope.launch {
             val events: List<EventRelation> = eventRepository.getEvents()
             for (i in events) {
@@ -94,29 +80,11 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
         }.invokeOnCompletion {
             onStopJob(runningParams)
         }
-        /*
-        runningParams = params
-        scheduleJob(this)
-        scope.launch {
-            val events: List<EventRelation> = eventRepository.getEvents()
-            for (i in events) {
-
-            }
-        }
-        Log.i("CalendarProviderJob", "onStartJob()")
-        runningParams = params
-        handler.postDelayed(worker, 10*1000L)
-         */
         return true
     }
 
     override fun onStopJob(params: JobParameters?): Boolean {
-        /*
-        Log.i("CalendarProviderJob", "onStopJob()")
-        handler.removeCallbacks(worker)
-
         job.cancel()
-         */
         return false
     }
 

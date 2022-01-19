@@ -52,14 +52,6 @@ class PermissionExplanationDialog: DialogFragment() {
         } ?: throw IllegalStateException("Activity cannot be null")
     }
 
-    private fun setWindowDim(): Unit {
-        val window: Window? = dialog!!.window
-        val windowParams: WindowManager.LayoutParams = window!!.attributes
-        windowParams.dimAmount = 0.90f
-        windowParams.flags = windowParams.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND
-        window.attributes = windowParams
-    }
-
     companion object {
 
         fun newInstance(permission: String, message: Int, iconResource: Int, requestMultiplePermissions: Boolean = false): PermissionExplanationDialog {
@@ -73,7 +65,6 @@ class PermissionExplanationDialog: DialogFragment() {
             return dialog
         }
 
-        const val EXTRA_TITLE: String = "extra_title"
         const val EXTRA_MESSAGE_STRING_RESOURCE: String = "extra_message"
         const val EXTRA_ICON_RESOURCE: String = "extra_icon_resource"
         const val EXTRA_PERMISSION: String = "extra_permission"

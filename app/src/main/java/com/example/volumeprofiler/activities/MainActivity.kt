@@ -69,12 +69,14 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-        window.exitTransition = Fade(Fade.OUT)
-        window.enterTransition = Fade(Fade.IN)
+        with(window) {
+            exitTransition = Fade(Fade.OUT)
+            enterTransition = Fade(Fade.IN)
+        }
 
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.main_activity)
+
         viewPager = findViewById(R.id.pager)
         viewPager.adapter = pagerAdapter
         setupTabLayout()
@@ -189,9 +191,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
 
     override fun requestLocationPermissions(locationRelation: LocationRelation) {
         this.locationRelation = locationRelation
-        var permissions: Array<String> = arrayOf(
-            ACCESS_FINE_LOCATION
-        )
+        var permissions: Array<String> = arrayOf(ACCESS_FINE_LOCATION)
         if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
             permissions += ACCESS_BACKGROUND_LOCATION
         }

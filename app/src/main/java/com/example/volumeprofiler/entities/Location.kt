@@ -6,7 +6,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import com.example.volumeprofiler.util.getAppSpecificAlbumStorageDir
 import kotlinx.parcelize.Parcelize
 import java.io.File
 import java.util.*
@@ -35,9 +34,4 @@ data class Location(
         @ColumnInfo(index = true)
         var onEnterProfileId: UUID,
 
-): Parcelable {
-
-        fun getPreviewBitmapFile(context: Context): File {
-                return File("${getAppSpecificAlbumStorageDir(context).absolutePath}/$id.jpeg")
-        }
-}
+): Parcelable

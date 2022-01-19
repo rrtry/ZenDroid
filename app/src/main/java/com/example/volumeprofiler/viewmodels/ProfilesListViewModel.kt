@@ -24,6 +24,8 @@ class ProfilesListViewModel @Inject constructor(
 
     sealed class Event {
 
+        data class ProfileSetEvent(val profile: Profile): Event()
+        data class ProfileRemoveEvent(val profile: Profile): Event()
         data class CancelAlarmsEvent(val alarms: List<AlarmRelation>?): Event()
         data class RemoveGeofencesEvent(val geofences: List<LocationRelation>): Event()
     }
@@ -34,6 +36,12 @@ class ProfilesListViewModel @Inject constructor(
     val profilesFlow: Flow<List<Profile>> = profileRepository.observeProfiles()
 
     var lastSelected: UUID? = null
+
+    fun setProfile(profile: Profile): Unit {
+        viewModelScope.launch {
+            eventChannel.send(Event.ProfileSetEvent(profile))
+        }
+    }
 
     fun addProfile(profile: Profile): Unit {
         viewModelScope.launch {
@@ -49,6 +57,9 @@ class ProfilesListViewModel @Inject constructor(
 
     fun removeProfile(profile: Profile): Unit {
         viewModelScope.launch {
+            launch {
+                eventChannel.send(Event.ProfileRemoveEvent(profile))
+            }
             launch {
                 eventChannel.send(Event.CancelAlarmsEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
             }
