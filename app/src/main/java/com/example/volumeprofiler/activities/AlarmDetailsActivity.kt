@@ -50,7 +50,6 @@ class AlarmDetailsActivity: AppCompatActivity() {
 
     private lateinit var binding: CreateAlarmLayoutBinding
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
-    private var runnableInQueue: Boolean = false
 
     @Inject
     lateinit var alarmUtil: AlarmUtil

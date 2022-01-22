@@ -168,6 +168,7 @@ class AlarmUtil @Inject constructor (
                     break
                 }
             }
+            Log.i("AlarmUtil", "next day: $nextDay")
             return nextDay
         }
 
@@ -246,7 +247,7 @@ class AlarmUtil @Inject constructor (
                     "Alarm set for %3${'$'}s minutes from now",
                     "Alarm set for %1${'$'}s days and %3${'$'}s minutes from now",
                     "Alarm set for %2${'$'}s hours and %3${'$'}s minutes from now",
-                    "Alarm set for %1${'$'}s hours, %2${'$'}s hours, %3${'$'}s minutes"
+                    "Alarm set for %1${'$'}s days, %2${'$'}s hours, %3${'$'}s minutes"
                 )
                 val index = ((if (showDays) 1 else 0)
                         or (if (showHours) 2 else 0)
