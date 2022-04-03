@@ -6,7 +6,7 @@ import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.ScheduleManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import java.time.*
 import java.util.*
 import javax.inject.Inject
-import kotlin.collections.ArrayList
 
 @HiltViewModel
 class AlarmDetailsViewModel @Inject constructor(
@@ -33,19 +32,19 @@ class AlarmDetailsViewModel @Inject constructor(
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
 
-    val updateNextAlarmDay: Flow<Boolean> = combine(localTime, scheduledDays) {
-        localTime, scheduledDays -> scheduledDays == 0 && localTime > LocalTime.now()
-    }
-
     private var id: Long? = null
     private var isScheduled: Boolean = false
 
-    private val channel: Channel<Event> = Channel(Channel.BUFFERED)
-    val eventsFlow: Flow<Event> = channel.receiveAsFlow()
+    private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    val eventsFlow: Flow<ViewEvent> = channel.receiveAsFlow()
 
-    sealed class Event {
+    sealed class ViewEvent {
 
-        data class ShowDialogEvent(val dialogType: DialogType): Event()
+        data class ShowDialogEvent(val dialogType: DialogType): ViewEvent()
+        data class OnCreateAlarmEvent(val alarm: Alarm): ViewEvent()
+        data class OnUpdateAlarmEvent(val alarm: Alarm): ViewEvent()
+
+        object OnCancelChangesEvent: ViewEvent()
     }
 
     enum class DialogType {
@@ -65,20 +64,37 @@ class AlarmDetailsViewModel @Inject constructor(
         }
     }
 
+    fun onSaveChangesButtonClick(): Unit {
+        viewModelScope.launch {
+            val event = if (getAlarmId() != null) {
+                ViewEvent.OnUpdateAlarmEvent(getAlarm())
+            } else {
+                ViewEvent.OnCreateAlarmEvent(getAlarm())
+            }
+            channel.send(event)
+        }
+    }
+
+    fun onCancelButtonClick(): Unit {
+        viewModelScope.launch {
+            channel.send(ViewEvent.OnCancelChangesEvent)
+        }
+    }
+
     fun onTimeSelectButtonClick(): Unit {
         viewModelScope.launch {
-            channel.send(Event.ShowDialogEvent(DialogType.TIME_SELECTION))
+            channel.send(ViewEvent.ShowDialogEvent(DialogType.TIME_SELECTION))
         }
     }
 
     fun onDaysSelectButtonClick(): Unit {
         viewModelScope.launch {
-            channel.send(Event.ShowDialogEvent(DialogType.DAYS_SELECTION))
+            channel.send(ViewEvent.ShowDialogEvent(DialogType.DAYS_SELECTION))
         }
     }
 
     private fun getNextInstanceDate(): Instant {
-        return AlarmUtil.getNextAlarmTime(scheduledDays.value, localTime.value)
+        return ScheduleManager.getNextAlarmTime(scheduledDays.value, localTime.value)
             .toInstant()
     }
 
@@ -107,7 +123,7 @@ class AlarmDetailsViewModel @Inject constructor(
         return 0
     }
 
-    fun setArgs(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
+    fun setEntity(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
         if (!areArgsSet && alarmRelation != null) {
 
             selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)

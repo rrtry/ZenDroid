@@ -13,33 +13,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SharedPreferencesUtil @Inject constructor (
+class PreferencesManager @Inject constructor (
     @ApplicationContext private val context: Context
 ) {
 
-    private val sharedPreferences: SharedPreferences = (getStorageContext()).getSharedPreferences(SHARED_PREFS, Context.MODE_PRIVATE)
-
-    private fun getStorageContext(): Context {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            context.createDeviceProtectedStorageContext()
-        } else {
-            context
-        }
+    private val storageContext: Context = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        context.createDeviceProtectedStorageContext()
+    } else {
+        context
     }
-
-    fun getRecyclerViewPositionsMap(): ArrayMap<UUID, Int>? {
-        return Gson().fromJson(sharedPreferences.getString(
-                PREFS_POSITIONS_MAP, null), object : TypeToken<ArrayMap<UUID, Int>>() {}.type
-        )
-    }
-
-    fun putProfilePositions(positionMap: ArrayMap<UUID, Int>): Unit {
-        val gson: Gson = Gson()
-        val str: String = gson.toJson(positionMap)
-        val editor: SharedPreferences.Editor = sharedPreferences.edit()
-        editor.putString(PREFS_POSITIONS_MAP, str)
-        editor.apply()
-    }
+    private val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(
+        SHARED_PREFS, Context.MODE_PRIVATE
+    )
 
     fun writeCurrentProfileProperties(profile: Profile): Unit {
         val title: String = profile.title
@@ -55,6 +40,10 @@ class SharedPreferencesUtil @Inject constructor (
         editor.putInt(PREFS_PRIORITY_CATEGORIES, profile.priorityCategories)
         editor.putBoolean(PREFS_STREAMS_UNLINKED, profile.streamsUnlinked)
         editor.apply()
+    }
+
+    fun showPermissionExplanationDialog(): Boolean {
+        return sharedPreferences.getBoolean(PREFS_SHOW_EXPLANATION_DIALOG, true)
     }
 
     fun getPriorityCategories(): Int {
@@ -86,11 +75,24 @@ class SharedPreferencesUtil @Inject constructor (
     }
 
     fun isProfileEnabled(profile: Profile): Boolean {
-        val id: String? = sharedPreferences.getString(PREFS_PROFILE_ID, "")
-        if (id != null && profile.id.toString() == id) {
-            return true
+        sharedPreferences.getString(PREFS_PROFILE_ID, null)?.let {
+            return profile.id.toString() == it
         }
         return false
+    }
+
+    fun getRecyclerViewPositionsMap(): ArrayMap<UUID, Int>? {
+        return Gson().fromJson(sharedPreferences.getString(
+            PREFS_POSITIONS_MAP, null), object : TypeToken<ArrayMap<UUID, Int>>() {}.type
+        )
+    }
+
+    fun putProfilePositions(positionMap: ArrayMap<UUID, Int>): Unit {
+        val gson: Gson = Gson()
+        val str: String = gson.toJson(positionMap)
+        val editor: SharedPreferences.Editor = sharedPreferences.edit()
+        editor.putString(PREFS_POSITIONS_MAP, str)
+        editor.apply()
     }
 
     fun clearPreferences(): Unit {
@@ -98,37 +100,19 @@ class SharedPreferencesUtil @Inject constructor (
         editor.clear().apply()
     }
 
-    fun getEnabledProfileId(): String? {
-        return sharedPreferences.getString(PREFS_PROFILE_ID, null)
-    }
-
     companion object {
 
-        fun fromList(list: List<Int>): String {
-            return list.joinToString(",")
-        }
-
-        fun toList(string: String): List<Int> {
-            return string.split(',').mapNotNull {
-                try {
-                    it.toInt()
-                }
-                catch (e: NumberFormatException) {
-                    null
-                }
-            }
-        }
-
-        const val SHARED_PREFS: String = "volumeprofiler_shared_prefs"
-        const val PREFS_PROFILE_ID = "prefs_profile_id"
-        const val PREFS_PROFILE_STREAM_NOTIFICATION = "prefs_profile_stream_notification"
-        const val PREFS_PROFILE_STREAM_RING = "prefs_profile_streams_ring"
-        const val PREFS_PROFILE_TITLE = "prefs_profile_title"
-        const val PREFS_RINGER_MODE: String = "prefs_ringer_mode"
-        const val PREFS_NOTIFICATION_MODE: String = "prefs_notification_mode"
-        const val PREFS_INTERRUPTION_FILTER: String = "prefs_interruption_filter"
-        const val PREFS_PRIORITY_CATEGORIES: String = "priority_categories"
-        const val PREFS_STREAMS_UNLINKED: String = "prefs_streams_unlinked"
+        private const val SHARED_PREFS: String = "volumeprofiler_shared_prefs"
+        private const val PREFS_PROFILE_ID = "prefs_profile_id"
+        private const val PREFS_PROFILE_STREAM_NOTIFICATION = "prefs_profile_stream_notification"
+        private const val PREFS_PROFILE_STREAM_RING = "prefs_profile_streams_ring"
+        private const val PREFS_PROFILE_TITLE = "prefs_profile_title"
+        private const val PREFS_SHOW_EXPLANATION_DIALOG: String = "prefs_show_explanation_dialog"
+        private const val PREFS_RINGER_MODE: String = "prefs_ringer_mode"
+        private const val PREFS_NOTIFICATION_MODE: String = "prefs_notification_mode"
+        private const val PREFS_INTERRUPTION_FILTER: String = "prefs_interruption_filter"
+        private const val PREFS_PRIORITY_CATEGORIES: String = "priority_categories"
+        private const val PREFS_STREAMS_UNLINKED: String = "prefs_streams_unlinked"
 
         private const val PREFS_POSITIONS_MAP: String = "prefs_positions_map"
     }

@@ -3,10 +3,9 @@ package com.example.volumeprofiler.fragments
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
-import android.view.Window
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.util.TextUtil
-import android.view.WindowManager
+import com.example.volumeprofiler.util.getCategoryName
 
 class PermissionExplanationDialog: DialogFragment() {
 
@@ -34,7 +33,7 @@ class PermissionExplanationDialog: DialogFragment() {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
             val permission: String = requireArguments().getString(EXTRA_PERMISSION)!!
-            val permissionDisplayName: String = TextUtil.getPermissionName(permission)
+            val permissionDisplayName: String = getCategoryName(permission)
             builder.setTitle("$permissionDisplayName permission is required")
                 .setMessage(resources.getString(requireArguments().getInt(
                     EXTRA_MESSAGE_STRING_RESOURCE

@@ -22,16 +22,16 @@ class ProfilesListViewModel @Inject constructor(
         private val locationRepository: LocationRepository
 ): ViewModel() {
 
-    sealed class Event {
+    sealed class ViewEvent {
 
-        data class ProfileSetEvent(val profile: Profile): Event()
-        data class ProfileRemoveEvent(val profile: Profile): Event()
-        data class CancelAlarmsEvent(val alarms: List<AlarmRelation>?): Event()
-        data class RemoveGeofencesEvent(val geofences: List<LocationRelation>): Event()
+        data class ProfileSetViewEvent(val profile: Profile): ViewEvent()
+        data class ProfileRemoveViewEvent(val profile: Profile): ViewEvent()
+        data class CancelAlarmsViewEvent(val alarms: List<AlarmRelation>?): ViewEvent()
+        data class RemoveGeofencesViewEvent(val geofences: List<LocationRelation>): ViewEvent()
     }
 
-    private val eventChannel: Channel<Event> = Channel(Channel.BUFFERED)
-    val eventFlow: Flow<Event> = eventChannel.receiveAsFlow()
+    private val viewEventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    val viewEventFlow: Flow<ViewEvent> = viewEventChannel.receiveAsFlow()
 
     val profilesFlow: Flow<List<Profile>> = profileRepository.observeProfiles()
 
@@ -39,7 +39,7 @@ class ProfilesListViewModel @Inject constructor(
 
     fun setProfile(profile: Profile): Unit {
         viewModelScope.launch {
-            eventChannel.send(Event.ProfileSetEvent(profile))
+            viewEventChannel.send(ViewEvent.ProfileSetViewEvent(profile))
         }
     }
 
@@ -58,13 +58,13 @@ class ProfilesListViewModel @Inject constructor(
     fun removeProfile(profile: Profile): Unit {
         viewModelScope.launch {
             launch {
-                eventChannel.send(Event.ProfileRemoveEvent(profile))
+                viewEventChannel.send(ViewEvent.ProfileRemoveViewEvent(profile))
             }
             launch {
-                eventChannel.send(Event.CancelAlarmsEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
+                viewEventChannel.send(ViewEvent.CancelAlarmsViewEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
             }
             launch {
-                eventChannel.send(Event.RemoveGeofencesEvent(locationRepository.getLocationsByProfileId(profile.id)))
+                viewEventChannel.send(ViewEvent.RemoveGeofencesViewEvent(locationRepository.getLocationsByProfileId(profile.id)))
             }
             profileRepository.removeProfile(profile)
         }
@@ -72,6 +72,6 @@ class ProfilesListViewModel @Inject constructor(
 
     override fun onCleared(): Unit {
         super.onCleared()
-        eventChannel.cancel()
+        viewEventChannel.cancel()
     }
 }

@@ -7,17 +7,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.transition.Fade
 import androidx.transition.Slide
-import androidx.transition.Transition
 import androidx.transition.TransitionSet
-import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.MapsSelectProfilesFragmentBinding
 import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
-import java.util.*
 
 @AndroidEntryPoint
 class MapsProfileSelectionFragment: Fragment() {

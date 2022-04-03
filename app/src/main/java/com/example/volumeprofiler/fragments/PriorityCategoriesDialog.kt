@@ -4,9 +4,16 @@ import android.os.Build
 import android.os.Bundle
 import com.example.volumeprofiler.R
 import android.app.NotificationManager.Policy.*
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class PriorityCategoriesDialog: BaseDialog() {
+
+    private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
     override val title: String = "Priority categories"
     override val arrayRes: Int = if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
@@ -31,11 +38,7 @@ class PriorityCategoriesDialog: BaseDialog() {
     }
 
     override fun applyChanges(mask: Int) {
-        parentFragmentManager.setFragmentResult(
-            InterruptionFilterFragment.PRIORITY_REQUEST_KEY,
-            Bundle().apply {
-                putInt(EXTRA_MASK, mask)
-            })
+        viewModel.priorityCategories.value = mask
     }
 
     companion object {

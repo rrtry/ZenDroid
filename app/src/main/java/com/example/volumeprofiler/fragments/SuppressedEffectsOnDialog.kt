@@ -8,11 +8,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 @TargetApi(Build.VERSION_CODES.P)
 class SuppressedEffectsOnDialog : BaseDialog() {
+
+    private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
     override val title: String = "When screen is on"
     override val arrayRes: Int = R.array.screenIsOn
@@ -56,10 +62,7 @@ class SuppressedEffectsOnDialog : BaseDialog() {
     }
 
     override fun applyChanges(mask: Int) {
-        parentFragmentManager.setFragmentResult(
-            InterruptionFilterFragment.EFFECTS_REQUEST_KEY, Bundle().apply {
-                putInt(EXTRA_MASK, mask)
-            })
+        viewModel.suppressedVisualEffects.value = mask
     }
 
     companion object {

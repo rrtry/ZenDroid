@@ -76,7 +76,6 @@ fun interruptionPolicyAllowsNotificationStream(
     streamsUnlinked: Boolean): Boolean {
 
     val state: Boolean = interruptionFilterAllowsNotifications(notificationInterruptionFilter, notificationPriorityCategories)
-
     return if (!streamsUnlinked) {
         false
     } else if (notificationAccessGranted) {

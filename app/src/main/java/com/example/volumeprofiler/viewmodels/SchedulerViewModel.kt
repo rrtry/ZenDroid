@@ -5,11 +5,11 @@ import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.database.repositories.EventRepository
-import com.example.volumeprofiler.entities.Event
 import com.example.volumeprofiler.entities.EventRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,67 +22,53 @@ class SchedulerViewModel @Inject constructor(
     val alarmsFlow: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
     val eventsFlow: Flow<List<EventRelation>> = eventRepository.observeEvents()
 
-    fun addEvent(event: Event): Unit {
+    sealed class ViewEvent {
+
+        data class OnAlarmRemoved(val relation: AlarmRelation): ViewEvent()
+        data class OnAlarmCancelled(val relation: AlarmRelation): ViewEvent()
+        data class OnAlarmSet(val relation: AlarmRelation): ViewEvent()
+
+    }
+
+    private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    val viewEvents: Flow<ViewEvent> = channel.receiveAsFlow()
+
+    fun sendScheduleAlarmEvent(alarmRelation: AlarmRelation): Unit {
         viewModelScope.launch {
-            eventRepository.insertEvent(event)
+            scheduleAlarm(alarmRelation.alarm)
+            channel.send(ViewEvent.OnAlarmSet(alarmRelation))
         }
     }
 
-    fun updateEvent(event: Event): Unit {
+    fun sendCancelAlarmEvent(alarmRelation: AlarmRelation): Unit {
         viewModelScope.launch {
-            eventRepository.updateEvent(event)
+            cancelAlarm(alarmRelation.alarm)
+            channel.send(ViewEvent.OnAlarmCancelled(alarmRelation))
         }
     }
 
-    private fun removeEvent(event: Event): Unit {
+    fun sendRemoveAlarmEvent(alarmRelation: AlarmRelation): Unit {
         viewModelScope.launch {
-            eventRepository.deleteEvent(event)
+            removeAlarm(alarmRelation.alarm)
+            channel.send(ViewEvent.OnAlarmRemoved(alarmRelation))
         }
     }
 
-    private fun updateAlarm(alarm: Alarm) {
-        viewModelScope.launch {
-            alarmRepository.updateAlarm(alarm)
-        }
-    }
-
-    private fun removeAlarm(alarm: Alarm): Unit {
-        viewModelScope.launch {
-            alarmRepository.removeAlarm(alarm)
-        }
-    }
-
-    fun cancelAlarm(alarmRelation: AlarmRelation): Unit {
-        val alarm: Alarm = alarmRelation.alarm
-        alarm.isScheduled = 0
-        updateAlarm(alarm)
-    }
-
-    fun cancelEvent(eventRelation: EventRelation): Unit {
-        val event: Event = eventRelation.event
-        event.scheduled = false
-        updateEvent(event)
-    }
-
-    fun scheduleAlarm(alarmRelation: AlarmRelation): Unit {
-        val alarm: Alarm = alarmRelation.alarm
+    private suspend fun scheduleAlarm(alarm: Alarm): Unit {
         alarm.isScheduled = 1
         updateAlarm(alarm)
     }
 
-    fun scheduleEvent(eventRelation: EventRelation): Unit {
-        val event: Event = eventRelation.event
-        event.scheduled = true
-        updateEvent(event)
+    private suspend fun removeAlarm(alarm: Alarm): Unit {
+        alarmRepository.removeAlarm(alarm)
     }
 
-    fun removeAlarm(alarmRelation: AlarmRelation) {
-        val alarm: Alarm = alarmRelation.alarm
-        removeAlarm(alarm)
+    private suspend fun cancelAlarm(alarm: Alarm): Unit {
+        alarm.isScheduled = 0
+        updateAlarm(alarm)
     }
 
-    fun removeEvent(eventRelation: EventRelation): Unit {
-        val event: Event = eventRelation.event
-        removeEvent(event)
+    private suspend fun updateAlarm(alarm: Alarm): Unit {
+        alarmRepository.updateAlarm(alarm)
     }
 }

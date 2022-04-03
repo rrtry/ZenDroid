@@ -4,7 +4,6 @@ import android.annotation.TargetApi
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import android.os.Build
-import android.util.Log
 import androidx.databinding.BindingConversion
 import com.example.volumeprofiler.util.interruptionPolicy.*
 import kotlin.text.StringBuilder
@@ -58,9 +57,7 @@ object BindingConverters {
             )
         }
         val allEffectsMask: Int = if (screenOn) ALL_SCREEN_ON_EFFECTS else ALL_SCREEN_OFF_EFFECTS
-        val effectsMask: Int = createMask(effectsList.filter { isBitSet(mask, it) })
-        Log.i("BindingConverters", "mask: $effectsMask, screenOn: $screenOn")
-        return when (effectsMask) {
+        return when (createMask(effectsList.filter { isBitSet(mask, it) })) {
             allEffectsMask -> "All suppressed"
             0 -> "All visible"
             else -> "Partially visible"

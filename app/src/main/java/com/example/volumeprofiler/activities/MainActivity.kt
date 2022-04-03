@@ -1,210 +1,163 @@
 package com.example.volumeprofiler.activities
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
+import android.transition.Fade
+import android.view.LayoutInflater
+import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.adapters.viewPager.MainActivityPagerAdapter
-import com.example.volumeprofiler.entities.Profile
-import com.example.volumeprofiler.interfaces.PermissionRequestCallback
+import com.example.volumeprofiler.databinding.ActivityMainBinding
+import com.example.volumeprofiler.fragments.LocationsListFragment
+import com.example.volumeprofiler.fragments.ProfilesListFragment
+import com.example.volumeprofiler.fragments.SchedulerFragment
+import com.example.volumeprofiler.interfaces.FabContainer
+import com.example.volumeprofiler.interfaces.FabContainerCallbacks
+import com.example.volumeprofiler.interfaces.FragmentSwipedListener
+import com.example.volumeprofiler.util.canWriteSettings
+import com.example.volumeprofiler.util.isNotificationPolicyAccessGranted
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import android.Manifest.permission.*
-import android.os.Build
-import android.view.Window
-import android.transition.Fade
-import com.example.volumeprofiler.entities.LocationRelation
-import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.EXTRA_PERMISSION
-import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.EXTRA_REQUEST_MULTIPLE_PERMISSIONS
-import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.EXTRA_RESULT_OK
-import com.example.volumeprofiler.fragments.PermissionExplanationDialog.Companion.PERMISSION_REQUEST_KEY
-import com.example.volumeprofiler.util.*
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), PermissionRequestCallback {
+class MainActivity : FragmentActivity(), FabContainerCallbacks {
 
-    @Inject
-    lateinit var pagerAdapter: MainActivityPagerAdapter
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var pagerAdapter: ScreenSlidePagerAdapter
+    private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
 
-    @Inject
-    lateinit var profileUtil: ProfileUtil
+    private var afterTransition: Boolean = false
 
-    @Inject
-    lateinit var geofenceUtil: GeofenceUtil
+    private var currentPosition: Int = 0
+    set(value) {
+        (pagerAdapter.fragments[field] as FragmentSwipedListener).also {
+            it.onSwipe()
+        }
+        field = value
+    }
 
-    private lateinit var viewPager: ViewPager2
+    private val selectedFragment: FabContainer
+    get() {
+        return pagerAdapter.fragments[binding.pager.currentItem] as FabContainer
+    }
 
-    private lateinit var profilePermissionLauncher: ActivityResultLauncher<String>
-    private lateinit var locationPermissionLauncher: ActivityResultLauncher<Array<out String>>
+    private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
-    private var profile: Profile? = null
-    private var locationRelation: LocationRelation? = null
+        override fun onPageSelected(position: Int) {
+            super.onPageSelected(position)
+            currentPosition = position
+            if (!afterTransition) {
+                selectedFragment.onAnimateFab(binding.fab)
+            }
+            afterTransition = false
+        }
+    }
 
-    private fun setupTabLayout(): Unit {
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            when (position) {
-                0 -> {
-                    tab.text = resources.getString(R.string.tab_profiles)
-                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[2], theme)
-                }
-                1 -> {
-                    tab.text = resources.getString(R.string.tab_scheduler)
-                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[0], theme)
-                }
-                2 -> {
-                    tab.text = resources.getString(R.string.tab_locations)
-                    tab.icon = ResourcesCompat.getDrawable(resources, drawables[3], theme)
+    private class ScreenSlidePagerAdapter(fa: FragmentActivity) : FragmentStateAdapter(fa) {
+
+        val fragments: List<Fragment> = listOf(
+            ProfilesListFragment(),
+            SchedulerFragment(),
+            LocationsListFragment()
+        )
+
+        override fun getItemId(position: Int): Long {
+            return position.toLong()
+        }
+
+        override fun getItemCount(): Int = 3
+
+        override fun createFragment(position: Int): Fragment {
+            return fragments[position]
+        }
+    }
+
+    override fun showSnackBar(text: String, length: Int, action: (() -> Unit)?) {
+        Snackbar.make(
+            binding.coordinatorLayout,
+            text,
+            length
+        ).apply {
+            action?.let {
+                setAction("Grant") {
+                    action()
                 }
             }
-        }.attach()
+        }.show()
+    }
+
+    override fun requestPermissions(permissions: Array<String>) {
+        permissionRequestLauncher.launch(
+            permissions
+        )
+    }
+
+    override fun onBackPressed() {
+        if (binding.pager.currentItem == 0) {
+            super.onBackPressed()
+        } else {
+            binding.pager.currentItem =- 1
+        }
+    }
+
+    override fun onActivityReenter(resultCode: Int, data: Intent?) {
+        afterTransition = true
+        super.onActivityReenter(resultCode, data)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)
             enterTransition = Fade(Fade.IN)
         }
-
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.main_activity)
 
-        viewPager = findViewById(R.id.pager)
-        viewPager.adapter = pagerAdapter
-        setupTabLayout()
+        binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
+        setContentView(binding.root)
 
-        supportFragmentManager.setFragmentResultListener(PERMISSION_REQUEST_KEY, this,
-            { _, result ->
-                val permission: String = result.getString(EXTRA_PERMISSION, "")
-                val requestMultiplePermissions: Boolean = result.getBoolean(EXTRA_REQUEST_MULTIPLE_PERMISSIONS, false)
-                if (result.getBoolean(EXTRA_RESULT_OK)) {
-                    if (shouldShowRequestPermissionRationale(permission)) {
-                        if (requestMultiplePermissions) {
-                            requestLocationPermissions(locationRelation!!)
-                        } else {
-                            profilePermissionLauncher.launch(permission)
-                        }
-                    }
-                    else {
-                        startActivity(getApplicationSettingsIntent(this))
-                    }
-                }
-            })
-        locationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            when {
-                !geofenceUtil.locationAccessGranted() && !profileUtil.grantedRequiredPermissions(locationRelation!!)-> {
+        pagerAdapter = ScreenSlidePagerAdapter(this)
+        binding.pager.adapter = pagerAdapter
+        binding.pager.registerOnPageChangeCallback(onPageChangeCallback)
 
-                    val snackbar: Snackbar = Snackbar.make(viewPager, "", Snackbar.LENGTH_LONG)
-
-                    if (profileUtil.shouldRequestPhonePermission(locationRelation!!)) {
-                        snackbar.setText("Phone and location permissions required")
-                        setAction(snackbar, true)
-                    } else {
-                        snackbar.setText("Location permission required")
-                        setAction(snackbar, false)
-                    }
-                    snackbar.show()
+        TabLayoutMediator(binding.tabs, binding.pager) { tab, position ->
+            when (position) {
+                0 -> {
+                    tab.text = resources.getString(R.string.tab_profiles)
+                    tab.icon = ResourcesCompat.getDrawable(resources, R.drawable.baseline_notifications_active_black_24dp, theme)
                 }
-                !geofenceUtil.locationAccessGranted() -> {
-                    if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-                        ViewUtil.showBackgroundLocationPermissionExplanation(supportFragmentManager)
-                    } else {
-                        ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
-                    }
+                1 -> {
+                    tab.text = resources.getString(R.string.tab_scheduler)
+                    tab.icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_access_time_24, theme)
                 }
-                profileUtil.shouldRequestPhonePermission(locationRelation!!) -> {
-                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                }
-                !profileUtil.grantedSystemPreferencesAccess() -> {
-                    sendSystemPreferencesAccessNotification(this, profileUtil)
+                2 -> {
+                    tab.text = resources.getString(R.string.tab_locations)
+                    tab.icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_location_on_24, theme)
                 }
             }
+        }.attach()
+        binding.fab.setOnClickListener {
+            selectedFragment.onFabClick(binding.fab)
         }
-        profilePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            when {
-                it -> {
-                    if (!profileUtil.grantedSystemPreferencesAccess()) {
-                        sendSystemPreferencesAccessNotification(this, profileUtil)
-                    }
-                }
-                shouldShowRequestPermissionRationale(READ_PHONE_STATE) -> {
-                    Snackbar.make(viewPager, "Phone permission is required", Snackbar.LENGTH_LONG)
-                        .setAction("Show explanation") {
-                            ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                        }
-                        .show()
-                }
-                else -> {
-                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                }
+        permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            if (!it.values.contains(false)) {
+                // Not all permissions were granted
+            } else if (canWriteSettings(this) || isNotificationPolicyAccessGranted(this)) {
+                // Grant permissions from notification area
             }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        profilePermissionLauncher.unregister()
-        locationPermissionLauncher.unregister()
-    }
-
-    private fun setAction(snackbar: Snackbar, requiresPhonePermission: Boolean): Unit {
-        val permissions: MutableList<String> = mutableListOf()
-        permissions += if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-            ACCESS_BACKGROUND_LOCATION
-        } else {
-            ACCESS_FINE_LOCATION
-        }
-        if (requiresPhonePermission) {
-            permissions += READ_PHONE_STATE
-        }
-        for (i in permissions) {
-            if (!shouldShowRequestPermissionRationale(i)) {
-                snackbar.setAction("Open settings") {
-                    startActivity(getApplicationSettingsIntent(this))
-                }
-                break
-            }
-        }
-    }
-
-    override fun onBackPressed() {
-        if (viewPager.currentItem == 0) {
-            super.onBackPressed()
-        }
-        else {
-            viewPager.currentItem = viewPager.currentItem - 1
-        }
-    }
-
-    override fun requestProfilePermissions(profile: Profile) {
-        this.profile = profile
-        profilePermissionLauncher.launch(READ_PHONE_STATE)
-    }
-
-    override fun requestLocationPermissions(locationRelation: LocationRelation) {
-        this.locationRelation = locationRelation
-        var permissions: Array<String> = arrayOf(ACCESS_FINE_LOCATION)
-        if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-            permissions += ACCESS_BACKGROUND_LOCATION
-        }
-        if (profileUtil.requiresPhoneStatePermission(locationRelation)) {
-            permissions += READ_PHONE_STATE
-        }
-        locationPermissionLauncher.launch(permissions)
-    }
-
-    companion object {
-
-        private val drawables: List<Int> = listOf(android.R.drawable.ic_menu_recent_history,
-                android.R.drawable.ic_menu_sort_by_size,
-                android.R.drawable.ic_lock_silent_mode, android.R.drawable.ic_menu_mylocation)
+        binding.pager.unregisterOnPageChangeCallback(onPageChangeCallback)
     }
 }

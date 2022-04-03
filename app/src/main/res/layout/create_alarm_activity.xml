@@ -17,7 +17,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/clockView"
+            android:id="@+id/startClockView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -25,9 +25,36 @@
             android:transitionName="alarmDetailsTransition"
             android:text="@{TextUtil.formatLocalTime(context, viewModel.localTime)}"
             android:onClick="@{() -> viewModel.onTimeSelectButtonClick()}"
-            android:textSize="35sp"
+            android:textSize="30sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/clockViewSeparator"
+            android:layout_width="0.5dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:rotation="180"
+            android:background="@color/gray"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/endClockView"
+            app:layout_constraintTop_toTopOf="@+id/endClockView"
+            app:layout_constraintStart_toEndOf="@+id/startClockView"
+            app:layout_constraintEnd_toStartOf="@+id/endClockView"/>
+
+        <TextView
+            android:id="@+id/endClockView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:onClick="@{() -> viewModel.onTimeSelectButtonClick()}"
+            android:text="@{TextUtil.formatLocalTime(context, viewModel.localTime)}"
+            android:textSize="30sp"
+            app:layout_constraintBottom_toBottomOf="@+id/startClockView"
+            app:layout_constraintStart_toEndOf="@id/clockViewSeparator"
+            app:layout_constraintTop_toTopOf="@+id/startClockView" />
 
         <Switch
             android:id="@+id/enableAlarmSwitch"
@@ -36,9 +63,9 @@
             android:layout_marginEnd="16dp"
             android:checked="@={viewModel.scheduled}"
             android:transitionName="alarmDetailsTransition"
-            app:layout_constraintBottom_toBottomOf="@+id/clockView"
+            app:layout_constraintBottom_toBottomOf="@+id/startClockView"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/clockView" />
+            app:layout_constraintTop_toTopOf="@+id/startClockView" />
 
         <View
             android:id="@+id/separator1"
@@ -50,7 +77,7 @@
             android:background="@color/gray"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/clockView" />
+            app:layout_constraintTop_toBottomOf="@+id/startClockView" />
 
         <View
             android:id="@+id/separator2"
@@ -69,22 +96,44 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Profile"
+            android:text="Select profiles"
             android:textColor="?attr/colorPrimary"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/separator2"
             app:layout_constraintTop_toBottomOf="@+id/separator2" />
 
         <Spinner
-            android:id="@+id/profileSpinner"
+            android:id="@+id/startProfileSpinner"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="8dp"
             android:entries="@{viewModel.profilesStateFlow}"
             android:selectedItemPosition="@={viewModel.selectedSpinnerPosition}"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/spinnerSeparator"
             app:layout_constraintStart_toStartOf="@+id/profileTitle"
+            app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
+
+        <View
+            android:id="@+id/spinnerSeparator"
+            android:layout_width="0.5dp"
+            android:layout_height="0dp"
+            android:background="@color/gray"
+            android:rotation="180"
+            app:layout_constraintBottom_toBottomOf="@+id/startProfileSpinner"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/endProfileSpinner" />
+
+        <Spinner
+            android:id="@+id/endProfileSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBottom_toTopOf="@+id/separator3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/spinnerSeparator"
             app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
 
         <View
@@ -97,14 +146,14 @@
             android:background="@color/gray"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/profileSpinner" />
+            app:layout_constraintTop_toBottomOf="@+id/startProfileSpinner" />
 
         <TextView
             android:id="@+id/textView9"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Repeat"
+            android:text="Repeat on"
             android:textColor="?attr/colorPrimary"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/separator1"
@@ -130,6 +179,7 @@
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
             android:text="Cancel"
+            android:onClick="@{() -> viewModel.onCancelButtonClick()}"
             android:background="@android:color/transparent"
             android:textColor="?attr/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -144,6 +194,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
             android:text="OK"
+            android:onClick="@{() -> viewModel.onSaveChangesButtonClick()}"
             android:background="@android:color/transparent"
             android:textColor="?attr/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -166,7 +217,7 @@
             android:id="@+id/verticalSeparator"
             android:layout_width="0.5dp"
             android:layout_height="0dp"
-            android:background="@android:color/transparent"
+            android:background="@color/gray"
             android:rotation="180"
             app:layout_constraintBottom_toBottomOf="@+id/cancelButton"
             app:layout_constraintEnd_toEndOf="parent"

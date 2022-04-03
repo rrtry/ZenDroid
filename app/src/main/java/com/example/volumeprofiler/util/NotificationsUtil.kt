@@ -68,11 +68,11 @@ private fun getAppDetailsPendingIntent(context: Context): PendingIntent {
     return PendingIntent.getActivity(context, REQUEST_LAUNCH_APPLICATION_DETAILS_SETTINGS, intent, PendingIntent.FLAG_IMMUTABLE)
 }
 
-fun sendSystemPreferencesAccessNotification(context: Context, profileUtil: ProfileUtil): Unit {
-    if (!profileUtil.canWriteSettings()) {
+fun sendSystemPreferencesAccessNotification(context: Context, profileManager: ProfileManager): Unit {
+    if (!profileManager.canWriteSettings()) {
         postNotification(context, createSystemSettingsNotification(context), ID_SYSTEM_SETTINGS)
     }
-    if (!profileUtil.isNotificationPolicyAccessGranted()) {
+    if (!profileManager.isNotificationPolicyAccessGranted()) {
         postNotification(context, createInterruptionPolicyNotification(context), ID_INTERRUPTION_POLICY)
     }
 }
@@ -90,13 +90,13 @@ fun cancelPermissionNotifications(context: Context): Unit {
 }
 
 fun createMissingPermissionNotification(context: Context, permissions: List<String>): Notification {
-    val contentTitle: String = if (permissions.size > 1) "Permissions required" else "Permission required"
-    val pNames: String = permissions.map { TextUtil.getPermissionName(it) }.toString().removeSurrounding("[", "]")
-    val contentText: String = if (permissions.size > 1) "Missing '$pNames' permissions" else "Missing '$pNames' permission"
+    val contentTitle: String = "Insufficient permissions"
+    val pNames: String = permissions.map { getCategoryName(it) }.toString().removeSurrounding("[", "]")
+    val contentText: String = pNames
     val builder = NotificationCompat.Builder(context, PERMISSIONS_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(contentTitle)
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.baseline_volume_down_deep_purple_300_24dp)
+            .setSmallIcon(R.drawable.ic_baseline_perm_device_information_24)
             .setContentIntent(getAppDetailsPendingIntent(context))
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(
@@ -117,7 +117,7 @@ fun createSystemSettingsNotification(context: Context): Notification {
             .setContentTitle("Write system settings")
             .setContentText("Click to open settings")
             .setContentIntent(getSystemSettingsPendingIntent(context))
-            .setSmallIcon(R.drawable.baseline_volume_down_deep_purple_300_24dp)
+            .setSmallIcon(R.drawable.ic_baseline_perm_device_information_24)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(
                 context,
@@ -137,7 +137,7 @@ fun createInterruptionPolicyNotification(context: Context): Notification {
             .setContentTitle("Do not disturb access")
             .setContentText("Click to open settings")
             .setContentIntent(getInterruptionPolicyPendingIntent(context))
-            .setSmallIcon(R.drawable.baseline_volume_down_deep_purple_300_24dp)
+            .setSmallIcon(R.drawable.ic_baseline_perm_device_information_24)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(
                 context,

@@ -8,7 +8,7 @@ import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 
 class DetailsLookup <T> (private val recyclerView: RecyclerView): ItemDetailsLookup<T>() {
 
-    @SuppressWarnings("unchecked")
+    @Suppress("unchecked_cast")
     override fun getItemDetails(event: MotionEvent): ItemDetails<T>? {
         val view: View? = recyclerView.findChildViewUnder(event.x, event.y)
         if (view != null) {

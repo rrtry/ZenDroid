@@ -1,19 +1,16 @@
 package com.example.volumeprofiler.activities
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import android.media.RingtoneManager.*
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -28,72 +25,171 @@ import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.Event.*
-import android.Manifest.permission.*
-import android.net.Uri
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.ViewEvent.*
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.FlowPreview
+import com.example.volumeprofiler.fragments.PermissionDenialDialog
+import com.example.volumeprofiler.interfaces.DetailsViewContract
+import com.example.volumeprofiler.util.ui.animations.AnimUtil
+import com.google.android.material.appbar.AppBarLayout
+import kotlin.math.abs
 
 @AndroidEntryPoint
-class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks, ActivityCompat.OnRequestPermissionsResultCallback {
+class ProfileDetailsActivity: AppCompatActivity(),
+    EditProfileActivityCallbacks,
+    ActivityCompat.OnRequestPermissionsResultCallback,
+    DetailsViewContract<Profile>,
+    FragmentManager.OnBackStackChangedListener,
+    AppBarLayout.OnOffsetChangedListener,
+    AppBarLayout.LiftOnScrollListener {
 
-    @Inject
-    lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+    @Inject lateinit var preferencesManager: PreferencesManager
+    @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var scheduleManager: ScheduleManager
 
-    @Inject
-    lateinit var profileUtil: ProfileUtil
-
-    @Inject
-    lateinit var alarmUtil: AlarmUtil
-
+    private var showExplanationDialog: Boolean = true
     private var elapsedTime: Long = 0
     private var scheduledAlarms: List<AlarmRelation>? = null
 
-    private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<out String>>
     private lateinit var binding: CreateProfileActivityBinding
 
     private val viewModel by viewModels<ProfileDetailsViewModel>()
 
+    override fun onBackStackChanged() {
+        (supportFragmentManager.backStackEntryCount > 0).let {
+            if (it) {
+                binding.appBar.setExpanded(false, true)
+                binding.appBar.removeOnOffsetChangedListener(this)
+            } else {
+                binding.appBar.setExpanded(true, true)
+                binding.appBar.addOnOffsetChangedListener(this)
+            }
+            AnimUtil.scale(binding.menuSaveChangesButton, !it)
+            AnimUtil.scale(binding.editNameButton, !it)
+        }
+    }
+
+    override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+        appBarLayout?.let {
+            when {
+                abs(verticalOffset) == it.totalScrollRange -> {
+                    // AnimUtil.scale(binding.menuEditNameButton, true)
+                }
+                verticalOffset == 0 -> {
+                    // AnimUtil.scale(binding.menuEditNameButton, false)
+                }
+            }
+        }
+    }
+
+    override fun onUpdate(elevation: Float, backgroundColor: Int) {
+        Log.i("DetailsActivity", "elevation: $elevation")
+    }
+
+    private fun showExplanationDialog(): Unit {
+        showExplanationDialog = false
+        PermissionDenialDialog().apply {
+            show(supportFragmentManager, null)
+        }
+    }
+
+    private fun setEntity() {
+        intent.extras?.getParcelable<Profile>(EXTRA_PROFILE)?.let {
+            viewModel.setEntity(it, true)
+            return
+        }
+        viewModel.setEntity(profileManager.getDefaultProfile(), false)
+    }
+
+    override fun onUpdate(item: Profile) {
+        if (shouldShowPermissionSuggestion(this, item) &&
+                showExplanationDialog) {
+            showExplanationDialog()
+        } else {
+            if (preferencesManager.isProfileEnabled(item)) {
+                profileManager.setProfile(item)
+            }
+            scheduledAlarms?.let {
+                for (i in it) {
+                    scheduleManager.scheduleAlarm(i.alarm, item)
+                }
+            }
+            lifecycleScope.launch {
+                viewModel.updateProfile(item)
+            }.invokeOnCompletion {
+                finish()
+            }
+        }
+    }
+
+    override fun onInsert(item: Profile) {
+        if (shouldShowPermissionSuggestion(this, item) &&
+                showExplanationDialog) {
+            showExplanationDialog()
+        } else {
+            lifecycleScope.launch {
+                viewModel.addProfile(item)
+            }.invokeOnCompletion {
+                finish()
+            }
+        }
+    }
+
+    override fun onCancel() {
+        finish()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putLong(KEY_ELAPSED_TIME, elapsedTime)
+        outState.putLong(EXTRA_ELAPSED_TIME, elapsedTime)
+        outState.putBoolean(EXTRA_SHOW_DIALOG, showExplanationDialog)
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        elapsedTime = savedInstanceState.getLong(KEY_ELAPSED_TIME, 0)
-    }
-
-    @FlowPreview
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setProfile()
-        setBinding()
-        openProfileDetailsFragment()
-        collectEventsFlow()
+        setEntity()
+        showExplanationDialog = preferencesManager.showPermissionExplanationDialog()
 
-        permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            val profile: Profile = viewModel.getProfile()
-            when {
-                !checkSelfPermission(this, READ_EXTERNAL_STORAGE) && !profileUtil.grantedRequiredPermissions(profile)-> {
-                    Snackbar.make(binding.root, "Missing required permissions", Snackbar.LENGTH_LONG).show()
+        savedInstanceState?.let {
+            elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
+            showExplanationDialog = it.getBoolean(EXTRA_SHOW_DIALOG, false)
+        }
+
+        binding = CreateProfileActivityBinding.inflate(layoutInflater)
+        binding.viewModel = viewModel
+        binding.lifecycleOwner = this
+        setContentView(binding.root)
+
+        openProfileDetailsFragment()
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.activityEventsFlow.collect {
+                        when (it) {
+                            is ShowDialogFragment -> {
+                                if (it.dialogType == ProfileDetailsViewModel.DialogType.TITLE) {
+                                    showTitleInputDialog()
+                                }
+                            }
+                            is OnUpdateProfileEvent -> {
+                                onUpdate(it.profile)
+                            }
+                            is OnInsertProfileEvent -> {
+                                onInsert(it.profile)
+                            }
+                            is OnRemoveProfileEvent -> {
+                                onCancel()
+                            }
+                            else -> Log.i("EditProfileActivity", "unknown event")
+                        }
+                    }
                 }
-                !checkSelfPermission(this, READ_EXTERNAL_STORAGE) -> {
-                    ViewUtil.showStoragePermissionExplanation(supportFragmentManager)
-                }
-                profileUtil.shouldRequestPhonePermission(profile) -> {
-                    ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                }
-                !profileUtil.grantedSystemPreferencesAccess() -> {
-                    sendSystemPreferencesAccessNotification(this, profileUtil)
-                }
-                else -> {
-                    updateMediaUris()
+                launch {
+                    viewModel.alarmsFlow.collect {
+                        scheduledAlarms = it
+                    }
                 }
             }
         }
@@ -103,13 +199,16 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
         super.onStart()
         setFragmentResultListener()
         setNavigationListener()
+        supportFragmentManager.addOnBackStackChangedListener(this)
+        binding.appBar.apply {
+            addLiftOnScrollListener(this@ProfileDetailsActivity)
+            addOnOffsetChangedListener(this@ProfileDetailsActivity)
+        }
     }
 
-    private fun setBinding(): Unit {
-        binding = CreateProfileActivityBinding.inflate(layoutInflater)
-        binding.viewModel = viewModel
-        binding.lifecycleOwner = this
-        setContentView(binding.root)
+    override fun onStop() {
+        super.onStop()
+        supportFragmentManager.removeOnBackStackChangedListener(this)
     }
 
     private fun openProfileDetailsFragment(): Unit {
@@ -131,83 +230,6 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
             .commit()
     }
 
-    private fun setProfile(): Unit {
-        if (intent.extras != null) {
-            val profile: Profile = intent.extras!!.getParcelable(EXTRA_PROFILE)!!
-            viewModel.setArgs(profile, true)
-        } else {
-            viewModel.setArgs(profileUtil.getDefaultProfile(), false)
-        }
-    }
-
-    @FlowPreview
-    private fun collectEventsFlow(): Unit {
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.activityEventsFlow.collect {
-                        when (it) {
-                            is ShowDialogFragment -> {
-                                if (it.dialogType == ProfileDetailsViewModel.DialogType.TITLE) {
-                                    showTitleInputDialog()
-                                }
-                            }
-                            is ApplyChangesEvent -> {
-                                updateProfile(it.profile, it.shouldUpdate)
-                            }
-                            else -> Log.i("EditProfileActivity", "unknown event")
-                        }
-                    }
-                }
-                launch {
-                    viewModel.alarmsFlow.collect {
-                        scheduledAlarms = it
-                    }
-                }
-            }
-        }
-    }
-
-    private fun requestPermissions(profile: Profile): Unit {
-        var permissions: Array<String> = arrayOf(READ_EXTERNAL_STORAGE)
-        if (profile.streamsUnlinked) {
-            permissions += READ_PHONE_STATE
-        }
-        permissionRequestLauncher.launch(permissions)
-    }
-
-    private fun updateProfile(profile: Profile, update: Boolean): Unit {
-        when {
-            profileUtil.grantedRequiredPermissions(
-                true,
-                viewModel.usesUnlinkedStreams()
-            ) -> {
-                setProfile(profile)
-                updateAlarms(profile)
-                setSuccessfulResult(profile, update)
-            }
-            !checkSelfPermission(this, READ_EXTERNAL_STORAGE) || profileUtil.shouldRequestPhonePermission(profile) -> {
-                requestPermissions(profile)
-            }
-            else -> {
-                sendSystemPreferencesAccessNotification(this, profileUtil)
-            }
-        }
-    }
-
-    private fun setSuccessfulResult(profile: Profile, updateFlag: Boolean): Unit {
-        setResult(Activity.RESULT_OK, Intent().apply {
-            putExtra(EXTRA_PROFILE, profile)
-            putExtra(EXTRA_UPDATE, updateFlag)
-        })
-        finish()
-    }
-
-    private fun setCancelledResult(): Unit {
-        setResult(Activity.RESULT_CANCELED)
-        finish()
-    }
-
     private fun setNavigationListener(): Unit {
         binding.toolbar.setNavigationOnClickListener {
             onBackPressed()
@@ -227,86 +249,37 @@ class ProfileDetailsActivity: AppCompatActivity(), EditProfileActivityCallbacks,
     }
 
     override fun onFragmentReplace(fragment: Int): Unit {
-        when (fragment) {
-            INTERRUPTION_FILTER_FRAGMENT -> {
-                openInterruptionsFilterFragment()
-            }
-            else -> {
-                supportFragmentManager.popBackStackImmediate()
-            }
+        if (fragment == INTERRUPTION_FILTER_FRAGMENT) {
+            openInterruptionsFilterFragment()
+        } else {
+            supportFragmentManager.popBackStackImmediate()
         }
-    }
-
-    override fun getBinding(): CreateProfileActivityBinding {
-        return binding
-    }
-
-    override fun updateMediaUris() {
-        viewModel.notificationSoundUri.value =
-            if (viewModel.notificationUri != Uri.EMPTY) viewModel.notificationUri else getActualDefaultRingtoneUri(
-                this,
-                TYPE_NOTIFICATION
-            )
-        viewModel.phoneRingtoneUri.value =
-            if (viewModel.ringtoneUri != Uri.EMPTY) viewModel.ringtoneUri else getActualDefaultRingtoneUri(
-                this,
-                TYPE_RINGTONE
-            )
-        viewModel.alarmSoundUri.value =
-            if (viewModel.alarmUri != Uri.EMPTY) viewModel.alarmUri else getActualDefaultRingtoneUri(
-                this,
-                TYPE_ALARM
-            )
     }
 
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount < 1) {
-            if (elapsedTime + TIME_INTERVAL > System.currentTimeMillis()) {
-                setCancelledResult()
+            if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
+                finish()
             } else {
                 Toast.makeText(this, "Press back button again to exit", Toast.LENGTH_LONG).show()
             }
             elapsedTime = System.currentTimeMillis()
-        }
-        else {
+        } else {
             super.onBackPressed()
-        }
-    }
-
-    private fun setAlarms(relations: List<AlarmRelation>, newProfile: Profile): Unit {
-        for (i in relations) {
-            alarmUtil.scheduleAlarm(i.alarm, newProfile)
-        }
-    }
-
-    private fun updateAlarms(profile: Profile): Unit {
-        scheduledAlarms.let {
-            if (!it.isNullOrEmpty()) {
-                setAlarms(it, profile)
-            }
-        }
-    }
-
-    private fun setProfile(profile: Profile): Unit {
-        if (sharedPreferencesUtil.getEnabledProfileId() == profile.id.toString()) {
-            profileUtil.setProfile(profile)
         }
     }
 
     companion object {
 
-
-        private const val TIME_INTERVAL: Int = 2000
-        private const val KEY_ELAPSED_TIME: String = "key_elapsed_time"
+        private const val EXTRA_ELAPSED_TIME: String = "key_elapsed_time"
+        private const val EXTRA_SHOW_DIALOG: String = "extra_show_dialog"
 
         const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
         const val TAG_INTERRUPTIONS_FRAGMENT: String = "tag_interruptions_fragment"
         const val EXTRA_PROFILE = "extra_profile"
-        const val EXTRA_UPDATE: String = "extra_update"
         const val INPUT_TITLE_REQUEST_KEY: String = "input_title_request_key"
         const val EXTRA_TITLE: String = "extra_title"
         const val INTERRUPTION_FILTER_FRAGMENT: Int = 0
-        const val PROFILE_DETAILS_FRAGMENT: Int = 1
 
         fun newIntent(context: Context, profile: Profile?): Intent {
             val intent = Intent(context, ProfileDetailsActivity::class.java)

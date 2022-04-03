@@ -33,9 +33,11 @@ object BindingAdapters {
     private const val DRAWABLE_STOP_PLAYBACK: Int = R.drawable.ic_baseline_pause_24
 
     @JvmStatic
-    private fun setEnabledState(layout: ViewGroup, enabled: Boolean): Unit {
-        layout.isEnabled = enabled
-        (layout as SwitchableConstraintLayout).disabled = !enabled
+    private fun setEnabledState(layout: View, enabled: Boolean): Unit {
+        (layout as SwitchableConstraintLayout).apply {
+            isEnabled = enabled
+            disabled = !enabled
+        }
     }
 
     @JvmStatic
@@ -91,7 +93,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "policyAccessGranted")
     fun bindMediaSliderLayout(
-        viewGroup: SwitchableConstraintLayout,
+        viewGroup: View,
         mediaInterruptionFilter: Int,
         mediaPriorityCategories: Int,
         policyAccessGranted: Boolean
@@ -106,7 +108,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("ringerInterruptionFilter", "ringerPriorityCategories", "policyAccessGranted", "streamsUnlinked")
     fun bindRingerSliderLayout(
-        viewGroup: SwitchableConstraintLayout,
+        viewGroup: View,
         ringerInterruptionFilter: Int,
         ringerPriorityCategories: Int,
         policyAccessGranted: Boolean,
@@ -123,7 +125,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "policyAccessGranted")
     fun bindAlarmSliderLayout(
-        viewGroup: SwitchableConstraintLayout,
+        viewGroup: View,
         alarmInterruptionFilter: Int,
         alarmPriorityCategories: Int,
         policyAccessGranted: Boolean
@@ -163,8 +165,10 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("storagePermissionGranted")
-    fun bindRingtoneLayout(view: SwitchableConstraintLayout, storagePermissionGranted: Boolean): Unit {
-        view.disabled = !storagePermissionGranted
+    fun bindRingtoneLayout(view: View, storagePermissionGranted: Boolean): Unit {
+        (view as SwitchableConstraintLayout).apply {
+            disabled = !storagePermissionGranted
+        }
     }
 
     @JvmStatic
@@ -210,14 +214,14 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("callSenders", "priorityCategories", requireAll = false)
-    fun bindRepeatingCallersLayout(view: SwitchableConstraintLayout, callSenders: Int, priorityCategories: Int): Unit {
+    fun bindRepeatingCallersLayout(view: View, callSenders: Int, priorityCategories: Int): Unit {
         setEnabledState(view, callSenders != PRIORITY_SENDERS_ANY || priorityCategories and PRIORITY_CATEGORY_CALLS == 0)
     }
 
     @JvmStatic
     @BindingAdapter( "interruptionFilter", "priorityCategories", "policyAccessGranted", "streamsUnlinked")
     fun notificationLayoutTransition(
-        view: SwitchableConstraintLayout,
+        view: View,
         interruptionFilter: Int,
         priorityCategories: Int,
         policyAccessGranted: Boolean,
@@ -305,7 +309,11 @@ object BindingAdapters {
         notificationPriorityCategories: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean): Unit {
-        if (!interruptionPolicyAllowsNotificationStream(notificationInterruptionFilter, notificationPriorityCategories, notificationAccessGranted, streamsUnlinked)) {
+        if (!interruptionPolicyAllowsNotificationStream(
+                notificationInterruptionFilter,
+                notificationPriorityCategories,
+                notificationAccessGranted,
+                streamsUnlinked)) {
             setSilentIcon(icon)
         } else {
             when (notificationMode) {
@@ -318,8 +326,10 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("canWriteSettings")
-    fun bindVibrateForCallsLayout(viewGroup: SwitchableConstraintLayout, canWriteSettings: Boolean): Unit {
-        viewGroup.disabled = !canWriteSettings
+    fun bindVibrateForCallsLayout(viewGroup: View, canWriteSettings: Boolean): Unit {
+        (viewGroup as SwitchableConstraintLayout).apply {
+            disabled = !canWriteSettings
+        }
     }
 
     @JvmStatic
@@ -345,7 +355,10 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted")
     fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: Int, notificationAccessGranted: Boolean): Unit {
-        view.isEnabled = interruptionPolicyAllowsAlarmsStream(alarmInterruptionFilter, alarmPriorityCategories, notificationAccessGranted)
+        view.isEnabled = interruptionPolicyAllowsAlarmsStream(
+            alarmInterruptionFilter,
+            alarmPriorityCategories,
+            notificationAccessGranted)
     }
 
     @JvmStatic
@@ -357,8 +370,10 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("notificationPolicyAccessGranted")
-    fun bindInterruptionFilterLayout(viewGroup: SwitchableConstraintLayout, notificationPolicyAccessGranted: Boolean): Unit {
-        viewGroup.disabled = !notificationPolicyAccessGranted
+    fun bindInterruptionFilterLayout(viewGroup: View, notificationPolicyAccessGranted: Boolean): Unit {
+        (viewGroup as SwitchableConstraintLayout).apply {
+            disabled = !notificationPolicyAccessGranted
+        }
     }
 
     @JvmStatic
@@ -389,7 +404,12 @@ object BindingAdapters {
         if (!notificationAccessGranted) {
             setEnabledState(viewGroup, true)
         } else {
-            setEnabledState(viewGroup, interruptionPolicyAllowsRingerStream(interruptionFilterRinger, silentModePriorityCategories, notificationAccessGranted, streamsUnlinked))
+            setEnabledState(viewGroup,
+                interruptionPolicyAllowsRingerStream(
+                    interruptionFilterRinger,
+                    silentModePriorityCategories,
+                    notificationAccessGranted,
+                    streamsUnlinked))
         }
     }
 }

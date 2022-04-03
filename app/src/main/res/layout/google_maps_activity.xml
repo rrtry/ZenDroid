@@ -9,9 +9,8 @@
     android:focusableInTouchMode="true"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/jumpToCurrentLocationButton"
+        android:id="@+id/recentLocationButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:translationY="-65dp"
@@ -30,7 +29,7 @@
         tools:context=".activities.MapsActivity"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/saveGeofenceButton"
+        android:id="@+id/addGeofenceButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@android:drawable/ic_input_add"

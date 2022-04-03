@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.services
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
 import android.database.Cursor
@@ -23,6 +24,16 @@ import com.example.volumeprofiler.database.repositories.EventRepository
 @AndroidEntryPoint
 class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
 
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+
+    override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
+
+    }
+
+    /*
+
     private data class QueryCookie(
         var event: Event,
         var profile: Profile,
@@ -30,28 +41,17 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
     )
 
     private val job: Job = Job()
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main + job)
+    private val serviceScope: CoroutineScope = CoroutineScope(Dispatchers.Main + job)
 
     private lateinit var profile: Profile
     private lateinit var alarm: Alarm
 
-    @Inject
-    lateinit var alarmUtil: AlarmUtil
-
-    @Inject
-    lateinit var profileUtil: ProfileUtil
-
-    @Inject
-    lateinit var contentUtil: ContentUtil
-
-    @Inject
-    lateinit var eventBus: EventBus
-
-    @Inject
-    lateinit var alarmRepository: AlarmRepository
-
-    @Inject
-    lateinit var eventRepository: EventRepository
+    @Inject lateinit var scheduleManager: ScheduleManager
+    @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var contentUtil: ContentUtil
+    @Inject lateinit var eventBus: EventBus
+    @Inject lateinit var alarmRepository: AlarmRepository
+    @Inject lateinit var eventRepository: EventRepository
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -63,13 +63,12 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
     }
 
     private suspend fun updateAlarmNextInstanceDate(alarm: Alarm): Unit {
-        alarm.instanceStartTime = AlarmUtil.getNextAlarmTime(alarm).toInstant()
+        alarm.instanceStartTime = ScheduleManager.getNextAlarmTime(alarm).toInstant()
         alarmRepository.updateAlarm(alarm)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-
         WakeLock.acquire(this)
 
         when (intent?.action) {
@@ -81,18 +80,18 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
 
                 startForeground(SERVICE_ID, createAlarmAlertNotification(this, profile.title, alarm.localStartTime))
 
-                scope.launch {
+                serviceScope.launch {
                     try {
-                        if (!AlarmUtil.isAlarmValid(alarm)) {
-                            alarmUtil.cancelAlarm(alarm, profile)
+                        if (!ScheduleManager.isAlarmValid(alarm)) {
+                            scheduleManager.cancelAlarm(alarm, profile)
                             updateAlarmCancelledState(alarm)
                         } else {
-                            alarmUtil.scheduleAlarm(alarm, profile)
+                            scheduleManager.scheduleAlarm(alarm, profile)
                             updateAlarmNextInstanceDate(alarm)
                         }
                     } finally {
-                        if (profileUtil.grantedRequiredPermissions(profile)) {
-                            profileUtil.setProfile(profile)
+                        if (profileManager.grantedRequiredPermissions(profile)) {
+                            profileManager.setProfile(profile)
                             eventBus.onProfileSet(profile.id)
                         } else {
                             sendPermissionDeniedNotifications()
@@ -105,6 +104,7 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
                     stopService()
                 }
             }
+
             ACTION_CALENDAR_EVENT_TRIGGER -> {
 
                 val event: Event = ParcelableUtil.toParcelable(intent.getByteArrayExtra(EXTRA_EVENT)!!, ParcelableUtil.getParcelableCreator())
@@ -120,7 +120,7 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
                         ),this)
                     }
                     Event.State.START -> {
-                        alarmUtil.scheduleAlarm(event, profile, Event.State.END)
+                        scheduleManager.scheduleAlarm(event, profile, Event.State.END)
                         stopService()
                     }
                 }
@@ -129,28 +129,13 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
         return START_REDELIVER_INTENT
     }
 
-    private fun sendPermissionDeniedNotifications(): Unit {
-        val missingPermissions: List<String> = profileUtil.getMissingPermissions()
-        if (missingPermissions.isNotEmpty()) {
-            postNotification(this, createMissingPermissionNotification(this, missingPermissions), ID_PERMISSIONS)
-        }
-        if (!profileUtil.canWriteSettings()) {
-            postNotification(this, createSystemSettingsNotification(this), ID_SYSTEM_SETTINGS)
-        }
-        if (!profileUtil.isNotificationPolicyAccessGranted()) {
-            postNotification(this, createInterruptionPolicyNotification(this), ID_INTERRUPTION_POLICY)
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            postNotification(this, createAlarmAlertNotification(this, profile.title, alarm.localStartTime), ID_SCHEDULER)
-        }
     }
 
     private fun stopService(): Unit {
+        /*
         WakeLock.release()
         if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT) {
             stopForeground(STOP_FOREGROUND_DETACH)
@@ -158,10 +143,12 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
         else {
             stopForeground(false)
         }
-        stopSelf()
+        stopSelf() */
     }
 
+    @SuppressLint("Range")
     override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
+        /*
 
         val queryCookie: QueryCookie = cookie!! as QueryCookie
         val event: Event = queryCookie.event
@@ -176,18 +163,20 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
                 }
             }
         }
-        scope.launch {
+        serviceScope.launch {
             if (eventValid) {
                 eventRepository.updateEvent(event)
-                alarmUtil.scheduleAlarm(event, profile, Event.State.START)
+                scheduleManager.scheduleAlarm(event, profile, Event.State.START)
             } else {
                 eventRepository.deleteEvent(event)
-                alarmUtil.cancelAlarm(event)
+                scheduleManager.cancelAlarm(event)
             }
         }.invokeOnCompletion {
             stopService()
         }
+        */
     }
+
 
     companion object {
 
@@ -199,4 +188,5 @@ class AlarmService: Service(), ContentQueryHandler.AsyncQueryCallback {
         internal const val EXTRA_ALARM: String = "extra_alarm"
         internal const val EXTRA_PROFILE: String = "extra_profile"
     }
+     */
 }

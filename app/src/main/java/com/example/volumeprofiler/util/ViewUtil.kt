@@ -96,15 +96,6 @@ class ViewUtil {
             )
         }
 
-        fun showStoragePermissionExplanation(fragmentManager: FragmentManager): Unit {
-            showPermissionRationaleDialog(
-                fragmentManager,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                R.string.storage_permission_explanation,
-                R.drawable.ic_baseline_sd_storage_24
-            )
-        }
-
         @TargetApi(Build.VERSION_CODES.Q)
         fun showBackgroundLocationPermissionExplanation(fragmentManager: FragmentManager): Unit {
             showPermissionRationaleDialog(

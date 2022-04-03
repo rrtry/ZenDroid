@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<com.google.android.material.card.MaterialCardView xmlns:tools="http://schemas.android.com/tools"
+<androidx.cardview.widget.CardView xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/cardView"
     android:animateLayoutChanges="true"
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -11,7 +11,6 @@
     android:layout_marginStart="7dp"
     android:layout_marginEnd="7dp"
     android:layout_marginTop="7dp"
-    android:background="?attr/colorOnSecondary"
     app:cardCornerRadius="5dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -61,7 +60,7 @@
             android:layout_marginStart="16dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/profileName"
-            app:srcCompat="@drawable/baseline_volume_down_deep_purple_300_24dp" />
+            android:src="@drawable/baseline_volume_down_deep_purple_300_24dp" />
 
         <TextView
             android:id="@+id/profileName"
@@ -82,7 +81,7 @@
             android:layout_marginStart="16dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/occurrencesTextView"
-            app:srcCompat="@drawable/baseline_calendar_today_black_24dp" />
+            android:src="@drawable/baseline_calendar_today_black_24dp" />
 
         <ImageButton
             android:id="@+id/deleteAlarmButton"
@@ -94,7 +93,7 @@
             app:layout_constraintBottom_toBottomOf="@+id/profileName"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/profileName"
-            app:srcCompat="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
+            android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
 
         <ImageButton
             android:id="@+id/editAlarmButton"
@@ -105,7 +104,7 @@
             app:layout_constraintBottom_toBottomOf="@+id/deleteAlarmButton"
             app:layout_constraintEnd_toStartOf="@+id/deleteAlarmButton"
             app:layout_constraintTop_toTopOf="@+id/deleteAlarmButton"
-            app:srcCompat="@drawable/baseline_drive_file_rename_outline_black_24dp" />
+            android:src="@drawable/baseline_drive_file_rename_outline_black_24dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView>
+</androidx.cardview.widget.CardView>

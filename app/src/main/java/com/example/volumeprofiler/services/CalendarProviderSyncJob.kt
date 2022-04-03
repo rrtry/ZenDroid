@@ -13,7 +13,7 @@ import android.provider.CalendarContract
 import com.example.volumeprofiler.database.repositories.EventRepository
 import com.example.volumeprofiler.entities.Event
 import com.example.volumeprofiler.entities.EventRelation
-import com.example.volumeprofiler.util.AlarmUtil
+import com.example.volumeprofiler.util.ScheduleManager
 import com.example.volumeprofiler.util.ContentQueryHandler
 import com.example.volumeprofiler.util.ContentUtil
 import dagger.hilt.android.AndroidEntryPoint
@@ -23,6 +23,19 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallback {
 
+    override fun onStartJob(params: JobParameters?): Boolean {
+        return false
+    }
+
+    override fun onStopJob(params: JobParameters?): Boolean {
+        return false
+    }
+
+    override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
+
+    }
+
+    /*
     private var runningParams: JobParameters? = null
 
     private val job: Job = Job()
@@ -35,7 +48,7 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
     lateinit var contentUtil: ContentUtil
 
     @Inject
-    lateinit var alarmUtil: AlarmUtil
+    lateinit var scheduleManager: ScheduleManager
 
     override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
         val eventRelation: EventRelation = cookie as EventRelation
@@ -57,13 +70,13 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
             if (instanceValid) {
                 eventRepository.updateEvent(event)
                 if (event.isInstanceObsolete(event.instanceBeginTime)) {
-                    alarmUtil.scheduleAlarm(event, eventRelation.eventEndsProfile, Event.State.END)
+                    scheduleManager.scheduleAlarm(event, eventRelation.eventEndsProfile, Event.State.END)
                 } else {
-                    alarmUtil.scheduleAlarm(event, eventRelation.eventStartsProfile, Event.State.START)
+                    scheduleManager.scheduleAlarm(event, eventRelation.eventStartsProfile, Event.State.START)
                 }
             } else {
                 eventRepository.deleteEvent(event)
-                alarmUtil.cancelAlarm(event)
+                scheduleManager.cancelAlarm(event)
             }
         }.ensureActive()
     }
@@ -125,4 +138,5 @@ class CalendarProviderSyncJob: JobService(), ContentQueryHandler.AsyncQueryCallb
             jobScheduler.cancel(JOB_ID)
         }
     }
+     */
 }

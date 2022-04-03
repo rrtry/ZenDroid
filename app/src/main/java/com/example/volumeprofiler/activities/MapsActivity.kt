@@ -1,21 +1,17 @@
 package com.example.volumeprofiler.activities
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
-import android.app.Activity
 import android.app.SearchManager
 import android.content.*
-import android.Manifest.permission.*
 import android.annotation.SuppressLint
+import android.content.Intent.ACTION_SEARCH
 import android.content.res.Configuration
 import android.database.MatrixCursor
 import android.graphics.Color
 import android.location.Address
-import android.location.LocationManager
 import android.os.*
 import android.provider.BaseColumns
 import android.util.Log
-import android.view.Gravity
-import android.view.View
 import android.view.animation.BounceInterpolator
 import android.widget.FrameLayout
 import androidx.activity.result.ActivityResultLauncher
@@ -25,17 +21,14 @@ import androidx.appcompat.widget.SearchView
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.transition.*
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.databinding.GoogleMapsActivityBinding
 import com.example.volumeprofiler.fragments.BottomSheetFragment
 import com.example.volumeprofiler.fragments.MapsCoordinatesFragment
-import com.example.volumeprofiler.fragments.PermissionExplanationDialog
-import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
@@ -50,14 +43,9 @@ import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.*
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
 import java.time.Instant
-import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.ln
@@ -76,17 +64,13 @@ class MapsActivity : AppCompatActivity(),
 
     private var marker: Marker? = null
     private var circle: Circle? = null
-    private var pendingAction: Int = 0
-    private var floatingItemsVisible: Boolean = true
-    private var transitionRunning: Boolean = false
 
-    private lateinit var addGeofenceButton: FloatingActionButton
-    private lateinit var recentLocationButton: FloatingActionButton
-    private lateinit var coordinatorLayout: CoordinatorLayout
+    private var bindingImpl: GoogleMapsActivityBinding? = null
+    private val binding: GoogleMapsActivityBinding get() = bindingImpl!!
+
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var mMap: GoogleMap
-    private lateinit var searchView: SearchView
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<out String>>
     private lateinit var profilesQuery: List<Profile>
     private lateinit var taskCancellationSource: CancellationTokenSource
@@ -95,111 +79,29 @@ class MapsActivity : AppCompatActivity(),
     lateinit var geocoderUtil: GeocoderUtil
 
     @Inject
-    lateinit var geofenceUtil: GeofenceUtil
+    lateinit var geofenceManager: GeofenceManager
 
     @Inject
-    lateinit var profileUtil: ProfileUtil
-
-    private val locationProviderReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == LocationManager.PROVIDERS_CHANGED_ACTION) {
-                Log.i("MapsActivity", "PROVIDERS_CHANGED_ACTION")
-            }
-        }
-    }
+    lateinit var profileManager: ProfileManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.google_maps_activity)
-
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
 
-        coordinatorLayout = findViewById(R.id.rootLayout)
-        recentLocationButton = findViewById(R.id.jumpToCurrentLocationButton)
-        addGeofenceButton = findViewById(R.id.saveGeofenceButton)
+        binding.addGeofenceButton.setOnClickListener {
 
-        addGeofenceButton.setOnClickListener {
-            pendingAction = ACTION_CREATE_GEOFENCE
-            setSuccessfulResult(
-                viewModel.getLocation(
-                    profilesQuery
-                ), hasParcelableData()
-            )
         }
-        recentLocationButton.setOnClickListener {
-            pendingAction = ACTION_DETERMINE_LOCATION
-            if (checkSelfPermission(this, ACCESS_FINE_LOCATION)) {
-                val weakReference = WeakReference(this)
-                geofenceUtil.checkLocationServicesAvailability(this) {
-                    weakReference.get()?.getCurrentLocation()
-                }
-            } else {
-                requestLocationPermission()
-            }
+        binding.recentLocationButton.setOnClickListener {
+
         }
         permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            onPermissionRequestResult(false)
+
         }
-        supportFragmentManager.setFragmentResultListener(
-            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, this,
-            { _, result ->
-                val permission: String = result.getString(PermissionExplanationDialog.EXTRA_PERMISSION)!!
-                if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
-                    if (shouldShowRequestPermissionRationale(permission)) {
-                        requestPermissions()
-                    } else {
-                        startActivity(getApplicationSettingsIntent(this))
-                    }
-                }
-            })
         setSearchConfiguration()
         setBottomSheetBehavior()
         addBottomSheetFragment()
         getMap()
-    }
-
-    private fun requestLocationPermission(): Unit {
-        permissionLauncher.launch(
-            arrayOf(ACCESS_FINE_LOCATION)
-        )
-    }
-
-    private fun requestPermissions(): Unit {
-        var permissions: Array<String> = arrayOf(
-            ACCESS_FINE_LOCATION
-        )
-        if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-            permissions += ACCESS_BACKGROUND_LOCATION
-        }
-        if (profileUtil.requiresPhoneStatePermission(viewModel.getLocationRelation(profilesQuery))) {
-            permissions += READ_PHONE_STATE
-        }
-        permissionLauncher.launch(permissions)
-    }
-
-    private fun onPermissionRequestResult(resolve: Boolean): Unit {
-        when (pendingAction) {
-            ACTION_CREATE_GEOFENCE -> {
-                setSuccessfulResult(viewModel.getLocation(profilesQuery), hasParcelableData())
-            }
-            ACTION_DETERMINE_LOCATION -> {
-                when {
-                    checkSelfPermission(this, ACCESS_FINE_LOCATION) -> {
-                        val weakReference: WeakReference<MapsActivity> = WeakReference(this)
-                        geofenceUtil.checkLocationServicesAvailability(this) {
-                            weakReference.get()?.getRecentLocation()
-                        }
-                    }
-                    resolve -> {
-                        requestLocationPermission()
-                    }
-                    else -> {
-                        ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
-                    }
-                }
-            }
-        }
     }
 
     override fun onStart() {
@@ -208,38 +110,26 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun setSearchConfiguration(): Unit {
-        searchView = findViewById(R.id.searchView)
         setSearchableInfo()
         setSearchViewSuggestions()
     }
 
-    override fun onResume() {
-        super.onResume()
-        registerReceiver(locationProviderReceiver, IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION))
-    }
-
     override fun onStop() {
         super.onStop()
-        unregisterReceiver(locationProviderReceiver)
         taskCancellationSource.cancel()
     }
 
     private fun setArgs(): Unit {
-        val locationRelation: LocationRelation? = intent.getParcelableExtra(EXTRA_LOCATION_RELATION)
-        if (locationRelation != null) {
-            viewModel.setLocation(locationRelation)
+        intent.getParcelableExtra<LocationRelation>(EXTRA_LOCATION_RELATION)?.also {
+            viewModel.setLocation(it)
         }
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        handleSearchIntent(intent)
-    }
-
-    private fun handleSearchIntent(intent: Intent?): Unit {
-        if (Intent.ACTION_SEARCH == intent?.action) {
+        if (intent?.action == ACTION_SEARCH) {
             intent.getStringExtra(SearchManager.QUERY)?.also { query ->
-                searchView.setQuery(query, false)
+                binding.searchView.setQuery(query, false)
             }
         }
     }
@@ -253,7 +143,7 @@ class MapsActivity : AppCompatActivity(),
 
     private fun setSearchableInfo(): Unit {
         val searchManager: SearchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
+        binding.searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
     }
 
     private fun setSuggestionsAdapter(): SimpleCursorAdapter {
@@ -264,7 +154,7 @@ class MapsActivity : AppCompatActivity(),
             arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1),
             intArrayOf(R.id.event_display_name),
             0)
-        searchView.suggestionsAdapter = adapter
+        binding.searchView.suggestionsAdapter = adapter
         return adapter
     }
 
@@ -285,7 +175,7 @@ class MapsActivity : AppCompatActivity(),
             )
             matrixCursor.addRow(row)
         }
-        searchView.suggestionsAdapter.changeCursor(matrixCursor)
+        binding.searchView.suggestionsAdapter.changeCursor(matrixCursor)
     }
 
     private fun getAddressFromLocationName(query: String): Unit {
@@ -299,23 +189,24 @@ class MapsActivity : AppCompatActivity(),
 
     private fun setSearchViewSuggestions(): Unit {
         setSuggestionsAdapter()
-        searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
+        binding.searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
 
             override fun onSuggestionSelect(position: Int): Boolean {
                 return false
             }
 
+            @SuppressLint("Range")
             override fun onSuggestionClick(position: Int): Boolean {
-                val cursor = searchView.suggestionsAdapter.cursor
+                val cursor = binding.searchView.suggestionsAdapter.cursor
                 viewModel.latLng.value = LatLng(
                         cursor.getString(cursor.getColumnIndex(COLUMN_LATITUDE)).toDouble(),
                         cursor.getString(cursor.getColumnIndex(COLUMN_LONGITUDE)).toDouble())
-                searchView.setQuery(null, false)
-                searchView.setQuery(cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)), false)
+                binding.searchView.setQuery(null, false)
+                binding.searchView.setQuery(cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)), false)
                 return true
             }
         })
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query != null && query.length > MIN_LENGTH) {
@@ -340,19 +231,20 @@ class MapsActivity : AppCompatActivity(),
         mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.mapstyle_night))
     }
 
-    private fun bounceInterpolatorAnimation(): Unit {
-        val handler = Handler(Looper.getMainLooper())
-        val start = SystemClock.uptimeMillis()
+    private fun startMarkerAnimation(): Unit {
+
+        val handler: Handler = Handler(Looper.getMainLooper())
+        val start: Long = SystemClock.uptimeMillis()
         val duration: Long = 1500
 
-        val interpolator = BounceInterpolator()
+        val interpolator: BounceInterpolator = BounceInterpolator()
 
         handler.post(object : Runnable {
 
             override fun run() {
                 val elapsed = SystemClock.uptimeMillis() - start
                 val remainingTime: Float = (1 - interpolator.getInterpolation(elapsed.toFloat() / duration)).coerceAtLeast(0f)
-                marker!!.setAnchor(0.5f, 1.0f + 0.5f * remainingTime)
+                marker?.setAnchor(0.5f, 1.0f + 0.5f * remainingTime)
                 if (remainingTime > 0.0) {
                     handler.postDelayed(this, 16)
                 }
@@ -378,7 +270,7 @@ class MapsActivity : AppCompatActivity(),
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
         }
         setAddress(latLng)
-        bounceInterpolatorAnimation()
+        startMarkerAnimation()
     }
 
     private fun setAddress(latLng: LatLng): Unit {
@@ -393,13 +285,12 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun getZoomFactor(): Float {
-        var zoomFactor: Float = mMap.maxZoomLevel
-        if (circle != null) {
-            val radius = circle!!.radius + circle!!.radius / 2
-            val scale = radius / 400
-            zoomFactor = (16 - ln(scale) / ln(2.0)).toFloat()
+        circle?.let {
+            val radius: Double = it.radius + it.radius / 2
+            val scale: Double = radius / 400
+            return (16 - ln(scale) / ln(2.0)).toFloat()
         }
-        return zoomFactor
+        return mMap.maxZoomLevel
     }
 
     private fun addCircle(): Unit {
@@ -413,7 +304,9 @@ class MapsActivity : AppCompatActivity(),
 
     private fun addMarker(): Unit {
         marker?.remove()
-        marker = mMap.addMarker(MarkerOptions().position(viewModel.getLatLng()!!).title(viewModel.getAddress()))
+        viewModel.getLatLng()?.let {
+            marker = mMap.addMarker(MarkerOptions().position(it).title(viewModel.getAddress()))
+        }
     }
 
     @RequiresPermission(ACCESS_FINE_LOCATION)
@@ -421,13 +314,12 @@ class MapsActivity : AppCompatActivity(),
         fusedLocationProvider.lastLocation
             .addOnFailureListener {
                 Log.e("MapsActivity", "Failed to fetch last known location", it)
-            }
-            .addOnSuccessListener {
-            if (it != null && TimeUnit.MILLISECONDS.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT_MINUTES) {
-                updateCoordinates(LatLng(it.latitude, it.longitude), false)
-            } else {
-                getCurrentLocation()
-            }
+            }.addOnSuccessListener {
+                if (it != null && TimeUnit.MINUTES.toMinutes(Instant.now().toEpochMilli() - it.time) < DWELL_LIMIT_MINUTES) {
+                    updateCoordinates(LatLng(it.latitude, it.longitude), false)
+                } else {
+                    getCurrentLocation()
+                }
         }
     }
 
@@ -449,81 +341,16 @@ class MapsActivity : AppCompatActivity(),
     private fun addBottomSheetFragment(): Unit {
         val fragment: Fragment? = supportFragmentManager.findFragmentById(R.id.containerBottomSheet)
         if (fragment == null) {
-            val bottomSheetFragment: BottomSheetFragment = BottomSheetFragment()
-            supportFragmentManager.beginTransaction()
-                    .add(R.id.containerBottomSheet, bottomSheetFragment)
-                    .commit()
+            supportFragmentManager
+                .beginTransaction()
+                .add(R.id.containerBottomSheet, BottomSheetFragment())
+                .commit()
         }
     }
 
-    @SuppressLint("WrongConstant")
     private fun setBottomSheetBehavior(): Unit {
-        bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.containerBottomSheet))
+        bottomSheetBehavior = from(binding.containerBottomSheet)
         bottomSheetBehavior.isFitToContents = false
-        bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                if (newState == STATE_HIDDEN) {
-                    bottomSheetBehavior.state = STATE_COLLAPSED
-                }
-            }
-
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                if (floatingItemsVisible) {
-                    if (slideOffset > 0.3f) {
-                        setSearchViewVisibility(View.INVISIBLE, true)
-                        recentLocationButton.hide()
-                        addGeofenceButton.hide()
-                    } else {
-                        setSearchViewVisibility(View.VISIBLE, true)
-                        recentLocationButton.show()
-                        addGeofenceButton.show()
-                    }
-                }
-            }
-        })
-    }
-
-    private fun setSearchViewVisibility(visibility: Int, animate: Boolean) {
-        if (floatingItemsVisible && !transitionRunning) {
-            if (animate) {
-                val transition: TransitionSet = TransitionSet()
-                transition.addListener(object : TransitionListenerAdapter() {
-
-                    override fun onTransitionStart(transition: Transition) {
-                        super.onTransitionStart(transition)
-                        transitionRunning = true
-                    }
-
-                    override fun onTransitionEnd(transition: Transition) {
-                        super.onTransitionEnd(transition)
-                        transitionRunning = false
-                    }
-
-                })
-                transition.addTarget(R.id.searchView).addTransition(Slide(Gravity.TOP))
-                TransitionManager.beginDelayedTransition(coordinatorLayout, transition)
-            }
-            searchView.visibility = visibility
-        }
-    }
-
-    private fun setFloatingItemsVisibility(visibility: Int): Unit {
-        floatingItemsVisible = visibility == View.VISIBLE
-
-        val transition: TransitionSet = TransitionSet()
-        transition.addTarget(R.id.searchView).addTransition(Slide(Gravity.TOP))
-        TransitionManager.beginDelayedTransition(coordinatorLayout, transition)
-
-        searchView.visibility = visibility
-
-        if (visibility == View.VISIBLE) {
-            addGeofenceButton.show()
-            recentLocationButton.show()
-        } else {
-            addGeofenceButton.hide()
-            recentLocationButton.hide()
-        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -548,8 +375,8 @@ class MapsActivity : AppCompatActivity(),
                 launch {
                     viewModel.radius.collect {
                         circle?.radius = it.toDouble()
-                        if (circle != null && marker != null) {
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker!!.position, getZoomFactor()))
+                        marker?.let {
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(it.position, getZoomFactor()))
                         }
                     }
                 }
@@ -574,7 +401,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onMapLongClick(p0: LatLng) {
-        setFloatingItemsVisibility(if (floatingItemsVisible) View.INVISIBLE else View.VISIBLE)
+
     }
 
     override fun setState(state: Int) {
@@ -587,50 +414,8 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun hasParcelableData(): Boolean {
-        return intent.extras?.getParcelable<LocationRelation>(EXTRA_LOCATION_RELATION) != null
-    }
-
-    @Suppress("MissingPermission")
-    private fun setSuccessfulResult(geofence: Location, updateExisting: Boolean): Unit {
-        if (geofence.enabled == 1.toByte()) {
-            val locationRelation: LocationRelation = viewModel.getLocationRelation(profilesQuery)
-            when {
-                    !profileUtil.grantedRequiredPermissions(locationRelation) && !geofenceUtil.locationAccessGranted() -> {
-                        Snackbar.make(coordinatorLayout, "Missing required permissions", Snackbar.LENGTH_INDEFINITE)
-                            .setAction("Grant") {
-                                requestPermissions()
-                            }
-                            .show()
-                    }
-                    !geofenceUtil.locationAccessGranted() -> {
-                        ViewUtil.showLocationPermissionExplanation(supportFragmentManager)
-                    }
-                    profileUtil.shouldRequestPhonePermission(locationRelation) -> {
-                        ViewUtil.showPhoneStatePermissionExplanation(supportFragmentManager)
-                    }
-                    !profileUtil.grantedSystemPreferencesAccess() -> {
-                        sendSystemPreferencesAccessNotification(this, profileUtil)
-                    }
-                    else -> {
-                        applyChanges(geofence, updateExisting)
-                    }
-                }
-        } else {
-            applyChanges(geofence, updateExisting)
-        }
-    }
-
-    private fun applyChanges(geofence: Location, updateExisting: Boolean): Unit {
-        val intent: Intent = Intent().apply {
-            putExtra(EXTRA_LOCATION, geofence)
-            putExtra(FLAG_UPDATE_EXISTING, updateExisting)
-        }
-        setResult(RESULT_OK, intent)
-        takeMapSnapshotAndFinish(geofence.previewImageId)
-    }
-
-    private fun takeMapSnapshotAndFinish(id: UUID): Unit {
+    /*
+    private fun takeSnapshot(id: UUID): Unit {
         mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(
             viewModel.getLatLng()!!, getZoomFactor()
         )))
@@ -658,7 +443,7 @@ class MapsActivity : AppCompatActivity(),
                 onPermissionRequestResult(true)
             }
         }
-    }
+    } */
 
     override fun setPeekHeight(height: Int) {
         bottomSheetBehavior.peekHeight = height
@@ -680,7 +465,6 @@ class MapsActivity : AppCompatActivity(),
             }
             REASON_DEVELOPER_ANIMATION -> {
                 Log.i("MapsActivity", "REASON_DEVELOPER_ANIMATION")
-
             }
         }
     }
@@ -699,10 +483,11 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun setHalfExpandedRatio(ratio: Float) {
+        /*
         val previousState: Int = bottomSheetBehavior.state
         bottomSheetBehavior.state = STATE_COLLAPSED
         bottomSheetBehavior.halfExpandedRatio = ratio
-        bottomSheetBehavior.state = previousState
+        bottomSheetBehavior.state = previousState */
     }
 
     override fun getPeekHeight(): Int {
@@ -712,16 +497,12 @@ class MapsActivity : AppCompatActivity(),
     companion object {
 
         private const val DWELL_LIMIT_MINUTES: Int = 3 * 60
-        private const val EXTRA_POST_PERMISSION_CHECK_ACTION: String = "extra_post_permission_check_action"
-        private const val ACTION_CREATE_GEOFENCE: Int = 182
-        private const val ACTION_DETERMINE_LOCATION: Int = 192
         private const val EXTRA_LOCATION_RELATION: String = "location"
         private const val EXTRA_SHEET_STATE: String = "extra_sheet_state"
         private const val EXTRA_HALF_EXPANDED_RATIO: String = "extra_half_expanded_ratio"
         private const val COLUMN_LATITUDE: String = "latitude"
         private const val COLUMN_LONGITUDE: String = "longitude"
         private const val MIN_LENGTH: Int = 10
-        private const val REQUEST_TURN_DEVICE_LOCATION_ON: Int = 4
 
         const val EXTRA_LOCATION: String = "Location"
         const val FLAG_UPDATE_EXISTING: String = "update_existing"

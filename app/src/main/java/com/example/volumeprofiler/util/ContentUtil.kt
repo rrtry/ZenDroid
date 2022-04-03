@@ -9,7 +9,10 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import android.Manifest.permission.*
+import android.annotation.SuppressLint
 import android.content.ContentUris
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.provider.CalendarContract
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -77,8 +80,8 @@ class ContentUtil @Inject constructor(
     fun queryEventNextInstances(id: Int, token: Int, cookie: Any?, callback: ContentQueryHandler.AsyncQueryCallback): Unit {
 
         val now: LocalDateTime = LocalDateTime.now()
-        val startMillis: Long = AlarmUtil.toEpochMilli(now)
-        val endMillis: Long = AlarmUtil.toEpochMilli(now.plusYears(1))
+        val startMillis: Long = ScheduleManager.toEpochMilli(now)
+        val endMillis: Long = ScheduleManager.toEpochMilli(now.plusYears(1))
 
         val builder: Uri.Builder = buildInstancesUri(startMillis, endMillis)
         val projection: Array<String> = arrayOf(
@@ -99,6 +102,7 @@ class ContentUtil @Inject constructor(
             null, null)
     }
 
+    @SuppressLint("Range")
     suspend fun getEventNextInstanceTime(eventId: Int): Pair<Long, Long> {
 
         val projection: Array<String> = arrayOf(
@@ -108,8 +112,8 @@ class ContentUtil @Inject constructor(
         )
 
         val now: LocalDateTime = LocalDateTime.now()
-        val startMillis: Long = AlarmUtil.toEpochMilli(now)
-        val endMillis: Long = AlarmUtil.toEpochMilli(now.plusYears(1))
+        val startMillis: Long = ScheduleManager.toEpochMilli(now)
+        val endMillis: Long = ScheduleManager.toEpochMilli(now.plusYears(1))
 
         val builder: Uri.Builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
         ContentUris.appendId(builder, startMillis)
@@ -156,9 +160,6 @@ class ContentUtil @Inject constructor(
     }
 
     suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
-        if (!checkSelfPermission(context, READ_EXTERNAL_STORAGE)) {
-            return "Storage permission required"
-        }
         val contentResolver: ContentResolver = context.contentResolver
         val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
         return withContext(Dispatchers.IO) {

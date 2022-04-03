@@ -31,7 +31,6 @@ class TextUtil {
         }
 
         private fun rruleToArgsMap(rrule: String): Map<String, String> {
-            Log.i("TextUtil", rrule)
             val argsMap: Map<String, String> = rrule.split(";").associate {
                 val (rule, arg) = it.split("=")
                 rule to arg

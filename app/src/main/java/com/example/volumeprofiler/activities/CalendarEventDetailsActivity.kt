@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.activities
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ContentUris
 import android.content.Context
@@ -21,35 +22,33 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.loader.app.LoaderManager
 import androidx.loader.content.Loader
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.databinding.CalendarEventActivityLayoutBinding
+import com.example.volumeprofiler.databinding.CalendarEventActivityBinding
 import com.example.volumeprofiler.entities.Event
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.EventDetailsViewModel
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
 import javax.inject.Inject
 import kotlin.IllegalArgumentException
 
+@SuppressLint("Range")
 @AndroidEntryPoint
 class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor>,
     ContentQueryHandler.AsyncQueryCallback {
 
     @Inject
-    lateinit var profileUtil: ProfileUtil
+    lateinit var profileManager: ProfileManager
 
     @Inject
-    lateinit var alarmUtil: AlarmUtil
+    lateinit var scheduleManager: ScheduleManager
 
     @Inject
     lateinit var contentUtil: ContentUtil
 
     private lateinit var calendarListPopupWindow: ListPopupWindow
-    private lateinit var binding: CalendarEventActivityLayoutBinding
+    private lateinit var binding: CalendarEventActivityBinding
 
     private val viewModel: EventDetailsViewModel by viewModels()
 
@@ -133,7 +132,7 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
     }
 
     private fun setBinding(): Unit {
-        binding = CalendarEventActivityLayoutBinding.inflate(layoutInflater)
+        binding = CalendarEventActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
@@ -297,32 +296,6 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        super.onCreateOptionsMenu(menu)
-        return if (menu != null) {
-            menuInflater.inflate(R.menu.action_menu_scheduler, menu)
-            true
-        }
-        else {
-            false
-        }
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        super.onPrepareOptionsMenu(menu)
-        if (menu != null) {
-            val item: MenuItem = menu.findItem(R.id.saveChangesButton)
-            return if (intent.extras != null) {
-                ViewUtil.setActionMenuSaveIcon(this, item)
-                true
-            } else {
-                ViewUtil.setActionMenuAddIcon(this, item)
-                true
-            }
-        }
-        return false
-    }
-
     private fun setActionBar(): Unit {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         if (intent.extras == null) {
@@ -330,19 +303,6 @@ class CalendarEventDetailsActivity: AppCompatActivity(), LoaderManager.LoaderCal
         } else {
             supportActionBar?.title = "Edit event"
         }
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        super.onOptionsItemSelected(item)
-        when (item.itemId) {
-            R.id.saveChangesButton -> {
-                onSaveChangesItemClick()
-            }
-            R.id.home -> {
-                setResultCancelled()
-            }
-        }
-        return true
     }
 
     override fun onBackPressed() {

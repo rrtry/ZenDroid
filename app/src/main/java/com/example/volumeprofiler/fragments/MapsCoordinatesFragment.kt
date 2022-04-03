@@ -24,7 +24,6 @@ import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.textfield.TextInputLayout
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -197,11 +196,11 @@ class MapsCoordinatesFragment: Fragment(), TextView.OnEditorActionListener {
 
             if (!viewModel.latitudeEditStatus.value) {
                 isInputValid = false
-                AnimUtil.shakeAnimation(binding.latitudeTextInputLayout)
+                AnimUtil.shake(binding.latitudeTextInputLayout)
             }
             if (!viewModel.longitudeEditStatus.value) {
                 isInputValid = false
-                AnimUtil.shakeAnimation(binding.longitudeTextInputLayout)
+                AnimUtil.shake(binding.longitudeTextInputLayout)
             }
             if (isInputValid) {
                 sharedViewModel.setLatLng(

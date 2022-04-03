@@ -1,10 +1,10 @@
-package com.example.volumeprofiler.broadcastReceivers
+package com.example.volumeprofiler.receivers
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.example.volumeprofiler.util.ProfileUtil
-import com.example.volumeprofiler.util.SharedPreferencesUtil
+import com.example.volumeprofiler.util.ProfileManager
+import com.example.volumeprofiler.util.PreferencesManager
 import javax.inject.Inject
 import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
@@ -15,18 +15,16 @@ import android.app.NotificationManager.Policy.*
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
 
-    @Inject
-    lateinit var sharedPreferencesUtil: SharedPreferencesUtil
-
-    @Inject
-    lateinit var profileUtil: ProfileUtil
+    @Inject lateinit var preferencesManager: PreferencesManager
+    @Inject lateinit var profileManager: ProfileManager
 
     override fun onReceive(context: Context?, intent: Intent?) {
+
         if (intent?.action == ACTION_PHONE_STATE_CHANGED && intent.extras != null) {
 
-            val streamsUnlinked: Boolean = sharedPreferencesUtil.getStreamsUnlinked()
-            val interruptionFilter: Int = sharedPreferencesUtil.getInterruptionFilter()
-            val priorityCategories: Int = sharedPreferencesUtil.getPriorityCategories()
+            val streamsUnlinked: Boolean = preferencesManager.getStreamsUnlinked()
+            val interruptionFilter: Int = preferencesManager.getInterruptionFilter()
+            val priorityCategories: Int = preferencesManager.getPriorityCategories()
 
             val isPriorityFilter: Boolean = interruptionFilter == INTERRUPTION_FILTER_PRIORITY
             val includesCallsPriority: Boolean = isPriorityFilter && (priorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0
@@ -35,18 +33,18 @@ class PhoneStateReceiver: BroadcastReceiver() {
             if (streamsUnlinked && (includesCallsPriority || interruptionFilter == INTERRUPTION_FILTER_ALL)) {
                 val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
 
-                val ringVolume: Int = sharedPreferencesUtil.getRingStreamVolume()
-                val notificationVolume: Int = sharedPreferencesUtil.getNotificationStreamVolume()
-                val ringerMode: Int = sharedPreferencesUtil.getRingerMode()
-                val notificationMode: Int = sharedPreferencesUtil.getNotificationMode()
+                val ringVolume: Int = preferencesManager.getRingStreamVolume()
+                val notificationVolume: Int = preferencesManager.getNotificationStreamVolume()
+                val ringerMode: Int = preferencesManager.getRingerMode()
+                val notificationMode: Int = preferencesManager.getNotificationMode()
 
                 if (phoneState == EXTRA_STATE_RINGING && ringVolume >= 0) {
-                    profileUtil.setRingerMode(
+                    profileManager.setRingerMode(
                         STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES
                     )
                 }
                 else if ((phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) && notificationVolume >= 0) {
-                    profileUtil.setRingerMode(
+                    profileManager.setRingerMode(
                         STREAM_NOTIFICATION,
                         notificationVolume, notificationMode, FLAG_ALLOW_RINGER_MODES)
                 }

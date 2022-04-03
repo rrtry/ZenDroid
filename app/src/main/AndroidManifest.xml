@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -33,7 +33,6 @@
             android:name="com.example.volumeprofiler.activities.MapsActivity"
             android:configChanges="uiMode"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar"
             android:label="@string/title_activity_maps"
             android:exported="true">
@@ -45,19 +44,7 @@
         </activity>
 
         <receiver
-            android:name=".broadcastReceivers.BootCompletedReceiver"
-            android:directBootAware="true"
-            tools:targetApi="n"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".broadcastReceivers.PhoneStateReceiver"
+            android:name=".receivers.PhoneStateReceiver"
             android:directBootAware="true"
             tools:targetApi="n"
             android:exported="true">
@@ -67,68 +54,44 @@
         </receiver>
 
         <receiver
-            android:name=".broadcastReceivers.PackageDataClearedReceiver"
+            android:name=".receivers.AlarmReceiver"
             android:directBootAware="true"
-            android:enabled="true"
             tools:targetApi="n"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.PACKAGE_DATA_CLEARED"/>
-                <data android:scheme="package" />
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
+                <action android:name="com.example.volumeprofiler.ACTION_ALARM_TRIGGER"/>
             </intent-filter>
         </receiver>
 
         <receiver
-            android:name=".broadcastReceivers.GeofenceReceiver"
+            android:name=".receivers.GeofenceReceiver"
             android:directBootAware="true"
-            android:enabled="true"
             tools:targetApi="n"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"/>
-            </intent-filter>
-        </receiver>
-
-        <service android:name=".services.CalendarProviderSyncJob"
-            android:directBootAware="true"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            tools:targetApi="n"/>
-
-        <receiver android:name=".broadcastReceivers.TimezoneChangedReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.DATE_CHANGED" />
-                <action android:name="android.intent.action.TIME_SET"/>
-                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
+                <action android:name="com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"/>
+                <action android:name="android.intent.action.PACKAGE_DATA_CLEARED" />
+                <data android:scheme="package" android:sspPrefix="com.google.android.gms"/>
             </intent-filter>
         </receiver>
 
-        <service
-            android:name=".services.SchedulerService"
-            android:directBootAware="true"
-            android:enabled="true"
-            tools:targetApi="n" />
-
-        <service
-            android:name=".services.AlarmService"
-            android:directBootAware="true"
-            android:enabled="true"
-            tools:targetApi="n"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.example.volumeprofiler.ACTION_ALARM_TRIGGER" />
-                <action android:name="com.example.volumeprofiler.ACTION_CALENDAR_EVENT_TRIGGER"/>
-            </intent-filter>
-        </service>
+        <service android:name=".services.PlaybackService"
+            android:exported="false"/>
 
         <activity
             android:name=".activities.ProfileDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
-        <activity android:name=".activities.AlarmDetailsActivity" />
-        <activity android:name=".activities.CalendarEventDetailsActivity"/>
+        <activity
+            android:name=".activities.AlarmDetailsActivity"
+            android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
         <activity android:name=".activities.MainActivity"
+            android:theme="@style/Theme.VolumeProfiler.NoActionBar"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -6,10 +6,15 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
-import com.example.volumeprofiler.activities.AlarmDetailsActivity.Companion.TIME_REQUEST_KEY
+import androidx.fragment.app.activityViewModels
+import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.time.LocalTime
 
+@AndroidEntryPoint
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
+
+    private val viewModel: AlarmDetailsViewModel by activityViewModels()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val args = arguments?.getSerializable(ARG_LOCAL_TIME)
@@ -28,19 +33,17 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
     }
 
     private fun setResult(adjustedLocalTime: LocalTime): Unit {
-        parentFragmentManager.setFragmentResult(TIME_REQUEST_KEY, Bundle().apply {
-            putSerializable(EXTRA_LOCAL_TIME, adjustedLocalTime)
-        })
+        viewModel.localTime.value = adjustedLocalTime
+        viewModel.weekDaysLocalTime.value = adjustedLocalTime
     }
 
     companion object {
 
         private const val ARG_LOCAL_TIME = "arg_local_time"
-        const val EXTRA_LOCAL_TIME = "extra_local_date_time"
 
         fun newInstance(localTime: LocalTime): TimePickerFragment {
             val args = Bundle().apply {
-                this.putSerializable(ARG_LOCAL_TIME, localTime)
+                putSerializable(ARG_LOCAL_TIME, localTime)
             }
             return TimePickerFragment().apply {
                 this.arguments = args

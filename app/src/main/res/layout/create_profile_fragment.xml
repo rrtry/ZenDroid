@@ -6,7 +6,7 @@
     <data>
         <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
         <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
-        <import type="com.example.volumeprofiler.util.ProfileUtil"/>
+        <import type="com.example.volumeprofiler.util.ProfileManager"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>
         <variable
@@ -62,7 +62,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_MUSIC)}"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_MUSIC)}"
                     android:onProgressChanged="@{(seekbar, index, fromUser) -> viewModel.onMediaStreamVolumeChanged(index, fromUser)}"
                     android:progress="@{viewModel.mediaVolume}"
                     app:layout_constraintEnd_toStartOf="@+id/playMediaRingtone"
@@ -112,7 +112,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="8dp"
-                android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
+                android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
                 android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser)}"
                 android:progress="@{viewModel.callVolume}"
                 app:layout_constraintEnd_toStartOf="@+id/playCallRingtone"
@@ -170,7 +170,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_NOTIFICATION)}"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_NOTIFICATION)}"
                     android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
                     android:progress="@{viewModel.notificationVolume}"
                     app:layout_constraintEnd_toStartOf="@+id/playNotificationRingtone"
@@ -243,7 +243,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="8dp"
-                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_RING)}"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_RING)}"
                     android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
                     android:progress="@{viewModel.ringVolume}"
                     app:layout_constraintEnd_toStartOf="@+id/playIncomingCallRingtone"
@@ -364,7 +364,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
-                    android:max="@{ProfileUtil.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
                     android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser)}"
                     android:progress="@{viewModel.alarmVolume}"
                     app:layout_constraintEnd_toStartOf="@+id/playAlarmRingtone"

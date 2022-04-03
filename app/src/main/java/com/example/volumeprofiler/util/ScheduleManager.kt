@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.util
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -8,19 +9,20 @@ import android.os.Build
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.services.AlarmService
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.*
-import java.time.temporal.ChronoField
 import java.time.temporal.TemporalAdjuster
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AlarmUtil @Inject constructor (
+class ScheduleManager @Inject constructor (
         @ApplicationContext private val context: Context
         ) {
 
@@ -38,16 +40,13 @@ class AlarmUtil @Inject constructor (
         }
     }
 
-    fun scheduleAlarm(alarm: Alarm, profile: Profile, showToast: Boolean = false): Unit {
-        val pendingIntent: PendingIntent = getAlarmPendingIntent(alarm, profile, true)!!
-        val millis: Long = toEpochMilli(getNextAlarmTime(alarm))
-        setAlarm(millis, pendingIntent)
-        if (showToast) {
-            Toast.makeText(context, formatRemainingTimeUtilAlarm(alarm), Toast.LENGTH_LONG)
-                .show()
+    fun scheduleAlarm(alarm: Alarm, profile: Profile): Unit {
+        getAlarmPendingIntent(alarm, profile, true)?.let {
+            setAlarm(toEpochMilli(getNextAlarmTime(alarm)), it)
         }
     }
 
+    @SuppressLint("MissingPermission")
     @Suppress("obsoleteSdkInt")
     private fun setAlarm(timestamp: Long, pendingIntent: PendingIntent): Unit {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -144,7 +143,7 @@ class AlarmUtil @Inject constructor (
             val today: DayOfWeek = now.dayOfWeek
 
             return when {
-                days != 0 -> {
+                days != WeekDay.NONE -> {
                     getNextAlarmDay(today, days, inclusive)
                 }
                 inclusive -> {
@@ -168,7 +167,6 @@ class AlarmUtil @Inject constructor (
                     break
                 }
             }
-            Log.i("AlarmUtil", "next day: $nextDay")
             return nextDay
         }
 
@@ -218,7 +216,7 @@ class AlarmUtil @Inject constructor (
             return zdt.toInstant().toEpochMilli()
         }
 
-        private fun formatRemainingTimeUtilAlarm(alarm: Alarm): String {
+        internal fun formatRemainingTimeUntilAlarm(alarm: Alarm): String {
 
             var millisBetween: Long = ChronoUnit.MILLIS.between(LocalDateTime.now(), getNextAlarmTime(alarm))
 

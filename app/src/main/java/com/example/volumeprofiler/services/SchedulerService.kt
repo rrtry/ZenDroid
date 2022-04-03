@@ -20,6 +20,15 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
 
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+
+    override fun onQueryComplete(cursor: Cursor?, cookie: Any?, token: Int) {
+
+    }
+
+    /*
     private val job: Job = Job()
     private val serviceScope = CoroutineScope(Dispatchers.Main + job)
 
@@ -33,19 +42,19 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
     lateinit var contentUtil: ContentUtil
 
     @Inject
-    lateinit var alarmUtil: AlarmUtil
+    lateinit var scheduleManager: ScheduleManager
 
     @Inject
-    lateinit var sharedPreferencesUtil: SharedPreferencesUtil
+    lateinit var preferencesManager: PreferencesManager
 
     @Inject
-    lateinit var profileUtil: ProfileUtil
+    lateinit var profileManager: ProfileManager
 
     @Inject
     lateinit var eventBus: EventBus
 
     private suspend fun updateAlarmInstanceTime(alarm: Alarm): Unit {
-        alarm.instanceStartTime = AlarmUtil.getNextAlarmTime(alarm).toInstant()
+        alarm.instanceStartTime = ScheduleManager.getNextAlarmTime(alarm).toInstant()
         repository.updateAlarm(alarm)
     }
 
@@ -70,9 +79,9 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
                 }.ensureActive()
 
                 if (event.isInstanceObsolete(event.instanceBeginTime)) {
-                    alarmUtil.scheduleAlarm(event, eventRelation.eventEndsProfile, Event.State.END)
+                    scheduleManager.scheduleAlarm(event, eventRelation.eventEndsProfile, Event.State.END)
                 } else {
-                    alarmUtil.scheduleAlarm(event, eventRelation.eventStartsProfile, Event.State.START)
+                    scheduleManager.scheduleAlarm(event, eventRelation.eventStartsProfile, Event.State.START)
                 }
             }
             QUERY_PREVIOUS_INSTANCES_TOKEN -> {
@@ -88,14 +97,14 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
                         val adjustedEnd: LocalDateTime = Instant.ofEpochMilli(end).atZone(zoneId).toLocalDateTime()
 
                         if (adjustedBegin < now) {
-                            profileUtil.setProfile(eventRelation.eventStartsProfile)
+                            profileManager.setProfile(eventRelation.eventStartsProfile)
                             eventBus.onProfileSet(eventRelation.eventStartsProfile.id)
                             postNotification(this, createCalendarEventNotification(
                                 this, event, eventRelation.eventStartsProfile, Event.State.START
                             ), ID_CALENDAR_EVENT)
                         }
                         if (adjustedEnd < now) {
-                            profileUtil.setProfile(eventRelation.eventEndsProfile)
+                            profileManager.setProfile(eventRelation.eventEndsProfile)
                             eventBus.onProfileSet(eventRelation.eventEndsProfile.id)
                             postNotification(this, createCalendarEventNotification(
                                 this, event, eventRelation.eventEndsProfile, Event.State.END
@@ -118,7 +127,7 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
                 }
                 if (event.isObsolete()) {
                     eventRepository.deleteEvent(event)
-                    alarmUtil.cancelAlarm(event)
+                    scheduleManager.cancelAlarm(event)
                 } else {
                     contentUtil.queryEventNextInstances(event.id, QUERY_NEXT_INSTANCES_TOKEN, i, this)
                 }
@@ -130,32 +139,32 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
         val alarms: List<AlarmRelation>? = repository.getEnabledAlarms()
         if (!alarms.isNullOrEmpty()) {
 
-            for (i in AlarmUtil.sortInstances(alarms)) {
+            for (i in ScheduleManager.sortInstances(alarms)) {
 
                 val alarm: Alarm = i.alarm
                 val profile: Profile = i.profile
                 var obsolete: Boolean = false
 
-                if (AlarmUtil.isAlarmInstanceObsolete(alarm)) {
+                if (ScheduleManager.isAlarmInstanceObsolete(alarm)) {
                     obsolete = true
-                    profileUtil.setProfile(profile)
+                    profileManager.setProfile(profile)
                     eventBus.onProfileSet(profile.id)
                     postNotification(
                         this,
                         createAlarmAlertNotification(this, profile.title, alarm.localStartTime),
                         ID_SCHEDULER)
                 }
-                if (!obsolete && sharedPreferencesUtil.isProfileEnabled(profile)) {
+                if (!obsolete && preferencesManager.isProfileEnabled(profile)) {
                     eventBus.onProfileSet(profile.id)
-                    profileUtil.setProfile(profile)
+                    profileManager.setProfile(profile)
                 }
-                if (AlarmUtil.isAlarmValid(alarm)) {
-                    alarmUtil.scheduleAlarm(alarm, profile, false)
+                if (ScheduleManager.isAlarmValid(alarm)) {
+                    scheduleManager.scheduleAlarm(alarm, profile)
                     if (obsolete) {
                         updateAlarmInstanceTime(alarm)
                     }
                 } else {
-                    alarmUtil.cancelAlarm(i.alarm, i.profile)
+                    scheduleManager.cancelAlarm(i.alarm, i.profile)
                     cancelAlarm(i.alarm)
                 }
             }
@@ -183,10 +192,6 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
         stopSelf()
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
@@ -198,4 +203,5 @@ class SchedulerService: Service(), ContentQueryHandler.AsyncQueryCallback {
         private const val QUERY_NEXT_INSTANCES_TOKEN: Int = 3
         private const val SERVICE_ID: Int = 162
     }
+     */
 }

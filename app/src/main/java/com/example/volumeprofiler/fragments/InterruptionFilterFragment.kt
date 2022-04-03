@@ -24,29 +24,27 @@ import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.util.ProfileUtil
+import com.example.volumeprofiler.util.ProfileManager
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import android.Manifest.permission.*
 import android.content.Context
 import com.example.volumeprofiler.activities.ProfileDetailsActivity
-import com.example.volumeprofiler.util.ui.animations.AnimUtil
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
 class InterruptionFilterFragment: Fragment() {
 
     @Inject
-    lateinit var profileUtil: ProfileUtil
+    lateinit var profileManager: ProfileManager
 
     private val detailsViewModel: ProfileDetailsViewModel by activityViewModels()
 
-    private var _binding: ZenPreferencesFragmentBinding? = null
-    private val binding: ZenPreferencesFragmentBinding get() = _binding!!
+    private var bindingImpl: ZenPreferencesFragmentBinding? = null
+    private val binding: ZenPreferencesFragmentBinding get() = bindingImpl!!
 
     private var callback: EditProfileActivityCallbacks? = null
 
@@ -59,11 +57,11 @@ class InterruptionFilterFragment: Fragment() {
     override fun onDetach() {
         super.onDetach()
         callback = null
-        _binding = null
+        bindingImpl = null
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = DataBindingUtil.inflate(inflater, R.layout.zen_preferences_fragment, container, false)
+        bindingImpl = DataBindingUtil.inflate(inflater, R.layout.zen_preferences_fragment, container, false)
         binding.viewModel = detailsViewModel
         binding.lifecycleOwner = viewLifecycleOwner
         return binding.root
@@ -72,41 +70,18 @@ class InterruptionFilterFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        collectEventsFlow()
-        disableNestedScrolling()
-        hideToolbarItems()
+        ViewCompat.setNestedScrollingEnabled(binding.scrollView, false)
 
-        requireActivity().supportFragmentManager.setFragmentResultListener(
-            PermissionExplanationDialog.PERMISSION_REQUEST_KEY, viewLifecycleOwner,
-            { _, result ->
-                if (result.getString(PermissionExplanationDialog.EXTRA_PERMISSION) == ACCESS_NOTIFICATION_POLICY) {
-                    if (result.getBoolean(PermissionExplanationDialog.EXTRA_RESULT_OK)) {
-                        startNotificationPolicySettingsActivity()
-                    }
-                    else {
-                        callback?.onFragmentReplace(ProfileDetailsActivity.PROFILE_DETAILS_FRAGMENT)
-                    }
-                }
-            })
-        requireActivity().supportFragmentManager.setFragmentResultListener(PRIORITY_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
-            onPriorityResult(bundle)
-        }
-        requireActivity().supportFragmentManager.setFragmentResultListener(EFFECTS_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
-            onSuppressedEffectsResult(bundle)
-        }
-    }
-
-    private fun collectEventsFlow(): Unit {
         viewLifecycleOwner.lifecycleScope.launch {
             detailsViewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
                 when (it) {
-                    ProfileDetailsViewModel.Event.StartContactsActivity -> {
+                    ProfileDetailsViewModel.ViewEvent.StartContactsActivity -> {
                         startFavoriteContactsActivity()
                     }
-                    is ProfileDetailsViewModel.Event.ShowPopupWindow -> {
+                    is ProfileDetailsViewModel.ViewEvent.ShowPopupWindow -> {
                         showPopupWindow(it.category)
                     }
-                    is ProfileDetailsViewModel.Event.ShowDialogFragment -> {
+                    is ProfileDetailsViewModel.ViewEvent.ShowDialogFragment -> {
                         showDialog(it.dialogType)
                     }
                     else -> {
@@ -115,22 +90,6 @@ class InterruptionFilterFragment: Fragment() {
                 }
             }.collect()
         }
-    }
-
-    private fun hideToolbarItems(): Unit {
-        val binding = callback?.getBinding()!!
-        if (binding.menuEditNameButton.visibility != View.INVISIBLE) {
-            AnimUtil.scaleAnimation(binding.menuEditNameButton, false)
-        }
-        if (binding.menuSaveChangesButton.visibility != View.INVISIBLE) {
-            AnimUtil.scaleAnimation(binding.menuSaveChangesButton, false)
-        }
-    }
-
-    private fun disableNestedScrolling(): Unit {
-        val activityBinding = callback?.getBinding()!!
-        activityBinding.appBar.setExpanded(false, true)
-        ViewCompat.setNestedScrollingEnabled(binding.rootElement, false)
     }
 
     private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {

@@ -1,11 +1,16 @@
 package com.example.volumeprofiler.fragments
 
 import android.os.Bundle
+import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.activities.AlarmDetailsActivity
 import com.example.volumeprofiler.util.WeekDay.*
+import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class WeekDaysPickerDialog: BaseDialog() {
+
+    private val viewModel: AlarmDetailsViewModel by activityViewModels()
 
     override val title: String = "Weekdays"
     override val arrayRes: Int = R.array.daysOfWeek
@@ -20,9 +25,7 @@ class WeekDaysPickerDialog: BaseDialog() {
     )
 
     override fun applyChanges(mask: Int) {
-        parentFragmentManager.setFragmentResult(AlarmDetailsActivity.SCHEDULED_DAYS_REQUEST_KEY, Bundle().apply {
-            putInt(EXTRA_MASK, categoriesMask)
-        })
+        viewModel.scheduledDays.value = mask
     }
 
     companion object {

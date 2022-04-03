@@ -10,7 +10,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import com.example.volumeprofiler.Application.Companion.ACTION_GEOFENCE_TRANSITION
-import com.example.volumeprofiler.broadcastReceivers.GeofenceReceiver
+import com.example.volumeprofiler.receivers.GeofenceReceiver
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.Profile
 import com.google.android.gms.common.api.ResolvableApiException
@@ -23,7 +23,7 @@ import android.Manifest.permission.*
 import android.annotation.SuppressLint
 
 @Singleton
-class GeofenceUtil @Inject constructor(
+class GeofenceManager @Inject constructor(
         @ApplicationContext private val context: Context
 ) {
     private val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)

@@ -3,7 +3,7 @@
 
     <style name="Theme.VolumeProfiler" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimary">@color/teal_400</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorOnPrimary">@color/light_gray</item>
 
@@ -19,9 +19,7 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.VolumeProfiler.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:textColor">@color/black</item>
-    </style>
+    <style name="Theme.VolumeProfiler.NoActionBar" parent="Theme.AppCompat.NoActionBar"/>
 
     <style name="Theme.VolumeProfiler.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
     <style name="Theme.VolumeProfiler.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />

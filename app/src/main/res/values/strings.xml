@@ -54,22 +54,21 @@
     </string-array>
     <string name="title_activity_maps">Map</string>
     <string name="phone_permission_explanation">
-        Separating ringer and notification streams requires phone permission.
-        The app won\'t be able to read call log
-        Warning: this feature is experimental and may not work on some devices</string>
+        Phone state permission explanation
+    </string>
     <string name="location_permission_explanation">
-        To determine your current location, the app needs location permission
+        Location permission explanation
     </string>
     <string name="background_location_access_explanation">
-        Background location access is necessary for geofencing feature
-    </string>
-    <string name="storage_permission_explanation">
-        The app needs storage permission to access media content (ringtones, notification sounds)
+        Background location permission explanation
     </string>
     <string name="interruption_policy_access_explanation">
-        To change do not disturb settings, the app needs interruption policy access
+        Do not disturb access permission explanation
     </string>
     <string name="system_settings_permission_explanation">
-        From android M and onwards, the app requires write access to system settings to change ringtones, alarm sounds
+        System settings permission explanation
+    </string>
+    <string name="permission_denial_warning">
+        Permission denial warning
     </string>
 </resources>

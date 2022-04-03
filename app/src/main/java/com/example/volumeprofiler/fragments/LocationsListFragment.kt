@@ -28,21 +28,25 @@ import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.example.volumeprofiler.interfaces.PermissionRequestCallback
 import android.graphics.BitmapFactory
 import android.media.ThumbnailUtils
+import android.os.Handler
+import android.os.Looper
+import androidx.core.content.res.ResourcesCompat
+import com.example.volumeprofiler.R
+import com.example.volumeprofiler.interfaces.FabContainer
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 @AndroidEntryPoint
-class LocationsListFragment: Fragment() {
+class LocationsListFragment: Fragment(), FabContainer {
 
     @Inject
-    lateinit var geofenceUtil: GeofenceUtil
+    lateinit var geofenceManager: GeofenceManager
 
     @Inject
-    lateinit var profileUtil: ProfileUtil
+    lateinit var profileManager: ProfileManager
 
     private val locationAdapter: LocationAdapter by lazy {
         LocationAdapter()
@@ -55,11 +59,8 @@ class LocationsListFragment: Fragment() {
 
     private val viewModel: LocationsListViewModel by viewModels()
 
-    private var callback: PermissionRequestCallback? = null
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callback = requireActivity() as PermissionRequestCallback
         mapActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == Activity.RESULT_OK) {
                 val geofence: Location = it.data!!.getParcelableExtra(MapsActivity.EXTRA_LOCATION)!!
@@ -75,7 +76,6 @@ class LocationsListFragment: Fragment() {
 
     override fun onDetach() {
         super.onDetach()
-        callback = null
         mapActivityLauncher.unregister()
     }
 
@@ -85,9 +85,6 @@ class LocationsListFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = LocationsListFragmentBinding.inflate(inflater, container, false)
-        binding.createGeofenceButton.setOnClickListener {
-            startMapActivity(null)
-        }
         return binding.root
     }
 
@@ -98,10 +95,10 @@ class LocationsListFragment: Fragment() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == GeofenceUtil.REQUEST_ENABLE_LOCATION_SERVICES && resultCode != Activity.RESULT_OK) {
+        if (requestCode == GeofenceManager.REQUEST_ENABLE_LOCATION_SERVICES && resultCode != Activity.RESULT_OK) {
             val snackBar: Snackbar = Snackbar.make(binding.root, "Enabling location services is required", Snackbar.LENGTH_LONG)
             snackBar.setAction("Enable location") {
-                geofenceUtil.checkLocationServicesAvailability(requireActivity(),null)
+                geofenceManager.checkLocationServicesAvailability(requireActivity(),null)
             }
             snackBar.show()
         }
@@ -132,7 +129,7 @@ class LocationsListFragment: Fragment() {
     }
 
     private fun removeGeofence(locationRelation: LocationRelation): Unit {
-        geofenceUtil.removeGeofence(
+        geofenceManager.removeGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
@@ -143,7 +140,7 @@ class LocationsListFragment: Fragment() {
 
     @Suppress("MissingPermission")
     private fun enableGeofence(locationRelation: LocationRelation, position: Int): Unit {
-        geofenceUtil.addGeofence(
+        geofenceManager.addGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
@@ -153,7 +150,7 @@ class LocationsListFragment: Fragment() {
     }
 
     private fun disableGeofence(locationRelation: LocationRelation, position: Int): Unit {
-        geofenceUtil.removeGeofence(
+        geofenceManager.removeGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
@@ -168,7 +165,9 @@ class LocationsListFragment: Fragment() {
         })
     }
 
-    private inner class LocationViewHolder(private val binding: LocationItemViewBinding): RecyclerView.ViewHolder(binding.root), View.OnClickListener {
+    private inner class LocationViewHolder(
+        private val binding: LocationItemViewBinding
+        ): RecyclerView.ViewHolder(binding.root), View.OnClickListener {
 
         init {
             binding.root.setOnClickListener(this)
@@ -198,24 +197,7 @@ class LocationsListFragment: Fragment() {
         }
 
         override fun onClick(v: View?) {
-            val locationRelation: LocationRelation = locationAdapter.getItemAtPosition(bindingAdapterPosition)
-            if (locationRelation.location.enabled == 1.toByte()) {
-                disableGeofence(locationRelation, bindingAdapterPosition)
-            } else {
-                when {
-                    profileUtil.grantedRequiredPermissions(locationRelation) && geofenceUtil.locationAccessGranted() -> {
-                        geofenceUtil.checkLocationServicesAvailability(requireActivity()) {
-                            enableGeofence(locationRelation, bindingAdapterPosition)
-                        }
-                    }
-                    !geofenceUtil.locationAccessGranted() || profileUtil.shouldRequestPhonePermission(locationRelation) -> {
-                        callback?.requestLocationPermissions(locationRelation)
-                    }
-                    else -> {
-                        sendSystemPreferencesAccessNotification(requireContext(), profileUtil)
-                    }
-                }
-            }
+
         }
     }
 
@@ -264,6 +246,20 @@ class LocationsListFragment: Fragment() {
 
         override fun getPosition(key: String): Int {
             return currentList.indexOfFirst { key == it.location.id.toString() }
+        }
+    }
+
+    override fun onFabClick(fab: FloatingActionButton) {
+
+    }
+
+    override fun onUpdateFab(fab: FloatingActionButton) {
+        Handler(Looper.getMainLooper()).post {
+            fab.setImageDrawable(
+                ResourcesCompat.getDrawable(
+                    resources, R.drawable.ic_baseline_location_on_24, context?.theme
+                )
+            )
         }
     }
 
