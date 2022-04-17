@@ -6,7 +6,7 @@
     <data>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.MapsSharedViewModel"/>
+            type="com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel"/>
     </data>
 
     <androidx.core.widget.NestedScrollView
@@ -18,8 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:focusableInTouchMode="true"
-            android:focusable="true"
-            android:background="?attr/colorOnPrimary">
+            android:focusable="true">
 
             <Spinner
                 android:id="@+id/onEnterSpinner"
@@ -30,7 +29,7 @@
                 android:layout_marginEnd="16dp"
                 style="@style/Widget.AppCompat.Spinner.Underlined"
                 android:entries="@{viewModel.profilesStateFlow}"
-                android:selectedItemPosition="@={viewModel.toApplyProfilePosition}"
+                android:selectedItemPosition="@={viewModel.enterProfilePosition}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
@@ -87,10 +86,11 @@
                 style="@style/Widget.AppCompat.Spinner.Underlined"
                 android:layout_marginEnd="16dp"
                 android:entries="@{viewModel.profilesStateFlow}"
-                android:selectedItemPosition="@={viewModel.toRestoreProfilePosition}"
+                android:selectedItemPosition="@={viewModel.exitProfilePosition}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textView8" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 </layout>

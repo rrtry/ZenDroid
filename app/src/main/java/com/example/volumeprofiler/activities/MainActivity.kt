@@ -2,7 +2,6 @@ package com.example.volumeprofiler.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
 import android.transition.Fade
 import android.view.LayoutInflater
 import android.view.Window

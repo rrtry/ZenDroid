@@ -49,20 +49,11 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
-    @Inject
-    lateinit var preferencesManager: PreferencesManager
-
-    @Inject
-    lateinit var scheduleManager: ScheduleManager
-
-    @Inject
-    lateinit var geofenceManager: GeofenceManager
-
-    @Inject
-    lateinit var profileManager: ProfileManager
-
-    @Inject
-    lateinit var eventBus: EventBus
+    @Inject lateinit var preferencesManager: PreferencesManager
+    @Inject lateinit var scheduleManager: ScheduleManager
+    @Inject lateinit var geofenceManager: GeofenceManager
+    @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var eventBus: EventBus
 
     private val profileAdapter: ProfileAdapter by lazy {
         ProfileAdapter()
@@ -127,10 +118,8 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
                                     preferencesManager.clearPreferences()
                                     profileAdapter.setSelection(null)
                                 } else {
-
                                     profileManager.setProfile(it.profile)
                                     profileAdapter.setSelection(it.profile)
-
                                     if (shouldShowPermissionSuggestion(requireContext(), it.profile)) {
                                         activity?.showSnackBar(
                                             "Insufficient permissions for profile",
@@ -150,7 +139,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
                             }
                             is RemoveGeofencesViewEvent -> {
                                 for (i in it.geofences) {
-                                    deletePreviewBitmap(requireContext(), i.location.previewImageId)
+                                    deleteThumbnail(requireContext(), i.location.previewImageId)
                                     geofenceManager.removeGeofence(
                                         i.location,
                                         i.onEnterProfile,

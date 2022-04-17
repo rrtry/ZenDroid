@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.fragments
 
-import android.provider.Settings.*
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.NotificationManager.Policy.*
@@ -32,7 +31,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.content.Context
-import com.example.volumeprofiler.activities.ProfileDetailsActivity
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
@@ -51,7 +49,6 @@ class InterruptionFilterFragment: Fragment() {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as EditProfileActivityCallbacks
-        detailsViewModel.currentFragmentTag.value = ProfileDetailsActivity.TAG_INTERRUPTIONS_FRAGMENT
     }
 
     override fun onDetach() {
@@ -180,27 +177,5 @@ class InterruptionFilterFragment: Fragment() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         startActivity(intent)
-    }
-
-    private fun startNotificationPolicySettingsActivity(): Unit {
-        val intent: Intent = Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
-    }
-
-    private fun onPriorityResult(bundle: Bundle): Unit {
-        detailsViewModel.priorityCategories.value = bundle.getInt(BaseDialog.EXTRA_MASK)
-    }
-
-    private fun onSuppressedEffectsResult(bundle: Bundle): Unit {
-        val effectsMask: Int = bundle.getInt(BaseDialog.EXTRA_MASK)
-        detailsViewModel.suppressedVisualEffects.value = effectsMask
-    }
-
-    companion object {
-
-        const val EFFECTS_REQUEST_KEY: String = "request_key"
-        const val PRIORITY_REQUEST_KEY: String = "priority_request_key"
     }
 }

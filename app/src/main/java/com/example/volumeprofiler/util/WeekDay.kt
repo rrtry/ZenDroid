@@ -18,6 +18,8 @@ enum class WeekDay(val num: Int, val value: Int) {
 
     companion object {
 
+        const val WEEKENDS: Int = 0x41
+        const val WEEKDAYS: Int = 0x3E
         const val ALL_DAYS: Int = 0x7F
         const val NONE: Int = 0x00
 

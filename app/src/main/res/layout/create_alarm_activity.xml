@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<layout xmlns:tools="http://schemas.android.com/tools"
+<layout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -25,36 +25,9 @@
             android:transitionName="alarmDetailsTransition"
             android:text="@{TextUtil.formatLocalTime(context, viewModel.localTime)}"
             android:onClick="@{() -> viewModel.onTimeSelectButtonClick()}"
-            android:textSize="30sp"
+            android:textSize="35sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <View
-            android:id="@+id/clockViewSeparator"
-            android:layout_width="0.5dp"
-            android:layout_height="0dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:rotation="180"
-            android:background="@color/gray"
-            android:layout_marginBottom="8dp"
-            android:layout_marginTop="8dp"
-            app:layout_constraintBottom_toBottomOf="@+id/endClockView"
-            app:layout_constraintTop_toTopOf="@+id/endClockView"
-            app:layout_constraintStart_toEndOf="@+id/startClockView"
-            app:layout_constraintEnd_toStartOf="@+id/endClockView"/>
-
-        <TextView
-            android:id="@+id/endClockView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:onClick="@{() -> viewModel.onTimeSelectButtonClick()}"
-            android:text="@{TextUtil.formatLocalTime(context, viewModel.localTime)}"
-            android:textSize="30sp"
-            app:layout_constraintBottom_toBottomOf="@+id/startClockView"
-            app:layout_constraintStart_toEndOf="@id/clockViewSeparator"
-            app:layout_constraintTop_toTopOf="@+id/startClockView" />
 
         <Switch
             android:id="@+id/enableAlarmSwitch"
@@ -96,7 +69,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Select profiles"
+            android:text="Profile"
             android:textColor="?attr/colorPrimary"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/separator2"
@@ -107,33 +80,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
-            android:entries="@{viewModel.profilesStateFlow}"
-            android:selectedItemPosition="@={viewModel.selectedSpinnerPosition}"
-            app:layout_constraintEnd_toStartOf="@+id/spinnerSeparator"
-            app:layout_constraintStart_toStartOf="@+id/profileTitle"
-            app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
-
-        <View
-            android:id="@+id/spinnerSeparator"
-            android:layout_width="0.5dp"
-            android:layout_height="0dp"
-            android:background="@color/gray"
-            android:rotation="180"
-            app:layout_constraintBottom_toBottomOf="@+id/startProfileSpinner"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/endProfileSpinner" />
-
-        <Spinner
-            android:id="@+id/endProfileSpinner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:layout_marginEnd="16dp"
-            app:layout_constraintBottom_toTopOf="@+id/separator3"
+            android:entries="@{viewModel.profilesStateFlow}"
+            android:selectedItemPosition="@={viewModel.spinnerPosition}"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/spinnerSeparator"
+            app:layout_constraintStart_toStartOf="@+id/profileTitle"
             app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
 
         <View
@@ -153,7 +104,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Repeat on"
+            android:text="Repeat"
             android:textColor="?attr/colorPrimary"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="@+id/separator1"

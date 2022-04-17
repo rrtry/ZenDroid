@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout
+<layout xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -60,64 +60,31 @@
                     android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
                     android:textSize="14sp"
+                    android:layout_marginBottom="16dp"
                     android:layout_height="wrap_content"
                     android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityCallSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_CALLS)}"/>
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/callsStarredContactsLayout"
-                categoryType="@{Policy.PRIORITY_CATEGORY_CALLS}"
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/repeatCallersLayout"
+                callSenders="@{viewModel.priorityCallSenders}"
                 priorityCategories="@{viewModel.priorityCategories}"
-                prioritySenders="@{viewModel.priorityCallSenders}"
-                rootViewGroup="@{rootViewGroup}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
-                android:onClick="@{() -> viewModel.onStarredContactsLayoutClick()}"
-                android:orientation="vertical"
-                android:paddingTop="16dp"
-                app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="parent"
+                android:onClick="@{() -> viewModel.onRepetitiveCallersLayoutClick()}"
                 app:layout_constraintTop_toBottomOf="@+id/exceptionsCallsLayout">
 
                 <TextView
-                    android:id="@+id/CallsStarredContactsTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:text="Starred contacts"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/CallsStarredContactsDescription"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
-                    android:text="Contacts"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <com.example.volumeprofiler.views.SwitchableConstraintLayout
-                android:background="?attr/selectableItemBackground"
-                android:id="@+id/repeatCallersLayout"
-                android:layout_width="match_parent"
-                android:onClick="@{() -> viewModel.onRepetitiveCallersLayoutClick()}"
-                callSenders="@{viewModel.priorityCallSenders}"
-                priorityCategories="@{viewModel.priorityCategories}"
-                app:layout_constraintTop_toBottomOf="@id/callsStarredContactsLayout"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
                     android:id="@+id/repeatCallersTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     android:layout_marginLeft="35dp"
+                    android:layout_marginTop="16dp"
                     android:text="Allow repeat callers"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/repeatCallersDescription"
@@ -195,53 +162,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
+                    android:layout_marginBottom="16dp"
                     android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"
                     android:textSize="14sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/messagesStarredContactsLayout"
-                android:orientation="vertical"
-                android:background="?attr/selectableItemBackground"
-                app:layout_constraintTop_toBottomOf="@+id/exceptionsMessagesLayout"
-                app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="parent"
-                android:paddingTop="16dp"
-                rootViewGroup="@{rootViewGroup}"
-                prioritySenders="@{viewModel.priorityMessageSenders}"
-                priorityCategories="@{viewModel.priorityCategories}"
-                categoryType="@{Policy.PRIORITY_CATEGORY_MESSAGES}"
-                android:onClick="@{() -> viewModel.onStarredContactsLayoutClick()}"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:id="@+id/messagesStarredContactsTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:textSize="16sp"
-                    android:layout_height="wrap_content"
-                    android:text="Starred contacts"/>
-
-                <TextView
-                    android:id="@+id/messagesStarredContactsDescription"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
-                    android:textSize="14sp"
-                    android:layout_height="wrap_content"
-                    android:text="Contacts"/>
             </LinearLayout>
 
             <View
                 android:id="@+id/separator3"
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
-                android:layout_marginTop="16dp"
                 android:background="#969696"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/messagesStarredContactsLayout" />
+                app:layout_constraintTop_toBottomOf="@+id/exceptionsMessagesLayout" />
 
             <TextView
                 android:id="@+id/textView4"
@@ -283,9 +216,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="35dp"
                     android:paddingTop="4dp"
+                    android:layout_marginBottom="16dp"
                     android:text="@{BindingConverters.priorityCategoriesToString(viewModel.priorityCategories)}"
                     android:textSize="14sp" />
             </LinearLayout>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 </layout>

@@ -205,10 +205,10 @@ object BindingAdapters {
     @BindingAdapter("repeatingCallersPriorityCategories", "callSenders")
     fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: Int, callSenders: Int): Unit {
         if (callSenders == PRIORITY_SENDERS_ANY
-            && isBitSet(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)) {
+            && containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)) {
             view.isChecked = true
         } else {
-            view.isChecked = isBitSet(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)
+            view.isChecked = containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)
         }
     }
 

@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.fragments
 
 import android.Manifest.permission.*
-import android.annotation.SuppressLint
 import android.util.Log
 import android.view.*
 import android.widget.PopupMenu
@@ -30,6 +29,7 @@ import javax.inject.Inject
 import android.media.RingtoneManager.*
 import android.os.*
 import android.provider.Settings
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -37,10 +37,9 @@ import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.IN
 import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.services.PlaybackService
 import com.example.volumeprofiler.util.ViewUtil
-import com.example.volumeprofiler.util.checkSelfPermission
+import com.example.volumeprofiler.util.checkPermission
 import kotlinx.coroutines.launch
 
-@SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
 class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
 
@@ -153,10 +152,13 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     detailsViewModel.fragmentEventsFlow.collect {
                         when (it) {
+                            is ProfileDetailsViewModel.ViewEvent.ShowDialogFragment -> {
+                                getFragmentInstance(it.dialogType).show(requireActivity().supportFragmentManager, null)
+                            }
                             is ProfileDetailsViewModel.ViewEvent.ResumeRingtonePlayback -> {
                                 detailsViewModel.currentMediaUri?.let { uri ->
                                     mediaService?.resume(
@@ -311,7 +313,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     }
 
     private fun setPhonePermissionProperty(): Unit {
-        detailsViewModel.phonePermissionGranted.value = checkSelfPermission(requireContext(), READ_PHONE_STATE)
+        detailsViewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
     }
 
     private fun setNotificationPolicyProperty(): Unit {
@@ -466,6 +468,16 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
             }
         }
         popupMenu.show()
+    }
+
+    private fun getFragmentInstance(dialogType: ProfileDetailsViewModel.DialogType): DialogFragment {
+        return when (dialogType) {
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF ->
+                SuppressedEffectsOffDialog.newInstance(detailsViewModel.getProfile())
+            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON ->
+                SuppressedEffectsOnDialog.newInstance(detailsViewModel.getProfile())
+            else -> throw IllegalArgumentException("Unknown dialog type")
+        }
     }
 
     companion object {

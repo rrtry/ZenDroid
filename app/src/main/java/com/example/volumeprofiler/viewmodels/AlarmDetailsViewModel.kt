@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.lang.IllegalArgumentException
 import java.time.*
 import java.util.*
 import javax.inject.Inject
@@ -21,18 +22,18 @@ class AlarmDetailsViewModel @Inject constructor(
         private val alarmRepository: AlarmRepository
 ): ViewModel() {
 
-    private var areArgsSet: Boolean = false
+    private var entitySet: Boolean = false
 
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
-    val selectedSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(-1)
+    val spinnerPosition: MutableStateFlow<Int> = MutableStateFlow(-1)
     val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(0)
     val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
 
-    private var id: Long? = null
+    private var alarmId: Long? = null
     private var isScheduled: Boolean = false
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
@@ -66,7 +67,7 @@ class AlarmDetailsViewModel @Inject constructor(
 
     fun onSaveChangesButtonClick(): Unit {
         viewModelScope.launch {
-            val event = if (getAlarmId() != null) {
+            val event = if (alarmId != null) {
                 ViewEvent.OnUpdateAlarmEvent(getAlarm())
             } else {
                 ViewEvent.OnCreateAlarmEvent(getAlarm())
@@ -103,15 +104,11 @@ class AlarmDetailsViewModel @Inject constructor(
     }
 
     private fun getProfileUUID(): UUID {
-        return profilesStateFlow.value[selectedSpinnerPosition.value].id
+        return profilesStateFlow.value[spinnerPosition.value].id
     }
 
     fun getProfile(): Profile {
-        return profilesStateFlow.value[selectedSpinnerPosition.value]
-    }
-
-    fun getAlarmId(): Long? {
-        return this.id
+        return profilesStateFlow.value[spinnerPosition.value]
     }
 
     private fun getPosition(uuid: UUID, profiles: List<Profile>): Int {
@@ -124,33 +121,34 @@ class AlarmDetailsViewModel @Inject constructor(
     }
 
     fun setEntity(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
-        if (!areArgsSet && alarmRelation != null) {
+        if (!entitySet) {
+            alarmRelation?.let {
+                spinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)
+                scheduledDays.value = alarmRelation.alarm.scheduledDays
+                localTime.value = alarmRelation.alarm.localStartTime
+                scheduled.value = alarmRelation.alarm.isScheduled == 1
 
-            selectedSpinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)
-            scheduledDays.value = alarmRelation.alarm.scheduledDays
-            localTime.value = alarmRelation.alarm.localStartTime
-            scheduled.value = alarmRelation.alarm.isScheduled == 1
+                alarmId = alarmRelation.alarm.id
+                isScheduled = alarmRelation.alarm.isScheduled == 1
 
-            id = alarmRelation.alarm.id
-            isScheduled = alarmRelation.alarm.isScheduled == 1
-
-            areArgsSet = true
+                entitySet = true
+            }
         }
     }
 
-    fun getAlarm(): Alarm {
-        val alarm: Alarm = Alarm(
+    private fun getAlarm(): Alarm {
+        return Alarm(
             localStartTime = localTime.value,
             scheduledDays = scheduledDays.value,
             isScheduled = getAlarmState(),
             instanceStartTime = getNextInstanceDate(),
             zoneId = ZoneId.systemDefault(),
             profileUUID = getProfileUUID(),
-        )
-        if (id != null) {
-            alarm.id = this.id!!
+        ).apply {
+            alarmId?.let {
+                id = it
+            }
         }
-        return alarm
     }
 
     override fun onCleared(): Unit {

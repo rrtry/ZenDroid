@@ -1,0 +1,752 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
+        <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
+        <import type="com.example.volumeprofiler.util.ProfileManager"/>
+        <import type="android.app.NotificationManager.Policy"/>
+        <import type="android.media.RingtoneManager"/>
+        <import type="android.media.AudioManager"/>
+        <variable
+            name="viewModel"
+            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
+    </data>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:paddingTop="16dp"
+            android:id="@+id/constraintRoot"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:layout_height="wrap_content">
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/mediaSliderLayout"
+                android:layout_width="match_parent"
+                mediaInterruptionFilter="@{viewModel.interruptionFilter}"
+                mediaPriorityCategories="@{viewModel.priorityCategories}"
+                policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginTop="16dp">
+
+                <ImageView
+                    android:id="@+id/imageView9"
+                    mediaInterruptionFilter="@{viewModel.interruptionFilter}"
+                    mediaPriorityCategories="@{viewModel.priorityCategories}"
+                    mediaVolume="@{viewModel.mediaVolume}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="27dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
+                    app:srcCompat="@drawable/baseline_music_note_deep_purple_300_24dp" />
+
+                <SeekBar
+                    android:id="@+id/mediaSeekBar"
+                    mediaInterruptionFilter="@{viewModel.interruptionFilter}"
+                    mediaPriorityCategories="@{viewModel.priorityCategories}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="8dp"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_MUSIC)}"
+                    android:onProgressChanged="@{(seekbar, index, fromUser) -> viewModel.onMediaStreamVolumeChanged(index, fromUser)}"
+                    android:progress="@{viewModel.mediaVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playMediaRingtone"
+                    app:layout_constraintStart_toEndOf="@+id/imageView9"
+                    app:layout_constraintTop_toBottomOf="@+id/mediaBarTitle" />
+
+                <TextView
+                    android:id="@+id/mediaBarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="Media volume"
+                    android:textColor="?android:attr/textColorPrimary"
+                    app:layout_constraintStart_toEndOf="@+id/imageView9"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/playMediaRingtone"
+                    android:layout_width="40dp"
+                    playing="@{viewModel.musicRingtonePlaying}"
+                    android:duplicateParentState="true"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@null"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_MUSIC)}"
+                    app:layout_constraintBottom_toBottomOf="@+id/mediaSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <ImageView
+                android:id="@+id/imageView10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="27dp"
+                app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
+                app:srcCompat="@drawable/baseline_call_deep_purple_300_24dp" />
+
+            <SeekBar
+                android:id="@+id/phoneSeekBar"
+                callInterruptionFilter="@{viewModel.interruptionFilter}"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="8dp"
+                android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
+                android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser)}"
+                android:progress="@{viewModel.callVolume}"
+                app:layout_constraintEnd_toStartOf="@+id/playCallRingtone"
+                app:layout_constraintStart_toEndOf="@+id/imageView10"
+                app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
+
+            <TextView
+                android:id="@+id/phoneBarTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:text="Call volume"
+                android:textColor="?android:attr/textColorPrimary"
+                app:layout_constraintStart_toEndOf="@+id/imageView10"
+                app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout" />
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/notificationSliderLayout"
+                android:layout_width="match_parent"
+                interruptionFilter="@{viewModel.interruptionFilter}"
+                priorityCategories="@{viewModel.priorityCategories}"
+                policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                streamsUnlinked="@{viewModel.streamsUnlinked}"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar"
+                android:layout_marginTop="32dp">
+
+                <ImageView
+                    android:id="@+id/notificationIcon"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                    notificationMode="@{viewModel.notificationMode}"
+                    notificationPriorityCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:onClick="@{() -> viewModel.onNotificationIconClick()}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="27dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
+                    app:srcCompat="@drawable/baseline_circle_notifications_deep_purple_300_24dp" />
+
+                <SeekBar
+                    android:id="@+id/notificationSeekBar"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    notificationInterruptionFilter="@{viewModel.interruptionFilter}"
+                    notificationMode="@{viewModel.notificationMode}"
+                    notificationPriorityCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="8dp"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_NOTIFICATION)}"
+                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
+                    android:progress="@{viewModel.notificationVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playNotificationRingtone"
+                    app:layout_constraintStart_toEndOf="@+id/notificationIcon"
+                    app:layout_constraintTop_toBottomOf="@+id/notificationBarTitle" />
+
+                <TextView
+                    android:id="@+id/notificationBarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:text="Notification volume"
+                    android:textColor="?android:attr/textColorPrimary"
+                    app:layout_constraintStart_toEndOf="@+id/notificationIcon"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/playNotificationRingtone"
+                    android:layout_width="40dp"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_NOTIFICATION)}"
+                    android:layout_height="40dp"
+                    playing="@{viewModel.notificationRingtonePlaying}"
+                    android:duplicateParentState="true"
+                    android:background="@null"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/notificationSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/ringerSliderLayout"
+                android:layout_width="match_parent"
+                ringerInterruptionFilter="@{viewModel.interruptionFilter}"
+                ringerPriorityCategories="@{viewModel.priorityCategories}"
+                policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                streamsUnlinked="@{viewModel.streamsUnlinked}"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/notificationSliderLayout"
+                android:layout_marginTop="32dp">
+
+                <ImageView
+                    android:id="@+id/ringerIcon"
+                    iconRingerMode="@{viewModel.ringerMode}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    ringerIconInterruptionFilter="@{viewModel.interruptionFilter}"
+                    ringerPriorityCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:onClick="@{() -> viewModel.onRingerIconClick()}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="27dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
+                    app:srcCompat="@drawable/baseline_notifications_active_black_24dp" />
+
+                <SeekBar
+                    android:id="@+id/ringerSeekBar"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    ringerMode="@{viewModel.ringerMode}"
+                    ringerSeekBarInterruptionFilter="@{viewModel.interruptionFilter}"
+                    ringerSeekBarPropertyCategories="@{viewModel.priorityCategories}"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="8dp"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_RING)}"
+                    android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
+                    android:progress="@{viewModel.ringVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playIncomingCallRingtone"
+                    app:layout_constraintStart_toEndOf="@+id/ringerIcon"
+                    app:layout_constraintTop_toBottomOf="@+id/ringerBarTitle" />
+
+                <TextView
+                    android:id="@+id/ringerBarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="32dp"
+                    android:text="Ring volume"
+                    android:textColor="?android:attr/textColorPrimary"
+                    app:layout_constraintStart_toEndOf="@+id/ringerIcon"
+                    app:layout_constraintTop_toBottomOf="@+id/notificationSliderLayout" />
+
+                <ImageButton
+                    android:id="@+id/playIncomingCallRingtone"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_RING)}"
+                    android:background="@null"
+                    playing="@{viewModel.phoneRingtonePlaying}"
+                    android:duplicateParentState="true"
+                    app:layout_constraintBottom_toBottomOf="@+id/ringerSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/unlinkStreamsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onUnlinkStreamsLayoutClick()}"
+                android:orientation="horizontal"
+                android:visibility="visible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/alarmSliderLayout">
+
+                <TextView
+                    android:id="@+id/unlinkModeDescription"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Unlink ringer and notifications"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="@+id/playSoundSwitch"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/unlinkStreamsSwitch" />
+
+                <Switch
+                    android:id="@+id/unlinkStreamsSwitch"
+                    streamsUnlinked="@{viewModel.streamsUnlinked}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:clickable="false"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/alarmSliderLayout"
+                android:layout_width="match_parent"
+                alarmInterruptionFilter="@{viewModel.interruptionFilter}"
+                alarmPriorityCategories="@{viewModel.priorityCategories}"
+                policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/ringerSliderLayout"
+                android:layout_marginTop="32dp">
+
+                <ImageView
+                    alarmInterruptionFilter="@{viewModel.interruptionFilter}"
+                    priorityCategories="@{viewModel.priorityCategories}"
+                    policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    index="@{viewModel.alarmVolume}"
+                    android:id="@+id/alarmIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="27dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/alarmSeekBar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
+                    app:srcCompat="@drawable/baseline_alarm_deep_purple_300_24dp" />
+
+                <TextView
+                    android:id="@+id/alarmBarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="32dp"
+                    android:text="Alarm volume"
+                    android:textColor="?android:attr/textColorPrimary"
+                    app:layout_constraintStart_toEndOf="@+id/alarmIcon"
+                    app:layout_constraintTop_toBottomOf="@+id/ringerSliderLayout" />
+
+                <SeekBar
+                    android:id="@+id/alarmSeekBar"
+                    alarmInterruptionFilter="@{viewModel.interruptionFilter}"
+                    alarmPriorityCategories="@{viewModel.priorityCategories}"
+                    notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
+                    android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
+                    android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser)}"
+                    android:progress="@{viewModel.alarmVolume}"
+                    app:layout_constraintEnd_toStartOf="@+id/playAlarmRingtone"
+                    app:layout_constraintStart_toEndOf="@+id/alarmIcon"
+                    app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
+
+                <ImageButton
+                    android:id="@+id/playAlarmRingtone"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@null"
+                    playing="@{viewModel.alarmRingtonePlaying}"
+                    android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_ALARM)}"
+                    android:duplicateParentState="true"
+                    app:layout_constraintBottom_toBottomOf="@+id/alarmSeekBar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
+                    app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <View
+                android:id="@+id/separator1"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="8dp"
+                android:background="#969696"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/unlinkStreamsLayout" />
+
+            <TextView
+                android:id="@+id/Title1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="35dp"
+                android:layout_marginTop="16dp"
+                android:text="Ringtones and notifications"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/separator1" />
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/interruptionFilterLayout"
+                notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="8dp"
+                android:onClick="@{() -> viewModel.onInterruptionFilterLayoutClick()}"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/Title1">
+
+                <TextView
+                    android:id="@+id/doNotDisturbTitle"
+                    android:layout_width="wrap_content"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Do Not disturb"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/interruptionFilterPolicy"
+                    app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/doNotDisturbTitle"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
+                    android:textSize="14sp" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/phoneRingtoneLayout"
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onRingtoneLayoutClick()}"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/alarmSoundLayout">
+
+                <TextView
+                    android:id="@+id/phoneRingtoneTitle"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Phone ringtone"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/phoneRingtone"
+                    android:layout_width="wrap_content"
+                    app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="@{viewModel.phoneRingtoneTitle}"
+                    android:textSize="14sp" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/notificationSoundLayout"
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{() -> viewModel.onNotificationSoundLayoutClick()}"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/vibrateForCallsLayout">
+
+                <TextView
+                    android:id="@+id/notificationSoundTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:paddingStart="35dp"
+                    android:text="Default notification sound"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/notificationSound"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
+                    android:text="@{viewModel.notificationRingtoneTitle}"
+                    android:textSize="14sp" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/alarmSoundLayout"
+                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="16dp"
+                android:onClick="@{() -> viewModel.onAlarmSoundLayoutClick()}"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/notificationSoundLayout">
+
+                <TextView
+                    android:id="@+id/alarmSoundTitle"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Default alarm sound"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/alarmSound"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="@{viewModel.alarmRingtoneTitle}"
+                    android:textSize="14sp" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/interruptionFilterPreferencesLayout"
+                notificationPolicyAccess="@{viewModel.notificationPolicyAccessGranted}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="16dp"
+                preferencesInterruptionFilter="@{viewModel.interruptionFilter}"
+                android:onClick="@{() -> viewModel.onPreferencesLayoutClick()}"
+                app:layout_constraintEnd_toStartOf="parent"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/interruptionFilterLayout">
+
+                <TextView
+                    android:id="@+id/doNotDisturbPreferencesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Priority only allows"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="16sp"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/doNotDisturbRules"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/doNotDisturbPreferencesTitle"
+                    android:paddingStart="35dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="8dp"
+                    android:text="@{BindingConverters.interruptionRulesToString(viewModel.notificationPolicyAccessGranted)}"
+                    android:textSize="14sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/vibrateForCallsLayout"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:background="?attr/selectableItemBackground"
+                android:orientation="horizontal"
+                android:paddingTop="16dp"
+                canWriteSettings="@{viewModel.canWriteSettings}"
+                android:onClick="@{() -> viewModel.onVibrateForCallsLayoutClick()}"
+                android:paddingBottom="16dp"
+                app:layout_constraintStart_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/interruptionFilterPreferencesLayout">
+
+                <TextView
+                    android:id="@+id/vibrateForCallsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="35dp"
+                    android:text="Also vibrate for calls"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="16sp" />
+
+                <Switch
+                    android:id="@+id/vibrateForCallsSwitch"
+                    shouldVibrateForCalls="@{viewModel.vibrateForCalls}"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <ImageButton
+                android:id="@+id/playCallRingtone"
+                android:layout_width="40dp"
+                android:duplicateParentState="true"
+                android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_VOICE_CALL)}"
+                android:layout_height="40dp"
+                playing="@{viewModel.voiceCallRingtonePlaying}"
+                android:layout_marginEnd="16dp"
+                android:background="@null"
+                app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
+                app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
+            <View
+                android:id="@+id/separator2"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="8dp"
+                android:background="#969696"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneLayout" />
+
+            <!-- Visual interruptions section -->
+
+            <TextView
+                android:id="@+id/Title2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="35dp"
+                android:layout_marginTop="16dp"
+                android:text="Custom restrictions"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/separator2" />
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/blockWhenScreenIsOnLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:background="?attr/selectableItemBackground"
+                android:onClick="@{(view) -> viewModel.onSuppressedEffectsOnLayoutClick()}"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/Title2">
+
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOnTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="35dp"
+                    android:layout_marginTop="16dp"
+                    android:text="When the screen is on"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOnDescription"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/blockWhenScreenIsOnTitle"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Prevent notifications \nfrom peeking or popping on screen"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="@+id/blockWhenScreenIsOnTitle"
+                    app:layout_constraintStart_toStartOf="@+id/blockWhenScreenIsOnTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOnTitle" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/blockWhenScreenIsOffLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:background="?attr/selectableItemBackground"
+                notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                android:onClick="@{(view) -> viewModel.onSuppressedEffectsOffLayoutClick()}"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/blockWhenScreenIsOnLayout">
+
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOffTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="16dp"
+                    android:text="When the screen is off"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/blockWhenScreenIsOffDescription"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/blockWhenScreenIsOffTitle"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Prevent notifications \nfrom turning on the screen"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/blockWhenScreenIsOffTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOffTitle" />
+
+            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+</layout>

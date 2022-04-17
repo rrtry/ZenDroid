@@ -1,52 +1,26 @@
 package com.example.volumeprofiler.fragments
 
-import android.content.Context
 import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.R
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.navigation.NavigationBarView
+import com.example.volumeprofiler.activities.MapsActivity
+import java.lang.IllegalArgumentException
 
-class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
+class BottomSheetFragment: Fragment(), MapsActivity.ItemSelectedListener {
 
-    private var callbacks: Callbacks? = null
-    private lateinit var bottomNavView: BottomNavigationView
-    private var activeFragmentTag: String = TAG_COORDINATES_FRAGMENT
-
-    interface Callbacks {
-
-        fun setState(state: Int): Unit
-
-        fun collapseBottomSheet(): Unit
-
-        fun setPeekHeight(height: Int): Unit
-
-        fun getBottomSheetState(): Int
-
-        fun setGesturesEnabled(enabled: Boolean): Unit
-    }
+    private var currentFragment: String = TAG_GEOFENCE_FRAGMENT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState != null) {
-            activeFragmentTag = savedInstanceState.getString(KEY_CURRENT_FRAGMENT, TAG_COORDINATES_FRAGMENT)
+        savedInstanceState?.let {
+            currentFragment = it.getString(EXTRA_CURRENT_FRAGMENT, TAG_GEOFENCE_FRAGMENT)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString(KEY_CURRENT_FRAGMENT, this.activeFragmentTag)
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        callbacks = requireActivity() as Callbacks
-    }
-
-    override fun onDetach() {
-        callbacks = null
-        super.onDetach()
+        outState.putString(EXTRA_CURRENT_FRAGMENT, this.currentFragment)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -55,61 +29,49 @@ class BottomSheetFragment: Fragment(), NavigationBarView.OnItemSelectedListener{
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        bottomNavView = view.findViewById(R.id.bottom_navigation)
-        bottomNavView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-
-            override fun onGlobalLayout() {
-                bottomNavView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                callbacks?.setPeekHeight(bottomNavView.height)
-            }
-        })
-        bottomNavView.setOnItemSelectedListener(this)
         if (childFragmentManager.fragments.isEmpty()) {
             addFragments()
         }
     }
 
     private fun findFragmentByTag(tag: String): Fragment {
-        return childFragmentManager.findFragmentByTag(tag)!!
+        childFragmentManager.findFragmentByTag(tag)?.let {
+            return it
+        }
+        throw IllegalArgumentException("Invalid fragment tag")
     }
 
     private fun addFragments(): Unit {
-        val coordinatesFragment: Fragment = MapsCoordinatesFragment()
-        val profileSelectionFragment: Fragment = MapsProfileSelectionFragment()
+        val profileFragment = GeofenceProfileFragment()
         childFragmentManager
                 .beginTransaction()
-                .add(R.id.fragmentContainer, coordinatesFragment, TAG_COORDINATES_FRAGMENT)
-                .add(R.id.fragmentContainer, profileSelectionFragment, TAG_PROFILES_FRAGMENT).hide(profileSelectionFragment)
+                .add(R.id.fragmentContainer, GeofenceDetailsFragment(), TAG_GEOFENCE_FRAGMENT)
+                .add(R.id.fragmentContainer, profileFragment, TAG_PROFILE_FRAGMENT).hide(profileFragment)
                 .commit()
     }
 
     private fun replaceFragment(tag: String): Unit {
-        childFragmentManager
+        if (tag != currentFragment) {
+            childFragmentManager
                 .beginTransaction()
-                .hide(findFragmentByTag(activeFragmentTag))
+                .hide(findFragmentByTag(currentFragment))
                 .show(findFragmentByTag(tag))
                 .commit()
+            currentFragment = tag
+        }
     }
 
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.profile_tab -> {
-                replaceFragment(TAG_PROFILES_FRAGMENT)
-                activeFragmentTag = TAG_PROFILES_FRAGMENT
-                true
-            }
-            R.id.location_tab -> {
-                replaceFragment(TAG_COORDINATES_FRAGMENT)
-                activeFragmentTag = TAG_COORDINATES_FRAGMENT
-                true
-            } else -> false
-        }
+    override fun onItemSelected(itemId: Int) {
+        val tag: String = if (itemId == R.id.geofence_tab) {
+            TAG_GEOFENCE_FRAGMENT
+        } else TAG_PROFILE_FRAGMENT
+        replaceFragment(tag)
     }
 
     companion object {
 
-        private const val TAG_COORDINATES_FRAGMENT: String = "coordinates"
-        private const val TAG_PROFILES_FRAGMENT: String = "profiles"
-        private const val KEY_CURRENT_FRAGMENT: String = "key_current_fragment"
+        private const val TAG_GEOFENCE_FRAGMENT: String = "tag_geofence_fragment"
+        private const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
+        private const val EXTRA_CURRENT_FRAGMENT: String = "key_current_fragment"
     }
 }

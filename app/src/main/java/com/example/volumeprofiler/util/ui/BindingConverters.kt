@@ -32,9 +32,9 @@ object BindingConverters {
     @JvmStatic
     fun prioritySendersToString(prioritySenders: Int, priorityCategories: Int, categoryType: Int): String {
         return when (prioritySenders) {
-            PRIORITY_SENDERS_ANY -> if (isBitSet(priorityCategories, categoryType)) "From anyone" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            PRIORITY_SENDERS_STARRED -> if (isBitSet(priorityCategories, categoryType)) "From starred contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            PRIORITY_SENDERS_CONTACTS -> if (isBitSet(priorityCategories, categoryType)) "From contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_ANY -> if (containsCategory(priorityCategories, categoryType)) "From anyone" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_STARRED -> if (containsCategory(priorityCategories, categoryType)) "From starred contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            PRIORITY_SENDERS_CONTACTS -> if (containsCategory(priorityCategories, categoryType)) "From contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
             else -> throw IllegalArgumentException("Invalid sender type")
         }
     }
@@ -57,7 +57,7 @@ object BindingConverters {
             )
         }
         val allEffectsMask: Int = if (screenOn) ALL_SCREEN_ON_EFFECTS else ALL_SCREEN_OFF_EFFECTS
-        return when (createMask(effectsList.filter { isBitSet(mask, it) })) {
+        return when (createMask(effectsList.filter { containsCategory(mask, it) })) {
             allEffectsMask -> "All suppressed"
             0 -> "All visible"
             else -> "Partially visible"

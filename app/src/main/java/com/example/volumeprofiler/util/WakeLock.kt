@@ -6,7 +6,7 @@ import android.os.PowerManager
 object WakeLock {
 
     private const val TAG: String = "volumeprofiler:PROFILE_STATE_UPDATE_WAKELOCK"
-    private const val DEFAULT_TIMEOUT: Long = (1000 * 60).toLong()
+    private const val DEFAULT_TIMEOUT: Long = 1000L * 60
 
     private var wakeLock: PowerManager.WakeLock? = null
 

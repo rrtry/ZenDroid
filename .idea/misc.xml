@@ -96,24 +96,44 @@
         <entry key="app/src/main/res/drawable/ic_baseline_access_time_24.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/ic_baseline_alarm_off_24.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/ic_baseline_calendar_today_24.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/ic_baseline_delete_forever_24.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/ic_baseline_done_24.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/ic_baseline_image_24.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/ic_baseline_label_24.xml" value="0.2495" />
+        <entry key="app/src/main/res/drawable/ic_baseline_more_vert_24.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/ic_baseline_not_listed_location_24.xml" value="0.4595" />
         <entry key="app/src/main/res/drawable/ic_baseline_perm_device_information_24.xml" value="0.1" />
-        <entry key="app/src/main/res/layout-v23/zen_preferences_fragment.xml" value="0.26494427558257344" />
-        <entry key="app/src/main/res/layout-v30/zen_preferences_fragment.xml" value="0.26494427558257344" />
+        <entry key="app/src/main/res/layout-v23/create_profile_fragment.xml" value="0.22108843537414966" />
+        <entry key="app/src/main/res/layout-v23/zen_preferences_fragment.xml" value="0.5" />
+        <entry key="app/src/main/res/layout-v24/create_profile_fragment.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/layout-v24/zen_preferences_fragment.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.33926521239954077" />
+        <entry key="app/src/main/res/layout-v28/zen_preferences_fragment.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/layout-v30/create_profile_fragment.xml" value="0.33926521239954077" />
+        <entry key="app/src/main/res/layout-v30/zen_preferences_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout/activity_intro.xml" value="0.17346014492753623" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.25" />
         <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.33" />
         <entry key="app/src/main/res/layout/alarms_fragment.xml" value="0.26494427558257344" />
-        <entry key="app/src/main/res/layout/create_alarm_activity.xml" value="0.1" />
-        <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/bottom_sheet_fragment.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/calendar_event_activity.xml" value="0.14969604863221886" />
+        <entry key="app/src/main/res/layout/create_alarm_activity.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.33" />
         <entry key="app/src/main/res/layout/create_profile_fragment.xml" value="0.26494427558257344" />
-        <entry key="app/src/main/res/layout/google_maps_activity.xml" value="0.26494427558257344" />
+        <entry key="app/src/main/res/layout/google_maps_activity.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/location_item_view.xml" value="0.26494427558257344" />
+        <entry key="app/src/main/res/layout/location_suggestion_item_view.xml" value="0.38858695652173914" />
         <entry key="app/src/main/res/layout/locations_list_fragment.xml" value="0.26494427558257344" />
+        <entry key="app/src/main/res/layout/maps_select_location_fragment.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/layout/profile_item_view.xml" value="0.28309409888357256" />
         <entry key="app/src/main/res/layout/profiles_list_fragment.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/suggestion_error_item_view.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/menu/action_item_selection.xml" value="0.3962962962962963" />
         <entry key="app/src/main/res/menu/action_menu_profile_single_selection.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/action_menu_scheduler.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/action_menu_selected.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.4626334519572954" />
         <entry key="app/src/main/res/menu/dnd_conversations.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/dnd_exceptions.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/dnd_mode_menu.xml" value="0.5447916666666667" />

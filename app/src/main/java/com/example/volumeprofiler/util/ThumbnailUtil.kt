@@ -14,19 +14,19 @@ private fun getAppSpecificStorageDir(context: Context): String {
     return snapshotsDir.absolutePath
 }
 
-fun resolvePath(context: Context, uuid: UUID): String {
-    return getAppSpecificStorageDir(context) + File.separatorChar + "$uuid.png"
+fun resolvePath(context: Context, id: UUID): String {
+    return getAppSpecificStorageDir(context) + File.separatorChar + "$id.png"
 }
 
-fun writePreviewBitmap(context: Context, uuid: UUID, bitmap: Bitmap): Unit {
+fun writeThumbnail(context: Context, uuid: UUID, bitmap: Bitmap) {
     val file: File = File(resolvePath(context, uuid))
     val out: FileOutputStream = FileOutputStream(file)
-    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) // PNG is lossless, so quality is ignored
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
     out.flush()
     out.close()
 }
 
-fun deletePreviewBitmap(context: Context, uuid: UUID): Boolean {
+fun deleteThumbnail(context: Context, uuid: UUID): Boolean {
     val file: File = File(resolvePath(context, uuid))
     return file.delete()
 }

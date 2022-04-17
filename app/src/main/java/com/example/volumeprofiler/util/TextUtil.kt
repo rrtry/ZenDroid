@@ -163,17 +163,6 @@ class TextUtil {
             }
         }
 
-        fun getPermissionName(permission: String): String {
-            return when (permission) {
-                READ_PHONE_STATE -> "Phone"
-                READ_EXTERNAL_STORAGE -> "Storage"
-                ACCESS_FINE_LOCATION -> "Location"
-                ACCESS_BACKGROUND_LOCATION -> "Background location"
-                ACCESS_NOTIFICATION_POLICY -> "Do not disturb"
-                else -> "System settings"
-            }
-        }
-
         @JvmStatic
         fun formatLocalTime(context: Context, time: LocalTime): String {
             val pattern: String = if (DateFormat.is24HourFormat(context)) {
@@ -187,8 +176,7 @@ class TextUtil {
 
         fun validateCoordinatesInput(source: CharSequence?): Boolean {
             return if (source != null && source.isNotEmpty()) {
-                val double: Double? = source.toString().toDoubleOrNull()
-                double != null
+                source.toString().toDoubleOrNull() != null
             } else {
                 false
             }

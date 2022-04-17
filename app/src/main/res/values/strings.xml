@@ -53,6 +53,12 @@
         <item>Don\'t wake for notifications</item>
     </string-array>
     <string name="title_activity_maps">Map</string>
+    <string name="latitude_text_input_error">
+        Enter a valid value between -90 and 90
+    </string>
+    <string name="longitude_text_input_error">
+        Enter a valid value between -180 and 180
+    </string>
     <string name="phone_permission_explanation">
         Phone state permission explanation
     </string>

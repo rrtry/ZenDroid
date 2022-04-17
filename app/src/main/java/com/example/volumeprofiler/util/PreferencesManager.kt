@@ -22,6 +22,7 @@ class PreferencesManager @Inject constructor (
     } else {
         context
     }
+
     private val sharedPreferences: SharedPreferences = storageContext.getSharedPreferences(
         SHARED_PREFS, Context.MODE_PRIVATE
     )

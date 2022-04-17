@@ -9,12 +9,11 @@ import android.os.Build
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import android.util.Log
-import android.view.View
-import android.widget.Toast
 import com.example.volumeprofiler.Application
 import com.example.volumeprofiler.entities.*
-import com.example.volumeprofiler.services.AlarmService
-import com.google.android.material.snackbar.Snackbar
+import com.example.volumeprofiler.receivers.AlarmReceiver
+import com.example.volumeprofiler.receivers.AlarmReceiver.Companion.EXTRA_ALARM
+import com.example.volumeprofiler.receivers.AlarmReceiver.Companion.EXTRA_PROFILE
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.*
 import java.time.temporal.TemporalAdjuster
@@ -28,26 +27,12 @@ class ScheduleManager @Inject constructor (
 
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    fun scheduleAlarm(event: Event, profile: Profile, state: Event.State): Unit {
-        val pendingIntent: PendingIntent = getEventPendingIntent(event, profile, state, true)!!
-        when (state) {
-            Event.State.START -> {
-                setAlarm(event.instanceBeginTime, pendingIntent)
-            }
-            Event.State.END -> {
-                setAlarm(event.instanceEndTime, pendingIntent)
-            }
-        }
-    }
-
     fun scheduleAlarm(alarm: Alarm, profile: Profile): Unit {
         getAlarmPendingIntent(alarm, profile, true)?.let {
             setAlarm(toEpochMilli(getNextAlarmTime(alarm)), it)
         }
     }
 
-    @SuppressLint("MissingPermission")
-    @Suppress("obsoleteSdkInt")
     private fun setAlarm(timestamp: Long, pendingIntent: PendingIntent): Unit {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timestamp, pendingIntent)
@@ -56,59 +41,23 @@ class ScheduleManager @Inject constructor (
         }
     }
 
-    private fun getEventPendingIntent(event: Event, profile: Profile?, state: Event.State?, create: Boolean): PendingIntent? {
-        val id: Int = event.id
-        val intent: Intent = Intent(context, AlarmService::class.java).apply {
-            action = Application.ACTION_CALENDAR_EVENT_TRIGGER
-            putExtra(AlarmService.EXTRA_EVENT, ParcelableUtil.toByteArray(event))
-            if (profile != null) {
-                putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
-            }
-            putExtra(AlarmService.EXTRA_EVENT_STATE, state)
-        }
-        var flags: Int = if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
-        flags = flags or PendingIntent.FLAG_IMMUTABLE
-        return if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
-            PendingIntent.getForegroundService(context, id, intent, flags)
-        } else {
-            PendingIntent.getService(context, id, intent, flags)
-        }
-    }
-
     private fun getAlarmPendingIntent(alarm: Alarm, profile: Profile?, create: Boolean): PendingIntent? {
         val id: Int = alarm.id.toInt()
-        val intent: Intent = Intent(context, AlarmService::class.java).apply {
+        val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
             action = Application.ACTION_ALARM_TRIGGER
-            putExtra(AlarmService.EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            putExtra(EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
             if (profile != null) {
-                putExtra(AlarmService.EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
+                putExtra(EXTRA_PROFILE, ParcelableUtil.toByteArray(profile))
             }
         }
         var flags: Int = if (create) PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_NO_CREATE
         flags = flags or PendingIntent.FLAG_IMMUTABLE
-        return if (Build.VERSION_CODES.O <= Build.VERSION.SDK_INT) {
-            PendingIntent.getForegroundService(context, id, intent, flags)
-        } else {
-            PendingIntent.getService(context, id, intent, flags)
-        }
-    }
-
-    fun cancelAlarm(event: Event): Unit {
-        val pendingIntent: PendingIntent? = getEventPendingIntent(event, null, null, false)
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-        } else {
-            Log.w("AlarmUtil", "failed to cancel alarm")
-        }
+        return PendingIntent.getBroadcast(context, id, intent, flags)
     }
 
     fun cancelAlarm(alarm: Alarm, profile: Profile): Unit {
-        val pendingIntent: PendingIntent? = getAlarmPendingIntent(alarm, null, false)
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-        }
-        else {
-            Log.w("AlarmUtil", "failed to cancel alarm")
+        getAlarmPendingIntent(alarm, null, false)?.let {
+            alarmManager.cancel(it)
         }
     }
 
@@ -120,7 +69,7 @@ class ScheduleManager @Inject constructor (
 
     companion object {
 
-        private fun isBitSet(mask: Int, day: Int): Boolean {
+        private fun isDayInSchedule(mask: Int, day: Int): Boolean {
             val bit: Int = WeekDay.fromDay(day)
             return (mask and bit) != 0
         }
@@ -158,12 +107,12 @@ class ScheduleManager @Inject constructor (
         private fun getNextAlarmDay(today: DayOfWeek, days: Int, inclusive: Boolean): DayOfWeek {
             var nextDay: DayOfWeek = today
 
-            if (inclusive && isBitSet(days, nextDay.value)) {
+            if (inclusive && isDayInSchedule(days, nextDay.value)) {
                 return nextDay
             }
             while (true) {
                 nextDay = nextDay.plus(1)
-                if (isBitSet(days, nextDay.value)) {
+                if (isDayInSchedule(days, nextDay.value)) {
                     break
                 }
             }
@@ -193,7 +142,7 @@ class ScheduleManager @Inject constructor (
         }
 
         internal fun isAlarmValid(alarm: Alarm): Boolean {
-            return if (alarm.scheduledDays == 0) {
+            return if (alarm.scheduledDays == WeekDay.NONE) {
                 !isAlarmInstanceObsolete(alarm)
             } else {
                 true
@@ -221,7 +170,7 @@ class ScheduleManager @Inject constructor (
             var millisBetween: Long = ChronoUnit.MILLIS.between(LocalDateTime.now(), getNextAlarmTime(alarm))
 
             return if (millisBetween < MILLIS_PER_MINUTE) {
-                "Alarm is set for less than a minute from now"
+                "Profil is scheduled for less than a minute from now"
             }
             else {
                 val remainder = millisBetween % MILLIS_PER_MINUTE
@@ -238,14 +187,14 @@ class ScheduleManager @Inject constructor (
                 val showDays: Boolean = diffDays > 0
 
                 val templates: Array<String> = arrayOf(
-                    "Alarm set for less than a minute from now",
-                    "Alarm set for %1${'$'}s days from now",
-                    "Alarm set for %2${'$'}s hours from now",
-                    "Alarm set for %1${'$'}s days and %2${'$'}s hours from now",
-                    "Alarm set for %3${'$'}s minutes from now",
-                    "Alarm set for %1${'$'}s days and %3${'$'}s minutes from now",
-                    "Alarm set for %2${'$'}s hours and %3${'$'}s minutes from now",
-                    "Alarm set for %1${'$'}s days, %2${'$'}s hours, %3${'$'}s minutes"
+                    "Profile scheduled for less than a minute from now",
+                    "Profile scheduled %1${'$'}s days from now",
+                    "Profile scheduled %2${'$'}s hours from now",
+                    "Profile scheduled %1${'$'}s days and %2${'$'}s hours from now",
+                    "Profile scheduled %3${'$'}s minutes from now",
+                    "Profile scheduled %1${'$'}s days and %3${'$'}s minutes from now",
+                    "Profile scheduled %2${'$'}s hours and %3${'$'}s minutes from now",
+                    "Profile scheduled %1${'$'}s days, %2${'$'}s hours, %3${'$'}s minutes from now"
                 )
                 val index = ((if (showDays) 1 else 0)
                         or (if (showHours) 2 else 0)

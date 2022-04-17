@@ -7,13 +7,19 @@ import android.content.Context.NOTIFICATION_SERVICE
 import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.entities.Profile
 import java.lang.IllegalArgumentException
 
-const val FLAG_DISPLAY_PERMISSION_CATEGORY: Int = 0x20
-const val FLAG_DISPLAY_FEATURE_NAME: Int = 0x40
+fun Fragment.checkPermission(permission: String): Boolean {
+    return checkSelfPermission(requireContext(), permission)
+}
 
-fun checkSelfPermission(context: Context, permission: String): Boolean {
+fun Context.checkPermission(permission: String): Boolean {
+    return checkSelfPermission(this, permission)
+}
+
+private fun checkSelfPermission(context: Context, permission: String): Boolean {
     return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }
 
@@ -61,7 +67,7 @@ fun getDeniedPermissionsForProfile(context: Context, profile: Profile): Array<St
     if (!notificationManager.isNotificationPolicyAccessGranted) {
         permissions.add(ACCESS_NOTIFICATION_POLICY)
     }
-    if (profile.streamsUnlinked && !checkSelfPermission(context, READ_PHONE_STATE)) {
+    if (profile.streamsUnlinked && !context.checkPermission(READ_PHONE_STATE)) {
         permissions.add(READ_PHONE_STATE)
     }
     return permissions.toTypedArray()

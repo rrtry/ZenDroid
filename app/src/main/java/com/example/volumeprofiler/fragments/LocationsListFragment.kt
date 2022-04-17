@@ -1,14 +1,9 @@
 package com.example.volumeprofiler.fragments
 
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -26,7 +21,6 @@ import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,16 +31,14 @@ import android.os.Looper
 import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.interfaces.FabContainer
+import com.example.volumeprofiler.interfaces.FragmentSwipedListener
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 @AndroidEntryPoint
-class LocationsListFragment: Fragment(), FabContainer {
+class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
 
-    @Inject
-    lateinit var geofenceManager: GeofenceManager
-
-    @Inject
-    lateinit var profileManager: ProfileManager
+    @Inject lateinit var geofenceManager: GeofenceManager
+    @Inject lateinit var profileManager: ProfileManager
 
     private val locationAdapter: LocationAdapter by lazy {
         LocationAdapter()
@@ -55,29 +47,7 @@ class LocationsListFragment: Fragment(), FabContainer {
     private var _binding: LocationsListFragmentBinding? = null
     private val binding: LocationsListFragmentBinding get() = _binding!!
 
-    private lateinit var mapActivityLauncher: ActivityResultLauncher<Intent>
-
     private val viewModel: LocationsListViewModel by viewModels()
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mapActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == Activity.RESULT_OK) {
-                val geofence: Location = it.data!!.getParcelableExtra(MapsActivity.EXTRA_LOCATION)!!
-                val updateExisting: Boolean = it.data!!.getBooleanExtra(MapsActivity.FLAG_UPDATE_EXISTING, false)
-                if (updateExisting) {
-                    viewModel.updateLocation(geofence)
-                } else {
-                    viewModel.addLocation(geofence)
-                }
-            }
-        }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        mapActivityLauncher.unregister()
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -85,28 +55,15 @@ class LocationsListFragment: Fragment(), FabContainer {
         savedInstanceState: Bundle?
     ): View {
         _binding = LocationsListFragmentBinding.inflate(inflater, container, false)
+
+        binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        binding.recyclerView.adapter = locationAdapter
+
         return binding.root
     }
 
     private fun startMapActivity(locationRelation: LocationRelation? = null): Unit {
-        val intent: Intent = MapsActivity.newIntent(requireContext(), locationRelation)
-        mapActivityLauncher.launch(intent)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == GeofenceManager.REQUEST_ENABLE_LOCATION_SERVICES && resultCode != Activity.RESULT_OK) {
-            val snackBar: Snackbar = Snackbar.make(binding.root, "Enabling location services is required", Snackbar.LENGTH_LONG)
-            snackBar.setAction("Enable location") {
-                geofenceManager.checkLocationServicesAvailability(requireActivity(),null)
-            }
-            snackBar.show()
-        }
-    }
-
-    private fun setRecyclerView(view: View) {
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        binding.recyclerView.adapter = locationAdapter
+        startActivity(MapsActivity.newIntent(requireContext(), locationRelation))
     }
 
     private fun updateAdapterData(list: List<LocationRelation>): Unit {
@@ -120,7 +77,6 @@ class LocationsListFragment: Fragment(), FabContainer {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setRecyclerView(view)
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.locationsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).collect {
                 updateAdapterData(it)
@@ -134,7 +90,7 @@ class LocationsListFragment: Fragment(), FabContainer {
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
         )
-        deletePreviewBitmap(requireContext(), locationRelation.location.previewImageId)
+        deleteThumbnail(requireContext(), locationRelation.location.previewImageId)
         viewModel.removeLocation(locationRelation.location)
     }
 
@@ -224,20 +180,21 @@ class LocationsListFragment: Fragment(), FabContainer {
 
     }), ListAdapterItemProvider<String> {
 
-        private lateinit var binding: LocationItemViewBinding
-
         fun getItemAtPosition(position: Int): LocationRelation {
             return getItem(position)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LocationViewHolder {
-            binding = LocationItemViewBinding.inflate(LayoutInflater.from(context), parent, false)
-            return LocationViewHolder(binding)
+            return LocationViewHolder(
+                LocationItemViewBinding.inflate(
+                    LayoutInflater.from(context),
+                    parent,
+                    false)
+            )
         }
 
         override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {
-            val locationRelation: LocationRelation = getItem(position)
-            holder.bind(locationRelation, false)
+            holder.bind(getItem(position), false)
         }
 
         override fun getItemKey(position: Int): String {
@@ -250,7 +207,7 @@ class LocationsListFragment: Fragment(), FabContainer {
     }
 
     override fun onFabClick(fab: FloatingActionButton) {
-
+        startMapActivity()
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {
@@ -261,6 +218,10 @@ class LocationsListFragment: Fragment(), FabContainer {
                 )
             )
         }
+    }
+
+    override fun onSwipe() {
+
     }
 
     companion object {

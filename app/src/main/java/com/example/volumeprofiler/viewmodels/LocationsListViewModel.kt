@@ -23,7 +23,7 @@ class LocationsListViewModel @Inject constructor(
         }
     }
 
-    fun updateLocation(location: Location): Unit {
+    private fun updateLocation(location: Location): Unit {
         viewModelScope.launch {
             locationRepository.updateLocation(location)
         }

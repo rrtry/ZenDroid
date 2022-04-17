@@ -26,13 +26,22 @@ import android.annotation.SuppressLint
 class GeofenceManager @Inject constructor(
         @ApplicationContext private val context: Context
 ) {
+
+    interface LocationRequestListener {
+
+        fun onSuccess()
+
+        fun onFailure()
+
+    }
+
     private val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)
 
     @TargetApi(Build.VERSION_CODES.Q)
     fun locationAccessGranted(): Boolean {
-        val foregroundLocationApproved: Boolean = checkSelfPermission(context, ACCESS_FINE_LOCATION)
+        val foregroundLocationApproved: Boolean = context.checkPermission(ACCESS_FINE_LOCATION)
         val backgroundLocationApproved: Boolean = if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {
-            checkSelfPermission(context, ACCESS_BACKGROUND_LOCATION)
+            context.checkPermission(ACCESS_BACKGROUND_LOCATION)
         } else {
             true
         }
@@ -109,30 +118,34 @@ class GeofenceManager @Inject constructor(
         return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_NO_CREATE)
     }
 
-    fun checkLocationServicesAvailability(context: Context, onCompleteAction: (() -> Unit)?) {
+    fun checkLocationServicesAvailability(activity: Activity) {
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
         val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
 
-        val settingsClient = LocationServices.getSettingsClient(context as Activity)
+        val settingsClient = LocationServices.getSettingsClient(activity as Activity)
         val locationSettingsResponseTask: Task<LocationSettingsResponse> = settingsClient.checkLocationSettings(builder.build())
 
         locationSettingsResponseTask.addOnFailureListener { exception ->
             if (exception is ResolvableApiException) {
                 try {
                     exception.startResolutionForResult(
-                        context,
+                        activity,
                         REQUEST_ENABLE_LOCATION_SERVICES
                     )
                 } catch (sendEx: IntentSender.SendIntentException) {
-                    Log.d("LocationsListFragment", "Error geting location settings resolution: " + sendEx.message)
+                    Log.e("GeofenceManager", "Error geting location settings resolution: " + sendEx.message)
                 }
             }
         }
         locationSettingsResponseTask.addOnCompleteListener {
-            if ( it.isSuccessful && onCompleteAction != null) {
-                onCompleteAction()
+            (activity as LocationRequestListener).also { listener ->
+                if (it.isSuccessful) {
+                    listener.onSuccess()
+                } else {
+                    listener.onFailure()
+                }
             }
         }
     }

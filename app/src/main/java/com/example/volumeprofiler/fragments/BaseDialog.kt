@@ -40,12 +40,10 @@ abstract class BaseDialog: DialogFragment() {
 
     override fun onResume() {
         super.onResume()
-
         if (!argsSet) {
             categoriesMask = requireArguments().getInt(EXTRA_MASK, 0)
             argsSet = true
         }
-
         val listView: ListView = getListView()
         for ((index, category) in categories.withIndex()) {
             if ((categoriesMask and category) != 0) {
@@ -60,15 +58,15 @@ abstract class BaseDialog: DialogFragment() {
             builder.setTitle(title)
                 .setMultiChoiceItems(arrayRes, null)
                 { _, which, isChecked ->
-
-                    val category: Int = categories[which]
-
-                    if (isChecked) {
-                        addBit(category)
-                    } else if ((categoriesMask and category) != 0) {
-                        removeBit(category)
+                    categories[which].also { category ->
+                        if (isChecked) {
+                            addBit(category)
+                        } else if ((categoriesMask and category) != 0) {
+                            removeBit(category)
+                        }
                     }
-                    (getListView().adapter as ArrayAdapter<*>).notifyDataSetChanged()
+                    (getListView().adapter as ArrayAdapter<*>)
+                        .notifyDataSetChanged()
                 }
                 .setPositiveButton(R.string.apply)
                 { _, _ ->

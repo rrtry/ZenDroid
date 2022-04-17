@@ -3,6 +3,7 @@ package com.example.volumeprofiler.util
 import android.Manifest
 import android.annotation.TargetApi
 import android.content.Context
+import android.content.Context.INPUT_METHOD_SERVICE
 import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.Build
@@ -21,14 +22,38 @@ import androidx.appcompat.content.res.AppCompatResources
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import android.view.MenuItem
+import androidx.annotation.IntegerRes
 import androidx.core.content.res.ResourcesCompat
 import com.example.volumeprofiler.R
+import com.google.android.material.snackbar.Snackbar
+import kotlin.math.roundToInt
 
 class ViewUtil {
 
     companion object {
 
         internal const val DISMISS_TIME_WINDOW: Int = 2000
+
+        fun Context.getDrawable(drawableRes: Int): Drawable? {
+            return ResourcesCompat.getDrawable(resources, drawableRes, theme)
+        }
+
+        fun Context.showSnackbar(view: View, message: String, length: Int) {
+            Snackbar.make(view, message, length).show()
+        }
+
+        fun Context.convertDipToPx(dip: Float): Int {
+            return TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dip,
+                resources.displayMetrics
+            ).roundToInt()
+        }
+
+        fun isInputMethodVisible(context: Context): Boolean {
+            val inputMethodManager = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            return inputMethodManager.isActive
+        }
 
         fun setActionMenuAddIcon(context: Context, item: MenuItem): Unit {
             val drawable = ResourcesCompat.getDrawable(context.resources, android.R.drawable.ic_menu_add, null)
@@ -40,7 +65,7 @@ class ViewUtil {
             item.icon = drawable
         }
 
-        fun hideSoftwareInput(context: Context): Unit {
+        fun hideInputMethod(context: Context): Unit {
             try {
                 val inputManager: InputMethodManager = context.getSystemService(AppCompatActivity.INPUT_METHOD_SERVICE) as InputMethodManager
                 inputManager.hideSoftInputFromWindow((context as AppCompatActivity).currentFocus?.windowToken, 0)

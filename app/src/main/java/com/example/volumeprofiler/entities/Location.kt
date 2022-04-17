@@ -14,7 +14,6 @@ import java.util.*
 @Entity(foreignKeys = [ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["onExitProfileId"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE),
                       ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["onEnterProfileId"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE)])
 data class Location(
-
         @PrimaryKey(autoGenerate = true)
         @ColumnInfo (name = "location_id")
         var id: Int = 0,
@@ -32,6 +31,4 @@ data class Location(
         var onExitProfileId: UUID,
 
         @ColumnInfo(index = true)
-        var onEnterProfileId: UUID,
-
-): Parcelable
+        var onEnterProfileId: UUID): Parcelable

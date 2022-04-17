@@ -8,7 +8,6 @@ import android.os.Build
 import com.example.volumeprofiler.Application.Companion.ACTION_ALARM_TRIGGER
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.entities.Alarm
-import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
 import dagger.hilt.android.AndroidEntryPoint
@@ -75,17 +74,15 @@ class AlarmReceiver: BroadcastReceiver() {
     }
 
     private suspend fun updateAlarmInstances(context: Context): Unit {
-        val alarms: List<AlarmRelation>? = alarmRepository.getEnabledAlarms()
-        if (!alarms.isNullOrEmpty()) {
-
-            for (i in ScheduleManager.sortInstances(alarms)) {
+        alarmRepository.getEnabledAlarms()?.let {
+            for (i in it) {
 
                 val alarm: Alarm = i.alarm
                 val profile: Profile = i.profile
-                var obsolete = false
+                var missed = false
 
                 if (ScheduleManager.isAlarmInstanceObsolete(alarm)) {
-                    obsolete = true
+                    missed = true
                     profileManager.setProfile(profile)
                     postNotification(
                         context,
@@ -93,12 +90,9 @@ class AlarmReceiver: BroadcastReceiver() {
                         ID_SCHEDULER
                     )
                 }
-                if (!obsolete && preferencesManager.isProfileEnabled(profile)) {
-                    profileManager.setProfile(profile)
-                }
                 if (ScheduleManager.isAlarmValid(alarm)) {
                     scheduleManager.scheduleAlarm(alarm, profile)
-                    if (obsolete) {
+                    if (missed) {
                         updateAlarmNextInstanceTime(alarm)
                     }
                 } else {

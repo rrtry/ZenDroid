@@ -13,16 +13,4 @@ import javax.inject.Inject
 class MainActivityViewModel: ViewModel() {
 
     val showDialog: MutableStateFlow<Boolean> = MutableStateFlow(true)
-
-    /*
-    private val currentTabObservable: MutableSharedFlow<Int> = MutableSharedFlow(
-        replay = 1,
-        extraBufferCapacity = 10,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    val viewPagerPosition: SharedFlow<Int> = currentTabObservable
-
-    fun setPage(position: Int): Unit {
-        currentTabObservable.tryEmit(position)
-    } */
 }

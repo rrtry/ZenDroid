@@ -10,8 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:focusableInTouchMode="true"
-        android:focusable="true"
-        android:background="?attr/colorOnPrimary">
+        android:focusable="true">
 
         <ImageView
             android:id="@+id/imageView2"
@@ -29,7 +28,6 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="32dp"
             android:text="Coordinates"
-            android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             app:layout_constraintStart_toEndOf="@+id/imageView2"
             app:layout_constraintTop_toBottomOf="@+id/titleTextInputLayout" />
@@ -37,10 +35,11 @@
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/latitudeTextInputLayout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:hint="Latitude"
+            android:transitionGroup="true"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -59,11 +58,12 @@
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/longitudeTextInputLayout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
+            android:transitionGroup="true"
             android:hint="Longitude"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -75,6 +75,7 @@
                 android:layout_height="wrap_content"
                 android:inputType="numberSigned|numberDecimal"
                 android:singleLine="true" />
+
         </com.google.android.material.textfield.TextInputLayout>
 
         <Button
@@ -87,26 +88,17 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/longitudeTextInputLayout" />
 
-        <RelativeLayout
-            android:id="@+id/scene_root"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/radiusTitle"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintEnd_toStartOf="@+id/metricsSpinner"/>
-
         <com.google.android.material.slider.Slider
             android:id="@+id/radiusSlider"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
             android:value="100"
             android:valueFrom="100"
             android:valueTo="1000"
-            app:layout_constraintEnd_toEndOf="@+id/scene_root"
+            app:layout_constraintEnd_toStartOf="@+id/metricsSpinner"
             app:layout_constraintStart_toEndOf="@+id/metricsSpinner"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/radiusTitle" />
@@ -127,8 +119,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
-            android:text="Area radius"
-            android:textColor="?attr/colorPrimary"
+            android:text="Geofence radius"
             app:layout_constraintStart_toEndOf="@+id/imageView16"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -139,7 +130,7 @@
             android:drawSelectorOnTop="true"
             app:layout_constraintBottom_toBottomOf="@+id/radiusSlider"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/scene_root" />
+            app:layout_constraintTop_toTopOf="@+id/radiusSlider" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/titleTextInputLayout"
@@ -148,8 +139,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
+            android:transitionGroup="true"
             android:layout_marginEnd="16dp"
-            android:hint="Location trigger title"
+            android:hint="Location label"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/title">
@@ -170,7 +162,7 @@
             app:layout_constraintBottom_toBottomOf="@+id/title"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/title"
-            app:srcCompat="@drawable/ic_baseline_title_24" />
+            app:srcCompat="@drawable/ic_baseline_label_24" />
 
         <TextView
             android:id="@+id/title"
@@ -179,7 +171,6 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:text="Title"
-            android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             app:layout_constraintStart_toEndOf="@+id/imageView5"
             app:layout_constraintTop_toBottomOf="@+id/radiusSlider" />

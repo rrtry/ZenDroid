@@ -31,6 +31,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
                     || (priorityCategories and PRIORITY_CATEGORY_CALLS) != 0
 
             if (streamsUnlinked && (includesCallsPriority || interruptionFilter == INTERRUPTION_FILTER_ALL)) {
+
                 val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
 
                 val ringVolume: Int = preferencesManager.getRingStreamVolume()

@@ -10,17 +10,11 @@ import android.os.Binder
 import android.os.IBinder
 import com.example.volumeprofiler.util.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableSharedFlow
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class PlaybackService: Service() {
-
-    /*
-       * Due to ServiceConnection not being garbage collected, LocalBinder leaks the whole service object
-       * Setting LocalBinder as static class and storing service in WeakReference solves the problem
-     */
 
     internal class LocalBinder(
         private val service: WeakReference<PlaybackService>

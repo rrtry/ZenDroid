@@ -65,50 +65,15 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/callsStarredContactsLayout"
-                categoryType="@{Policy.PRIORITY_CATEGORY_CALLS}"
+            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+                android:id="@+id/repeatCallersLayout"
+                callSenders="@{viewModel.priorityCallSenders}"
                 priorityCategories="@{viewModel.priorityCategories}"
-                prioritySenders="@{viewModel.priorityCallSenders}"
-                rootViewGroup="@{rootViewGroup}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
-                android:onClick="@{() -> viewModel.onStarredContactsLayoutClick()}"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/exceptionsCallsLayout">
-
-                <TextView
-                    android:id="@+id/CallsStarredContactsTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:layout_marginTop="8dp"
-                    android:text="Starred contacts"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/CallsStarredContactsDescription"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
-                    android:layout_marginBottom="8dp"
-                    android:text="Contacts"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <com.example.volumeprofiler.views.SwitchableConstraintLayout
-                android:background="?attr/selectableItemBackground"
-                android:id="@+id/repeatCallersLayout"
-                android:layout_width="match_parent"
                 android:onClick="@{() -> viewModel.onRepetitiveCallersLayoutClick()}"
-                callSenders="@{viewModel.priorityCallSenders}"
-                priorityCategories="@{viewModel.priorityCategories}"
-                app:layout_constraintTop_toBottomOf="@id/callsStarredContactsLayout"
-                android:layout_height="wrap_content">
+                app:layout_constraintTop_toBottomOf="@+id/exceptionsCallsLayout">
 
                 <TextView
                     android:id="@+id/repeatCallersTitle"
@@ -197,56 +162,20 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="35dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="16dp"
                     android:paddingTop="4dp"
                     android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"
                     android:textSize="14sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/messagesStarredContactsLayout"
-                android:orientation="vertical"
-                android:background="?attr/selectableItemBackground"
-                app:layout_constraintTop_toBottomOf="@+id/exceptionsMessagesLayout"
-                app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="parent"
-                rootViewGroup="@{rootViewGroup}"
-                prioritySenders="@{viewModel.priorityMessageSenders}"
-                priorityCategories="@{viewModel.priorityCategories}"
-                categoryType="@{Policy.PRIORITY_CATEGORY_MESSAGES}"
-                android:onClick="@{() -> viewModel.onStarredContactsLayoutClick()}"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:id="@+id/messagesStarredContactsTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:textSize="16sp"
-                    android:layout_marginTop="8dp"
-                    android:layout_height="wrap_content"
-                    android:text="Starred contacts"/>
-
-                <TextView
-                    android:id="@+id/messagesStarredContactsDescription"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp"
-                    android:layout_height="wrap_content"
-                    android:text="Contacts"/>
             </LinearLayout>
 
             <View
                 android:id="@+id/separator3"
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
-                android:layout_marginTop="16dp"
                 android:background="#cfcfcf"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/messagesStarredContactsLayout" />
+                app:layout_constraintTop_toBottomOf="@+id/exceptionsMessagesLayout" />
 
             <TextView
                 android:id="@+id/textView4"
@@ -266,6 +195,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_marginBottom="32dp"
                 android:onClick="@{() -> viewModel.onPriorityInterruptionsLayoutClick()}"
                 android:orientation="vertical"
                 app:layout_constraintEnd_toStartOf="parent"
@@ -289,93 +220,7 @@
                     android:paddingTop="4dp"
                     android:text="@{BindingConverters.priorityCategoriesToString(viewModel.priorityCategories)}"
                     android:textSize="14sp" />
-            </LinearLayout>
 
-            <View
-                android:id="@+id/separator4"
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="#cfcfcf"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@+id/otherInterruptionsLayout"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                tools:layout_editor_absoluteY="589dp" />
-
-            <TextView
-                android:id="@+id/textView12"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="35dp"
-                android:layout_marginTop="16dp"
-                android:text="Block visual disturbances"
-                android:textColor="?attr/colorPrimary"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/separator4" />
-
-            <LinearLayout
-                android:id="@+id/whenScreenIsOnLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:onClick="@{() -> viewModel.onSuppressedEffectsOnLayoutClick()}"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textView12">
-
-                <TextView
-                    android:id="@+id/title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:layout_marginTop="8dp"
-                    android:text="When the screen is on"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/whenScreenIsOnDescription"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:layout_marginBottom="16dp"
-                    android:paddingTop="4dp"
-                    android:text="@{BindingConverters.suppressedEffectsToString(viewModel.suppressedVisualEffects, true)}"
-                    android:textSize="14sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:orientation="vertical"
-                android:background="?attr/selectableItemBackground"
-                app:layout_constraintTop_toBottomOf="@+id/whenScreenIsOnLayout"
-                app:layout_constraintEnd_toStartOf="parent"
-                app:layout_constraintStart_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:layout_marginBottom="32dp"
-                android:onClick="@{() -> viewModel.onSuppressedEffectsOffLayoutClick()}"
-                android:id="@+id/whenScreenIsOffLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:id="@+id/title2"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:textSize="16sp"
-                    android:layout_marginTop="8dp"
-                    android:layout_height="wrap_content"
-                    android:text="When the screen is off"/>
-
-                <TextView
-                    android:id="@+id/whenScreenIsOffDescription"
-                    android:layout_width="wrap_content"
-                    android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
-                    android:layout_marginBottom="16dp"
-                    android:textSize="14sp"
-                    android:layout_height="wrap_content"
-                    android:text="@{BindingConverters.suppressedEffectsToString(viewModel.suppressedVisualEffects, false)}"/>
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

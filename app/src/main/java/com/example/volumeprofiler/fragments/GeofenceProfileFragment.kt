@@ -11,16 +11,16 @@ import androidx.transition.Fade
 import androidx.transition.Slide
 import androidx.transition.TransitionSet
 import com.example.volumeprofiler.databinding.MapsSelectProfilesFragmentBinding
-import com.example.volumeprofiler.viewmodels.MapsSharedViewModel
+import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MapsProfileSelectionFragment: Fragment() {
+class GeofenceProfileFragment: Fragment() {
 
     private var _binding: MapsSelectProfilesFragmentBinding? = null
     private val binding: MapsSelectProfilesFragmentBinding get() = _binding!!
 
-    private val viewModel: MapsSharedViewModel by activityViewModels()
+    private val viewModel: GeofenceSharedViewModel by activityViewModels()
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -29,18 +29,16 @@ class MapsProfileSelectionFragment: Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setTransitions()
-    }
 
-    private fun setTransitions(): Unit {
-        val transitionSet: TransitionSet = TransitionSet().apply {
+        TransitionSet().apply {
+
             ordering = TransitionSet.ORDERING_TOGETHER
             addTransition(Fade())
             addTransition(Slide(Gravity.END))
-        }
 
-        enterTransition = transitionSet
-        exitTransition = transitionSet
+            enterTransition = this
+            exitTransition = this
+        }
     }
 
     override fun onCreateView(
