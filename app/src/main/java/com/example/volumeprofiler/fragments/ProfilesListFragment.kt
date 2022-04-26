@@ -9,13 +9,14 @@ import android.os.Handler
 import android.os.Looper
 import android.view.*
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
 import androidx.recyclerview.widget.ListAdapter
 import androidx.transition.*
 import com.example.volumeprofiler.activities.ProfileDetailsActivity
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
+import com.example.volumeprofiler.adapters.ItemDetails
 import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.databinding.ProfilesListFragmentBinding
 import com.example.volumeprofiler.eventBus.EventBus
@@ -35,9 +36,9 @@ import javax.inject.Inject
 import androidx.fragment.app.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.EXTRA_PROFILE
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelectionObserver
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.KeyProvider
+import com.example.volumeprofiler.adapters.BaseSelectionObserver
+import com.example.volumeprofiler.adapters.DetailsLookup
+import com.example.volumeprofiler.adapters.KeyProvider
 import com.example.volumeprofiler.interfaces.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
@@ -229,17 +230,17 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
             adapterBinding.expandButton.animate().rotation(0f).start()
         }
 
-        private fun setProfileTitle(profile: Profile): Unit {
+        private fun setProfileTitle(profile: Profile) {
             adapterBinding.checkBox.text = profile.title
         }
 
-        private fun setViewScale(isSelected: Boolean): Unit {
+        private fun setViewScale(isSelected: Boolean) {
             val scale: Float = if (isSelected) 0.8f else 1.0f
             itemView.scaleX = scale
             itemView.scaleY = scale
         }
 
-        private fun setSelectedState(isSelected: Boolean, animate: Boolean): Unit {
+        private fun setSelectedState(isSelected: Boolean, animate: Boolean) {
             if (animate) {
                 AnimUtil.selected(itemView, isSelected)
             } else {
@@ -247,7 +248,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
             }
         }
 
-        private fun setEnabledState(profile: Profile): Unit {
+        private fun setEnabledState(profile: Profile) {
             preferencesManager.isProfileEnabled(profile).let {
                 adapterBinding.checkBox.isChecked = it
                 if (it) {
@@ -256,12 +257,12 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
             }
         }
 
-        private fun setListeners(profile: Profile): Unit {
+        private fun setListeners(profile: Profile) {
             adapterBinding.expandButton.setOnClickListener {
-                if (adapterBinding.expandableView.visibility == View.GONE) {
-                    expandView(true)
-                } else {
+                if (adapterBinding.expandableView.isVisible) {
                     collapseView()
+                } else {
+                    expandView(true)
                 }
             }
             adapterBinding.editProfileButton.setOnClickListener {

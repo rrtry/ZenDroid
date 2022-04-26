@@ -24,9 +24,7 @@ import com.example.volumeprofiler.eventBus.EventBus
 import java.util.*
 
 @Singleton
-class ProfileManager @Inject constructor (
-        @ApplicationContext private val context: Context
-        ) {
+class ProfileManager @Inject constructor (@ApplicationContext private val context: Context) {
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var eventBus: EventBus
@@ -34,7 +32,9 @@ class ProfileManager @Inject constructor (
     private val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     private val telephonyManager: TelephonyManager = context.getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-    @Suppress("deprecation") private val vibrator: Vibrator = context.getSystemService(VIBRATOR_SERVICE) as Vibrator
+
+    @Suppress("deprecation")
+    private val vibrator: Vibrator = context.getSystemService(VIBRATOR_SERVICE) as Vibrator
 
     @Suppress("deprecation")
     private fun isRinging(): Boolean {
@@ -87,7 +87,7 @@ class ProfileManager @Inject constructor (
         audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, flags)
     }
 
-    private fun setVibrateMode(streamType: Int, flags: Int = 0): Unit {
+    private fun setVibrateMode(streamType: Int, flags: Int = 0) {
         if (isVibrateHardwarePresent()) {
             adjustUnmuteStream(streamType)
             audioManager.setStreamVolume(streamType, 0, flags)
@@ -176,7 +176,7 @@ class ProfileManager @Inject constructor (
         }
     }
 
-    private fun setNotificationPolicy(policy: Policy?): Unit {
+    private fun setNotificationPolicy(policy: Policy?) {
         if (notificationManager.isNotificationPolicyAccessGranted) {
             notificationManager.notificationPolicy = policy
         } else {
@@ -184,22 +184,20 @@ class ProfileManager @Inject constructor (
         }
     }
 
-    private fun setInterruptionFilter(profile: Profile): Unit {
+    private fun setInterruptionFilter(profile: Profile) {
         if (profile.interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
             setNotificationPolicy(createNotificationPolicy(profile))
         }
         setInterruptionFilter(profile.interruptionFilter)
     }
 
-    private fun setInterruptionFilter(interruptionFilter: Int): Unit {
+    private fun setInterruptionFilter(interruptionFilter: Int) {
         if (notificationManager.isNotificationPolicyAccessGranted) {
             notificationManager.setInterruptionFilter(interruptionFilter)
-        } else {
-            Log.w("ProfileManager", "Failed to set interruption filter")
         }
     }
 
-    private fun setRingtoneUri(uri: Uri, type: Int): Unit {
+    private fun setRingtoneUri(uri: Uri, type: Int) {
         if (Settings.System.canWrite(context)) {
             setActualDefaultRingtoneUri(context, type, uri)
         } else {
@@ -211,7 +209,7 @@ class ProfileManager @Inject constructor (
         return getActualDefaultRingtoneUri(context, type)
     }
 
-    private fun setVibrateWhenRingingBehavior(state: Int): Unit {
+    private fun setVibrateWhenRingingBehavior(state: Int) {
         if (Settings.System.canWrite(context)) {
             try {
                 Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
@@ -219,7 +217,7 @@ class ProfileManager @Inject constructor (
                 Log.e("ProfileManager", "Failed to change system settings", e)
             }
         } else {
-            Log.w("ProfileManager", "Not allowed to modify system settings", SecurityException())
+            Log.e("ProfileManager", "Not allowed to modify system settings", SecurityException())
         }
     }
 

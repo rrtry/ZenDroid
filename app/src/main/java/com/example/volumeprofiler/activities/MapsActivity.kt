@@ -2,52 +2,41 @@ package com.example.volumeprofiler.activities
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.SearchManager
 import android.app.SearchManager.SUGGEST_COLUMN_TEXT_1
 import android.content.*
 import android.content.Intent.ACTION_SEARCH
-import android.database.Cursor
 import android.database.MatrixCursor
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkCapabilities.*
-import android.net.NetworkRequest
 import android.os.*
 import android.provider.BaseColumns._ID
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.ViewTreeObserver
-import android.view.animation.Animation
+import android.view.*
 import android.view.animation.BounceInterpolator
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.TextView
+import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.SearchView
-import androidx.cursoradapter.widget.CursorAdapter
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.adapters.SuggestionsAdapter
 import com.example.volumeprofiler.databinding.GoogleMapsActivityBinding
-import com.example.volumeprofiler.databinding.LocationSuggestionItemViewBinding
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
+import com.example.volumeprofiler.entities.LocationSuggestion
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.fragments.BottomSheetFragment
+import com.example.volumeprofiler.fragments.MapThemeSelectionDialog
 import com.example.volumeprofiler.interfaces.DetailsViewContract
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_ICON
@@ -56,6 +45,7 @@ import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_L
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_VIEW_TYPE
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_CONNECTIVITY_ERROR
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_EMPTY_QUERY
+import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_LOCATION_RECENT_QUERY
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_LOCATION_SUGGESTION
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ID_CONNECTIVITY_ERROR
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ID_EMPTY_QUERY
@@ -63,11 +53,11 @@ import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.SUGGESTI
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.SUGGESTION_TEXT_EMPTY_QUERY
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_CONNECTIVITY_ERROR
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_EMPTY_QUERY
+import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_LOCATION_RECENT_QUERY
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_LOCATION_SUGGESTION
 import com.example.volumeprofiler.util.ViewUtil.Companion.convertDipToPx
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
-import com.example.volumeprofiler.util.ui.animations.AnimUtil
-import com.example.volumeprofiler.util.ui.animations.SimpleAnimationListener
+import com.example.volumeprofiler.util.ui.FloatingActionMenuController
 import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -81,14 +71,15 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.*
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.map
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.ln
 import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel.ViewEvent.*
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 import java.io.IOException
 import java.lang.Runnable
+import java.lang.ref.WeakReference
+import kotlin.collections.HashSet
 
 @AndroidEntryPoint
 class MapsActivity : AppCompatActivity(),
@@ -97,44 +88,10 @@ class MapsActivity : AppCompatActivity(),
         GoogleMap.OnMapClickListener,
         GoogleMap.OnCameraMoveStartedListener,
         DetailsViewContract<Location>,
-        GeofenceManager.LocationRequestListener {
-
-    @SuppressLint("Range")
-    private class SuggestionsAdapter(context: Context, cursor: MatrixCursor?): CursorAdapter(context, cursor, 0) {
-
-        private class ViewHolder {
-
-            lateinit var suggestionIcon: ImageView
-            lateinit var suggestionText: TextView
-        }
-
-        private val inflater = context.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-
-        override fun newView(context: Context?, cursor: Cursor?, parent: ViewGroup?): View {
-            val suggestionBinding = LocationSuggestionItemViewBinding.inflate(inflater)
-
-            ViewHolder().apply {
-
-                suggestionText = suggestionBinding.locationName
-                suggestionIcon = suggestionBinding.locationIcon
-
-                suggestionBinding.root.tag = this
-            }
-            return suggestionBinding.root
-        }
-
-        override fun bindView(view: View?, context: Context?, cursor: Cursor?) {
-            cursor?.let {
-                val viewHolder = view?.tag as ViewHolder
-
-                val iconRes: Int = Integer.parseInt(cursor.getString(cursor.getColumnIndex(COLUMN_ICON)))
-                val suggestionText: String = cursor.getString(cursor.getColumnIndex(SUGGEST_COLUMN_TEXT_1))
-
-                viewHolder.suggestionIcon.setImageDrawable(AppCompatResources.getDrawable(context!!, iconRes))
-                viewHolder.suggestionText.text = suggestionText
-            }
-        }
-    }
+        GeofenceManager.LocationRequestListener,
+        NetworkStateObserver.NetworkCallback,
+        SuggestionsAdapter.Callback,
+        GoogleMap.OnInfoWindowLongClickListener {
 
     interface ItemSelectedListener {
 
@@ -143,89 +100,69 @@ class MapsActivity : AppCompatActivity(),
 
     private val viewModel: GeofenceSharedViewModel by viewModels()
 
-    private lateinit var job: Job
-    private lateinit var coroutineScope: CoroutineScope
-
     private var marker: Marker? = null
     private var circle: Circle? = null
 
     private var bindingImpl: GoogleMapsActivityBinding? = null
     private val binding: GoogleMapsActivityBinding get() = bindingImpl!!
 
-    private var isAnimationRunning: Boolean = false
-    private var isOverlayVisible: Boolean = false
     private var isSuggestionClicked: Boolean = false
-    private var activeNetworkHasInet: Boolean = false
+    private val floatingMenuViews: List<View>
+    get() = listOf(
+        binding.overlay,
+        binding.saveGeofenceButton,
+        binding.saveChangesLabel,
+        binding.overlayOptionsFab,
+        binding.mapOverlayLabel,
+        binding.currentLocationFab,
+        binding.currentLocationLabel
+    )
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var mMap: GoogleMap
     private lateinit var profiles: List<Profile>
-    private lateinit var savedLocations: List<AddressWrapper>
     private lateinit var taskCancellationSource: CancellationTokenSource
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
 
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
 
-    private lateinit var connectivityManager: ConnectivityManager
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var geocoder: Geocoder
+    private lateinit var floatingActionMenuController: FloatingActionMenuController
+    private lateinit var networkObserver: NetworkStateObserver
 
-    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-
-        override fun onAvailable(network: Network) {
-            super.onAvailable(network)
-            showNetworkStateMessage()
-        }
-
-        override fun onLost(network: Network) {
-            super.onLost(network)
-            showNetworkStateMessage()
-        }
-
-        override fun onCapabilitiesChanged(
-            network: Network,
-            networkCapabilities: NetworkCapabilities
-        ) {
-            super.onCapabilitiesChanged(network, networkCapabilities)
-            showNetworkStateMessage()
+    override fun onNetworkAvailable() {
+        runOnUiThread {
+            showSnackbar(
+                findViewById(android.R.id.content),
+                "Network is available",
+                LENGTH_LONG
+            )
         }
     }
 
-    private fun showNetworkStateMessage() {
-        if (hasInternetCapability(connectivityManager.activeNetwork) && !activeNetworkHasInet) {
-            activeNetworkHasInet = true
-            Log.i("NetworkCallback", "Internet connectivity restored")
-        } else if (activeNetworkHasInet) {
-            activeNetworkHasInet = false
-            Log.i("NetworkCallback", "Internet connectivity lost")
+    override fun onNetworkLost() {
+        runOnUiThread {
+            showSnackbar(
+                findViewById(android.R.id.content),
+                "Network is unavailable",
+                LENGTH_LONG
+            )
         }
-    }
-
-    private fun hasInternetCapability(network: Network?): Boolean {
-        connectivityManager.getNetworkCapabilities(network)?.let {
-            return it.hasCapability(NET_CAPABILITY_INTERNET)
-        }
-        return false
     }
 
     override fun onUpdate(location: Location) {
         lifecycleScope.launch {
             viewModel.updateLocation(location)
-            captureSnapshot(
-                LatLng(location.latitude, location.longitude),
-                location.previewImageId
-            )
+            captureSnapshot(location)
         }
     }
 
     override fun onInsert(location: Location) {
         lifecycleScope.launch {
             viewModel.addLocation(location)
-            captureSnapshot(
-                LatLng(location.latitude, location.longitude),
-                location.previewImageId
-            )
+            captureSnapshot(location)
         }
     }
 
@@ -245,14 +182,12 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun captureSnapshot(latLng: LatLng, uuid: UUID) {
-        mMap.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.fromLatLngZoom(
-            latLng, getZoomLevel()
-        )))
-        Handler(Looper.getMainLooper()).postDelayed( {
+    private fun captureSnapshot(location: Location) {
+        updateCameraBounds(LatLng(location.latitude, location.longitude), location.radius, false)
+        Handler(Looper.getMainLooper()).postDelayed({
             mMap.clear()
             mMap.snapshot {
-                onSnapshotReady(it, uuid)
+                onSnapshotReady(it, location.previewImageId)
             }
         }, 100)
     }
@@ -260,84 +195,47 @@ class MapsActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        locationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            if (it) {
-                geofenceManager.checkLocationServicesAvailability(this)
-            }
-        }
-
         bindingImpl = GoogleMapsActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
-        connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        networkObserver = NetworkStateObserver(WeakReference(this))
         geocoder = Geocoder(this, Locale.getDefault())
+        floatingActionMenuController = FloatingActionMenuController()
 
-        activeNetworkHasInet = hasInternetCapability(connectivityManager.activeNetwork)
-
+        registerForPermissionRequestResult()
         setSearchConfiguration()
         setBottomSheetBehavior()
         addBottomSheetFragment()
+        setListeners()
         getMap()
 
-        binding.expandableFab.setOnClickListener {
-            toggleOverlayMenuState()
-        }
-        binding.overlay.setOnClickListener {
-            toggleOverlayMenuState()
-        }
-        binding.currentLocationFab.setOnClickListener {
-            if (checkPermission(ACCESS_FINE_LOCATION)) {
-                geofenceManager.checkLocationServicesAvailability(this)
-            } else {
-                locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
-            }
-        }
-        binding.overlayOptionsFab.setOnClickListener {
-
-        }
-        binding.bottomNavigation.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                binding.bottomNavigation.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                bottomSheetBehavior.peekHeight = binding.bottomNavigation.height + convertDipToPx(BOTTOM_SHEET_OFFSET)
-            }
-        })
-        binding.bottomNavigation.setOnItemReselectedListener {
-            bottomSheetBehavior.state = STATE_EXPANDED
-        }
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            supportFragmentManager.findFragmentById(R.id.containerBottomSheet)?.let {
-                (it as ItemSelectedListener).onItemSelected(item.itemId)
-            }
-            bottomSheetBehavior.state = STATE_EXPANDED
-            true
-        }
-
+        lifecycle.addObserver(networkObserver)
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.latLng.collect { latLng ->
                         if (latLng != null) {
-                            setLocation(latLng.first, latLng.second)
+                            updatePosition(latLng.first, latLng.second)
                         } else {
-                            setDefaultLocation()
+                            requestDefaultLocation()
                         }
                     }
                 }
                 launch {
                     viewModel.radius.collect {
                         circle?.radius = it.toDouble()
-                        marker?.position?.let { position ->
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(position, getZoomLevel()))
-                        }
+                        updateCameraBounds(true)
                     }
                 }
                 launch {
                     viewModel.events.collect {
                         when (it) {
-                            is OnWrongInputEvent -> {
-                                showSnackbar(binding.root, "Fill all fields correctly", LENGTH_LONG)
-                                bottomSheetBehavior.state = STATE_EXPANDED
+                            is OnMapTypeChanged -> {
+
+                            }
+                            is OnMapStyleChanged -> {
+
                             }
                             is OnUpdateGeofenceEvent -> {
                                 onUpdate(it.location)
@@ -350,19 +248,6 @@ class MapsActivity : AppCompatActivity(),
                     }
                 }
                 launch {
-                    viewModel.locationsFlow.map { locations ->
-                        locations.map {
-                            AddressWrapper(
-                                it.location.latitude,
-                                it.location.longitude,
-                                it.location.address
-                            )
-                        }
-                    }.collect {
-                        savedLocations = it
-                    }
-                }
-                launch {
                     viewModel.profilesStateFlow.collect {
                         profiles = it
                         setEntity()
@@ -372,54 +257,74 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun toggleOverlayMenuState() {
-        if (!isAnimationRunning) {
+    override fun onDestroy() {
+        super.onDestroy()
+        lifecycle.removeObserver(networkObserver)
+    }
 
-            isAnimationRunning = true
-
-            binding.overlay.isClickable = !isOverlayVisible
-            binding.overlay.isFocusable = !isOverlayVisible
-
-            val views: List<View> = listOf(
-                binding.overlay,
-                binding.saveGeofenceButton,
-                binding.saveChangesLabel,
-                binding.overlayOptionsFab,
-                binding.mapOverlayLabel,
-                binding.currentLocationFab,
-                binding.currentLocationLabel
-            )
-            if (isOverlayVisible) {
-                AnimUtil.getFabCollapseAnimation(binding.expandableFab)
-                    .start()
-            } else {
-                AnimUtil.getFabExpandAnimation(binding.expandableFab)
-                    .start()
+    private fun registerForPermissionRequestResult() {
+        locationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            if (it) {
+                geofenceManager.checkLocationServicesAvailability(this)
             }
-            for ((index, view) in views.withIndex()) {
-                if (view is ViewGroup) {
-                    view.startAnimation(AnimUtil.getOverlayAnimation(view))
-                } else {
-                    view.startAnimation(
-                        AnimUtil.getMenuOptionAnimation(binding.expandableFab, view).apply {
-                            setAnimationListener(object : SimpleAnimationListener() {
-
-                                override fun onAnimationEnd(animation: Animation?) {
-                                    view.visibility = if (view.visibility == View.VISIBLE) {
-                                        View.INVISIBLE
-                                    } else {
-                                        View.VISIBLE
-                                    }
-                                    if (index == views.size - 1) {
-                                        isAnimationRunning = false
-                                    }
-                                }
-                            })
-                        })
-                }
-            }
-            isOverlayVisible = !isOverlayVisible
         }
+    }
+
+    private fun setListeners() {
+        binding.overlayOptionsFab.setOnClickListener {
+            MapThemeSelectionDialog().show(
+                supportFragmentManager, null
+            )
+            toggleFloatingActionMenuVisibility()
+        }
+
+        binding.expandableFab.setOnClickListener {
+            toggleFloatingActionMenuVisibility()
+        }
+
+        binding.overlay.setOnClickListener {
+            if (floatingActionMenuController.isVisible) {
+                toggleFloatingActionMenuVisibility()
+            }
+        }
+
+        binding.currentLocationFab.setOnClickListener {
+            if (checkPermission(ACCESS_FINE_LOCATION)) {
+                geofenceManager.checkLocationServicesAvailability(this)
+            } else {
+                locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+            }
+            toggleFloatingActionMenuVisibility()
+        }
+
+        binding.bottomNavigation.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+
+            override fun onGlobalLayout() {
+                binding.bottomNavigation.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                bottomSheetBehavior.peekHeight = binding.bottomNavigation.height + convertDipToPx(BOTTOM_SHEET_OFFSET)
+            }
+        })
+
+        binding.bottomNavigation.setOnItemReselectedListener {
+            bottomSheetBehavior.state = STATE_EXPANDED
+        }
+
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            supportFragmentManager.findFragmentById(R.id.containerBottomSheet)?.let {
+                val listener: ItemSelectedListener = it as ItemSelectedListener
+                listener.onItemSelected(item.itemId)
+            }
+            bottomSheetBehavior.state = STATE_EXPANDED
+            true
+        }
+    }
+
+    private fun toggleFloatingActionMenuVisibility() {
+        floatingActionMenuController.toggleVisibility(
+            binding.expandableFab,
+            floatingMenuViews,
+            binding.overlay
+        )
     }
 
     private fun setSearchableInfo() {
@@ -450,19 +355,12 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onStart() {
         super.onStart()
-        job = Job()
-        coroutineScope = CoroutineScope(Dispatchers.Main + job)
-
         taskCancellationSource = CancellationTokenSource()
-        connectivityManager.registerNetworkCallback(getNetworkRequest(), networkCallback)
     }
 
     override fun onStop() {
         super.onStop()
-        job.cancel()
-
         taskCancellationSource.cancel()
-        connectivityManager.unregisterNetworkCallback(networkCallback)
     }
 
     private fun setEntity() {
@@ -478,10 +376,6 @@ class MapsActivity : AppCompatActivity(),
                 binding.searchView.setQuery(query, false)
             }
         }
-    }
-
-    private fun setSuggestionsAdapter() {
-        binding.searchView.suggestionsAdapter = SuggestionsAdapter(this, null)
     }
 
     private fun setEmptyQueryCursor() {
@@ -506,7 +400,7 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun setAddressSuggestionsCursor(results: List<AddressWrapper>) {
+    private fun setAddressSuggestionsCursor(results: Collection<AddressWrapper>) {
         val columns: Array<String> = arrayOf(
                 _ID,
                 COLUMN_VIEW_TYPE,
@@ -516,82 +410,96 @@ class MapsActivity : AppCompatActivity(),
                 SUGGEST_COLUMN_TEXT_1,
         )
         MatrixCursor(columns).apply {
-            for (i in results.indices) {
-                val row: Array<String> = arrayOf(
-                    i.toString(),
-                    VIEW_TYPE_LOCATION_SUGGESTION.toString(),
-                    ICON_LOCATION_SUGGESTION.toString(),
-                    results[i].latitude.toString(),
-                    results[i].longitude.toString(),
-                    results[i].address
-                )
-                addRow(row)
+            for ((index, location) in results.withIndex()) {
+
+                val viewType: Int = if (location.recentQuery) {
+                    VIEW_TYPE_LOCATION_RECENT_QUERY
+                } else VIEW_TYPE_LOCATION_SUGGESTION
+
+                val icon: Int = if (location.recentQuery) {
+                    ICON_LOCATION_RECENT_QUERY
+                } else ICON_LOCATION_SUGGESTION
+
+                addRow(arrayOf(
+                    index.toString(),
+                    viewType.toString(),
+                    icon.toString(),
+                    location.latitude.toString(),
+                    location.longitude.toString(),
+                    location.address
+                ))
             }
             binding.searchView.suggestionsAdapter.changeCursor(this)
         }
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    private fun getAddressList(query: String) {
-        coroutineScope.launch {
-            try {
-                val addressList: List<AddressWrapper>? = withContext(Dispatchers.IO) {
-                    geocoder.getFromLocationName(query, 15)?.map {
-                        AddressWrapper(
-                            it.latitude,
-                            it.longitude,
-                            it.getAddressLine(0)
-                        )
+    private fun setLocationSuggestions(query: String?) {
+        lifecycleScope.launch {
+
+            val suggestions: List<AddressWrapper> = viewModel.getSuggestions(query)
+
+            Log.i("MapsActivity", "query: ${query.toString()}\nisNullOrEmpty: ${query.isNullOrEmpty()}\nsuggestions: ${suggestions.size}")
+
+            if (query.isNullOrEmpty()) {
+                setAddressSuggestionsCursor(suggestions)
+            } else {
+                val addresses: List<AddressWrapper>? = try {
+                    withContext(Dispatchers.IO) {
+                        geocoder.getFromLocationName(query, 30)?.map {
+                            AddressWrapper(
+                                it.latitude,
+                                it.longitude,
+                                it.getAddressLine(0)
+                            )
+                        }
+                    }
+                } catch (e: IOException) {
+                    setConnectionErrorCursor()
+                    null
+                }
+                when {
+                    addresses != null -> {
+                        HashSet<AddressWrapper>().apply {
+
+                            addAll(suggestions)
+                            addAll(addresses)
+
+                            setAddressSuggestionsCursor(this)
+                        }
+                    }
+                    suggestions.isNotEmpty() -> {
+                        setAddressSuggestionsCursor(suggestions)
                     }
                 }
-                if (addressList.isNullOrEmpty()) {
-                    setEmptyQueryCursor()
-                } else {
-                    setAddressSuggestionsCursor(addressList)
-                }
-            } catch (e: IOException) {
-                Log.e("Geocoder", "$e - $query")
-                setConnectionErrorCursor()
             }
         }
     }
 
+    override fun onSuggestionClick(suggestion: LocationSuggestion, itemViewType: Int) {
+
+        isSuggestionClicked = true
+
+        if (itemViewType == VIEW_TYPE_LOCATION_SUGGESTION) {
+            viewModel.addSuggestion(suggestion)
+        }
+        viewModel.latLng.value = Pair(LatLng(suggestion.latitude, suggestion.longitude), false)
+        viewModel.address.value = suggestion.address
+
+        binding.searchView.setQuery(suggestion.address, false)
+        binding.searchView.clearFocus()
+
+        isSuggestionClicked = false
+    }
+
+    override fun onRemoveRecentQuery(locationSuggestion: LocationSuggestion) {
+        viewModel.removeSuggestion(locationSuggestion).invokeOnCompletion {
+            setLocationSuggestions(binding.searchView.query.toString())
+        }
+    }
+
     private fun setSearchViewSuggestions() {
-        setSuggestionsAdapter()
-        binding.searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
-
-            override fun onSuggestionSelect(position: Int): Boolean {
-                return false
-            }
-
-            @SuppressLint("Range")
-            override fun onSuggestionClick(position: Int): Boolean {
-
-                binding.searchView.suggestionsAdapter.cursor.apply {
-
-                    val viewType: Int = Integer.parseInt(getString(getColumnIndex(COLUMN_VIEW_TYPE)))
-
-                    if (viewType == VIEW_TYPE_LOCATION_SUGGESTION) {
-
-                        isSuggestionClicked = true
-
-                        viewModel.latLng.value = Pair(LatLng(
-                            getString(getColumnIndex(COLUMN_LATITUDE)).toDouble(),
-                            getString(getColumnIndex(COLUMN_LONGITUDE)).toDouble()
-                        ), false)
-
-                        getString(getColumnIndex(SUGGEST_COLUMN_TEXT_1)).let { address ->
-                            viewModel.address.value = address
-                            binding.searchView.setQuery(address, false)
-                        }
-
-                        isSuggestionClicked = false
-                        return true
-                    }
-                }
-                return false
-            }
-        })
+        binding.searchView.suggestionsAdapter = SuggestionsAdapter(this, null)
         binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -599,8 +507,8 @@ class MapsActivity : AppCompatActivity(),
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                if (!newText.isNullOrBlank() && !isSuggestionClicked) {
-                    getAddressList(newText)
+                if (!isSuggestionClicked) {
+                    setLocationSuggestions(newText)
                     return true
                 }
                 return false
@@ -612,10 +520,6 @@ class MapsActivity : AppCompatActivity(),
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-    }
-
-    private fun setNightStyle() {
-        mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.mapstyle_night))
     }
 
     private fun startMarkerAnimation() {
@@ -645,11 +549,7 @@ class MapsActivity : AppCompatActivity(),
         )
     }
 
-    private fun targetWithinCameraBounds(latLng: LatLng): Boolean {
-        return mMap.projection.visibleRegion.latLngBounds.contains(latLng)
-    }
-
-    private fun setDefaultLocation() {
+    private fun requestDefaultLocation() {
         if (checkPermission(ACCESS_FINE_LOCATION)) {
             getRecentLocation()
         } else {
@@ -657,16 +557,36 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun setLocation(latLng: LatLng, queryAddress: Boolean) {
-        addMarker(latLng)
-        addCircle(latLng)
-        getZoomLevel().also {
-            if (targetWithinCameraBounds(latLng)) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, it))
+    private fun updateCameraBounds(latLng: LatLng, radius: Float, animate: Boolean) {
+        MapsUtil.getLatLngBoundsFromCircle(latLng, radius).also { bounds ->
+            if (animate) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
             } else {
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, it))
+                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
             }
         }
+    }
+
+    private fun updateCameraBounds(animate: Boolean) {
+        circle?.let { circle ->
+            MapsUtil.getLatLngBoundsFromCircle(circle).also { bounds ->
+                if (animate) {
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
+                } else {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
+                }
+            }
+        }
+    }
+
+    private fun updatePosition(latLng: LatLng, queryAddress: Boolean) {
+
+        addMarker(latLng)
+        addCircle(latLng)
+        updateCameraBounds(MapsUtil.isTargetWithinVisibleRegion(
+            mMap, latLng
+        ))
+
         if (queryAddress) {
             getAddress(latLng)
         } else {
@@ -681,7 +601,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun getAddress(latLng: LatLng) {
-        coroutineScope.launch {
+        lifecycleScope.launch {
             val addresses: List<Address>? = withContext(Dispatchers.IO) {
                 try {
                     geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
@@ -698,22 +618,13 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun getZoomLevel(): Float {
-        circle?.let {
-            // val maxZoomLevel: Int = 16
-            val scale: Double = (it.radius + it.radius / 2) / 400
-            return (mMap.maxZoomLevel - ln(scale) / ln(2.0)).toFloat()
-        }
-        return mMap.maxZoomLevel
-    }
-
     private fun addCircle(latLng: LatLng) {
         circle?.remove()
         circle = mMap.addCircle(CircleOptions()
                 .center(latLng)
                 .radius(viewModel.getRadius().toDouble())
                 .strokeColor(Color.TRANSPARENT)
-                .fillColor(R.color.geofence_fill_color))
+                .fillColor(R.color.teal_700))
     }
 
     private fun addMarker(latLng: LatLng) {
@@ -722,7 +633,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun getLocaleLocation() {
-        coroutineScope.launch {
+        lifecycleScope.launch {
             val addresses: List<Address>? = withContext(Dispatchers.IO) {
                 try {
                     geocoder.getFromLocationName(Locale.getDefault().country, 1)
@@ -741,26 +652,45 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    @Suppress("MissingPermission")
-    override fun onSuccess() {
-        getCurrentLocation()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == GeofenceManager.REQUEST_ENABLE_LOCATION_SERVICES) {
+            if (resultCode == Activity.RESULT_OK) {
+                requestCurrentLocation()
+            } else {
+                onLocationRequestFailure()
+            }
+        }
     }
 
-    override fun onFailure() {
-        showSnackbar(binding.root, "Failed to obtain current location", LENGTH_LONG)
+    @Suppress("MissingPermission")
+    override fun onLocationRequestSuccess() {
+        requestCurrentLocation()
+    }
+
+    override fun onLocationRequestFailure() {
+        showSnackbar(findViewById(android.R.id.content), "Enable location services", LENGTH_LONG)
     }
 
     @RequiresPermission(ACCESS_FINE_LOCATION)
     private fun getRecentLocation() {
         fusedLocationProvider.lastLocation
             .addOnFailureListener {
-                showSnackbar(binding.root, "Failed to fetch last known location", LENGTH_LONG)
+                showSnackbar(findViewById(android.R.id.content), "Failed to fetch last known location", LENGTH_LONG)
             }.addOnSuccessListener {
                 if (it != null) {
                     updatePosition(LatLng(it.latitude, it.longitude))
                 } else {
                     getCurrentLocation()
                 }
+        }
+    }
+
+    private fun requestCurrentLocation() {
+        if (checkPermission(ACCESS_FINE_LOCATION)) {
+            getCurrentLocation()
+        } else {
+            locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
         }
     }
 
@@ -779,11 +709,19 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    @SuppressLint("PotentialBehaviorOverride")
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        mMap.setOnInfoWindowLongClickListener(this)
         mMap.setOnMapClickListener(this)
         mMap.setOnCameraMoveStartedListener(this)
         mMap.setOnMarkerDragListener(this)
+    }
+
+    override fun onInfoWindowLongClick(p0: Marker) {
+        val clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipboardManager.setPrimaryClip(ClipData.newPlainText("Address", marker?.title))
+        showSnackbar(findViewById(android.R.id.content), "Copied to clipboard", Snackbar.LENGTH_LONG)
     }
 
     override fun onMapClick(p0: LatLng) {
@@ -820,14 +758,6 @@ class MapsActivity : AppCompatActivity(),
 
         private const val BOTTOM_SHEET_OFFSET: Float = 100f
         private const val EXTRA_LOCATION_RELATION: String = "location"
-
-        private fun getNetworkRequest(): NetworkRequest {
-            return NetworkRequest.Builder()
-                .addCapability(NET_CAPABILITY_INTERNET)
-                .addTransportType(TRANSPORT_WIFI)
-                .addTransportType(TRANSPORT_CELLULAR)
-                .build()
-        }
 
         fun newIntent(context: Context, locationRelation: LocationRelation?): Intent {
             return Intent(context, MapsActivity::class.java).apply {

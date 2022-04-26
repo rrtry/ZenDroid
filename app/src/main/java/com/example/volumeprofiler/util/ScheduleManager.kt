@@ -165,12 +165,12 @@ class ScheduleManager @Inject constructor (
             return zdt.toInstant().toEpochMilli()
         }
 
-        internal fun formatRemainingTimeUntilAlarm(alarm: Alarm): String {
+        internal fun getPeriodString(alarm: Alarm): String {
 
             var millisBetween: Long = ChronoUnit.MILLIS.between(LocalDateTime.now(), getNextAlarmTime(alarm))
 
             return if (millisBetween < MILLIS_PER_MINUTE) {
-                "Profil is scheduled for less than a minute from now"
+                "Profile is scheduled for less than a minute from now"
             }
             else {
                 val remainder = millisBetween % MILLIS_PER_MINUTE

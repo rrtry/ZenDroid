@@ -5,10 +5,12 @@ import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
+import com.example.volumeprofiler.entities.LocationSuggestion
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.AddressWrapper
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -22,6 +24,8 @@ class GeofenceSharedViewModel @Inject constructor(
 
     sealed class ViewEvent {
 
+        data class OnMapTypeChanged(val style: Int): ViewEvent()
+        data class OnMapStyleChanged(val style: Int): ViewEvent()
         data class OnUpdateGeofenceEvent(val location: Location): ViewEvent()
         data class OnInsertGeofenceEvent(val location: Location): ViewEvent()
         data class OnRemoveGeofenceEvent(val location: Location): ViewEvent()
@@ -42,13 +46,24 @@ class GeofenceSharedViewModel @Inject constructor(
 
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
-    val locationsFlow: Flow<List<LocationRelation>> = locationRepository.observeLocations()
 
     private val eventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val events: Flow<ViewEvent> = eventChannel.receiveAsFlow()
 
     private var locationId: Int? = null
     private var isEnabled: Boolean = false
+
+    fun onMapStyleChanged(style: Int) {
+        viewModelScope.launch {
+            eventChannel.send(ViewEvent.OnMapStyleChanged(style))
+        }
+    }
+
+    fun onMapTypeChanged(type: Int) {
+        viewModelScope.launch {
+            eventChannel.send(ViewEvent.OnMapTypeChanged(type))
+        }
+    }
 
     fun onApplyChangesButtonClick() {
         viewModelScope.launch {
@@ -62,6 +77,34 @@ class GeofenceSharedViewModel @Inject constructor(
             } else {
                 eventChannel.send(ViewEvent.OnWrongInputEvent)
             }
+        }
+    }
+
+    fun removeSuggestion(suggestion: LocationSuggestion): Job {
+        return viewModelScope.launch {
+            locationRepository.removeSuggestion(suggestion)
+        }
+    }
+
+    fun addSuggestion(suggestion: LocationSuggestion) {
+        viewModelScope.launch {
+            locationRepository.addSuggestion(suggestion)
+        }
+    }
+
+    suspend fun getSuggestions(query: String?): List<AddressWrapper> {
+        val suggestions: List<LocationSuggestion> = if (query.isNullOrEmpty()) {
+            locationRepository.getAllRecentSuggestions()
+        } else {
+            locationRepository.getRecentLocationsByAddress(query)
+        }
+        return suggestions.map {
+            AddressWrapper(
+                it.latitude,
+                it.longitude,
+                it.address,
+                true
+            )
         }
     }
 

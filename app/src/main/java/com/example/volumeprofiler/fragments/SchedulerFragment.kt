@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.*
-import androidx.activity.result.ActivityResultLauncher
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.*
@@ -18,15 +17,16 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
+import androidx.recyclerview.selection.SelectionTracker.SELECTION_CHANGED_MARKER
 import androidx.recyclerview.selection.StorageStrategy
 import androidx.recyclerview.widget.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.AlarmDetailsActivity
 import com.example.volumeprofiler.activities.AlarmDetailsActivity.Companion.EXTRA_ALARM_PROFILE_RELATION
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.BaseSelectionObserver
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.DetailsLookup
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.ItemDetails
-import com.example.volumeprofiler.adapters.recyclerview.multiSelection.KeyProvider
+import com.example.volumeprofiler.adapters.BaseSelectionObserver
+import com.example.volumeprofiler.adapters.DetailsLookup
+import com.example.volumeprofiler.adapters.ItemDetails
+import com.example.volumeprofiler.adapters.KeyProvider
 import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.entities.*
@@ -44,7 +44,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.time.LocalTime
-import java.util.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -56,8 +55,9 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
     private var activity: FabContainerCallbacks? = null
-    private var _binding: AlarmsFragmentBinding? = null
-    private val binding: AlarmsFragmentBinding get() = _binding!!
+
+    private var bindingImpl: AlarmsFragmentBinding? = null
+    private val binding: AlarmsFragmentBinding get() = bindingImpl!!
 
     private lateinit var tracker: SelectionTracker<Long>
 
@@ -100,7 +100,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View {
-        _binding = AlarmsFragmentBinding.inflate(inflater, container, false)
+        bindingImpl = AlarmsFragmentBinding.inflate(inflater, container, false)
 
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.adapter = alarmAdapter
@@ -134,11 +134,12 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
                                 alarmAdapter.updateAlarmState(it.relation.alarm, 0)
                             }
                             is SchedulerViewModel.ViewEvent.OnAlarmSet -> {
+
                                 scheduleManager.scheduleAlarm(it.relation.alarm, it.relation.profile)
                                 alarmAdapter.updateAlarmState(it.relation.alarm, 1)
 
                                 activity?.showSnackBar(
-                                    ScheduleManager.formatRemainingTimeUntilAlarm(
+                                    ScheduleManager.getPeriodString(
                                         it.relation.alarm
                                     ), Snackbar.LENGTH_LONG, null)
                             }
@@ -176,20 +177,20 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        bindingImpl = null
     }
 
-    private fun startAlarmDetailsActivity(alarmRelation: AlarmRelation? = null, activityOptions: ActivityOptionsCompat? = null): Unit {
-        val intent: Intent = Intent(requireContext(), AlarmDetailsActivity::class.java)
-        if (alarmRelation != null) {
-            intent.putExtra(EXTRA_ALARM_PROFILE_RELATION, alarmRelation)
+    private fun startAlarmDetailsActivity(alarmRelation: AlarmRelation? = null, activityOptions: ActivityOptionsCompat? = null) {
+        Intent(requireContext(), AlarmDetailsActivity::class.java).apply {
+            alarmRelation?.let {
+                putExtra(EXTRA_ALARM_PROFILE_RELATION, it)
+            }
+            startActivity(this, activityOptions?.toBundle())
         }
-        startActivity(intent, activityOptions?.toBundle())
     }
 
-    private fun setPlaceholderVisibility(empty: Boolean): Unit {
-        val visibility: Int = if (empty) View.VISIBLE else View.GONE
-        binding.hintScheduler.visibility = visibility
+    private fun setPlaceholderVisibility(empty: Boolean) {
+        binding.hintScheduler.visibility = if (empty) View.VISIBLE else View.GONE
     }
 
     private fun updateAlarmAdapter(alarms: List<AlarmRelation>) {
@@ -208,22 +209,24 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
             binding.scheduleSwitch.transitionName = SHARED_TRANSITION_SWITCH
         }
 
-        fun bindLocalTimeTextView(payload: Bundle): Unit {
-            binding.timeTextView.text = TextUtil.formatLocalTime(requireContext(), (payload.getSerializable(EXTRA_DIFF_LOCAL_TIME)!! as LocalTime))
+        fun bindLocalTimeTextView(payload: Bundle) {
+            binding.timeTextView.text = TextUtil.formatLocalTime(
+                requireContext(), (payload.getSerializable(EXTRA_DIFF_LOCAL_TIME)!! as LocalTime)
+            )
         }
 
-        fun bindProfileTextView(payload: Bundle): Unit {
+        fun bindProfileTextView(payload: Bundle) {
             binding.profileName.text = payload.getString(EXTRA_DIFF_PROFILE_TITLE)
         }
 
-        fun bindScheduledDaysTextView(payload: Bundle): Unit {
+        fun bindScheduledDaysTextView(payload: Bundle) {
             binding.occurrencesTextView.text = TextUtil.weekDaysToString(
                 payload.getInt(EXTRA_DIFF_SCHEDULED_DAYS, 0),
                 payload.getSerializable(EXTRA_DIFF_LOCAL_TIME) as LocalTime
             )
         }
 
-        fun bindSwitch(payload: Bundle): Unit {
+        fun bindSwitch(payload: Bundle) {
             binding.scheduleSwitch.isChecked = payload.getInt(EXTRA_DIFF_SCHEDULED) == 1
         }
 
@@ -238,7 +241,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
                 androidx.core.util.Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH))
         }
 
-        private fun setListeners(): Unit {
+        private fun setListeners() {
             binding.editAlarmButton.setOnClickListener {
                 startAlarmDetailsActivity(
                     alarmAdapter.getItemAtPosition(bindingAdapterPosition),
@@ -251,7 +254,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
             }
         }
 
-        private fun updateTextViews(profile: Profile, alarm: Alarm): Unit {
+        private fun updateTextViews(profile: Profile, alarm: Alarm) {
             binding.timeTextView.text = TextUtil.formatLocalTime(requireContext(), alarm.localStartTime)
             binding.occurrencesTextView.text = TextUtil.weekDaysToString(alarm.scheduledDays, alarm.localStartTime)
             binding.profileName.text = profile.title
@@ -340,9 +343,12 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {
-            val binding =
-                AlarmItemViewBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return AlarmViewHolder(binding)
+            return AlarmViewHolder(
+                AlarmItemViewBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false)
+            )
         }
 
         fun refresh(): Unit {
@@ -386,7 +392,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
                             }
                         }
                     }
-                    SelectionTracker.SELECTION_CHANGED_MARKER -> {
+                    SELECTION_CHANGED_MARKER -> {
                         tracker.let {
                             AnimUtil.selected(holder.itemView, tracker.isSelected(getItem(position).alarm.id))
                         }

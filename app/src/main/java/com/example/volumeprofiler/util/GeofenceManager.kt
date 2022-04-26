@@ -29,9 +29,9 @@ class GeofenceManager @Inject constructor(
 
     interface LocationRequestListener {
 
-        fun onSuccess()
+        fun onLocationRequestSuccess()
 
-        fun onFailure()
+        fun onLocationRequestFailure()
 
     }
 
@@ -49,25 +49,25 @@ class GeofenceManager @Inject constructor(
     }
 
     @RequiresPermission(ACCESS_FINE_LOCATION)
-    fun addGeofence(location: Location, enterProfile: Profile, exitProfile: Profile): Unit {
+    fun addGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
         geofencingClient.addGeofences(getGeofencingRequest(listOf(location)), createGeofencingPendingIntent(location, enterProfile, exitProfile))
                 .addOnSuccessListener {
-                    Log.i("GeofenceUtil", "successfully added geofence")
+                    Log.i("GeofenceManager", "successfully added geofence")
                 }
                 .addOnFailureListener {
-                    Log.e("GeofenceUtil", "an error happened while adding geofence", it)
+                    Log.e("GeofenceManager", "an error happened while adding geofence", it)
                 }
     }
 
-    fun removeGeofence(location: Location, enterProfile: Profile, exitProfile: Profile): Unit {
+    fun removeGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
         val pendingIntent: PendingIntent? = getGeofencingPendingIntent(location, enterProfile, exitProfile)
         if (pendingIntent != null) {
             geofencingClient.removeGeofences(pendingIntent)
                 .addOnSuccessListener {
-                    Log.i("GeofenceUtil", "removeGeofence: success")
+                    Log.i("GeofenceManager", "removeGeofence: success")
                 }
                 .addOnFailureListener {
-                    Log.i("GeofenceUtil", "removeGeofence: failure")
+                    Log.i("GeofenceManager", "removeGeofence: failure")
                 }
         }
     }
@@ -98,27 +98,33 @@ class GeofenceManager @Inject constructor(
         enterProfile: Profile,
         exitProfile: Profile
     ): PendingIntent {
-        val intent: Intent = Intent(context, GeofenceReceiver::class.java).apply {
+        Intent(context, GeofenceReceiver::class.java).apply {
+
             action = ACTION_GEOFENCE_TRANSITION
             putExtra(GeofenceReceiver.EXTRA_TITLE, location.title)
             putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
+
+            return PendingIntent.getBroadcast(context, location.id, this, PendingIntent.FLAG_UPDATE_CURRENT)
         }
-        return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun getGeofencingPendingIntent(location: Location,enterProfile: Profile, exitProfile: Profile): PendingIntent? {
-        val intent: Intent = Intent(context, GeofenceReceiver::class.java).apply {
+        Intent(context, GeofenceReceiver::class.java).apply {
+
             action = ACTION_GEOFENCE_TRANSITION
             putExtra(GeofenceReceiver.EXTRA_TITLE, location.title)
             putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
+
+            return PendingIntent.getBroadcast(context, location.id, this, PendingIntent.FLAG_NO_CREATE)
         }
-        return PendingIntent.getBroadcast(context, location.id, intent, PendingIntent.FLAG_NO_CREATE)
     }
 
     fun checkLocationServicesAvailability(activity: Activity) {
+
+        val listener = activity as LocationRequestListener
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
@@ -140,12 +146,10 @@ class GeofenceManager @Inject constructor(
             }
         }
         locationSettingsResponseTask.addOnCompleteListener {
-            (activity as LocationRequestListener).also { listener ->
-                if (it.isSuccessful) {
-                    listener.onSuccess()
-                } else {
-                    listener.onFailure()
-                }
+            if (it.isSuccessful) {
+                listener.onLocationRequestSuccess()
+            } else if (it.exception == null) {
+                listener.onLocationRequestFailure()
             }
         }
     }

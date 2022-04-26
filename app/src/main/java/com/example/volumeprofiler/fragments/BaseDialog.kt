@@ -16,11 +16,11 @@ abstract class BaseDialog: DialogFragment() {
     protected var categoriesMask: Int = 0
     private var argsSet: Boolean = false
 
-    private fun removeBit(category: Int): Unit {
+    private fun removeBit(category: Int) {
         categoriesMask = categoriesMask and category.inv()
     }
 
-    private fun addBit(category: Int): Unit {
+    private fun addBit(category: Int) {
         categoriesMask = categoriesMask or category
     }
 

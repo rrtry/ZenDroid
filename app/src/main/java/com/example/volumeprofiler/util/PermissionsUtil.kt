@@ -24,8 +24,8 @@ private fun checkSelfPermission(context: Context, permission: String): Boolean {
 }
 
 fun isNotificationPolicyAccessGranted(context: Context): Boolean {
-    return (context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
-        .isNotificationPolicyAccessGranted
+    val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    return notificationManager.isNotificationPolicyAccessGranted
 }
 
 fun canWriteSettings(context: Context): Boolean {

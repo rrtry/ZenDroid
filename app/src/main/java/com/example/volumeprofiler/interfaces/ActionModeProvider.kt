@@ -5,7 +5,7 @@ import androidx.recyclerview.selection.SelectionTracker
 
 interface ActionModeProvider<T> {
 
-    fun onActionItemRemove(): Unit
+    fun onActionItemRemove()
 
     fun getTracker(): SelectionTracker<T>
 

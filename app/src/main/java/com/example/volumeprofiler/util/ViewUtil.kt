@@ -24,6 +24,7 @@ import android.util.TypedValue
 import android.view.MenuItem
 import androidx.annotation.IntegerRes
 import androidx.core.content.res.ResourcesCompat
+import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.R
 import com.google.android.material.snackbar.Snackbar
 import kotlin.math.roundToInt
@@ -34,12 +35,30 @@ class ViewUtil {
 
         internal const val DISMISS_TIME_WINDOW: Int = 2000
 
-        fun Context.getDrawable(drawableRes: Int): Drawable? {
-            return ResourcesCompat.getDrawable(resources, drawableRes, theme)
+        fun Fragment.getDrawable(drawableRes: Int): Drawable {
+            return ResourcesCompat.getDrawable(
+                requireContext().resources, drawableRes, requireContext().theme
+            ) ?: throw IllegalArgumentException("Could not get drawableL $drawableRes")
         }
 
-        fun Context.showSnackbar(view: View, message: String, length: Int) {
-            Snackbar.make(view, message, length).show()
+        fun Context.getDrawable(drawableRes: Int): Drawable {
+            return ResourcesCompat.getDrawable(resources, drawableRes, theme)
+                ?: throw IllegalArgumentException("Could not get drawable from resource: $drawableRes")
+        }
+
+        fun Context.showSnackbar(
+            view: View,
+            message: String,
+            length: Int,
+            title: String? = null,
+            action: (() -> Unit)? = null) {
+            Snackbar.make(view, message, length).apply {
+                action?.let {
+                    setAction(title) {
+                        it()
+                    }
+                }
+            }.show()
         }
 
         fun Context.convertDipToPx(dip: Float): Int {
@@ -55,25 +74,6 @@ class ViewUtil {
             return inputMethodManager.isActive
         }
 
-        fun setActionMenuAddIcon(context: Context, item: MenuItem): Unit {
-            val drawable = ResourcesCompat.getDrawable(context.resources, android.R.drawable.ic_menu_add, null)
-            item.icon = drawable
-        }
-
-        fun setActionMenuSaveIcon(context: Context, item: MenuItem): Unit {
-            val drawable = ResourcesCompat.getDrawable(context.resources, android.R.drawable.ic_menu_save, null)
-            item.icon = drawable
-        }
-
-        fun hideInputMethod(context: Context): Unit {
-            try {
-                val inputManager: InputMethodManager = context.getSystemService(AppCompatActivity.INPUT_METHOD_SERVICE) as InputMethodManager
-                inputManager.hideSoftInputFromWindow((context as AppCompatActivity).currentFocus?.windowToken, 0)
-            } catch (e: ClassCastException) {
-                Log.e("ViewUtil", "Passed context is not an activity", e)
-            }
-        }
-
         fun uiModeNightEnabled(context: Context): Boolean {
             return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         }
@@ -82,18 +82,6 @@ class ViewUtil {
             val value = TypedValue()
             context.theme.resolveAttribute(attribute, value, true)
             return AppCompatResources.getDrawable(context, value.resourceId)
-        }
-
-        fun disableAutoHideBehavior(fab: FloatingActionButton): Unit {
-            val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
-            val behavior = layoutParams.behavior as FloatingActionButton.Behavior?
-            behavior?.isAutoHideEnabled = false
-        }
-
-        fun detachAnchorView(fab: FloatingActionButton): Unit {
-            val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
-            layoutParams.anchorId = View.NO_ID
-            fab.layoutParams = layoutParams
         }
 
         fun getHalfExpandedRatio(rootViewGroup: ViewGroup, targetView: View): Float {

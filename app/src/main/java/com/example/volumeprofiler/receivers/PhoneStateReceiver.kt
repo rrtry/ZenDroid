@@ -20,34 +20,36 @@ class PhoneStateReceiver: BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
-        if (intent?.action == ACTION_PHONE_STATE_CHANGED && intent.extras != null) {
+        if (intent?.action == ACTION_PHONE_STATE_CHANGED) {
 
-            val streamsUnlinked: Boolean = preferencesManager.getStreamsUnlinked()
-            val interruptionFilter: Int = preferencesManager.getInterruptionFilter()
-            val priorityCategories: Int = preferencesManager.getPriorityCategories()
+            intent.extras?.run {
 
-            val isPriorityFilter: Boolean = interruptionFilter == INTERRUPTION_FILTER_PRIORITY
-            val includesCallsPriority: Boolean = isPriorityFilter && (priorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0
-                    || (priorityCategories and PRIORITY_CATEGORY_CALLS) != 0
+                val streamsUnlinked: Boolean = preferencesManager.getStreamsUnlinked()
+                val interruptionFilter: Int = preferencesManager.getInterruptionFilter()
+                val priorityCategories: Int = preferencesManager.getPriorityCategories()
 
-            if (streamsUnlinked && (includesCallsPriority || interruptionFilter == INTERRUPTION_FILTER_ALL)) {
+                val isPriorityFilter: Boolean = interruptionFilter == INTERRUPTION_FILTER_PRIORITY
+                val includesCallsPriority: Boolean = isPriorityFilter &&
+                        (priorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0 ||
+                        (priorityCategories and PRIORITY_CATEGORY_CALLS) != 0
 
-                val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
+                if (streamsUnlinked && (includesCallsPriority || interruptionFilter == INTERRUPTION_FILTER_ALL)) {
 
-                val ringVolume: Int = preferencesManager.getRingStreamVolume()
-                val notificationVolume: Int = preferencesManager.getNotificationStreamVolume()
-                val ringerMode: Int = preferencesManager.getRingerMode()
-                val notificationMode: Int = preferencesManager.getNotificationMode()
+                    val phoneState: String? = getString(EXTRA_STATE)
 
-                if (phoneState == EXTRA_STATE_RINGING && ringVolume >= 0) {
-                    profileManager.setRingerMode(
-                        STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES
-                    )
-                }
-                else if ((phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) && notificationVolume >= 0) {
-                    profileManager.setRingerMode(
-                        STREAM_NOTIFICATION,
-                        notificationVolume, notificationMode, FLAG_ALLOW_RINGER_MODES)
+                    val ringVolume: Int = preferencesManager.getRingStreamVolume()
+                    val notificationVolume: Int = preferencesManager.getNotificationStreamVolume()
+                    val ringerMode: Int = preferencesManager.getRingerMode()
+                    val notificationMode: Int = preferencesManager.getNotificationMode()
+
+                    if (phoneState == EXTRA_STATE_RINGING && ringVolume >= 0) {
+                        profileManager.setRingerMode(STREAM_RING, ringVolume, ringerMode, FLAG_ALLOW_RINGER_MODES)
+                    }
+                    else if ((phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) && notificationVolume >= 0) {
+                        profileManager.setRingerMode(
+                            STREAM_NOTIFICATION, notificationVolume, notificationMode, FLAG_ALLOW_RINGER_MODES
+                        )
+                    }
                 }
             }
         }

@@ -24,6 +24,10 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideSuggestionsDao(database: ApplicationDatabase) = database.getSuggestionsDao()
+
+    @Provides
+    @Singleton
     fun provideEventDao(database: ApplicationDatabase) = database.getEventDao()
 
     @Provides

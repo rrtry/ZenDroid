@@ -5,7 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.transition.*
 
-class Scale: Visibility() {
+class ScaleTransition: Visibility() {
 
     override fun captureStartValues(transitionValues: TransitionValues) {
         super.captureStartValues(transitionValues)

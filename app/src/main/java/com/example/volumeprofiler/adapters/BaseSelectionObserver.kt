@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters.recyclerview.multiSelection
+package com.example.volumeprofiler.adapters
 
 import android.view.ActionMode
 import android.view.Menu

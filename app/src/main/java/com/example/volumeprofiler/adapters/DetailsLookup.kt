@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters.recyclerview.multiSelection
+package com.example.volumeprofiler.adapters
 
 import android.view.MotionEvent
 import android.view.View

@@ -65,7 +65,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
     private var scheduledAlarms: List<AlarmRelation>? = null
 
-    private fun toggleOverlayMenuState() {
+    private fun toggleOverlayMenuState() { /*
         if (!isAnimationRunning) {
 
             isAnimationRunning = true
@@ -111,9 +111,8 @@ class ProfileDetailsActivity: AppCompatActivity(),
                         })
                 }
             }
-            isOverlayVisible = !isOverlayVisible
+            isOverlayVisible = !isOverlayVisible */
         }
-    }
 
     override fun onBackStackChanged() {
         (supportFragmentManager.backStackEntryCount > 0).let {

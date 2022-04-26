@@ -12,7 +12,7 @@ import java.time.ZoneId
 
 @Parcelize
 @Entity(foreignKeys = [ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["profileUUID"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE)])
-data class Alarm(@PrimaryKey(autoGenerate = true) @ColumnInfo(name = "eventId") override var id: Long = 0L,
+data class Alarm(@PrimaryKey(autoGenerate = true) @ColumnInfo(name = "eventId") override val id: Long,
 
                  @ColumnInfo(index = true)
                  var profileUUID: UUID,
