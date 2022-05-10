@@ -3,11 +3,9 @@ package com.example.volumeprofiler.util
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
-import android.Manifest.permission.*
 import android.content.Context
 import android.text.format.DateFormat
-import android.util.Log
-import com.example.volumeprofiler.entities.Event
+import java.text.SimpleDateFormat
 import java.time.*
 import java.time.format.FormatStyle
 
@@ -15,19 +13,12 @@ class TextUtil {
 
     companion object {
 
-         fun formatRecurrenceRule(rrule: String): String {
+        fun formatRecurrenceRule(rrule: String): String {
+
             val argsMap: Map<String, String> = rruleToArgsMap(rrule)
-            val stringBuilder: StringBuilder = StringBuilder()
-            val results: Array<String> = arrayOf(parseFrequencyRule(argsMap), parseWeekdays(argsMap), parseEndRule(argsMap))
-            for ((index, result) in results.withIndex()) {
-                if (result.isNotEmpty()) {
-                    stringBuilder.append(result)
-                    if (index != results.size - 1) {
-                        stringBuilder.append("; ")
-                    }
-                }
-            }
-            return stringBuilder.toString()
+            val results: List<String> = listOf(parseFrequencyRule(argsMap), parseWeekdays(argsMap), parseEndRule(argsMap))
+
+            return results.joinToString(separator = ";")
         }
 
         private fun rruleToArgsMap(rrule: String): Map<String, String> {
@@ -39,8 +30,10 @@ class TextUtil {
         }
 
         private fun parseEndDate(until: String): LocalDate {
+
             val regex: Regex = Regex("(\\d{4})(\\d{2})(\\d{2})")
             val groupValues: List<Int> = regex.findAll(until).first().groupValues.map { it.toInt() }
+
             return LocalDate.of(
                 groupValues[1],
                 groupValues[2],
@@ -49,8 +42,10 @@ class TextUtil {
         }
 
         private fun parseEndRule(args: Map<String, String>): String {
+
             val count: Int? = args["COUNT"]?.toInt()
             val until: String? = args["UNTIL"]
+
             if (count != null) {
                 return "for $count times"
             }
@@ -81,8 +76,7 @@ class TextUtil {
                 val weekdays: String = args["BYDAY"]!!
                 when (freq) {
                     "MONTHLY" -> {
-                        val dayOfWeek: String = weekdays.substring(1)
-                        "on every first ${dayOfWeekToString(dayOfWeek)}"
+                        "on every first ${dayOfWeekToString(weekdays.substring(1))}"
                     }
                     "WEEKLY" -> {
                         "on $weekdays"
@@ -107,79 +101,33 @@ class TextUtil {
             }
         }
 
-        fun formatEventTimestamp(context: Context, event: Event, millis: Long): String {
-            val diff: Long = event.instanceEndTime - event.instanceBeginTime
-            val diffDays: Long = ((diff / (1000 * 60 * 60 * 24)) % 365)
-            val pattern: String = if (diffDays > 0) {
-                "d MMM HH:mm a"
-            } else {
-                "HH:mm a"
-            }
-            if (DateFormat.is24HourFormat(context)) {
-                pattern.replace("HH", "hh")
-                pattern.replace("a", "")
-            }
-            val instant: Instant = Instant.ofEpochMilli(millis)
-            val zonedDateTime: ZonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.systemDefault())
-            val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern(pattern)
-            return formatter.format(zonedDateTime)
-        }
-
         @JvmStatic
-        fun weekDaysToString(scheduledDays: Int, startTime: LocalTime): String {
-            val stringBuilder = StringBuilder()
-            return if (scheduledDays != 0) {
-                if (scheduledDays == WeekDay.ALL_DAYS) {
-                    "Every day"
-                } else {
-                    val days: List<WeekDay> = listOf(
-                        WeekDay.MONDAY,
-                        WeekDay.TUESDAY,
-                        WeekDay.WEDNESDAY,
-                        WeekDay.THURSDAY,
-                        WeekDay.FRIDAY,
-                        WeekDay.SATURDAY,
-                        WeekDay.SUNDAY
-                    ).filter { (scheduledDays and it.value) != 0 }
-                    if (days.size == 1) {
-                        stringBuilder.append(DayOfWeek.of(days[0].num).getDisplayName(TextStyle.FULL, Locale.getDefault()))
-                    } else {
-                        for ((index, i) in days.withIndex()) {
-                            if (index < days.size - 1) {
-                                stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()) + ", ")
-                            } else {
-                                stringBuilder.append(DayOfWeek.of(i.num).getDisplayName(TextStyle.SHORT, Locale.getDefault()))
-                            }
-                        }
-                    }
-                    stringBuilder.toString()
-                }
-            } else {
-                if (startTime > LocalTime.now()) {
-                    "Today"
-                } else {
-                    "Tomorrow"
+        fun formatWeekDays(scheduledDays: Int, startTime: LocalTime, endTime: LocalTime): String {
+            return when (scheduledDays) {
+                WeekDay.ALL_DAYS -> "Every day"
+                WeekDay.NONE -> "Not repeating"
+                else -> {
+                    val days: List<WeekDay> = WeekDay.values.filter { (scheduledDays and it.value) != 0 }
+                    val displayStyle: TextStyle = if (days.size == 1) TextStyle.FULL else TextStyle.SHORT
+
+                    days.joinToString(transform = {
+                        DayOfWeek.of(it.num).getDisplayName(displayStyle, Locale.getDefault())
+                    })
                 }
             }
         }
 
-        @JvmStatic
-        fun formatLocalTime(context: Context, time: LocalTime): String {
-            val pattern: String = if (DateFormat.is24HourFormat(context)) {
-                "HH:mm"
-            } else {
-                "hh:mm a"
-            }
-            val formatter = DateTimeFormatter.ofPattern(pattern).withZone(ZoneOffset.UTC)
-            return time.format(formatter)
+        private fun getTimeFormat(context: Context): String {
+            return (DateFormat.getTimeFormat(context) as SimpleDateFormat).toPattern()
         }
 
-        fun validateCoordinatesInput(source: CharSequence?): Boolean {
-            return if (source != null && source.isNotEmpty()) {
-                source.toString().toDoubleOrNull() != null
-            } else {
-                false
-            }
+        @JvmStatic
+        fun formatLocalTime(context: Context, localTime: LocalTime): String {
+            DateTimeFormatter
+                .ofPattern(getTimeFormat(context))
+                .withZone(ZoneOffset.UTC).also {
+                    return localTime.format(it)
+                }
         }
     }
 }

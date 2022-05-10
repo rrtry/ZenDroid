@@ -11,18 +11,36 @@ import java.util.*
 interface AlarmRelationDao {
 
     @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
+    @Query("SELECT * FROM Alarm WHERE Alarm.startProfileUUID = (:id) OR Alarm.endProfileUUID = (:id) AND Alarm.isScheduled = 1")
     suspend fun getActiveAlarmsByProfileId(id: UUID): List<AlarmRelation>?
 
     @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID")
+    @Query("SELECT * FROM Alarm")
     fun observeAlarms(): Flow<List<AlarmRelation>>
 
     @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
+    @Query("SELECT * FROM Alarm WHERE Alarm.startProfileUUID = (:id) OR Alarm.endProfileUUID = (:id) AND Alarm.isScheduled = 1")
+    fun observeScheduledAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?>
+
+    @Transaction
+    @Query("SELECT * FROM Alarm WHERE Alarm.isScheduled = 1")
+    suspend fun getActiveAlarms(): List<AlarmRelation>?
+
+    /*
+    @Transaction
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.startProfileUUID OR profile.id = Alarm.endProfileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
+    suspend fun getActiveAlarmsByProfileId(id: UUID): List<AlarmRelation>?
+
+    @Transaction
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.startProfileUUID OR profile.id = Alarm.endProfileUUID")
+    fun observeAlarms(): Flow<List<AlarmRelation>>
+
+    @Transaction
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.startProfileUUID OR profile.id = Alarm.endProfileUUID WHERE profile.id = (:id) AND Alarm.isScheduled = 1")
     fun observeAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?>
 
     @Transaction
-    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.profileUUID WHERE Alarm.isScheduled = 1")
+    @Query("SELECT * FROM Profile INNER JOIN Alarm ON profile.id = Alarm.startProfileUUID OR profile.id = Alarm.endProfileUUID WHERE Alarm.isScheduled = 1")
     suspend fun getActiveAlarms(): List<AlarmRelation>?
+     */
 }

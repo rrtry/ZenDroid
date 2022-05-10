@@ -1,7 +1,6 @@
 package com.example.volumeprofiler
 
 import android.app.Application
-import android.provider.SearchRecentSuggestions
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -30,10 +29,7 @@ class Application: Application(), LifecycleObserver {
 
     companion object {
 
-        private const val LOG_TAG: String = "Application"
-
         internal const val ACTION_GEOFENCE_TRANSITION: String = "com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"
-        internal const val ACTION_ALARM_TRIGGER: String = "com.example.volumeprofiler.ACTION_ALARM_TRIGGER"
-        internal const val ACTION_CALENDAR_EVENT_TRIGGER: String = "com.example.volumeprofiler.ACTION_CALENDAR_EVENT_TRIGGER"
+        internal const val ACTION_ALARM: String = "com.example.volumeprofiler.ACTION_ALARM"
     }
 }

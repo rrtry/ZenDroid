@@ -66,6 +66,10 @@ class LocationRepository @Inject constructor(
         return locationRelationDao.observeLocations()
     }
 
+    fun observeLocationsByProfileId(id: UUID): Flow<List<LocationRelation>?> {
+        return locationRelationDao.observeLocationsByProfileId(id)
+    }
+
     suspend fun getLocationsByProfileId(id: UUID): List<LocationRelation> {
         return withContext(Dispatchers.IO) {
             locationRelationDao.getLocationsByProfileId(id)

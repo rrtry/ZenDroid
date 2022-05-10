@@ -23,7 +23,7 @@ object AnimUtil {
         }
     }
 
-    fun getFabExpandAnimation(fab: FloatingActionButton): ValueAnimator {
+    private fun getFabExpandAnimation(fab: FloatingActionButton): ValueAnimator {
         return ValueAnimator.ofFloat(fab.rotation, 90f).apply {
             addUpdateListener {
                 fab.rotation = it.animatedValue as Float
@@ -31,7 +31,7 @@ object AnimUtil {
         }
     }
 
-    fun getFabCollapseAnimation(fab: FloatingActionButton): ValueAnimator {
+    private fun getFabCollapseAnimation(fab: FloatingActionButton): ValueAnimator {
         return ValueAnimator.ofFloat(fab.rotation, 0f).apply {
             addUpdateListener {
                 fab.rotation = it.animatedValue as Float
@@ -44,14 +44,6 @@ object AnimUtil {
             getOptionHideAnimation(startView, target)
         } else {
             getOptionRevealAnimation(startView, target)
-        }
-    }
-
-    fun getOverlayAnimation(view: View): AlphaAnimation {
-        return if (view.isVisible) {
-            getOverlayHideAnimation(view)
-        } else {
-            getOverlayRevealAnimation(view)
         }
     }
 
@@ -75,7 +67,7 @@ object AnimUtil {
             doOnEnd {
                 view.visibility = INVISIBLE
             }
-            duration = 300
+            duration = 500
         }
     }
 
@@ -93,49 +85,14 @@ object AnimUtil {
             doOnEnd {
                 view.visibility = VISIBLE
             }
-            duration = 300
-        }
-    }
-
-    private fun getOverlayHideAnimation(view: View): AlphaAnimation {
-        return AlphaAnimation(1f, 0f).apply {
-
-            repeatMode = REVERSE
-            duration = 300
-            fillAfter = true
-
-            setAnimationListener(object : SimpleAnimationListener() {
-
-                override fun onAnimationEnd(animation: Animation?) {
-                    view.visibility = INVISIBLE
-                }
-            })
-        }
-    }
-
-    private fun getOverlayRevealAnimation(view: View): AlphaAnimation {
-        return AlphaAnimation(0f, 1f).apply {
-
-            repeatMode = REVERSE
-            duration = 300
-            fillAfter = true
-
-            setAnimationListener(object : SimpleAnimationListener() {
-
-                override fun onAnimationEnd(animation: Animation?) {
-                    view.visibility = VISIBLE
-                }
-            })
+            duration = 500
         }
     }
 
     private fun getOptionHideAnimation(expandableView: View, option: View): ObjectAnimator {
 
-        val scaleX = PropertyValuesHolder.ofFloat(SCALE_X, 1f, 0f)
-        val scaleY = PropertyValuesHolder.ofFloat(SCALE_Y, 1f, 0f)
         val alpha = PropertyValuesHolder.ofFloat(ALPHA, 1f, 0f)
-
-        return ObjectAnimator.ofPropertyValuesHolder(option, scaleX, scaleY, alpha).apply {
+        return ObjectAnimator.ofPropertyValuesHolder(option, alpha).apply {
             doOnCancel {
                 option.visibility = INVISIBLE
             }
@@ -147,11 +104,9 @@ object AnimUtil {
 
     private fun getOptionRevealAnimation(expandableView: View, option: View): ObjectAnimator {
 
-        val scaleX = PropertyValuesHolder.ofFloat(SCALE_X, 0f, 1f)
-        val scaleY = PropertyValuesHolder.ofFloat(SCALE_Y, 0f, 1f)
         val alpha = PropertyValuesHolder.ofFloat(ALPHA, 0f, 1f)
 
-        return ObjectAnimator.ofPropertyValuesHolder(option, scaleX, scaleY, alpha).apply {
+        return ObjectAnimator.ofPropertyValuesHolder(option, alpha).apply {
 
             doOnStart {
                 option.visibility = VISIBLE
@@ -165,44 +120,6 @@ object AnimUtil {
         }
     }
 
-    private fun getOptionHideAnimationSet(expandableView: View, option: View): AnimationSet {
-        return AnimationSet(false).apply {
-            addAnimation(
-                TranslateAnimation(
-                    0f, 0f, 0f, expandableView.y - option.y
-                )
-            )
-            addAnimation(
-                AlphaAnimation(
-                    1f, 0f
-                )
-            )
-            repeatMode = REVERSE
-            duration = 300
-            fillAfter = true
-        }
-    }
-
-    private fun getOptionRevealAnimationSet(expandableView: View): AnimationSet {
-        return AnimationSet(false).apply {
-            addAnimation(
-                TranslateAnimation(
-                    0f, 0f, expandableView.x + expandableView.width / 2, 0f
-                ).apply {
-                    interpolator = OvershootInterpolator(5f)
-                }
-            )
-            addAnimation(
-                AlphaAnimation(
-                    0f, 1f
-                )
-            )
-            repeatMode = REVERSE
-            duration = 300
-            fillAfter = true
-        }
-    }
-
     fun shake(view: View): Unit {
         TranslateAnimation(
             0f, 30f, 0f, 0f
@@ -213,7 +130,7 @@ object AnimUtil {
         }
     }
 
-    fun scale(view: View, up: Boolean): Unit {
+    fun scale(view: View, up: Boolean) {
 
         val fromX: Float = if (up) 0.0f else 1.0f
         val toX: Float = if (up) 1.0f else 0.0f
@@ -240,7 +157,7 @@ object AnimUtil {
         view.startAnimation(animation)
     }
 
-    fun selected(itemView: View, selected: Boolean): Unit {
+    fun selected(itemView: View, selected: Boolean) {
 
         val value: Float = if (selected) 0.8f else 1.0f
 

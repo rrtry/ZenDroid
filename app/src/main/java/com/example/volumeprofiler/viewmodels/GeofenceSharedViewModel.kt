@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
@@ -29,7 +30,11 @@ class GeofenceSharedViewModel @Inject constructor(
         data class OnUpdateGeofenceEvent(val location: Location): ViewEvent()
         data class OnInsertGeofenceEvent(val location: Location): ViewEvent()
         data class OnRemoveGeofenceEvent(val location: Location): ViewEvent()
+
         object OnWrongInputEvent: ViewEvent()
+        object ToggleFloatingActionMenu: ViewEvent()
+        object ObtainCurrentLocation: ViewEvent()
+        object ShowMapStylesDialog: ViewEvent()
     }
 
     private data class PositionPair(var first: Int, var second: Int)
@@ -41,7 +46,7 @@ class GeofenceSharedViewModel @Inject constructor(
     val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
     val enterProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
     val exitProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
-    val locality: MutableStateFlow<String> = MutableStateFlow("")
+    private val locality: MutableStateFlow<String> = MutableStateFlow("")
     val address: MutableStateFlow<String> = MutableStateFlow("")
 
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
@@ -52,6 +57,25 @@ class GeofenceSharedViewModel @Inject constructor(
 
     private var locationId: Int? = null
     private var isEnabled: Boolean = false
+
+    fun onMapStylesFabClick() {
+        viewModelScope.launch {
+            eventChannel.send(ViewEvent.ShowMapStylesDialog)
+        }
+    }
+
+    fun onCurrentLocationFabClick() {
+        viewModelScope.launch {
+            eventChannel.send(ViewEvent.ObtainCurrentLocation)
+        }
+    }
+
+    fun onExpandableFabClick() {
+        viewModelScope.launch {
+            Log.i("GeofenceViewModel", "onExpandableFabClick")
+            eventChannel.send(ViewEvent.ToggleFloatingActionMenu)
+        }
+    }
 
     fun onMapStyleChanged(style: Int) {
         viewModelScope.launch {
@@ -140,7 +164,7 @@ class GeofenceSharedViewModel @Inject constructor(
             radius.value = locationRelation.location.radius
 
             locationId = locationRelation.location.id
-            isEnabled = locationRelation.location.enabled == 1.toByte()
+            isEnabled = locationRelation.location.enabled
         }
     }
 
@@ -168,6 +192,7 @@ class GeofenceSharedViewModel @Inject constructor(
             null
         } else {
             Location(
+                id = if (locationId != null) locationId!! else 0,
                 title = title.value!!,
                 latitude = latLng.value!!.first.latitude,
                 longitude = latLng.value!!.first.longitude,
@@ -176,12 +201,8 @@ class GeofenceSharedViewModel @Inject constructor(
                 radius = radius.value,
                 onEnterProfileId = getEnterProfile(profiles).id,
                 onExitProfileId = getExitProfile(profiles).id,
-                enabled = if (isEnabled) 1 else 0
-            ).apply {
-                locationId?.let {
-                    id = it
-                }
-            }
+                enabled = isEnabled
+            )
         }
     }
 
@@ -193,15 +214,15 @@ class GeofenceSharedViewModel @Inject constructor(
         this.latLng.value = Pair(latLng, queryAddress)
     }
 
-    fun setTitle(title: String?): Unit {
+    fun setTitle(title: String?) {
         this.title.value = title
     }
 
-    fun setAddress(address: String): Unit {
+    fun setAddress(address: String) {
         this.address.value = address
     }
 
-    fun setRadius(radius: Float): Unit {
+    fun setRadius(radius: Float) {
         this.radius.value = radius
     }
 }

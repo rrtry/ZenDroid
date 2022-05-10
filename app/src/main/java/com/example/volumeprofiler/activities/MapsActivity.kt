@@ -30,6 +30,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.SuggestionsAdapter
+import com.example.volumeprofiler.core.GeofenceManager
+import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.databinding.GoogleMapsActivityBinding
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
@@ -91,12 +93,16 @@ class MapsActivity : AppCompatActivity(),
         GeofenceManager.LocationRequestListener,
         NetworkStateObserver.NetworkCallback,
         SuggestionsAdapter.Callback,
-        GoogleMap.OnInfoWindowLongClickListener {
+        GoogleMap.OnInfoWindowLongClickListener,
+        FloatingActionMenuController.MenuStateListener {
 
     interface ItemSelectedListener {
 
         fun onItemSelected(itemId: Int)
     }
+
+    @Inject lateinit var geofenceManager: GeofenceManager
+    @Inject lateinit var profileManager: ProfileManager
 
     private val viewModel: GeofenceSharedViewModel by viewModels()
 
@@ -107,25 +113,13 @@ class MapsActivity : AppCompatActivity(),
     private val binding: GoogleMapsActivityBinding get() = bindingImpl!!
 
     private var isSuggestionClicked: Boolean = false
-    private val floatingMenuViews: List<View>
-    get() = listOf(
-        binding.overlay,
-        binding.saveGeofenceButton,
-        binding.saveChangesLabel,
-        binding.overlayOptionsFab,
-        binding.mapOverlayLabel,
-        binding.currentLocationFab,
-        binding.currentLocationLabel
-    )
+    private var floatingMenuVisible: Boolean = false
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var mMap: GoogleMap
     private lateinit var profiles: List<Profile>
     private lateinit var taskCancellationSource: CancellationTokenSource
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
-
-    @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var profileManager: ProfileManager
 
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var geocoder: Geocoder
@@ -192,33 +186,63 @@ class MapsActivity : AppCompatActivity(),
         }, 100)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, floatingMenuVisible)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         bindingImpl = GoogleMapsActivityBinding.inflate(layoutInflater)
+        binding.viewModel = viewModel
+        binding.lifecycleOwner = this
         setContentView(binding.root)
+
+        savedInstanceState?.let {
+            floatingMenuVisible = it.getBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, false)
+        }
 
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         networkObserver = NetworkStateObserver(WeakReference(this))
         geocoder = Geocoder(this, Locale.getDefault())
-        floatingActionMenuController = FloatingActionMenuController()
+        floatingActionMenuController = FloatingActionMenuController(
+            WeakReference(this), floatingMenuVisible
+        )
 
         registerForPermissionRequestResult()
         setSearchConfiguration()
         setBottomSheetBehavior()
+        setBottomNavigationListeners()
         addBottomSheetFragment()
-        setListeners()
         getMap()
 
         lifecycle.addObserver(networkObserver)
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
+                    viewModel.events.collect {
+                        when (it) {
+                            is ShowMapStylesDialog -> showMapStylesDialog()
+                            is ObtainCurrentLocation -> onLocationRequest()
+                            is ToggleFloatingActionMenu -> toggleFloatingActionMenuVisibility()
+                            is OnUpdateGeofenceEvent -> onUpdate(it.location)
+                            is OnInsertGeofenceEvent -> onInsert(it.location)
+                            is OnMapStyleChanged -> {
+                                mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
+                                    this@MapsActivity, it.style
+                                ))
+                            }
+                            else -> Log.i("MapsActivity", "unknown event")
+                        }
+                    }
+                }
+                launch {
                     viewModel.latLng.collect { latLng ->
                         if (latLng != null) {
                             updatePosition(latLng.first, latLng.second)
-                        } else {
-                            requestDefaultLocation()
+                        } else if (checkPermission(ACCESS_FINE_LOCATION)) {
+                            getRecentLocation()
                         }
                     }
                 }
@@ -226,25 +250,6 @@ class MapsActivity : AppCompatActivity(),
                     viewModel.radius.collect {
                         circle?.radius = it.toDouble()
                         updateCameraBounds(true)
-                    }
-                }
-                launch {
-                    viewModel.events.collect {
-                        when (it) {
-                            is OnMapTypeChanged -> {
-
-                            }
-                            is OnMapStyleChanged -> {
-
-                            }
-                            is OnUpdateGeofenceEvent -> {
-                                onUpdate(it.location)
-                            }
-                            is OnInsertGeofenceEvent -> {
-                                onInsert(it.location)
-                            }
-                            else -> Log.i("MapsActivity", "unknown event")
-                        }
                     }
                 }
                 launch {
@@ -270,60 +275,30 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    private fun setListeners() {
-        binding.overlayOptionsFab.setOnClickListener {
-            MapThemeSelectionDialog().show(
-                supportFragmentManager, null
-            )
-            toggleFloatingActionMenuVisibility()
+    private fun onLocationRequest() {
+        if (checkPermission(ACCESS_FINE_LOCATION)) {
+            geofenceManager.checkLocationServicesAvailability(this@MapsActivity)
+        } else {
+            locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
         }
+        toggleFloatingActionMenuVisibility()
+    }
 
-        binding.expandableFab.setOnClickListener {
-            toggleFloatingActionMenuVisibility()
-        }
-
-        binding.overlay.setOnClickListener {
-            if (floatingActionMenuController.isVisible) {
-                toggleFloatingActionMenuVisibility()
-            }
-        }
-
-        binding.currentLocationFab.setOnClickListener {
-            if (checkPermission(ACCESS_FINE_LOCATION)) {
-                geofenceManager.checkLocationServicesAvailability(this)
-            } else {
-                locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
-            }
-            toggleFloatingActionMenuVisibility()
-        }
-
-        binding.bottomNavigation.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-
-            override fun onGlobalLayout() {
-                binding.bottomNavigation.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                bottomSheetBehavior.peekHeight = binding.bottomNavigation.height + convertDipToPx(BOTTOM_SHEET_OFFSET)
-            }
-        })
-
-        binding.bottomNavigation.setOnItemReselectedListener {
-            bottomSheetBehavior.state = STATE_EXPANDED
-        }
-
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            supportFragmentManager.findFragmentById(R.id.containerBottomSheet)?.let {
-                val listener: ItemSelectedListener = it as ItemSelectedListener
-                listener.onItemSelected(item.itemId)
-            }
-            bottomSheetBehavior.state = STATE_EXPANDED
-            true
-        }
+    private fun showMapStylesDialog() {
+        MapThemeSelectionDialog().show(supportFragmentManager, null)
+        toggleFloatingActionMenuVisibility()
     }
 
     private fun toggleFloatingActionMenuVisibility() {
-        floatingActionMenuController.toggleVisibility(
+        floatingActionMenuController.toggle(
             binding.expandableFab,
-            floatingMenuViews,
-            binding.overlay
+            binding.overlay,
+            binding.saveGeofenceButton,
+            binding.saveChangesLabel,
+            binding.overlayOptionsFab,
+            binding.mapOverlayLabel,
+            binding.currentLocationFab,
+            binding.currentLocationLabel
         )
     }
 
@@ -344,6 +319,27 @@ class MapsActivity : AppCompatActivity(),
                 .beginTransaction()
                 .add(R.id.containerBottomSheet, BottomSheetFragment())
                 .commit()
+        }
+    }
+
+    private fun setBottomNavigationListeners() {
+        binding.bottomNavigation.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+
+            override fun onGlobalLayout() {
+                binding.bottomNavigation.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                bottomSheetBehavior.peekHeight = binding.bottomNavigation.height + convertDipToPx(BOTTOM_SHEET_OFFSET)
+            }
+        })
+        binding.bottomNavigation.setOnItemReselectedListener {
+            bottomSheetBehavior.state = STATE_EXPANDED
+        }
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            supportFragmentManager.findFragmentById(R.id.containerBottomSheet)?.let {
+                (it as ItemSelectedListener)
+                    .onItemSelected(item.itemId)
+            }
+            bottomSheetBehavior.state = STATE_EXPANDED
+            true
         }
     }
 
@@ -410,8 +406,7 @@ class MapsActivity : AppCompatActivity(),
                 SUGGEST_COLUMN_TEXT_1,
         )
         MatrixCursor(columns).apply {
-            for ((index, location) in results.withIndex()) {
-
+            results.forEachIndexed { index, location ->
                 val viewType: Int = if (location.recentQuery) {
                     VIEW_TYPE_LOCATION_RECENT_QUERY
                 } else VIEW_TYPE_LOCATION_SUGGESTION
@@ -438,9 +433,6 @@ class MapsActivity : AppCompatActivity(),
         lifecycleScope.launch {
 
             val suggestions: List<AddressWrapper> = viewModel.getSuggestions(query)
-
-            Log.i("MapsActivity", "query: ${query.toString()}\nisNullOrEmpty: ${query.isNullOrEmpty()}\nsuggestions: ${suggestions.size}")
-
             if (query.isNullOrEmpty()) {
                 setAddressSuggestionsCursor(suggestions)
             } else {
@@ -468,9 +460,7 @@ class MapsActivity : AppCompatActivity(),
                             setAddressSuggestionsCursor(this)
                         }
                     }
-                    suggestions.isNotEmpty() -> {
-                        setAddressSuggestionsCursor(suggestions)
-                    }
+                    suggestions.isNotEmpty() -> setAddressSuggestionsCursor(suggestions)
                 }
             }
         }
@@ -547,14 +537,6 @@ class MapsActivity : AppCompatActivity(),
         viewModel.latLng.value = Pair(
             latLng, true
         )
-    }
-
-    private fun requestDefaultLocation() {
-        if (checkPermission(ACCESS_FINE_LOCATION)) {
-            getRecentLocation()
-        } else {
-            getLocaleLocation()
-        }
     }
 
     private fun updateCameraBounds(latLng: LatLng, radius: Float, animate: Boolean) {
@@ -754,8 +736,13 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    override fun onTransformationFinished() {
+        floatingMenuVisible = floatingActionMenuController.isVisible
+    }
+
     companion object {
 
+        private const val EXTRA_FLOATING_ACTION_MENU_VISIBLE: String = "menu"
         private const val BOTTOM_SHEET_OFFSET: Float = 100f
         private const val EXTRA_LOCATION_RELATION: String = "location"
 

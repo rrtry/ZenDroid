@@ -53,10 +53,7 @@ class MapThemeSelectionDialog:
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        binding.mapStyleRecyclerView.also {
-            it.layoutManager = LinearLayoutManager(context, HORIZONTAL, false)
-            it.adapter = StyleAdapter(WeakReference(this), getMapStyles())
-        }
+        binding.mapStyleRecyclerView.layoutManager = LinearLayoutManager(context, HORIZONTAL, false)
+        binding.mapStyleRecyclerView.adapter = StyleAdapter(WeakReference(this), getMapStyles())
     }
 }

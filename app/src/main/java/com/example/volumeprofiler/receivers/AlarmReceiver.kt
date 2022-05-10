@@ -5,7 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.os.Build
-import com.example.volumeprofiler.Application.Companion.ACTION_ALARM_TRIGGER
+import com.example.volumeprofiler.Application.Companion.ACTION_ALARM
+import com.example.volumeprofiler.core.PreferencesManager
+import com.example.volumeprofiler.core.ProfileManager
+import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.Profile
@@ -24,96 +27,104 @@ class AlarmReceiver: BroadcastReceiver() {
     @Inject lateinit var preferencesManager: PreferencesManager
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        intent?.let {
-
-            val context: Context = context!!
-
-            when (it.action) {
-
-                ACTION_ALARM_TRIGGER -> {
-
-                    val alarm = ParcelableUtil.toParcelable(
-                        intent.getByteArrayExtra(EXTRA_ALARM)!!,
-                        ParcelableUtil.getParcelableCreator()) as Alarm
-
-                    val profile = ParcelableUtil.toParcelable(
-                        intent.getByteArrayExtra(EXTRA_PROFILE)!!,
-                        ParcelableUtil.getParcelableCreator()) as Profile
-
-                    goAsync(context, GlobalScope, Dispatchers.IO) {
-
-                        if (ScheduleManager.isAlarmValid(alarm)) {
-                            scheduleManager.scheduleAlarm(alarm, profile)
-                            updateAlarmNextInstanceTime(alarm)
-                        } else {
-                            scheduleManager.cancelAlarm(alarm, profile)
-                            cancelAlarm(alarm)
-                        }
-                        profileManager.setProfile(profile)
-                        postNotification(
-                            context,
-                            createAlarmAlertNotification(context, "Scheduler", LocalTime.now()),
-                            ID_SCHEDULER
-                        )
-                    }
+        when (intent?.action) {
+            ACTION_ALARM -> {
+                goAsync(context!!, GlobalScope, Dispatchers.Default) {
+                    onAlarm(
+                        context, getAlarm(intent),
+                        getProfile(intent, EXTRA_START_PROFILE),
+                        getProfile(intent, EXTRA_END_PROFILE)
+                    )
                 }
-                ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED -> {
-                    goAsync(context, GlobalScope, Dispatchers.IO) {
+            }
+            ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED, ACTION_TIME_CHANGED -> {
+                goAsync(context!!, GlobalScope, Dispatchers.IO) {
+                    updateAlarmInstances(context)
+                }
+            }
+            ACTION_BOOT_COMPLETED -> {
+                if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
+                    goAsync(context!!, GlobalScope, Dispatchers.IO) {
                         updateAlarmInstances(context)
                     }
                 }
-                ACTION_BOOT_COMPLETED -> {
-                    if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
-                        goAsync(context, GlobalScope, Dispatchers.IO) {
-                            updateAlarmInstances(context)
-                        }
-                    }
-                }
             }
         }
     }
 
-    private suspend fun updateAlarmInstances(context: Context): Unit {
-        alarmRepository.getEnabledAlarms()?.let {
-            for (i in it) {
+    private suspend fun onAlarm(context: Context, alarm: Alarm, startProfile: Profile, endProfile: Profile) {
+        scheduleManager.scheduleAlarm(alarm, startProfile, endProfile).also { scheduled ->
+            if (!scheduled) {
+                scheduleManager.cancelAlarm(alarm)
+                cancelAlarm(alarm)
+            }
+        }
 
-                val alarm: Alarm = i.alarm
-                val profile: Profile = i.profile
-                var missed = false
+        val profile: Profile = if (!scheduleManager.meetsSchedule()) endProfile else startProfile
+        val time: LocalTime = if (!scheduleManager.meetsSchedule()) alarm.endTime else alarm.startTime
 
-                if (ScheduleManager.isAlarmInstanceObsolete(alarm)) {
-                    missed = true
-                    profileManager.setProfile(profile)
-                    postNotification(
+        profileManager.setProfile(profile)
+        postNotification(
+            context,
+            createAlarmAlertNotification(
+                context,
+                alarm.title,
+                profile.title,
+                time
+            ), ID_SCHEDULER)
+    }
+
+    private suspend fun cancelAlarm(alarm: Alarm) {
+        withContext(Dispatchers.IO) {
+            alarmRepository.updateAlarm(alarm.apply {
+                isScheduled = false
+            })
+        }
+    }
+
+    private suspend fun updateAlarmInstances(context: Context) {
+        alarmRepository.getEnabledAlarms()?.let { enabledAlarms ->
+            enabledAlarms.forEach {
+                scheduleManager.scheduleAlarm(it.alarm, it.startProfile, it.endProfile).also { scheduled ->
+                    if (!scheduled) {
+                        scheduleManager.cancelAlarm(it.alarm)
+                        cancelAlarm(it.alarm)
+                    }
+                }
+            }
+            scheduleManager.getRecentAlarm(enabledAlarms)?.let {
+
+                profileManager.setProfile(it.profile)
+
+                postNotification(
+                    context,
+                    createAlarmAlertNotification(
                         context,
-                        createAlarmAlertNotification(context, profile.title, alarm.localStartTime),
-                        ID_SCHEDULER
-                    )
-                }
-                if (ScheduleManager.isAlarmValid(alarm)) {
-                    scheduleManager.scheduleAlarm(alarm, profile)
-                    if (missed) {
-                        updateAlarmNextInstanceTime(alarm)
-                    }
-                } else {
-                    scheduleManager.cancelAlarm(i.alarm, i.profile)
-                    cancelAlarm(i.alarm)
-                }
+                        it.alarm.title,
+                        it.profile.title,
+                        it.time.toLocalTime()
+                    ), ID_SCHEDULER)
             }
         }
-    }
-
-    private suspend fun cancelAlarm(alarm: Alarm): Unit {
-        alarm.isScheduled = 0
-        alarmRepository.updateAlarm(alarm)
-    }
-
-    private suspend fun updateAlarmNextInstanceTime(alarm: Alarm): Unit {
-        alarm.instanceStartTime = ScheduleManager.getNextAlarmTime(alarm).toInstant()
-        alarmRepository.updateAlarm(alarm)
     }
 
     companion object {
+
+        private fun getAlarm(intent: Intent): Alarm {
+            /*
+            return ParcelableUtil.toParcelable(
+                intent.getByteArrayExtra(EXTRA_ALARM)!!,
+                ParcelableUtil.getParcelableCreator()) as Alarm */
+            return intent.getParcelableExtra<Alarm>(EXTRA_ALARM) ?: throw IllegalStateException("Alarm cannot be null")
+        }
+
+        private fun getProfile(intent: Intent, name: String): Profile {
+            /*
+            return ParcelableUtil.toParcelable(
+                intent.getByteArrayExtra(name)!!,
+                ParcelableUtil.getParcelableCreator()) as Profile */
+            return intent.getParcelableExtra<Profile>(name) ?: throw IllegalStateException("Profile cannot be null")
+        }
 
         fun BroadcastReceiver.goAsync(
             context: Context,
@@ -131,6 +142,7 @@ class AlarmReceiver: BroadcastReceiver() {
         }
 
         internal const val EXTRA_ALARM: String = "extra_alarm"
-        internal const val EXTRA_PROFILE: String = "extra_profile"
+        internal const val EXTRA_START_PROFILE: String = "extra_start_profile"
+        internal const val EXTRA_END_PROFILE: String = "extra_end_profile"
     }
 }

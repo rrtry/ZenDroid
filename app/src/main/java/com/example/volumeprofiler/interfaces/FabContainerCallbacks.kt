@@ -8,5 +8,5 @@ interface FabContainerCallbacks {
         action: (() -> Unit)?
     )
 
-    fun requestPermissions(permissions: Array<String>): Unit
+    fun requestPermissions(permissions: Array<String>)
 }

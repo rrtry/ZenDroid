@@ -1,6 +1,7 @@
 package com.example.volumeprofiler.util
 
 import android.Manifest
+import android.Manifest.permission.WRITE_SETTINGS
 import android.annotation.TargetApi
 import android.content.Context
 import android.content.Context.INPUT_METHOD_SERVICE
@@ -26,6 +27,8 @@ import androidx.annotation.IntegerRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.R
+import com.google.android.material.snackbar.BaseTransientBottomBar
+import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
 import com.google.android.material.snackbar.Snackbar
 import kotlin.math.roundToInt
 
@@ -38,7 +41,7 @@ class ViewUtil {
         fun Fragment.getDrawable(drawableRes: Int): Drawable {
             return ResourcesCompat.getDrawable(
                 requireContext().resources, drawableRes, requireContext().theme
-            ) ?: throw IllegalArgumentException("Could not get drawableL $drawableRes")
+            ) ?: throw IllegalArgumentException("Could not get drawable from resource: $drawableRes")
         }
 
         fun Context.getDrawable(drawableRes: Int): Drawable {
@@ -46,16 +49,17 @@ class ViewUtil {
                 ?: throw IllegalArgumentException("Could not get drawable from resource: $drawableRes")
         }
 
-        fun Context.showSnackbar(
+        fun showSnackbar(
             view: View,
             message: String,
             length: Int,
             title: String? = null,
             action: (() -> Unit)? = null) {
             Snackbar.make(view, message, length).apply {
-                action?.let {
+                animationMode = ANIMATION_MODE_SLIDE
+                if (action != null) {
                     setAction(title) {
-                        it()
+                        action()
                     }
                 }
             }.show()
@@ -69,28 +73,7 @@ class ViewUtil {
             ).roundToInt()
         }
 
-        fun isInputMethodVisible(context: Context): Boolean {
-            val inputMethodManager = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            return inputMethodManager.isActive
-        }
-
-        fun uiModeNightEnabled(context: Context): Boolean {
-            return context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        }
-
-        fun resolveResourceAttribute(context: Context, attribute: Int): Drawable? {
-            val value = TypedValue()
-            context.theme.resolveAttribute(attribute, value, true)
-            return AppCompatResources.getDrawable(context, value.resourceId)
-        }
-
-        fun getHalfExpandedRatio(rootViewGroup: ViewGroup, targetView: View): Float {
-            val rect: Rect = Rect()
-            rootViewGroup.offsetDescendantRectToMyCoords(targetView, rect)
-            return (rect.top).toFloat() / rootViewGroup.height
-        }
-
-        fun showInterruptionPolicyAccessExplanation(fragmentManager: FragmentManager): Unit {
+        fun showInterruptionPolicyAccessExplanation(fragmentManager: FragmentManager) {
             showPermissionRationaleDialog(
                 fragmentManager,
                 Manifest.permission.ACCESS_NOTIFICATION_POLICY,
@@ -99,7 +82,7 @@ class ViewUtil {
             )
         }
 
-        fun showLocationPermissionExplanation(fragmentManager: FragmentManager): Unit {
+        fun showLocationPermissionExplanation(fragmentManager: FragmentManager) {
             showPermissionRationaleDialog(
                 fragmentManager,
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -110,7 +93,7 @@ class ViewUtil {
         }
 
         @TargetApi(Build.VERSION_CODES.Q)
-        fun showBackgroundLocationPermissionExplanation(fragmentManager: FragmentManager): Unit {
+        fun showBackgroundLocationPermissionExplanation(fragmentManager: FragmentManager) {
             showPermissionRationaleDialog(
                 fragmentManager,
                 Manifest.permission.ACCESS_BACKGROUND_LOCATION,
@@ -122,7 +105,7 @@ class ViewUtil {
 
         fun showPhoneStatePermissionExplanation(
             fragmentManager: FragmentManager,
-            requestMultiplePermissionsOnResult: Boolean = false): Unit {
+            requestMultiplePermissionsOnResult: Boolean = false) {
             showPermissionRationaleDialog(
                 fragmentManager,
                 Manifest.permission.READ_PHONE_STATE,
@@ -135,7 +118,7 @@ class ViewUtil {
         fun showSystemSettingsPermissionExplanation(fragmentManager: FragmentManager): Unit {
             showPermissionRationaleDialog(
                 fragmentManager,
-                Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                WRITE_SETTINGS,
                 R.string.system_settings_permission_explanation,
                 R.drawable.ic_baseline_settings_24
             )

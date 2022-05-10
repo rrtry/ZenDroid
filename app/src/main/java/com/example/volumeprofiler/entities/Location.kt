@@ -25,7 +25,7 @@ data class Location(
         var locality: String,
         var address: String,
         var radius: Float = 100f,
-        var enabled: Byte = 0,
+        var enabled: Boolean = false,
 
         @ColumnInfo(index = true)
         var onExitProfileId: UUID,

@@ -37,25 +37,25 @@ class ProfilesListViewModel @Inject constructor(
 
     var lastSelected: UUID? = null
 
-    fun setProfile(profile: Profile): Unit {
+    fun setProfile(profile: Profile) {
         viewModelScope.launch {
             viewEventChannel.send(ViewEvent.ProfileSetViewEvent(profile))
         }
     }
 
-    fun addProfile(profile: Profile): Unit {
+    fun addProfile(profile: Profile) {
         viewModelScope.launch {
             profileRepository.addProfile(profile)
         }
     }
 
-    fun updateProfile(profile: Profile): Unit {
+    fun updateProfile(profile: Profile) {
         viewModelScope.launch {
             profileRepository.updateProfile(profile)
         }
     }
 
-    fun removeProfile(profile: Profile): Unit {
+    fun removeProfile(profile: Profile) {
         viewModelScope.launch {
             launch {
                 viewEventChannel.send(ViewEvent.ProfileRemoveViewEvent(profile))

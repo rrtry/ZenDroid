@@ -8,7 +8,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
-import com.example.volumeprofiler.util.ProfileManager
+import com.example.volumeprofiler.core.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.lang.ref.WeakReference
 import javax.inject.Inject

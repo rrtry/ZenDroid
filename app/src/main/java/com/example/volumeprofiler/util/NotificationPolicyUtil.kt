@@ -14,14 +14,14 @@ fun containsCategory(mask: Int, bit: Int): Boolean {
 
 fun createMask(list: List<Int>): Int {
     var mask: Int = 0
-    for (i in list) {
-        mask = mask or i
+    list.forEach {
+        mask = mask or it
     }
     return mask
 }
 
 fun extractPriorityCategories(mask: Int): List<Int> {
-    var categories: Array<Int> = arrayOf(
+    val categories: MutableList<Int> = mutableListOf(
         PRIORITY_CATEGORY_EVENTS,
         PRIORITY_CATEGORY_REMINDERS,
     )

@@ -23,7 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.util.ProfileManager
+import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect

@@ -1,18 +1,25 @@
 package com.example.volumeprofiler.viewmodels
 
-import androidx.lifecycle.*
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.volumeprofiler.core.ScheduleCalendar
 import com.example.volumeprofiler.database.repositories.AlarmRepository
-import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.util.ScheduleManager
+import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.util.WeekDay
+import com.example.volumeprofiler.util.WeekDay.Companion.WEEKDAYS
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.lang.IllegalArgumentException
-import java.time.*
+import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
 import java.util.*
 import javax.inject.Inject
 
@@ -24,14 +31,44 @@ class AlarmDetailsViewModel @Inject constructor(
 
     private var entitySet: Boolean = false
 
+    val title: MutableStateFlow<String> = MutableStateFlow("My event")
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
-    val spinnerPosition: MutableStateFlow<Int> = MutableStateFlow(-1)
-    val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(0)
-    val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val localTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
-    val weekDaysLocalTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
+    val startProfileSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
+    val endProfileSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
+
+    val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(WEEKDAYS)
+    val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(true)
+
+    val startTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
+    val endTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now().plusMinutes(30))
+
+    val startAndEndDate: Flow<Pair<LocalDateTime, LocalDateTime>?> = combine(scheduledDays, startTime, endTime)
+    { days, startLocalTime, endLocalTime ->
+        if (days == WeekDay.NONE) {
+
+            val now: LocalDateTime = LocalDateTime.now()
+
+            val start: LocalDateTime = now
+                .withHour(startLocalTime.hour)
+                .withMinute(startLocalTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+            var end: LocalDateTime = now
+                .withHour(endLocalTime.hour)
+                .withMinute(endLocalTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+            if (start >= end) {
+                end = end.plusDays(1)
+            }
+
+            Pair(start, end)
+        } else null
+    }
 
     private var alarmId: Long? = null
     private var isScheduled: Boolean = false
@@ -49,66 +86,67 @@ class AlarmDetailsViewModel @Inject constructor(
     }
 
     enum class DialogType {
-        DAYS_SELECTION,
-        TIME_SELECTION
+        SCHEDULED_DAYS,
+        START_TIME,
+        END_TIME
     }
 
-    fun addAlarm(alarm: Alarm): Unit {
-        viewModelScope.launch {
+    suspend fun getEnabledAlarms(): List<AlarmRelation> {
+        return alarmRepository.getEnabledAlarms() ?: listOf()
+    }
+
+    suspend fun addAlarm(alarm: Alarm): Long {
+        return withContext(viewModelScope.coroutineContext) {
             alarmRepository.addAlarm(alarm)
         }
     }
 
-    fun updateAlarm(alarm: Alarm): Unit {
+    fun updateAlarm(alarm: Alarm) {
         viewModelScope.launch {
             alarmRepository.updateAlarm(alarm)
         }
     }
 
-    fun onSaveChangesButtonClick(): Unit {
+    fun onSaveChangesButtonClick() {
         viewModelScope.launch {
-            val event = if (alarmId != null) {
+            channel.send(if (alarmId != null) {
                 ViewEvent.OnUpdateAlarmEvent(getAlarm())
             } else {
                 ViewEvent.OnCreateAlarmEvent(getAlarm())
-            }
-            channel.send(event)
+            })
         }
     }
 
-    fun onCancelButtonClick(): Unit {
+    fun onCancelButtonClick() {
         viewModelScope.launch {
             channel.send(ViewEvent.OnCancelChangesEvent)
         }
     }
 
-    fun onTimeSelectButtonClick(): Unit {
+    fun onStartTimeTextViewClick() {
         viewModelScope.launch {
-            channel.send(ViewEvent.ShowDialogEvent(DialogType.TIME_SELECTION))
+            channel.send(ViewEvent.ShowDialogEvent(DialogType.START_TIME))
         }
     }
 
-    fun onDaysSelectButtonClick(): Unit {
+    fun onEndTimeTextViewClick() {
         viewModelScope.launch {
-            channel.send(ViewEvent.ShowDialogEvent(DialogType.DAYS_SELECTION))
+            channel.send(ViewEvent.ShowDialogEvent(DialogType.END_TIME))
         }
     }
 
-    private fun getNextInstanceDate(): Instant {
-        return ScheduleManager.getNextAlarmTime(scheduledDays.value, localTime.value)
-            .toInstant()
+    fun onDaysSelectButtonClick() {
+        viewModelScope.launch {
+            channel.send(ViewEvent.ShowDialogEvent(DialogType.SCHEDULED_DAYS))
+        }
     }
 
-    private fun getAlarmState(): Int {
-        return if (scheduled.value) 1 else 0
+    fun getEndProfile(): Profile {
+        return profilesStateFlow.value[endProfileSpinnerPosition.value]
     }
 
-    private fun getProfileUUID(): UUID {
-        return profilesStateFlow.value[spinnerPosition.value].id
-    }
-
-    fun getProfile(): Profile {
-        return profilesStateFlow.value[spinnerPosition.value]
+    fun getStartProfile(): Profile {
+        return profilesStateFlow.value[startProfileSpinnerPosition.value]
     }
 
     private fun getPosition(uuid: UUID, profiles: List<Profile>): Int {
@@ -120,38 +158,43 @@ class AlarmDetailsViewModel @Inject constructor(
         return 0
     }
 
-    fun setEntity(alarmRelation: AlarmRelation?, profiles: List<Profile>): Unit {
+    fun setEntity(alarmRelation: AlarmRelation, profiles: List<Profile>) {
         if (!entitySet) {
-            alarmRelation?.let {
-                spinnerPosition.value = getPosition(alarmRelation.profile.id, profiles)
-                scheduledDays.value = alarmRelation.alarm.scheduledDays
-                localTime.value = alarmRelation.alarm.localStartTime
-                scheduled.value = alarmRelation.alarm.isScheduled == 1
 
-                alarmId = alarmRelation.alarm.id
-                isScheduled = alarmRelation.alarm.isScheduled == 1
+            val alarm: Alarm = alarmRelation.alarm
+            val startProfile: Profile = alarmRelation.startProfile
+            val endProfile: Profile = alarmRelation.endProfile
 
-                entitySet = true
-            }
+            title.value = alarm.title
+            scheduledDays.value = alarm.scheduledDays
+            startTime.value = alarm.startTime
+            endTime.value = alarm.endTime
+            scheduled.value = alarm.isScheduled
+            alarmId = alarm.id
+            isScheduled = alarm.isScheduled
+
+            startProfileSpinnerPosition.value = getPosition(startProfile.id, profiles)
+            endProfileSpinnerPosition.value = getPosition(endProfile.id, profiles)
+
+            entitySet = true
         }
     }
 
     private fun getAlarm(): Alarm {
         return Alarm(
-            localStartTime = localTime.value,
-            scheduledDays = scheduledDays.value,
-            isScheduled = getAlarmState(),
-            instanceStartTime = getNextInstanceDate(),
+            id = if (alarmId != null) alarmId!! else 0,
+            title = title.value.ifEmpty { "No title" },
+            startProfileUUID = getStartProfile().id,
+            endProfileUUID = getEndProfile().id,
+            startTime = startTime.value,
+            endTime = endTime.value,
             zoneId = ZoneId.systemDefault(),
-            profileUUID = getProfileUUID(),
-        ).apply {
-            alarmId?.let {
-                id = it
-            }
-        }
+            isScheduled = scheduled.value,
+            scheduledDays = scheduledDays.value,
+        )
     }
 
-    override fun onCleared(): Unit {
+    override fun onCleared() {
         super.onCleared()
         channel.close()
     }

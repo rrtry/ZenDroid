@@ -1,12 +1,14 @@
 package com.example.volumeprofiler.activities
 
-import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -22,41 +24,39 @@ import com.example.volumeprofiler.interfaces.FabContainerCallbacks
 import com.example.volumeprofiler.interfaces.FragmentSwipedListener
 import com.example.volumeprofiler.util.canWriteSettings
 import com.example.volumeprofiler.util.isNotificationPolicyAccessGranted
+import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity(), FabContainerCallbacks {
+class MainActivity : AppCompatActivity(), FabContainerCallbacks {
+
+    interface OptionsItemSelectedListener {
+
+        fun onSelected(itemId: Int)
+    }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
 
-    private var afterTransition: Boolean = false
-
     private var currentPosition: Int = 0
-    set(value) {
-        (pagerAdapter.fragments[field] as FragmentSwipedListener).also {
-            it.onSwipe()
-        }
-        field = value
-    }
-
-    private val selectedFragment: FabContainer
+    private val selectedFragment: Fragment
     get() {
-        return pagerAdapter.fragments[binding.pager.currentItem] as FabContainer
+        return pagerAdapter.fragments[binding.pager.currentItem]
     }
 
     private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
         override fun onPageSelected(position: Int) {
             super.onPageSelected(position)
+
+            pagerAdapter.notifyFragmentChanged(currentPosition, position)
+            onPrepareOptionsMenu(binding.toolbar.menu)
             currentPosition = position
-            if (!afterTransition) {
-                selectedFragment.onAnimateFab(binding.fab)
-            }
-            afterTransition = false
+
+            (selectedFragment as FabContainer).onAnimateFab(binding.fab)
         }
     }
 
@@ -67,6 +67,14 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
             SchedulerFragment(),
             LocationsListFragment()
         )
+
+        fun notifyFragmentChanged(currentPosition: Int, nextPosition: Int) {
+            (fragments[currentPosition] as FragmentSwipedListener).run {
+                if (currentPosition != nextPosition) {
+                    onSwipe()
+                }
+            }
+        }
 
         override fun getItemId(position: Int): Long {
             return position.toLong()
@@ -85,7 +93,8 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
             text,
             length
         ).apply {
-            action?.let {
+            animationMode = ANIMATION_MODE_SLIDE
+            if (action != null) {
                 setAction("Grant") {
                     action()
                 }
@@ -94,9 +103,7 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
     }
 
     override fun requestPermissions(permissions: Array<String>) {
-        permissionRequestLauncher.launch(
-            permissions
-        )
+        permissionRequestLauncher.launch(permissions)
     }
 
     override fun onBackPressed() {
@@ -107,12 +114,31 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
         }
     }
 
-    override fun onActivityReenter(resultCode: Int, data: Intent?) {
-        afterTransition = true
-        super.onActivityReenter(resultCode, data)
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(EXTRA_PAGER_POSITION, currentPosition)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        super.onOptionsItemSelected(item)
+        (selectedFragment as OptionsItemSelectedListener)
+            .onSelected(item.itemId)
+        return true
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        super.onCreateOptionsMenu(menu)
+        menuInflater.inflate(R.menu.action_item_selection, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        super.onPrepareOptionsMenu(menu)
+        return currentPosition == SCHEDULER_FRAGMENT
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)
@@ -122,6 +148,11 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
 
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
+
+        savedInstanceState?.let {
+            currentPosition = it.getInt(EXTRA_PAGER_POSITION, 0)
+        }
 
         pagerAdapter = ScreenSlidePagerAdapter(this)
         binding.pager.adapter = pagerAdapter
@@ -129,22 +160,22 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
 
         TabLayoutMediator(binding.tabs, binding.pager) { tab, position ->
             when (position) {
-                0 -> {
+                PROFILE_FRAGMENT -> {
                     tab.text = resources.getString(R.string.tab_profiles)
                     tab.icon = ResourcesCompat.getDrawable(resources, R.drawable.baseline_notifications_active_black_24dp, theme)
                 }
-                1 -> {
+                SCHEDULER_FRAGMENT -> {
                     tab.text = resources.getString(R.string.tab_scheduler)
                     tab.icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_access_time_24, theme)
                 }
-                2 -> {
+                LOCATIONS_FRAGMENT -> {
                     tab.text = resources.getString(R.string.tab_locations)
                     tab.icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_location_on_24, theme)
                 }
             }
         }.attach()
         binding.fab.setOnClickListener {
-            selectedFragment.onFabClick(binding.fab)
+            (selectedFragment as FabContainer).onFabClick(binding.fab)
         }
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.contains(false)) {
@@ -158,5 +189,13 @@ class MainActivity : FragmentActivity(), FabContainerCallbacks {
     override fun onDestroy() {
         super.onDestroy()
         binding.pager.unregisterOnPageChangeCallback(onPageChangeCallback)
+    }
+
+    companion object {
+
+        private const val PROFILE_FRAGMENT: Int = 0
+        private const val SCHEDULER_FRAGMENT: Int = 1
+        private const val LOCATIONS_FRAGMENT: Int = 2
+        private const val EXTRA_PAGER_POSITION: String = "position"
     }
 }

@@ -6,7 +6,7 @@
     <data>
         <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
         <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
-        <import type="com.example.volumeprofiler.util.ProfileManager"/>
+        <import type="com.example.volumeprofiler.core.ProfileManager"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>
         <variable
@@ -449,7 +449,7 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/phoneRingtoneLayout"
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -486,7 +486,7 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/notificationSoundLayout"
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -524,7 +524,7 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/alarmSoundLayout"
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -676,7 +676,7 @@
                 android:layout_height="wrap_content"
                 notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:background="?attr/selectableItemBackground"
-                android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_ON)}"
+                android:onClick="@{() -> viewModel.onSuppressedEffectsOnLayoutClick()}"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/Title2">
 
@@ -712,9 +712,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="32dp"
+                android:onClick="@{() -> viewModel.onSuppressedEffectsOffLayoutClick()}"
                 notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:background="?attr/selectableItemBackground"
-                android:onClick="@{(view) -> viewModel.onSuppressedEffectLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_OFF)}"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/blockWhenScreenIsOnLayout">

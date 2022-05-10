@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,10 +28,15 @@ import android.media.ThumbnailUtils
 import android.os.Handler
 import android.os.Looper
 import androidx.core.content.res.ResourcesCompat
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.selection.SelectionTracker
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.core.GeofenceManager
+import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.FragmentSwipedListener
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.example.volumeprofiler.viewmodels.LocationsListViewModel.ViewEvent.*
 
 @AndroidEntryPoint
 class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
@@ -78,47 +82,51 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.locationsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).collect {
-                updateAdapterData(it)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.locationsFlow.collect {
+                        updateAdapterData(it)
+                    }
+                }
+                launch {
+                    viewModel.viewEvents.collect {
+                        when (it) {
+                            is OnGeofenceRemoved -> removeGeofence(it.relation)
+                            is OnGeofenceDisabled -> disableGeofence(it.relation)
+                            is OnGeofenceEnabled -> enableGeofence(it.relation)
+                        }
+                    }
+                }
             }
         }
     }
 
-    private fun removeGeofence(locationRelation: LocationRelation): Unit {
+    private fun removeGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
         )
         deleteThumbnail(requireContext(), locationRelation.location.previewImageId)
-        viewModel.removeLocation(locationRelation.location)
     }
 
     @Suppress("MissingPermission")
-    private fun enableGeofence(locationRelation: LocationRelation, position: Int): Unit {
+    private fun enableGeofence(locationRelation: LocationRelation) {
         geofenceManager.addGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
         )
-        viewModel.enableGeofence(locationRelation.location)
-        updateItem(position, 1)
+        locationAdapter.updateGeofenceState(locationRelation, true)
     }
 
-    private fun disableGeofence(locationRelation: LocationRelation, position: Int): Unit {
+    private fun disableGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
         )
-        viewModel.disableGeofence(locationRelation.location)
-        updateItem(position, 0)
-    }
-
-    private fun updateItem(position: Int, enabled: Byte): Unit {
-        locationAdapter.notifyItemChanged(position, Bundle().apply {
-            putByte(PAYLOAD_GEOFENCE_ENABLED, enabled)
-        })
+        locationAdapter.updateGeofenceState(locationRelation, false)
     }
 
     private inner class LocationViewHolder(
@@ -129,19 +137,23 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
             binding.root.setOnClickListener(this)
         }
 
+        fun updateEnabledState(enabled: Boolean) {
+            binding.enableGeofenceSwitch.isChecked = enabled
+        }
+
         fun bind(locationRelation: LocationRelation, isSelected: Boolean): Unit {
 
             val location: Location = locationRelation.location
 
             binding.geofenceTitle.text = location.title
-            binding.enableGeofenceSwitch.isChecked = location.enabled == 1.toByte()
+            binding.enableGeofenceSwitch.isChecked = location.enabled
             binding.geofenceProfiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
 
             binding.editGeofenceButton.setOnClickListener {
-                startMapActivity(locationAdapter.getItemAtPosition(bindingAdapterPosition))
+                startMapActivity(locationRelation)
             }
             binding.removeGeofenceButton.setOnClickListener {
-                removeGeofence(locationAdapter.getItemAtPosition(bindingAdapterPosition))
+                viewModel.removeGeofence(locationRelation)
             }
             binding.mapSnapshot.post {
                 binding.mapSnapshot.setImageBitmap(
@@ -153,7 +165,13 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
         }
 
         override fun onClick(v: View?) {
-
+            locationAdapter.getItemAtPosition(bindingAdapterPosition).also {
+                if (it.location.enabled) {
+                    viewModel.disableGeofence(it)
+                } else {
+                    viewModel.enableGeofence(it)
+                }
+            }
         }
     }
 
@@ -167,18 +185,23 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
             return oldItem == newItem
         }
 
-        override fun getChangePayload(oldItem: LocationRelation, newItem: LocationRelation): Any {
+        override fun getChangePayload(oldItem: LocationRelation, newItem: LocationRelation): Any? {
             super.getChangePayload(oldItem, newItem)
 
-            val payloadBundle: Bundle = Bundle()
-
             if (oldItem.location.enabled != newItem.location.enabled) {
-                payloadBundle.putByte(PAYLOAD_GEOFENCE_ENABLED, newItem.location.enabled)
+                return getEnabledStatePayload(newItem.location.enabled)
             }
-            return payloadBundle
+            return null
         }
 
     }), ListAdapterItemProvider<String> {
+
+        fun updateGeofenceState(relation: LocationRelation, enabled: Boolean) {
+            notifyItemChanged(
+                currentList.indexOfFirst { relation.location.id == it.location.id },
+                enabled
+            )
+        }
 
         fun getItemAtPosition(position: Int): LocationRelation {
             return getItem(position)
@@ -191,6 +214,28 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
                     parent,
                     false)
             )
+        }
+
+        @Suppress("unchecked_cast")
+        override fun onBindViewHolder(
+            holder: LocationViewHolder,
+            position: Int,
+            payloads: MutableList<Any>
+        ) {
+            if (payloads.isNotEmpty()) {
+                (payloads as MutableList<Bundle>).forEach { bundle ->
+                    bundle.keySet().forEach {
+                        when (it) {
+                            SelectionTracker.SELECTION_CHANGED_MARKER -> {
+
+                            }
+                            PAYLOAD_GEOFENCE_ENABLED -> {
+                                holder.updateEnabledState(bundle.getBoolean(it, false))
+                            }
+                        }
+                    }
+                }
+            } else super.onBindViewHolder(holder, position, payloads)
         }
 
         override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {
@@ -225,6 +270,13 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
     }
 
     companion object {
+
+        fun getEnabledStatePayload(enabled: Boolean): Bundle {
+            return Bundle().apply {
+                putBoolean(PAYLOAD_GEOFENCE_ENABLED, enabled)
+            }
+        }
+
         private const val PAYLOAD_GEOFENCE_ENABLED: String = "payload_geofence_enabled"
     }
 }

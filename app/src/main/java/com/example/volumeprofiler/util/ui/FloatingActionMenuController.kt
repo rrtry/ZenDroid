@@ -6,20 +6,30 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.volumeprofiler.util.ui.animations.AnimUtil
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.lang.ref.WeakReference
 
-class FloatingActionMenuController {
+class FloatingActionMenuController(listenerRef: WeakReference<MenuStateListener>, isVisible: Boolean) {
 
-    var isVisible: Boolean = false
+    interface MenuStateListener {
+
+        fun onTransformationFinished()
+    }
+
+    val listener: MenuStateListener = listenerRef.get()!!
+    var isVisible: Boolean = isVisible
     private set
 
     private var isAnimationRunning: Boolean = false
 
-    private fun applyTransformation(
+    fun toggle(
         expandableFab: FloatingActionButton,
-        menuOptions: List<View>,
-        overlay: ViewGroup
+        vararg menuOptions: View
     ) {
         if (!isAnimationRunning) {
+
+            val overlay: ViewGroup = menuOptions.firstOrNull {
+                it is ViewGroup
+            } as ViewGroup
 
             overlay.isClickable = !isVisible
             overlay.isFocusable = !isVisible
@@ -28,12 +38,8 @@ class FloatingActionMenuController {
                 play(AnimUtil.getFabAnimation(expandableFab, isVisible))
                 playTogether(menuOptions.map {
                     when (it) {
-                        is ViewGroup -> {
-                            AnimUtil.getOverlayCircularAnimator(it, expandableFab)
-                        }
-                        else -> {
-                            AnimUtil.getMenuOptionAnimation(expandableFab, it)
-                        }
+                        is ViewGroup -> AnimUtil.getOverlayCircularAnimator(it, expandableFab)
+                        else -> AnimUtil.getMenuOptionAnimation(expandableFab, it)
                     }
                 })
                 addListener(object : Animator.AnimatorListener {
@@ -45,11 +51,13 @@ class FloatingActionMenuController {
                     override fun onAnimationEnd(animation: Animator?) {
                         isVisible = !isVisible
                         isAnimationRunning = false
+                        listener.onTransformationFinished()
                     }
 
                     override fun onAnimationCancel(animation: Animator?) {
                         isVisible = !isVisible
                         isAnimationRunning = false
+                        listener.onTransformationFinished()
                     }
 
                     override fun onAnimationRepeat(animation: Animator?) {
@@ -59,13 +67,5 @@ class FloatingActionMenuController {
                 start()
             }
         }
-    }
-
-    fun toggleVisibility(
-        expandableFab: FloatingActionButton,
-        menuOptions: List<View>,
-        overlay: ViewGroup
-    ) {
-        applyTransformation(expandableFab, menuOptions, overlay)
     }
 }

@@ -10,7 +10,7 @@ interface AlarmDao {
     suspend fun getAlarm(id: Long): Alarm
 
     @Insert
-    suspend fun addAlarm(alarm: Alarm)
+    suspend fun addAlarm(alarm: Alarm): Long
 
     @Update
     suspend fun updateAlarm(alarm: Alarm)

@@ -115,14 +115,15 @@
         <entry key="app/src/main/res/layout-v30/zen_preferences_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout-v31/map_decoration_item.xml" value="0.44655797101449274" />
         <entry key="app/src/main/res/layout/activity_intro.xml" value="0.17346014492753623" />
-        <entry key="app/src/main/res/layout/activity_main.xml" value="0.25" />
-        <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.5" />
         <entry key="app/src/main/res/layout/alarms_fragment.xml" value="0.26494427558257344" />
         <entry key="app/src/main/res/layout/bottom_sheet_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout/calendar_event_activity.xml" value="0.14969604863221886" />
         <entry key="app/src/main/res/layout/create_alarm_activity.xml" value="0.5" />
-        <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.1" />
         <entry key="app/src/main/res/layout/create_profile_fragment.xml" value="0.26494427558257344" />
+        <entry key="app/src/main/res/layout/event_item_view.xml" value="0.3078125" />
         <entry key="app/src/main/res/layout/google_maps_activity.xml" value="0.1" />
         <entry key="app/src/main/res/layout/location_item_view.xml" value="0.26494427558257344" />
         <entry key="app/src/main/res/layout/location_recent_query_item_view.xml" value="0.5" />
@@ -132,9 +133,12 @@
         <entry key="app/src/main/res/layout/map_style_dialog.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_location_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/layout/profile_item_view.xml" value="0.28309409888357256" />
+        <entry key="app/src/main/res/layout/profile_item_view.xml" value="1.1" />
         <entry key="app/src/main/res/layout/profiles_list_fragment.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/seekbar_scene.xml" value="0.3078125" />
+        <entry key="app/src/main/res/layout/suggestion_empty_query_item_view.xml" value="0.3078125" />
         <entry key="app/src/main/res/layout/suggestion_error_item_view.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/layout/text_input_dialog.xml" value="0.3078125" />
         <entry key="app/src/main/res/menu/action_item_selection.xml" value="0.3962962962962963" />
         <entry key="app/src/main/res/menu/action_menu_profile_single_selection.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/action_menu_scheduler.xml" value="0.5447916666666667" />
@@ -143,6 +147,7 @@
         <entry key="app/src/main/res/menu/dnd_conversations.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/dnd_exceptions.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/dnd_mode_menu.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/menu/scheduler_options_menu.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/menu/search_menu.xml" value="0.5447916666666667" />
       </map>
     </option>

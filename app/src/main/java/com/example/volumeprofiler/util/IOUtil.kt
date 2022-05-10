@@ -19,16 +19,14 @@ fun resolvePath(context: Context, id: UUID): String {
 }
 
 fun writeThumbnail(context: Context, uuid: UUID, bitmap: Bitmap) {
-    val file: File = File(resolvePath(context, uuid))
-    val out: FileOutputStream = FileOutputStream(file)
+    val out: FileOutputStream = FileOutputStream(File(resolvePath(context, uuid)))
     bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
     out.flush()
     out.close()
 }
 
 fun deleteThumbnail(context: Context, uuid: UUID): Boolean {
-    val file: File = File(resolvePath(context, uuid))
-    return file.delete()
+    return File(resolvePath(context, uuid)).delete()
 }
 
 private const val DIRECTORY_NAME: String = "Snapshots"

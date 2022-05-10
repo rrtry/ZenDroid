@@ -6,7 +6,7 @@
     <data>
         <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
         <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
-        <import type="com.example.volumeprofiler.util.ProfileManager"/>
+        <import type="com.example.volumeprofiler.core.ProfileManager"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>
         <variable
@@ -449,7 +449,7 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/phoneRingtoneLayout"
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -486,7 +486,7 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/notificationSoundLayout"
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -524,7 +524,7 @@
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/alarmSoundLayout"
-                storagePermissionGranted="@{viewModel.storagePermissionGranted}"
+                canWriteSettings="@{viewModel.canWriteSettings}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"

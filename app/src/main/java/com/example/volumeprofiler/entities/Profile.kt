@@ -6,38 +6,40 @@ import java.util.UUID
 import android.os.Parcelable
 import kotlinx.parcelize.*
 import android.media.AudioManager.*
+import com.google.gson.annotations.Expose
 
 @Parcelize
 @androidx.room.Entity
 data class Profile(
 
     @PrimaryKey
+    @Expose
     val id: UUID = UUID.randomUUID(),
 
-    var title: String,
+    @Expose var title: String,
 
-    var mediaVolume: Int = 5,
-    var callVolume: Int = 4,
-    var notificationVolume: Int = 5,
-    var ringVolume: Int = 5,
-    var alarmVolume: Int = 3,
+    @Expose var mediaVolume: Int = 5,
+    @Expose var callVolume: Int = 4,
+    @Expose var notificationVolume: Int = 5,
+    @Expose var ringVolume: Int = 5,
+    @Expose var alarmVolume: Int = 3,
 
     var phoneRingtoneUri: Uri = Uri.EMPTY,
     var notificationSoundUri: Uri = Uri.EMPTY,
     var alarmSoundUri: Uri = Uri.EMPTY,
 
-    var streamsUnlinked: Boolean = false,
+    @Expose var streamsUnlinked: Boolean = false,
 
-    var interruptionFilter: Int = 0,
-    var ringerMode: Int = RINGER_MODE_NORMAL,
-    var notificationMode: Int = RINGER_MODE_NORMAL,
-    var isVibrateForCallsActive: Int = 0,
+    @Expose var interruptionFilter: Int = 0,
+    @Expose var ringerMode: Int = RINGER_MODE_NORMAL,
+    @Expose var notificationMode: Int = RINGER_MODE_NORMAL,
+    @Expose var isVibrateForCallsActive: Int = 0,
 
-    var priorityCategories: Int = 0,
-    var priorityCallSenders: Int = 0,
-    var priorityMessageSenders: Int = 0,
-    var suppressedVisualEffects: Int = 0,
-    var primaryConversationSenders: Int = 0): Parcelable {
+    @Expose var priorityCategories: Int = 0,
+    @Expose var priorityCallSenders: Int = 0,
+    @Expose var priorityMessageSenders: Int = 0,
+    @Expose var suppressedVisualEffects: Int = 0,
+    @Expose var primaryConversationSenders: Int = 0): Parcelable {
 
     override fun toString(): String {
         return title

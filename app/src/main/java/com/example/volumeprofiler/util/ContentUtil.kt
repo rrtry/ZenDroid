@@ -33,6 +33,7 @@ class ContentUtil @Inject constructor(
         return builder
     }
 
+    /*
     fun queryCurrentEventInstance(
         id: Int, startMillis: Long,
         token: Int, cookie: Any?,
@@ -158,6 +159,7 @@ class ContentUtil @Inject constructor(
         }
         return title
     }
+     */
 
     suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
         val contentResolver: ContentResolver = context.contentResolver

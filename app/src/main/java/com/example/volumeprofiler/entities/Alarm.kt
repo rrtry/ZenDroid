@@ -3,27 +3,28 @@ package com.example.volumeprofiler.entities
 import android.os.Parcelable
 import androidx.room.*
 import java.util.UUID
-import com.example.volumeprofiler.R
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import java.time.Instant
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 
 @Parcelize
-@Entity(foreignKeys = [ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["profileUUID"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE)])
-data class Alarm(@PrimaryKey(autoGenerate = true) @ColumnInfo(name = "eventId") override val id: Long,
+@Entity(foreignKeys = [
+    ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["startProfileUUID"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE),
+    ForeignKey(entity = Profile::class, parentColumns = ["id"], childColumns = ["endProfileUUID"], onUpdate = ForeignKey.CASCADE, onDelete = ForeignKey.CASCADE)
+])
+data class Alarm(@PrimaryKey(autoGenerate = true)
+                 @ColumnInfo(name = "eventId")
+                 var id: Long,
+                 var title: String = "No title",
 
                  @ColumnInfo(index = true)
-                 var profileUUID: UUID,
-                 var instanceStartTime: Instant,
-                 var localStartTime: LocalTime,
+                 var startProfileUUID: UUID,
+                 var endProfileUUID: UUID,
+                 var startDateTime: LocalDateTime? = null,
+                 var endDateTime: LocalDateTime? = null,
+                 var startTime: LocalTime,
+                 var endTime: LocalTime,
                  var zoneId: ZoneId,
-                 var isScheduled: Int,
-                 var scheduledDays: Int) : Parcelable, ListItem() {
-
-                     @IgnoredOnParcel
-                     @Ignore
-                     override val itemViewType: Int = R.layout.alarm_item_view
-
-                 }
+                 var isScheduled: Boolean,
+                 var scheduledDays: Int): Parcelable

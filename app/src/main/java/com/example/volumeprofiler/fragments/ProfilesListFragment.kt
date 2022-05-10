@@ -7,6 +7,7 @@ import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
@@ -39,13 +40,21 @@ import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.EX
 import com.example.volumeprofiler.adapters.BaseSelectionObserver
 import com.example.volumeprofiler.adapters.DetailsLookup
 import com.example.volumeprofiler.adapters.KeyProvider
+import com.example.volumeprofiler.core.GeofenceManager
+import com.example.volumeprofiler.core.PreferencesManager
+import com.example.volumeprofiler.core.ProfileManager
+import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.interfaces.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import java.lang.ref.WeakReference
+import kotlin.NoSuchElementException
 
 @AndroidEntryPoint
-class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer, FragmentSwipedListener {
+class ProfilesListFragment: Fragment(),
+    ActionModeProvider<String>,
+    FabContainer,
+    FragmentSwipedListener {
 
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
@@ -108,7 +117,6 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -116,30 +124,18 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
                         when (it) {
                             is ProfileSetViewEvent -> {
                                 if (preferencesManager.isProfileEnabled(it.profile)) {
-                                    preferencesManager.clearPreferences()
+                                    profileManager.setDefaultProfile()
                                     profileAdapter.setSelection(null)
                                 } else {
                                     profileManager.setProfile(it.profile)
                                     profileAdapter.setSelection(it.profile)
-                                    if (shouldShowPermissionSuggestion(requireContext(), it.profile)) {
-                                        activity?.showSnackBar(
-                                            "Insufficient permissions for profile",
-                                            Snackbar.LENGTH_LONG)
-                                        {
-                                            sendPermissionsNotification(requireContext(), profileManager, it.profile)
-                                            activity?.requestPermissions(
-                                                getDeniedPermissionsForProfile(requireContext(), it.profile))
-                                        }
-                                    }
                                 }
                             }
                             is CancelAlarmsViewEvent -> {
-                                if (!it.alarms.isNullOrEmpty()) {
-                                    scheduleManager.cancelAlarms(it.alarms)
-                                }
+                                scheduleManager.cancelAlarms(it.alarms)
                             }
                             is RemoveGeofencesViewEvent -> {
-                                for (i in it.geofences) {
+                                it.geofences.forEach { i ->
                                     deleteThumbnail(requireContext(), i.location.previewImageId)
                                     geofenceManager.removeGeofence(
                                         i.location,
@@ -157,23 +153,22 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
                     }.collect()
                 }
                 launch {
-                    viewModel.profilesFlow.map { list ->
-                        if (preferencesManager.getRecyclerViewPositionsMap() != null) {
-                            restoreChangedPositions(list, preferencesManager.getRecyclerViewPositionsMap()!!)
-                        } else {
-                            list
-                        }
-                    }.onEach { list -> sharedViewModel.showDialog.value = list.isEmpty()
+                    viewModel.profilesFlow.collect { list ->
+                        sharedViewModel.showDialog.value = list.isEmpty()
                         profileAdapter.submitList(list)
-                    }.collect()
+                    }
                 }
                 launch {
                     eventBus.sharedFlow.collectLatest {
-                        if (it is EventBus.Event.ProfileApplied) {
-                            for (item in profileAdapter.currentList) {
-                                if (item.id == it.id) {
-                                    profileAdapter.setSelection(item)
+                        if (it is EventBus.Event.ProfileChanged) {
+                            try {
+                                profileAdapter.currentList.first { profile ->
+                                    profile.id == it.id
+                                }.also { profile ->
+                                    profileAdapter.setSelection(profile)
                                 }
+                            } catch (e: NoSuchElementException) {
+                                Log.e("ProfilesListFragment", "Invalid profile: ${it.id}")
                             }
                         }
                     }
@@ -211,7 +206,7 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
             return ItemDetails(bindingAdapterPosition, profileAdapter.getItemAtPosition(bindingAdapterPosition).id.toString())
         }
 
-        private fun expandView(animate: Boolean): Unit {
+        private fun expand(animate: Boolean) {
             if (animate) {
                 TransitionManager.beginDelayedTransition(binding.root, AutoTransition())
                 adapterBinding.expandButton.animate().rotation(180.0f).start()
@@ -223,15 +218,11 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
             adapterBinding.expandableView.visibility = View.VISIBLE
         }
 
-        private fun collapseView(): Unit {
+        private fun collapse() {
             TransitionManager.beginDelayedTransition(binding.root, AutoTransition())
             adapterBinding.itemSeparator.visibility = View.GONE
             adapterBinding.expandableView.visibility = View.GONE
             adapterBinding.expandButton.animate().rotation(0f).start()
-        }
-
-        private fun setProfileTitle(profile: Profile) {
-            adapterBinding.checkBox.text = profile.title
         }
 
         private fun setViewScale(isSelected: Boolean) {
@@ -240,29 +231,26 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
             itemView.scaleY = scale
         }
 
-        private fun setSelectedState(isSelected: Boolean, animate: Boolean) {
+        fun bind(profile: Profile, isSelected: Boolean, animate: Boolean) {
+
+            adapterBinding.checkBox.text = profile.title
+
             if (animate) {
                 AnimUtil.selected(itemView, isSelected)
             } else {
                 setViewScale(isSelected)
             }
-        }
-
-        private fun setEnabledState(profile: Profile) {
             preferencesManager.isProfileEnabled(profile).let {
                 adapterBinding.checkBox.isChecked = it
                 if (it) {
-                    viewModel.lastSelected = profileAdapter.getItemAtPosition(bindingAdapterPosition).id
+                    viewModel.lastSelected = profile.id
                 }
             }
-        }
-
-        private fun setListeners(profile: Profile) {
             adapterBinding.expandButton.setOnClickListener {
                 if (adapterBinding.expandableView.isVisible) {
-                    collapseView()
+                    collapse()
                 } else {
-                    expandView(true)
+                    expand(true)
                 }
             }
             adapterBinding.editProfileButton.setOnClickListener {
@@ -270,19 +258,12 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
                     requireContext(),
                     ProfileDetailsActivity::class.java
                 ).apply {
-                    putExtra(EXTRA_PROFILE, profileAdapter.getItemAtPosition(bindingAdapterPosition))
+                    putExtra(EXTRA_PROFILE, profile)
                 })
             }
             adapterBinding.removeProfileButton.setOnClickListener {
                 viewModel.removeProfile(profile)
             }
-        }
-
-        fun bind(profile: Profile, isSelected: Boolean, animate: Boolean): Unit {
-            setProfileTitle(profile)
-            setSelectedState(isSelected, animate)
-            setEnabledState(profile)
-            setListeners(profile)
         }
 
         override fun onClick(v: View?) {
@@ -306,34 +287,31 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
 
     }), ListAdapterItemProvider<String> {
 
-        fun setSelection(profile: Profile?): Unit {
-            profile?.let {
+        fun setSelection(profile: Profile?) {
+            profile?.id?.also {
                 updatePreviousProfileView()
-                updateCurrentProfileView(profile.id)
-                viewModel.lastSelected = profile.id
+                updateCurrentProfileView(it)
+                viewModel.lastSelected = it
                 return
             }
             updatePreviousProfileView()
             viewModel.lastSelected = null
         }
 
-        private fun updatePreviousProfileView(): Unit {
+        private fun updatePreviousProfileView() {
             viewModel.lastSelected?.let {
                 notifyItemChanged(getPosition(it), true)
             }
         }
 
-        private fun updateCurrentProfileView(uuid: UUID): Unit {
+        private fun updateCurrentProfileView(uuid: UUID) {
             notifyItemChanged(getPosition(uuid), true)
         }
 
         private fun getPosition(id: UUID): Int {
-            for ((index, i) in currentList.withIndex()) {
-                if (i.id == id) {
-                    return index
-                }
+            return currentList.indexOfFirst {
+                it.id == id
             }
-            return -1
         }
 
         private fun isSelected(tracker: SelectionTracker<String>, position: Int): Boolean {
@@ -351,20 +329,10 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
         }
 
         override fun onBindViewHolder(holder: ProfileHolder, @SuppressLint("RecyclerView") position: Int) {
-            val profile = getItem(position)
-            tracker.let {
-                var animate: Boolean = true
-                if (isSelected(tracker, position)) {
-                    if (selectedItems.contains(profile.id.toString())) {
-                        animate = false
-                    } else {
-                        selectedItems.add(profile.id.toString())
-                    }
-                } else {
-                    selectedItems.remove(profile.id.toString())
-                }
-                holder.bind(profile, it.isSelected(getItemAtPosition(position).id.toString()), animate)
-            }
+            holder.bind(
+                getItem(position),
+                isSelected(tracker, position),
+                true)
         }
 
         override fun getItemKey(position: Int): String {
@@ -391,13 +359,12 @@ class ProfilesListFragment: Fragment(), ActionModeProvider<String>, FabContainer
     }
 
     override fun onActionItemRemove() {
-        for (i in tracker.selection) {
-            val id: UUID = UUID.fromString(i)
-            for ((index, j) in profileAdapter.currentList.withIndex()) {
-                if (j.id == id) {
-                    viewModel.removeProfile(j)
+        tracker.selection.forEach { selection ->
+            viewModel.removeProfile(
+                profileAdapter.currentList.first {
+                    it.id.toString() == selection
                 }
-            }
+            )
         }
     }
 

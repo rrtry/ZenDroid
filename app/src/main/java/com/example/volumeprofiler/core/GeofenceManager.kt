@@ -1,6 +1,5 @@
-package com.example.volumeprofiler.util
+package com.example.volumeprofiler.core
 
-import android.annotation.TargetApi
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
@@ -21,11 +20,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import android.Manifest.permission.*
 import android.annotation.SuppressLint
+import com.example.volumeprofiler.entities.LocationRelation
+import com.example.volumeprofiler.util.ParcelableUtil
+import com.example.volumeprofiler.util.checkPermission
 
 @Singleton
 class GeofenceManager @Inject constructor(
         @ApplicationContext private val context: Context
 ) {
+
+    private val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)
 
     interface LocationRequestListener {
 
@@ -35,9 +39,25 @@ class GeofenceManager @Inject constructor(
 
     }
 
-    private val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)
+    @SuppressLint("MissingPermission")
+    fun updateGeofenceProfile(registeredGeofences: List<LocationRelation>?, profile: Profile) {
+        registeredGeofences?.forEach { locationRelation ->
+            if (locationRelation.onEnterProfile.id == profile.id) {
+                addGeofence(
+                    locationRelation.location,
+                    profile,
+                    locationRelation.onExitProfile
+                )
+            } else {
+                addGeofence(
+                    locationRelation.location,
+                    locationRelation.onEnterProfile,
+                    profile
+                )
+            }
+        }
+    }
 
-    @TargetApi(Build.VERSION_CODES.Q)
     fun locationAccessGranted(): Boolean {
         val foregroundLocationApproved: Boolean = context.checkPermission(ACCESS_FINE_LOCATION)
         val backgroundLocationApproved: Boolean = if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT) {

@@ -23,12 +23,13 @@ import android.net.Uri
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.util.ProfileManager
+import com.example.volumeprofiler.core.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import android.media.RingtoneManager.*
 import android.os.*
 import android.provider.Settings
+import android.provider.Settings.System.canWrite
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -287,46 +288,40 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     private fun startSystemSettingsActivity(): Unit {
         systemPreferencesLauncher.launch(
             Intent(ACTION_MANAGE_WRITE_SETTINGS,
-                Uri.parse("package:${requireActivity().packageName}"))
+                Uri.parse("package:${requireContext().packageName}"))
         )
     }
 
     private fun startRingtonePickerActivity(type: Int): Unit {
         val contract: RingtonePickerContract = ringtoneActivityLauncher.contract as RingtonePickerContract
         when (type) {
-            TYPE_RINGTONE -> {
-                contract.existingUri = detailsViewModel.phoneRingtoneUri.value
-            }
-            TYPE_NOTIFICATION -> {
-                contract.existingUri = detailsViewModel.notificationSoundUri.value
-            }
-            TYPE_ALARM -> {
-                contract.existingUri = detailsViewModel.alarmSoundUri.value
-            }
+            TYPE_RINGTONE -> contract.existingUri = detailsViewModel.phoneRingtoneUri.value
+            TYPE_NOTIFICATION -> contract.existingUri = detailsViewModel.notificationSoundUri.value
+            TYPE_ALARM -> contract.existingUri = detailsViewModel.alarmSoundUri.value
             else -> Log.i("EditProfileFragment", "unknown ringtone type")
         }
         ringtoneActivityLauncher.launch(type)
     }
 
-    private fun startNotificationPolicyActivity(): Unit {
+    private fun startNotificationPolicyActivity() {
         notificationPolicyLauncher.launch(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
     }
 
-    private fun setPhonePermissionProperty(): Unit {
+    private fun setPhonePermissionProperty() {
         detailsViewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
     }
 
-    private fun setNotificationPolicyProperty(): Unit {
+    private fun setNotificationPolicyProperty() {
         detailsViewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
     }
 
-    private fun setCanWriteSettingsProperty(): Unit {
-        detailsViewModel.canWriteSettings.value = profileManager.canWriteSettings()
+    private fun setCanWriteSettingsProperty() {
+        detailsViewModel.canWriteSettings.value = canWrite(requireContext())
     }
 
     private fun registerForSystemSettingsResult(): Unit {
         systemPreferencesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            Settings.System.canWrite(requireContext()).let {
+            canWrite(requireContext()).let {
                 detailsViewModel.canWriteSettings.value = it
                 if (!it) {
                     ViewUtil.showSystemSettingsPermissionExplanation(requireActivity().supportFragmentManager)
@@ -358,27 +353,28 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    private fun registerForNotificationPolicyResult(): Unit {
+    private fun registerForNotificationPolicyResult() {
         notificationPolicyLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            val granted: Boolean = profileManager.isNotificationPolicyAccessGranted()
-            detailsViewModel.notificationPolicyAccessGranted.value = granted
-            if (!granted) {
-                ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
+            profileManager.isNotificationPolicyAccessGranted().also { granted ->
+                detailsViewModel.notificationPolicyAccessGranted.value = granted
+                if (!granted) {
+                    ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
+                }
             }
         }
     }
 
-    private fun registerForPhonePermissionResult(): Unit {
+    private fun registerForPhonePermissionResult() {
         phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             detailsViewModel.phonePermissionGranted.value = it
-            when {
-                it -> detailsViewModel.streamsUnlinked.value = true
-                else -> ViewUtil.showPhoneStatePermissionExplanation(requireActivity().supportFragmentManager)
+            detailsViewModel.streamsUnlinked.value = it
+            if (!it) {
+                ViewUtil.showPhoneStatePermissionExplanation(requireActivity().supportFragmentManager)
             }
         }
     }
 
-    private fun setDefaultRingtoneUri(type: Int): Unit {
+    private fun setDefaultRingtoneUri(type: Int) {
         val uri: Uri = getActualDefaultRingtoneUri(context, type)
         when {
             detailsViewModel.notificationSoundUri.value == Uri.EMPTY && type == TYPE_NOTIFICATION -> {
@@ -394,14 +390,12 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     }
 
     @Suppress("deprecation")
-    private fun createVibrateEffect(): Unit {
+    private fun createVibrateEffect() {
         vibrator?.let {
-            if (it.hasVibrator()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    it.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    it.vibrate(100)
-                }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                it.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                it.vibrate(100)
             }
         }
     }
@@ -410,7 +404,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         return detailsViewModel.getRingtoneUri(type)
     }
 
-    private fun changePlaybackVolume(streamType: Int, vol: Int): Unit {
+    private fun changePlaybackVolume(streamType: Int, vol: Int) {
         mediaService?.let {
             if (it.isPlaying() && streamType == detailsViewModel.currentStreamType) {
                 if (vol > 0) {
@@ -422,18 +416,14 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    private fun updateRingerMode(streamType: Int, mode: Int): Unit {
+    private fun updateRingerMode(streamType: Int, mode: Int) {
         when (streamType) {
-            STREAM_NOTIFICATION -> {
-                detailsViewModel.notificationMode.value = mode
-            }
-            STREAM_RING -> {
-                detailsViewModel.ringerMode.value = mode
-            }
+            STREAM_NOTIFICATION -> detailsViewModel.notificationMode.value = mode
+            STREAM_RING -> detailsViewModel.ringerMode.value = mode
         }
     }
 
-    private fun updateRingerMode(streamType: Int): Unit {
+    private fun updateRingerMode(streamType: Int) {
         vibrator?.let {
             if (it.hasVibrator()) {
                 updateRingerMode(streamType, RINGER_MODE_VIBRATE)
@@ -443,7 +433,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    private fun showPopupMenu(): Unit {
+    private fun showPopupMenu() {
         val popupMenu: PopupMenu = PopupMenu(requireContext(), binding.interruptionFilterLayout)
         popupMenu.inflate(R.menu.dnd_mode_menu)
         popupMenu.setOnMenuItemClickListener {

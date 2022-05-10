@@ -19,7 +19,9 @@ import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
 import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.TAG_PROFILE_FRAGMENT
+import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
+import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
@@ -34,25 +36,26 @@ import kotlinx.coroutines.FlowPreview
 class ProfileDetailsViewModel @Inject constructor(
         private val profileRepository: ProfileRepository,
         private val alarmRepository: AlarmRepository,
+        private val locationRepository: LocationRepository,
         private val contentUtil: ContentUtil
 ): ViewModel() {
 
     private val activityEventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
-    private val eventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    private val fragmentEventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
 
-    val fragmentEventsFlow: Flow<ViewEvent> = eventChannel.receiveAsFlow()
+    val fragmentEventsFlow: Flow<ViewEvent> = fragmentEventChannel.receiveAsFlow()
     val activityEventsFlow: Flow<ViewEvent> = activityEventChannel.receiveAsFlow()
 
     init {
         viewModelScope.launch {
             val ringtoneType: List<Int> = listOf(TYPE_ALARM, TYPE_NOTIFICATION, TYPE_RINGTONE)
             for (i in ringtoneType) {
-                eventChannel.send(ViewEvent.GetDefaultRingtoneUri(i))
+                fragmentEventChannel.send(ViewEvent.GetDefaultRingtoneUri(i))
             }
         }
     }
 
-    private var areArgsSet: Boolean = false
+    private var isEntitySet: Boolean = false
     private var previousRingerVolume: Int = STREAM_RING_DEFAULT_VOLUME
     private var previousNotificationVolume: Int = STREAM_NOTIFICATION_DEFAULT_VOLUME
 
@@ -63,18 +66,17 @@ class ProfileDetailsViewModel @Inject constructor(
     sealed class ViewEvent {
 
         object NavigateToNextFragment: ViewEvent()
-        object StoragePermissionRequestEvent: ViewEvent()
         object NotificationPolicyRequestEvent: ViewEvent()
         object PhonePermissionRequestEvent: ViewEvent()
         object ShowPopupWindowEvent: ViewEvent()
         object StartContactsActivity: ViewEvent()
         object WriteSystemSettingsRequestEvent: ViewEvent()
+        object ToggleFloatingActionMenu: ViewEvent()
 
         data class StartRingtonePlayback(val streamType: Int): ViewEvent()
         data class StopRingtonePlayback(val streamType: Int): ViewEvent()
         data class ResumeRingtonePlayback(val streamType: Int, val position: Int): ViewEvent()
 
-        data class ApplyChangesEvent(val profile: Profile, val shouldUpdate: Boolean): ViewEvent()
         data class ShowDialogFragment(val dialogType: DialogType): ViewEvent()
         data class ChangeRingerMode(val streamType: Int, val showToast: Boolean, val vibrate: Boolean): ViewEvent()
         data class GetDefaultRingtoneUri(val type: Int): ViewEvent()
@@ -95,20 +97,19 @@ class ProfileDetailsViewModel @Inject constructor(
         TITLE
     }
 
-    val isNew: MutableStateFlow<Boolean> = MutableStateFlow(false)
-
+    private val isNew: MutableStateFlow<Boolean> = MutableStateFlow(false)
     private val profileUUID = MutableStateFlow<UUID?>(null)
 
     @FlowPreview
     val alarmsFlow: Flow<List<AlarmRelation>?> = profileUUID.flatMapConcat {
-        if (it != null) {
-            alarmRepository.observeAlarmsByProfileId(it)
-        } else {
-            flowOf(listOf())
-        }
+        if (it != null) alarmRepository.observeScheduledAlarmsByProfileId(it) else flowOf(listOf())
+    }
+    @FlowPreview
+    val geofencesFlow: Flow<List<LocationRelation>?> = profileUUID.flatMapConcat {
+        if (it != null) locationRepository.observeLocationsByProfileId(it) else flowOf(listOf())
     }
 
-    val title: MutableStateFlow<String> = MutableStateFlow("New profile")
+    val title: MutableStateFlow<String> = MutableStateFlow("My profile")
     val currentFragmentTag: MutableStateFlow<String> = MutableStateFlow(TAG_PROFILE_FRAGMENT)
     val mediaVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_MUSIC_DEFAULT_VOLUME)
     val callVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_VOICE_CALL_DEFAULT_VOLUME)
@@ -187,19 +188,19 @@ class ProfileDetailsViewModel @Inject constructor(
     var currentMediaUri: Uri? = null
     var playerPosition: Int = -1
 
-    fun addProfile(profile: Profile): Unit {
+    fun addProfile(profile: Profile) {
         viewModelScope.launch {
             profileRepository.addProfile(profile)
         }
     }
 
-    fun updateProfile(profile: Profile): Unit {
+    fun updateProfile(profile: Profile) {
         viewModelScope.launch {
             profileRepository.updateProfile(profile)
         }
     }
 
-    private fun setProperties(profile: Profile): Unit {
+    private fun setProfile(profile: Profile) {
 
         title.value = profile.title
 
@@ -234,15 +235,15 @@ class ProfileDetailsViewModel @Inject constructor(
         primaryConversationSenders.value = profile.primaryConversationSenders
     }
 
-    fun setEntity(profile: Profile, hasExtras: Boolean): Unit {
-        if (!areArgsSet) {
-            setProperties(profile)
+    fun setEntity(profile: Profile, hasExtras: Boolean) {
+        if (!isEntitySet) {
+            setProfile(profile)
             if (hasExtras) {
                 setProfileUUID(profile.id)
             } else {
                 isNew.value = true
             }
-            areArgsSet = true
+            isEntitySet = true
         }
     }
 
@@ -283,78 +284,60 @@ class ProfileDetailsViewModel @Inject constructor(
         profileUUID.value = uuid
     }
 
-    fun onSaveChangesButtonClick(): Unit {
+    fun onSaveChangesButtonClick() {
         viewModelScope.launch {
-            val profile: Profile = getProfile()
-            activityEventChannel.send(
-                if (updateProfile()) ViewEvent.OnUpdateProfileEvent(profile) else ViewEvent.OnInsertProfileEvent(profile)
-            )
-        }
-    }
-
-    fun onVibrateForCallsLayoutClick(): Unit {
-        if (canWriteSettings.value) {
-            vibrateForCalls.value = vibrateForCalls.value xor 1
-        } else {
-            viewModelScope.launch {
-                eventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+            getProfile().let {
+                activityEventChannel.send(
+                    if (updateProfile()) ViewEvent.OnUpdateProfileEvent(it)
+                    else ViewEvent.OnInsertProfileEvent(it)
+                )
             }
         }
     }
 
-    fun onNotificationSoundLayoutClick(): Unit {
+    fun onVibrateForCallsLayoutClick() {
+        if (canWriteSettings.value) {
+            vibrateForCalls.value = vibrateForCalls.value xor 1
+        } else {
+            viewModelScope.launch {
+                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+            }
+        }
+    }
+
+    fun onNotificationSoundLayoutClick() {
         viewModelScope.launch {
             if (canWriteSettings.value) {
-                eventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_NOTIFICATION))
+                fragmentEventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_NOTIFICATION))
             } else {
-                eventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
 
     private fun isRingtonePlaying(streamType: Int): Boolean {
         return when (streamType) {
-            STREAM_MUSIC -> {
-                musicRingtonePlaying.value
-            }
-            STREAM_VOICE_CALL -> {
-                voiceCallRingtonePlaying.value
-            }
-            STREAM_NOTIFICATION -> {
-                notificationRingtonePlaying.value
-            }
-            STREAM_RING -> {
-                phoneRingtonePlaying.value
-            }
-            STREAM_ALARM -> {
-                alarmRingtonePlaying.value
-            }
+            STREAM_MUSIC -> musicRingtonePlaying.value
+            STREAM_VOICE_CALL -> voiceCallRingtonePlaying.value
+            STREAM_NOTIFICATION -> notificationRingtonePlaying.value
+            STREAM_RING -> phoneRingtonePlaying.value
+            STREAM_ALARM -> alarmRingtonePlaying.value
             else -> false
         }
     }
 
     fun getStreamVolume(streamType: Int): Int {
         return when (streamType) {
-            STREAM_MUSIC -> {
-                mediaVolume.value
-            }
-            STREAM_VOICE_CALL -> {
-                callVolume.value
-            }
-            STREAM_NOTIFICATION -> {
-                notificationVolume.value
-            }
-            STREAM_RING -> {
-                ringVolume.value
-            }
-            STREAM_ALARM -> {
-                alarmVolume.value
-            }
+            STREAM_MUSIC -> mediaVolume.value
+            STREAM_VOICE_CALL -> callVolume.value
+            STREAM_NOTIFICATION -> notificationVolume.value
+            STREAM_RING -> ringVolume.value
+            STREAM_ALARM -> alarmVolume.value
             else -> -1
         }
     }
 
-    fun setPlaybackState(streamType: Int, playing: Boolean): Unit {
+    fun setPlaybackState(streamType: Int, playing: Boolean) {
         when (streamType) {
             STREAM_MUSIC -> musicRingtonePlaying.value = playing
             STREAM_VOICE_CALL -> voiceCallRingtonePlaying.value = playing
@@ -380,27 +363,27 @@ class ProfileDetailsViewModel @Inject constructor(
         return -1
     }
 
-    fun onStopRingtonePlayback(streamType: Int): Unit {
+    fun onStopRingtonePlayback(streamType: Int) {
         viewModelScope.launch {
             if (isRingtonePlaying(streamType)) {
-                eventChannel.send(ViewEvent.StopRingtonePlayback(streamType))
+                fragmentEventChannel.send(ViewEvent.StopRingtonePlayback(streamType))
             }
         }
     }
 
-    fun onStartRingtonePlayback(streamType: Int): Unit {
+    fun onStartRingtonePlayback(streamType: Int) {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.StartRingtonePlayback(streamType))
+            fragmentEventChannel.send(ViewEvent.StartRingtonePlayback(streamType))
         }
     }
 
-    fun onResumeRingtonePlayback(streamType: Int, position: Int): Unit {
+    fun onResumeRingtonePlayback(streamType: Int, position: Int) {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ResumeRingtonePlayback(streamType, position))
+            fragmentEventChannel.send(ViewEvent.ResumeRingtonePlayback(streamType, position))
         }
     }
 
-    fun onPlayRingtoneButtonClick(streamType: Int): Unit {
+    fun onPlayRingtoneButtonClick(streamType: Int) {
         viewModelScope.launch {
             val event: ViewEvent = if (isRingtonePlaying(streamType)) {
                 ViewEvent.StopRingtonePlayback(streamType)
@@ -408,76 +391,82 @@ class ProfileDetailsViewModel @Inject constructor(
                 ViewEvent.StartRingtonePlayback(streamType)
             }
             setPlaybackState(getPlayingRingtone(), false)
-            eventChannel.send(event)
+            fragmentEventChannel.send(event)
         }
     }
 
-    fun onRingtoneLayoutClick(): Unit {
+    fun onExpandableFabClick() {
+        viewModelScope.launch {
+            activityEventChannel.send(ViewEvent.ToggleFloatingActionMenu)
+        }
+    }
+
+    fun onRingtoneLayoutClick() {
         viewModelScope.launch {
             if (canWriteSettings.value) {
-                eventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_RINGTONE))
+                fragmentEventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_RINGTONE))
             } else {
-                eventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
 
-    fun onUnlinkStreamsLayoutClick(): Unit {
+    fun onUnlinkStreamsLayoutClick() {
         viewModelScope.launch {
             if (phonePermissionGranted.value) {
                 streamsUnlinked.value = !streamsUnlinked.value
             } else {
-                eventChannel.send(ViewEvent.PhonePermissionRequestEvent)
+                fragmentEventChannel.send(ViewEvent.PhonePermissionRequestEvent)
             }
         }
     }
 
-    fun onAlarmSoundLayoutClick(): Unit {
+    fun onAlarmSoundLayoutClick() {
         viewModelScope.launch {
             if (canWriteSettings.value) {
-                eventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_ALARM))
+                fragmentEventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_ALARM))
             } else {
-                eventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
 
-    fun onMediaStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
+    fun onMediaStreamVolumeChanged(index: Int, fromUser: Boolean) {
         if (fromUser) {
             viewModelScope.launch {
-                eventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_MUSIC, index))
+                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_MUSIC, index))
             }
         }
         mediaVolume.value = index
     }
 
-    fun onAlarmStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
+    fun onAlarmStreamVolumeChanged(index: Int, fromUser: Boolean) {
         if (fromUser) {
             viewModelScope.launch {
-                eventChannel.send(ViewEvent.AlarmStreamVolumeChanged(STREAM_ALARM, index))
+                fragmentEventChannel.send(ViewEvent.AlarmStreamVolumeChanged(STREAM_ALARM, index))
             }
         }
     }
 
-    fun onVoiceCallStreamVolumeChanged(index: Int, fromUser: Boolean): Unit {
+    fun onVoiceCallStreamVolumeChanged(index: Int, fromUser: Boolean) {
         if (fromUser) {
             viewModelScope.launch {
-                eventChannel.send(ViewEvent.AlarmStreamVolumeChanged(STREAM_VOICE_CALL, index))
+                fragmentEventChannel.send(ViewEvent.AlarmStreamVolumeChanged(STREAM_VOICE_CALL, index))
             }
         }
     }
 
-    fun onInterruptionFilterLayoutClick(): Unit {
+    fun onInterruptionFilterLayoutClick() {
         viewModelScope.launch {
             if (notificationPolicyAccessGranted.value) {
-                eventChannel.send(ViewEvent.ShowPopupWindowEvent)
+                fragmentEventChannel.send(ViewEvent.ShowPopupWindowEvent)
             } else {
-                eventChannel.send(ViewEvent.NotificationPolicyRequestEvent)
+                fragmentEventChannel.send(ViewEvent.NotificationPolicyRequestEvent)
             }
         }
     }
 
-    fun onRingerIconClick(): Unit {
+    fun onRingerIconClick() {
         if (ringerStreamAllowed()) {
             if (ringerMode.value == RINGER_MODE_SILENT) {
                 ringVolume.value = 4
@@ -490,7 +479,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onNotificationIconClick(): Unit {
+    fun onNotificationIconClick() {
         if (notificationsStreamAllowed()) {
             if (notificationMode.value == RINGER_MODE_SILENT) {
                 notificationVolume.value = 4
@@ -503,33 +492,31 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onPreferencesLayoutClick(): Unit {
+    fun onPreferencesLayoutClick() {
         viewModelScope.launch {
             if (notificationPolicyAccessGranted.value) {
-                eventChannel.send(ViewEvent.NavigateToNextFragment)
+                fragmentEventChannel.send(ViewEvent.NavigateToNextFragment)
             } else {
-                eventChannel.send(ViewEvent.NotificationPolicyRequestEvent)
+                fragmentEventChannel.send(ViewEvent.NotificationPolicyRequestEvent)
             }
         }
     }
 
-    private fun onStreamMuted(streamType: Int, showToast: Boolean, vibrate: Boolean): Unit {
+    private fun onStreamMuted(streamType: Int, showToast: Boolean, vibrate: Boolean) {
         when (streamType) {
             STREAM_NOTIFICATION -> notificationVolume.value = 0
             STREAM_RING -> ringVolume.value = 0
         }
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ChangeRingerMode(streamType, showToast, vibrate))
+            fragmentEventChannel.send(ViewEvent.ChangeRingerMode(streamType, showToast, vibrate))
             onStopRingtonePlayback(getPlayingRingtone())
         }
     }
 
-    fun onAlertStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int): Unit {
+    fun onAlertStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int) {
         if (fromUser) {
             when {
-                value == 0 -> {
-                    onStreamMuted(streamType, false, true)
-                }
+                value == 0 -> onStreamMuted(streamType, false, true)
                 streamType == STREAM_NOTIFICATION -> {
                     notificationVolume.value = value
                     notificationMode.value = RINGER_MODE_NORMAL
@@ -540,18 +527,18 @@ class ProfileDetailsViewModel @Inject constructor(
                 }
             }
             viewModelScope.launch {
-                eventChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
+                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
             }
         }
     }
 
-    fun onCallsLayoutClick(): Unit {
+    fun onCallsLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CALLS))
+            fragmentEventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CALLS))
         }
     }
 
-    fun onRepetitiveCallersLayoutClick(): Unit {
+    fun onRepetitiveCallersLayoutClick() {
         if (containsPriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)) {
             removePriorityCategory(PRIORITY_CATEGORY_REPEAT_CALLERS)
         } else {
@@ -561,62 +548,56 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun getRingtoneUri(type: Int): Uri {
         return when (type) {
-            TYPE_RINGTONE -> {
-                phoneRingtoneUri.value
-            }
-            TYPE_NOTIFICATION -> {
-                notificationSoundUri.value
-            }
-            TYPE_ALARM -> {
-                alarmSoundUri.value
-            }
+            TYPE_RINGTONE -> phoneRingtoneUri.value
+            TYPE_NOTIFICATION -> notificationSoundUri.value
+            TYPE_ALARM -> alarmSoundUri.value
             else -> Uri.EMPTY
         }
     }
 
-    fun onStarredContactsLayoutClick(): Unit {
+    fun onStarredContactsLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.StartContactsActivity)
+            fragmentEventChannel.send(ViewEvent.StartContactsActivity)
         }
     }
 
-    fun onConversationsLayoutClick(): Unit {
+    fun onConversationsLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CONVERSATIONS))
+            fragmentEventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CONVERSATIONS))
         }
     }
 
-    fun onMessagesLayoutClick(): Unit {
+    fun onMessagesLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_MESSAGES))
+            fragmentEventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_MESSAGES))
         }
     }
 
-    fun onPriorityInterruptionsLayoutClick(): Unit {
+    fun onPriorityInterruptionsLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ShowDialogFragment(DialogType.PRIORITY))
+            fragmentEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.PRIORITY))
         }
     }
 
-    fun onSuppressedEffectsOnLayoutClick(): Unit {
+    fun onSuppressedEffectsOnLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_ON))
+            fragmentEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_ON))
         }
     }
 
-    fun onChangeTitleButtonClick(): Unit {
+    fun onChangeTitleButtonClick() {
         viewModelScope.launch {
             activityEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.TITLE))
         }
     }
 
-    fun onSuppressedEffectsOffLayoutClick(): Unit {
+    fun onSuppressedEffectsOffLayoutClick() {
         viewModelScope.launch {
-            eventChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_OFF))
+            fragmentEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_OFF))
         }
     }
 
-    fun onSuppressedEffectLayoutClick(effect: Int): Unit {
+    fun onSuppressedEffectLayoutClick(effect: Int) {
         if (containsSuppressedEffect(effect)) {
             removeSuppressedEffect(effect)
         } else {
@@ -632,23 +613,23 @@ class ProfileDetailsViewModel @Inject constructor(
         return suppressedVisualEffects.value and effect != 0
     }
 
-    private fun addSuppressedEffect(effect: Int): Unit {
+    private fun addSuppressedEffect(effect: Int) {
         suppressedVisualEffects.value = suppressedVisualEffects.value or effect
     }
 
-    private fun removeSuppressedEffect(effect: Int): Unit {
+    private fun removeSuppressedEffect(effect: Int) {
         suppressedVisualEffects.value = suppressedVisualEffects.value and effect.inv()
     }
 
-    fun addPriorityCategory(category: Int): Unit {
+    fun addPriorityCategory(category: Int) {
         priorityCategories.value = priorityCategories.value or category
     }
 
-    fun removePriorityCategory(category: Int): Unit {
+    fun removePriorityCategory(category: Int) {
         priorityCategories.value = priorityCategories.value and category.inv()
     }
 
-    fun setAllowedSenders(category: Int, senders: Int): Unit {
+    fun setAllowedSenders(category: Int, senders: Int) {
         when (category) {
             PRIORITY_CATEGORY_MESSAGES -> priorityMessageSenders.value = senders
             PRIORITY_CATEGORY_CALLS -> priorityCallSenders.value = senders
@@ -676,6 +657,6 @@ class ProfileDetailsViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         activityEventChannel.close()
-        eventChannel.close()
+        fragmentEventChannel.close()
     }
 }

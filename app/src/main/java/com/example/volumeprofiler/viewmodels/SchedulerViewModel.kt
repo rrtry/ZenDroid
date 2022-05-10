@@ -20,55 +20,54 @@ class SchedulerViewModel @Inject constructor(
 ): ViewModel() {
 
     val alarmsFlow: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
-    val eventsFlow: Flow<List<EventRelation>> = eventRepository.observeEvents()
 
     sealed class ViewEvent {
 
-        data class OnAlarmRemoved(val relation: AlarmRelation): ViewEvent()
-        data class OnAlarmCancelled(val relation: AlarmRelation): ViewEvent()
-        data class OnAlarmSet(val relation: AlarmRelation): ViewEvent()
+        data class OnAlarmRemoved(val relation: AlarmRelation, val scheduledAlarms: List<AlarmRelation>): ViewEvent()
+        data class OnAlarmCancelled(val relation: AlarmRelation, val scheduledAlarms: List<AlarmRelation>): ViewEvent()
+        data class OnAlarmSet(val relation: AlarmRelation, val scheduledAlarms: List<AlarmRelation>): ViewEvent()
 
     }
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val viewEvents: Flow<ViewEvent> = channel.receiveAsFlow()
 
-    fun sendScheduleAlarmEvent(alarmRelation: AlarmRelation): Unit {
+    fun sendScheduleAlarmEvent(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
             scheduleAlarm(alarmRelation.alarm)
-            channel.send(ViewEvent.OnAlarmSet(alarmRelation))
+            channel.send(ViewEvent.OnAlarmSet(alarmRelation, getScheduledAlarms()))
         }
     }
 
-    fun sendCancelAlarmEvent(alarmRelation: AlarmRelation): Unit {
+    fun sendCancelAlarmEvent(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
             cancelAlarm(alarmRelation.alarm)
-            channel.send(ViewEvent.OnAlarmCancelled(alarmRelation))
+            channel.send(ViewEvent.OnAlarmCancelled(alarmRelation, getScheduledAlarms()))
         }
     }
 
-    fun sendRemoveAlarmEvent(alarmRelation: AlarmRelation): Unit {
+    fun sendRemoveAlarmEvent(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
             removeAlarm(alarmRelation.alarm)
-            channel.send(ViewEvent.OnAlarmRemoved(alarmRelation))
+            channel.send(ViewEvent.OnAlarmRemoved(alarmRelation, getScheduledAlarms()))
         }
     }
 
-    private suspend fun scheduleAlarm(alarm: Alarm): Unit {
-        alarm.isScheduled = 1
-        updateAlarm(alarm)
+    private suspend fun getScheduledAlarms(): List<AlarmRelation> {
+        return alarmRepository.getEnabledAlarms() ?: listOf()
     }
 
-    private suspend fun removeAlarm(alarm: Alarm): Unit {
-        alarmRepository.removeAlarm(alarm)
-    }
-
-    private suspend fun cancelAlarm(alarm: Alarm): Unit {
-        alarm.isScheduled = 0
-        updateAlarm(alarm)
-    }
-
-    private suspend fun updateAlarm(alarm: Alarm): Unit {
+    private suspend fun scheduleAlarm(alarm: Alarm) {
+        alarm.isScheduled = true
         alarmRepository.updateAlarm(alarm)
+    }
+
+    private suspend fun cancelAlarm(alarm: Alarm) {
+        alarm.isScheduled = false
+        alarmRepository.updateAlarm(alarm)
+    }
+
+    private suspend fun removeAlarm(alarm: Alarm) {
+        alarmRepository.removeAlarm(alarm)
     }
 }

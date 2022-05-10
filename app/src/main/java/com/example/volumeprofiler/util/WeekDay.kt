@@ -21,9 +21,9 @@ enum class WeekDay(val num: Int, val value: Int) {
         const val WEEKENDS: Int = 0x41
         const val WEEKDAYS: Int = 0x3E
         const val ALL_DAYS: Int = 0x7F
-        const val NONE: Int = 0x00
+        const val NONE: Int = 0x0
 
-        private val values: Array<WeekDay>
+        val values: Array<WeekDay>
             get() = values()
 
         fun fromDay(day: Int): Int {

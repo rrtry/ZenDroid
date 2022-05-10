@@ -1,15 +1,9 @@
 package com.example.volumeprofiler.activities
 
-import android.content.Intent
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent.*
-import android.content.IntentFilter
 import android.os.Bundle
 import android.transition.*
 import android.view.Gravity
 import android.view.Window
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -19,31 +13,37 @@ import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.volumeprofiler.core.ProfileManager
+import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.fragments.*
-import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_CLOCK
+import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_END_TIME
+import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
+import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_START_TIME
 import com.example.volumeprofiler.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
 import com.example.volumeprofiler.interfaces.DetailsViewContract
 import com.example.volumeprofiler.util.*
+import com.example.volumeprofiler.util.ViewUtil.Companion.DISMISS_TIME_WINDOW
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import java.time.LocalTime
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.ViewEvent.*
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
-import com.google.android.material.snackbar.Snackbar
+import java.time.LocalDateTime
+import java.time.LocalTime
+import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType.*
 
 @AndroidEntryPoint
 class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     private val viewModel: AlarmDetailsViewModel by viewModels()
-    private var elapsedTime: Long = 0
+    private var elapsedTime: Long = 0L
 
     private lateinit var binding: CreateAlarmActivityBinding
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
@@ -52,26 +52,40 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     @Inject lateinit var contentUtil: ContentUtil
     @Inject lateinit var profileManager: ProfileManager
 
-    override fun onUpdate(alarm: Alarm) {
+    // Intended for non-recurring events
+    private var start: LocalDateTime? = null
+    private var end: LocalDateTime? = null
+
+    private fun onApply(alarm: Alarm, update: Boolean) {
         lifecycleScope.launch {
-            viewModel.updateAlarm(alarm)
-        }.invokeOnCompletion {
-            if (alarm.isScheduled == 1) {
+
+            alarm.startDateTime = start
+            alarm.endDateTime = end
+
+            if (update) {
+                viewModel.updateAlarm(alarm)
+            } else {
+                alarm.id = viewModel.addAlarm(alarm)
+            }
+            if (alarm.isScheduled) {
                 scheduleManager.scheduleAlarm(
                     alarm,
-                    viewModel.getProfile()
+                    viewModel.getStartProfile(),
+                    viewModel.getEndProfile()
                 )
             }
+            profileManager.setScheduledProfile(viewModel.getEnabledAlarms())
+        }.invokeOnCompletion {
             ActivityCompat.finishAfterTransition(this)
         }
     }
 
+    override fun onUpdate(alarm: Alarm) {
+        onApply(alarm, true)
+    }
+
     override fun onInsert(alarm: Alarm) {
-        lifecycleScope.launch {
-            viewModel.addAlarm(alarm)
-        }.invokeOnCompletion {
-            finish()
-        }
+        onApply(alarm, false)
     }
 
     override fun onCancel() {
@@ -81,24 +95,6 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     private fun setEntity(profiles: List<Profile>) {
         intent.getParcelableExtra<AlarmRelation>(EXTRA_ALARM_PROFILE_RELATION)?.also {
             viewModel.setEntity(it, profiles)
-        }
-    }
-
-    private val timeChangeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-
-        override fun onReceive(context: Context?, intent: Intent?) {
-            viewModel.weekDaysLocalTime.value = LocalTime.now()
-            val title: String = when (intent?.action) {
-                ACTION_TIME_CHANGED -> "System time changed"
-                ACTION_TIMEZONE_CHANGED -> "Timezone changed"
-                ACTION_LOCALE_CHANGED -> "Locale changed"
-                else -> ""
-            }
-            Snackbar.make(
-                binding.root,
-                title,
-                Snackbar.LENGTH_SHORT
-            ).show()
         }
     }
 
@@ -126,31 +122,29 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
-        ViewCompat.setTransitionName(binding.startClockView, SHARED_TRANSITION_CLOCK)
+
+        ViewCompat.setTransitionName(binding.startTime, SHARED_TRANSITION_START_TIME)
+        ViewCompat.setTransitionName(binding.endTime, SHARED_TRANSITION_END_TIME)
         ViewCompat.setTransitionName(binding.enableAlarmSwitch, SHARED_TRANSITION_SWITCH)
+        ViewCompat.setTransitionName(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
+
         setContentView(binding.root)
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
+                    viewModel.startAndEndDate.collect {
+                        start = it?.first
+                        end = it?.second
+                    }
+                }
+                launch {
                     viewModel.eventsFlow.collect {
                         when (it) {
-                            is ShowDialogEvent -> {
-                                if (it.dialogType == DialogType.DAYS_SELECTION) {
-                                    showDaysPickerDialog()
-                                } else if (it.dialogType == DialogType.TIME_SELECTION) {
-                                    showTimePickerDialog()
-                                }
-                            }
-                            is OnCreateAlarmEvent -> {
-                                onInsert(it.alarm)
-                            }
-                            is OnUpdateAlarmEvent -> {
-                                onUpdate(it.alarm)
-                            }
-                            is OnCancelChangesEvent -> {
-                                onCancel()
-                            }
+                            is ShowDialogEvent -> showDialog(it.dialogType)
+                            is OnCreateAlarmEvent -> onInsert(it.alarm)
+                            is OnUpdateAlarmEvent -> onUpdate(it.alarm)
+                            is OnCancelChangesEvent -> onCancel()
                         }
                     }
                 }
@@ -161,24 +155,9 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                 }
             }
         }
-
         phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
 
         }
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        registerReceiver(timeChangeReceiver, IntentFilter().apply {
-            addAction(ACTION_TIME_CHANGED)
-            addAction(ACTION_TIMEZONE_CHANGED)
-            addAction(ACTION_LOCALE_CHANGED)
-        })
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        unregisterReceiver(timeChangeReceiver)
     }
 
     override fun onDestroy() {
@@ -186,19 +165,29 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
         phonePermissionLauncher.unregister()
     }
 
+    private fun showDialog(dialogType: DialogType) {
+        when (dialogType) {
+            SCHEDULED_DAYS -> showDaysPickerDialog()
+            START_TIME -> showTimePickerDialog(viewModel.startTime.value, START_TIME)
+            END_TIME -> showTimePickerDialog(viewModel.endTime.value, END_TIME)
+        }
+    }
+
     private fun showDaysPickerDialog() {
-        WeekDaysPickerDialog.newInstance(viewModel.scheduledDays.value)
+        WeekDaysPickerDialog
+            .newInstance(viewModel.scheduledDays.value)
             .show(supportFragmentManager, null)
     }
 
-    private fun showTimePickerDialog() {
-        TimePickerFragment.newInstance(viewModel.localTime.value)
+    private fun showTimePickerDialog(localTime: LocalTime, dialogType: DialogType) {
+        TimePickerFragment
+            .newInstance(localTime, dialogType)
             .show(supportFragmentManager, null)
     }
 
     override fun onBackPressed() {
-        if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
-            ActivityCompat.finishAfterTransition(this)
+        if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
+            onCancel()
         } else {
             showSnackbar(binding.root, "Press back button again to dismiss changes", LENGTH_LONG)
         }

@@ -1,6 +1,5 @@
-package com.example.volumeprofiler.util
+package com.example.volumeprofiler.core
 
-import android.annotation.TargetApi
 import android.app.NotificationManager
 import android.app.NotificationManager.*
 import android.content.Context
@@ -17,29 +16,28 @@ import android.os.Vibrator
 import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
-import java.lang.IllegalArgumentException
 import android.media.RingtoneManager.*
+import android.provider.Settings.System.VIBRATE_WHEN_RINGING
 import android.telephony.TelephonyManager.CALL_STATE_RINGING
+import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.eventBus.EventBus
+import com.example.volumeprofiler.util.ID_SCHEDULER
+import com.example.volumeprofiler.util.createAlarmAlertNotification
+import com.example.volumeprofiler.util.postNotification
 import java.util.*
 
 @Singleton
+@Suppress("deprecation")
 class ProfileManager @Inject constructor (@ApplicationContext private val context: Context) {
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var eventBus: EventBus
+    @Inject lateinit var scheduleManager: ScheduleManager
 
     private val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     private val telephonyManager: TelephonyManager = context.getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-
-    @Suppress("deprecation")
     private val vibrator: Vibrator = context.getSystemService(VIBRATOR_SERVICE) as Vibrator
-
-    @Suppress("deprecation")
-    private fun isRinging(): Boolean {
-        return telephonyManager.callState == CALL_STATE_RINGING
-    }
 
     fun setProfile(profile: Profile) {
 
@@ -61,18 +59,43 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
             setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
         }
 
-        setInterruptionFilter(profile)
-
+        setNotificationPolicy(createNotificationPolicy(profile))
+        setInterruptionFilter(profile.interruptionFilter)
         setRingtoneUri(profile.phoneRingtoneUri, TYPE_RINGTONE)
         setRingtoneUri(profile.notificationSoundUri, TYPE_NOTIFICATION)
         setRingtoneUri(profile.alarmSoundUri, TYPE_ALARM)
         setVibrateWhenRingingBehavior(profile.isVibrateForCallsActive)
 
-        preferencesManager.writeCurrentProfileProperties(profile)
-        eventBus.onProfileSet(profile.id)
+        preferencesManager.setEnabledProfile(profile)
+        eventBus.onProfileChanged(profile.id)
     }
 
-    fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int, flags: Int = 0): Unit {
+    private fun isRinging(): Boolean {
+        return telephonyManager.callState == CALL_STATE_RINGING
+    }
+
+    fun setDefaultProfile() {
+        setProfile(getDefaultProfile())
+        preferencesManager.clearPreferences()
+    }
+
+    fun setScheduledProfile(alarms: List<AlarmRelation>) {
+        scheduleManager.getRecentAlarm(alarms)?.let {
+
+            setProfile(it.profile)
+
+            postNotification(
+                context,
+                createAlarmAlertNotification(
+                    context,
+                    it.alarm.title,
+                    it.profile.title,
+                    it.time.toLocalTime()
+                ), ID_SCHEDULER)
+        }
+    }
+
+    fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int, flags: Int = 0) {
         when (mode) {
             RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, flags)
             RINGER_MODE_VIBRATE -> setVibrateMode(streamType, flags)
@@ -80,23 +103,21 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         }
     }
 
-    private fun setSilentMode(streamType: Int, flags: Int = 0): Unit {
-        if (isVibrateHardwarePresent()) {
+    private fun setSilentMode(streamType: Int, flags: Int = 0) {
+        if (vibrator.hasVibrator()) {
             adjustUnmuteStream(streamType)
         }
         audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, flags)
     }
 
     private fun setVibrateMode(streamType: Int, flags: Int = 0) {
-        if (isVibrateHardwarePresent()) {
+        if (vibrator.hasVibrator()) {
             adjustUnmuteStream(streamType)
             audioManager.setStreamVolume(streamType, 0, flags)
-        } else {
-            Log.i("ProfileManager", "The device does not have a vibrator")
         }
     }
 
-    fun setStreamVolume(streamType: Int, index: Int, flags: Int): Unit {
+    fun setStreamVolume(streamType: Int, index: Int, flags: Int) {
         adjustUnmuteStream(streamType)
         audioManager.setStreamVolume(streamType, index, flags)
     }
@@ -117,7 +138,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
                 notificationManager.currentInterruptionFilter,
                 audioManager.ringerMode,
                 audioManager.ringerMode,
-                Settings.System.getInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING),
+                Settings.System.getInt(context.contentResolver, VIBRATE_WHEN_RINGING),
                 notificationManager.notificationPolicy.priorityCategories,
                 notificationManager.notificationPolicy.priorityCallSenders,
                 notificationManager.notificationPolicy.priorityMessageSenders,
@@ -132,14 +153,10 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         }
     }
 
-    private fun adjustUnmuteStream(streamType: Int): Unit {
+    private fun adjustUnmuteStream(streamType: Int) {
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_UNMUTE, 0)
         }
-    }
-
-    private fun isVibrateHardwarePresent(): Boolean {
-        return vibrator.hasVibrator()
     }
 
     fun isNotificationPolicyAccessGranted(): Boolean {
@@ -150,14 +167,14 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     private fun createNotificationPolicy(profile: Profile): Policy {
         return when {
             Build.VERSION_CODES.N > Build.VERSION.SDK_INT -> {
-                Policy (
+                Policy(
                     profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders
                 )
             }
             Build.VERSION_CODES.N <= Build.VERSION.SDK_INT && Build.VERSION_CODES.R > Build.VERSION.SDK_INT -> {
-                Policy (
+                Policy(
                     profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
@@ -165,7 +182,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
                 )
             }
             else -> {
-                Policy (
+                Policy(
                     profile.priorityCategories,
                     profile.priorityCallSenders,
                     profile.priorityMessageSenders,
@@ -179,16 +196,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     private fun setNotificationPolicy(policy: Policy?) {
         if (notificationManager.isNotificationPolicyAccessGranted) {
             notificationManager.notificationPolicy = policy
-        } else {
-            Log.w("ProfileManager", "Failed to set notification policy")
         }
-    }
-
-    private fun setInterruptionFilter(profile: Profile) {
-        if (profile.interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
-            setNotificationPolicy(createNotificationPolicy(profile))
-        }
-        setInterruptionFilter(profile.interruptionFilter)
     }
 
     private fun setInterruptionFilter(interruptionFilter: Int) {
@@ -198,10 +206,10 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     private fun setRingtoneUri(uri: Uri, type: Int) {
-        if (Settings.System.canWrite(context)) {
+        try {
             setActualDefaultRingtoneUri(context, type, uri)
-        } else {
-            Log.w("ProfileManager", "Failed to set ringtone uri")
+        } catch (e: SecurityException) {
+            Log.e("ProfileManager", "Failed to set ringtone uri")
         }
     }
 
@@ -210,20 +218,11 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     private fun setVibrateWhenRingingBehavior(state: Int) {
-        if (Settings.System.canWrite(context)) {
-            try {
-                Settings.System.putInt(context.contentResolver, Settings.System.VIBRATE_WHEN_RINGING, state)
-            } catch (e: IllegalArgumentException) {
-                Log.e("ProfileManager", "Failed to change system settings", e)
-            }
-        } else {
-            Log.e("ProfileManager", "Not allowed to modify system settings", SecurityException())
+        try {
+            Settings.System.putInt(context.contentResolver, VIBRATE_WHEN_RINGING, state)
+        } catch (e: SecurityException) {
+            Log.e("ProfileManager", "Failed to change system settings", e)
         }
-    }
-
-    @TargetApi(Build.VERSION_CODES.M)
-    fun canWriteSettings(): Boolean {
-        return Settings.System.canWrite(context)
     }
 
     companion object {

@@ -3,6 +3,7 @@ package com.example.volumeprofiler.fragments
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.ACTION_LOCALE_CHANGED
 import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
@@ -10,6 +11,7 @@ import android.os.Looper
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -23,10 +25,13 @@ import androidx.recyclerview.widget.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.AlarmDetailsActivity
 import com.example.volumeprofiler.activities.AlarmDetailsActivity.Companion.EXTRA_ALARM_PROFILE_RELATION
+import com.example.volumeprofiler.activities.MainActivity
 import com.example.volumeprofiler.adapters.BaseSelectionObserver
 import com.example.volumeprofiler.adapters.DetailsLookup
 import com.example.volumeprofiler.adapters.ItemDetails
 import com.example.volumeprofiler.adapters.KeyProvider
+import com.example.volumeprofiler.core.ProfileManager
+import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.entities.*
@@ -43,11 +48,14 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
-import java.time.LocalTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, FragmentSwipedListener {
+class SchedulerFragment: Fragment(),
+    FabContainer,
+    ActionModeProvider<Long>,
+    FragmentSwipedListener,
+    MainActivity.OptionsItemSelectedListener {
 
     private var showDialog: Boolean = false
 
@@ -55,7 +63,6 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
     private var activity: FabContainerCallbacks? = null
-
     private var bindingImpl: AlarmsFragmentBinding? = null
     private val binding: AlarmsFragmentBinding get() = bindingImpl!!
 
@@ -69,11 +76,22 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
         AlarmAdapter()
     }
 
-    private val localeChangeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val localeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_LOCALE_CHANGED) {
+            if (intent?.action == ACTION_LOCALE_CHANGED) {
                 alarmAdapter.refresh()
+            }
+        }
+    }
+
+    override fun onSelected(itemId: Int) {
+        when (itemId) {
+            R.id.action_show_scheduled_for_today -> {
+
+            }
+            else -> {
+
             }
         }
     }
@@ -82,9 +100,9 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
         super.onAttach(context)
         activity = requireActivity() as FabContainerCallbacks
         requireActivity().registerReceiver(
-            localeChangeReceiver,
+            localeReceiver,
             IntentFilter().apply {
-                addAction(Intent.ACTION_LOCALE_CHANGED)
+                addAction(ACTION_LOCALE_CHANGED)
             }
         )
     }
@@ -92,7 +110,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
     override fun onDetach() {
         super.onDetach()
         activity = null
-        requireActivity().unregisterReceiver(localeChangeReceiver)
+        requireActivity().unregisterReceiver(localeReceiver)
     }
 
     override fun onCreateView(
@@ -127,20 +145,28 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
                     viewModel.viewEvents.collect {
                         when (it) {
                             is SchedulerViewModel.ViewEvent.OnAlarmRemoved -> {
-                                scheduleManager.cancelAlarm(it.relation.alarm, it.relation.profile)
+                                scheduleManager.cancelAlarm(it.relation.alarm)
+                                profileManager.setScheduledProfile(it.scheduledAlarms)
                             }
                             is SchedulerViewModel.ViewEvent.OnAlarmCancelled -> {
-                                scheduleManager.cancelAlarm(it.relation.alarm, it.relation.profile)
-                                alarmAdapter.updateAlarmState(it.relation.alarm, 0)
+                                scheduleManager.cancelAlarm(it.relation.alarm)
+                                alarmAdapter.updateAlarmState(it.relation.alarm)
+                                profileManager.setScheduledProfile(it.scheduledAlarms)
                             }
                             is SchedulerViewModel.ViewEvent.OnAlarmSet -> {
 
-                                scheduleManager.scheduleAlarm(it.relation.alarm, it.relation.profile)
-                                alarmAdapter.updateAlarmState(it.relation.alarm, 1)
+                                scheduleManager.scheduleAlarm(
+                                    it.relation.alarm,
+                                    it.relation.startProfile,
+                                    it.relation.endProfile
+                                )
+
+                                profileManager.setScheduledProfile(it.scheduledAlarms)
+                                alarmAdapter.updateAlarmState(it.relation.alarm)
 
                                 activity?.showSnackBar(
-                                    ScheduleManager.getPeriodString(
-                                        it.relation.alarm
+                                    scheduleManager.getNextOccurrenceFormatted(
+                                        it.relation
                                     ), Snackbar.LENGTH_LONG, null)
                             }
                         }
@@ -161,13 +187,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
                 launch {
                     eventBus.sharedFlow.collectLatest {
                         if (it is EventBus.Event.UpdateAlarmState) {
-                            val id: Int? = alarmAdapter.getItemPosition(it.alarm.id)
-                            if (id != null) {
-                                alarmAdapter.notifyItemChanged(id, Bundle().apply {
-                                    putInt(EXTRA_DIFF_SCHEDULED_DAYS, it.alarm.scheduledDays)
-                                    putSerializable(EXTRA_DIFF_LOCAL_TIME, it.alarm.instanceStartTime)
-                                })
-                            }
+                            alarmAdapter.updateAlarmState(it.alarm)
                         }
                     }
                 }
@@ -195,7 +215,7 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
 
     private fun updateAlarmAdapter(alarms: List<AlarmRelation>) {
         setPlaceholderVisibility(alarms.isEmpty())
-        alarmAdapter.submitList(alarms.toMutableList())
+        alarmAdapter.submitList(alarms)
     }
 
     private inner class AlarmViewHolder(private val binding: AlarmItemViewBinding) :
@@ -205,43 +225,38 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
 
         init {
             binding.root.setOnClickListener(this)
-            binding.timeTextView.transitionName = SHARED_TRANSITION_CLOCK
-            binding.scheduleSwitch.transitionName = SHARED_TRANSITION_SWITCH
-        }
-
-        fun bindLocalTimeTextView(payload: Bundle) {
-            binding.timeTextView.text = TextUtil.formatLocalTime(
-                requireContext(), (payload.getSerializable(EXTRA_DIFF_LOCAL_TIME)!! as LocalTime)
-            )
-        }
-
-        fun bindProfileTextView(payload: Bundle) {
-            binding.profileName.text = payload.getString(EXTRA_DIFF_PROFILE_TITLE)
-        }
-
-        fun bindScheduledDaysTextView(payload: Bundle) {
-            binding.occurrencesTextView.text = TextUtil.weekDaysToString(
-                payload.getInt(EXTRA_DIFF_SCHEDULED_DAYS, 0),
-                payload.getSerializable(EXTRA_DIFF_LOCAL_TIME) as LocalTime
-            )
-        }
-
-        fun bindSwitch(payload: Bundle) {
-            binding.scheduleSwitch.isChecked = payload.getInt(EXTRA_DIFF_SCHEDULED) == 1
+            ViewCompat.setTransitionName(binding.startTime, SHARED_TRANSITION_START_TIME)
+            ViewCompat.setTransitionName(binding.endTime, SHARED_TRANSITION_END_TIME)
+            ViewCompat.setTransitionName(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH)
+            ViewCompat.setTransitionName(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Long> {
-            return ItemDetails(bindingAdapterPosition, alarmAdapter.getItemAtPosition(bindingAdapterPosition).alarm.id)
+            return ItemDetails(bindingAdapterPosition,
+                alarmAdapter.getItemAtPosition(bindingAdapterPosition).alarm.id
+            )
         }
 
         private fun createTransitionAnimationOptions(): ActivityOptionsCompat {
             return ActivityOptionsCompat.makeSceneTransitionAnimation(
                 requireActivity(),
-                androidx.core.util.Pair.create(binding.timeTextView, SHARED_TRANSITION_CLOCK),
-                androidx.core.util.Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH))
+                androidx.core.util.Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
+                androidx.core.util.Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
+                androidx.core.util.Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
+                androidx.core.util.Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR))
         }
 
-        private fun setListeners() {
+        fun updateScheduledState(scheduled: Boolean) {
+            binding.scheduleSwitch.isChecked = scheduled
+        }
+
+        fun bind(alarmRelation: AlarmRelation) {
+
+            val alarm: Alarm = alarmRelation.alarm
+            val startProfile: Profile = alarmRelation.startProfile
+            val endProfile: Profile = alarmRelation.endProfile
+
+            binding.eventTitle.text = alarm.title
             binding.editAlarmButton.setOnClickListener {
                 startAlarmDetailsActivity(
                     alarmAdapter.getItemAtPosition(bindingAdapterPosition),
@@ -252,26 +267,19 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
                     alarmAdapter.getItemAtPosition(bindingAdapterPosition)
                 )
             }
-        }
-
-        private fun updateTextViews(profile: Profile, alarm: Alarm) {
-            binding.timeTextView.text = TextUtil.formatLocalTime(requireContext(), alarm.localStartTime)
-            binding.occurrencesTextView.text = TextUtil.weekDaysToString(alarm.scheduledDays, alarm.localStartTime)
-            binding.profileName.text = profile.title
-        }
-
-        fun bind(alarmRelation: AlarmRelation) {
-            val alarm: Alarm = alarmRelation.alarm
-            val profile: Profile = alarmRelation.profile
-            binding.scheduleSwitch.isChecked = alarm.isScheduled == 1
-            setListeners()
-            updateTextViews(profile, alarm)
+            binding.startTime.text = TextUtil.formatLocalTime(requireContext(), alarm.startTime)
+            binding.endTime.text = TextUtil.formatLocalTime(requireContext(), alarm.endTime)
+            binding.occurrencesTextView.text = TextUtil.formatWeekDays(
+                alarm.scheduledDays, alarm.startTime, alarm.endTime
+            )
+            binding.profileName.text = "${startProfile.title} - ${endProfile.title}"
+            binding.scheduleSwitch.isChecked = alarm.isScheduled
         }
 
         override fun onClick(v: View?) {
             alarmAdapter.getItemAtPosition(bindingAdapterPosition).also {
                 if (!tracker.isSelected(it.alarm.id)) {
-                    if (it.alarm.isScheduled == 1) {
+                    if (it.alarm.isScheduled) {
                         viewModel.sendCancelAlarmEvent(it)
                     } else {
                         viewModel.sendScheduleAlarmEvent(it)
@@ -291,55 +299,21 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
             return oldItem == newItem
         }
 
-        override fun getChangePayload(oldItem: AlarmRelation, newItem: AlarmRelation): Any {
+        override fun getChangePayload(oldItem: AlarmRelation, newItem: AlarmRelation): Any? {
             super.getChangePayload(oldItem, newItem)
-
-            val diffBundle: Bundle = Bundle()
-
-            val oldAlarm: Alarm = oldItem.alarm
-            val newAlarm: Alarm = newItem.alarm
-
-            if (oldAlarm.localStartTime != newAlarm.localStartTime) {
-                putTimePayload(diffBundle, newItem)
+            if (oldItem.alarm.isScheduled != newItem.alarm.isScheduled) {
+                return getScheduledStatePayload(newItem.alarm.isScheduled)
             }
-            if (oldAlarm.profileUUID != newAlarm.profileUUID) {
-                putProfileNamePayload(diffBundle, newItem)
-            }
-            if (oldAlarm.scheduledDays != newAlarm.scheduledDays) {
-                putScheduledDaysPayload(diffBundle, newItem)
-            }
-            if (oldAlarm.isScheduled != newAlarm.isScheduled) {
-                putScheduledPayload(diffBundle, newItem)
-            }
-            return diffBundle
-        }
-
-        private fun putTimePayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putSerializable(EXTRA_DIFF_LOCAL_TIME, newItem.alarm.localStartTime)
-        }
-
-        private fun putScheduledPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putInt(EXTRA_DIFF_SCHEDULED, newItem.alarm.isScheduled)
-            putScheduledDaysPayload(diffBundle, newItem)
-        }
-
-        private fun putProfileNamePayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putSerializable(EXTRA_DIFF_PROFILE_TITLE, newItem.profile.title)
-        }
-
-        private fun putScheduledDaysPayload(diffBundle: Bundle, newItem: AlarmRelation): Unit {
-            diffBundle.putInt(EXTRA_DIFF_SCHEDULED_DAYS, newItem.alarm.scheduledDays)
-            diffBundle.putSerializable(EXTRA_DIFF_LOCAL_TIME, newItem.alarm.localStartTime)
+            return null
         }
 
     }), ListAdapterItemProvider<Long> {
 
-        fun updateAlarmState(alarm: Alarm, scheduled: Int): Unit {
-            getItemPosition(alarm.id)?.let {
-                notifyItemChanged(it, Bundle().apply {
-                    putInt(EXTRA_DIFF_SCHEDULED, scheduled)
-                })
-            }
+        fun updateAlarmState(alarm: Alarm) {
+            notifyItemChanged(
+                getItemPosition(alarm.id),
+                getScheduledStatePayload(alarm.isScheduled)
+            )
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {
@@ -351,56 +325,37 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
             )
         }
 
-        fun refresh(): Unit {
-            val currentList = currentList
-            submitList(null)
-            submitList(currentList)
-        }
-
-        fun getItemPosition(id: Long): Int? {
-            for ((index, i) in currentList.withIndex()) {
-                if (i.alarm.id == id) {
-                    return index
-                }
+        fun refresh() {
+            currentList.also {
+                submitList(null)
+                submitList(it)
             }
-            return null
         }
 
+        fun getItemPosition(id: Long): Int {
+            return currentList.indexOfFirst {
+                it.alarm.id == id
+            }
+        }
+
+        @Suppress("unchecked_cast")
         override fun onBindViewHolder(
             holder: AlarmViewHolder,
             position: Int,
             payloads: MutableList<Any>
         ) {
             if (payloads.isNotEmpty()) {
-                when (payloads[0]) {
-                    is Bundle -> {
-                        val payload: Bundle = payloads[0] as Bundle
-                        for (key in payload.keySet()) {
-                            when (key) {
-                                EXTRA_DIFF_PROFILE_TITLE -> {
-                                    holder.bindProfileTextView(payload)
-                                }
-                                EXTRA_DIFF_SCHEDULED_DAYS -> {
-                                    holder.bindScheduledDaysTextView(payload)
-                                }
-                                EXTRA_DIFF_LOCAL_TIME -> {
-                                    holder.bindLocalTimeTextView(payload)
-                                }
-                                EXTRA_DIFF_SCHEDULED -> {
-                                    holder.bindSwitch(payload)
-                                }
+                (payloads as MutableList<Bundle>).forEach { bundle ->
+                    bundle.keySet().forEach {
+                        when (it) {
+                            SELECTION_CHANGED_MARKER -> {
+                                AnimUtil.selected(holder.itemView, tracker.isSelected(getItem(position).alarm.id))
                             }
-                        }
-                    }
-                    SELECTION_CHANGED_MARKER -> {
-                        tracker.let {
-                            AnimUtil.selected(holder.itemView, tracker.isSelected(getItem(position).alarm.id))
+                            SCHEDULED_STATE_CHANGED -> holder.updateScheduledState(bundle.getBoolean(it))
                         }
                     }
                 }
-            } else {
-                super.onBindViewHolder(holder, position, payloads)
-            }
+            } else super.onBindViewHolder(holder, position, payloads)
         }
 
         override fun getItemKey(position: Int): Long {
@@ -435,12 +390,12 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
     }
 
     override fun onActionItemRemove() {
-        for (i in tracker.selection) {
-            for (a in alarmAdapter.currentList) {
-                if (a.alarm.id == i) {
-                    viewModel.sendRemoveAlarmEvent(a)
+        tracker.selection.forEach { selection ->
+            viewModel.sendRemoveAlarmEvent(
+                alarmAdapter.currentList.first {
+                    it.alarm.id == selection
                 }
-            }
+            )
         }
     }
 
@@ -458,12 +413,17 @@ class SchedulerFragment: Fragment(), FabContainer, ActionModeProvider<Long>, Fra
 
     companion object {
 
-        internal const val SHARED_TRANSITION_CLOCK: String = "ClockViewSharedTransition"
+        fun getScheduledStatePayload(scheduled: Boolean): Bundle {
+            return Bundle().apply {
+                putBoolean(SCHEDULED_STATE_CHANGED, scheduled)
+            }
+        }
+
+        private const val SCHEDULED_STATE_CHANGED: String = "scheduled"
+        internal const val SHARED_TRANSITION_SEPARATOR: String = "separator"
+        internal const val SHARED_TRANSITION_START_TIME: String = "start_time"
+        internal const val SHARED_TRANSITION_END_TIME: String = "end_time"
         internal const val SHARED_TRANSITION_SWITCH: String = "SwitchSharedTransition"
-        private const val EXTRA_DIFF_LOCAL_TIME: String = "extra_start_time"
-        private const val EXTRA_DIFF_SCHEDULED_DAYS: String = "extra_scheduled_days"
-        private const val EXTRA_DIFF_PROFILE_TITLE: String = "extra_profile_id"
-        private const val EXTRA_DIFF_SCHEDULED: String = "extra_scheduled"
         private const val SELECTION_ID: String = "alarm"
 
     }

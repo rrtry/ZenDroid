@@ -10,9 +10,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.content.Intent.*
+import android.provider.Settings
 import android.provider.Settings.*
+import android.provider.Settings.System.canWrite
 import androidx.core.app.NotificationCompat
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.entities.Event
 import com.example.volumeprofiler.entities.Profile
 import java.time.LocalTime
@@ -69,7 +72,7 @@ private fun getAppDetailsPendingIntent(context: Context): PendingIntent {
 }
 
 fun sendSystemPreferencesAccessNotification(context: Context, profileManager: ProfileManager): Unit {
-    if (!profileManager.canWriteSettings()) {
+    if (!canWrite(context)) {
         postNotification(context, createSystemSettingsNotification(context), ID_SYSTEM_SETTINGS)
     }
     if (!profileManager.isNotificationPolicyAccessGranted()) {
@@ -224,32 +227,10 @@ fun createSchedulerNotification(context: Context): Notification {
     return builder.build()
 }
 
-fun createCalendarEventNotification(context: Context, event: Event, profile: Profile, state: Event.State): Notification {
-    val contentText: String = if (state == Event.State.START) {
-        "${TextUtil.formatEventTimestamp(context, event, event.instanceBeginTime)} - setting '${profile.title}'"
-    } else {
-        "${TextUtil.formatEventTimestamp(context, event, event.instanceEndTime)} - restoring ${profile.title}"
-    }
-    val builder = NotificationCompat.Builder(context, CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID)
-        .setContentTitle(event.title)
-        .setContentText(contentText)
-        .setSmallIcon(R.drawable.ic_baseline_calendar_today_24)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        createNotificationChannel(
-            context,
-            CALENDAR_EVENTS_NOTIFICATION_CHANNEL_ID,
-            CALENDAR_EVENTS_NOTIFICATION_CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_LOW).also {
-            builder.setChannelId(it.id)
-        }
-    }
-    return builder.build()
-}
-
-fun createAlarmAlertNotification(context: Context, title: String, localTime: LocalTime): Notification {
+fun createAlarmAlertNotification(context: Context, title: String, profileTitle: String, localTime: LocalTime): Notification {
     val builder = NotificationCompat.Builder(context, SCHEDULER_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Scheduler")
-            .setContentText("$title at ${TextUtil.formatLocalTime(context, localTime)}")
+            .setContentTitle(title)
+            .setContentText("$profileTitle at ${TextUtil.formatLocalTime(context, localTime)}")
             .setSmallIcon(R.drawable.baseline_alarm_deep_purple_300_24dp)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         createNotificationChannel(

@@ -75,9 +75,12 @@
             android:layout_height="match_parent"
             />
 
+        <!--
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/expandableFab"
             android:elevation="10dp"
+            android:onClick="@{() -> viewModel.onExpandableFabClick()}"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_baseline_more_vert_24"
@@ -168,6 +171,6 @@
             android:textColor="@color/white"
             android:text="Create profile"
             android:textAppearance="?android:attr/textAppearanceMedium"/>
-
+        -->
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

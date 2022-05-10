@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.entities.Profile
 import java.lang.IllegalArgumentException
 
@@ -40,7 +41,7 @@ fun getCategoryName(permission: String): String {
         ACCESS_NOTIFICATION_POLICY -> "Do not disturb access"
         READ_PHONE_STATE -> "Phone"
         else -> throw IllegalArgumentException(
-            "Unknown permission"
+            "Unknown permission $permission"
         )
     }
 }

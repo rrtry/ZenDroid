@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.views
 
 import android.content.Context
-import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -50,6 +49,7 @@ class HideOnScrollBehavior(context: Context, attrs: AttributeSet?): FloatingActi
         )
         if (dyConsumed > 0 && child.visibility == View.VISIBLE) {
             child.hide(object : OnVisibilityChangedListener() {
+
                 override fun onHidden(floatingActionButon: FloatingActionButton) {
                     super.onHidden(floatingActionButon)
                     floatingActionButon.visibility = View.INVISIBLE

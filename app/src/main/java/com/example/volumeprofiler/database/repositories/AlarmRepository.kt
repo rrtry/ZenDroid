@@ -16,8 +16,8 @@ class AlarmRepository @Inject constructor(
         private val alarmDao: AlarmDao,
         private val alarmRelationDao: AlarmRelationDao) {
 
-    suspend fun addAlarm(alarm: Alarm) {
-        withContext(Dispatchers.IO) {
+    suspend fun addAlarm(alarm: Alarm): Long {
+        return withContext(Dispatchers.IO) {
             alarmDao.addAlarm(alarm)
         }
     }
@@ -54,6 +54,6 @@ class AlarmRepository @Inject constructor(
 
     fun observeAlarms(): Flow<List<AlarmRelation>> = alarmRelationDao.observeAlarms()
 
-    fun observeAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?> = alarmRelationDao.observeAlarmsByProfileId(id)
+    fun observeScheduledAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?> = alarmRelationDao.observeScheduledAlarmsByProfileId(id)
 
 }
