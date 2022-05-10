@@ -68,109 +68,21 @@
             </com.google.android.material.appbar.CollapsingToolbarLayout>
         </com.google.android.material.appbar.AppBarLayout>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/editProfileNameButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_anchor="@id/app_bar"
+            android:layout_marginEnd="16dp"
+            android:onClick="@{() -> viewModel.onChangeTitleButtonClick()}"
+            app:layout_anchorGravity="bottom|end"
+            android:src="@drawable/ic_baseline_drive_file_rename_outline_24"/>
+
         <androidx.fragment.app.FragmentContainerView
             app:layout_behavior="@string/appbar_scrolling_view_behavior"
             android:id="@+id/fragmentContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             />
-
-        <!--
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/expandableFab"
-            android:elevation="10dp"
-            android:onClick="@{() -> viewModel.onExpandableFabClick()}"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_baseline_more_vert_24"
-            android:layout_gravity="bottom|end"
-            app:layout_behavior=".views.HideOnScrollBehavior"
-            android:layout_margin="16dp"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/changeProfileNameButton"
-            android:layout_width="40dp"
-            android:src="@drawable/ic_baseline_drive_file_rename_outline_24"
-            android:layout_height="wrap_content"
-            app:fabCustomSize="40dp"
-            app:layout_anchor="@id/expandableFab"
-            android:visibility="invisible"
-            app:layout_anchorGravity="center|top"
-            android:layout_marginBottom="90dp"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/changeProfileIconButton"
-            android:layout_width="40dp"
-            android:layout_height="wrap_content"
-            app:fabCustomSize="40dp"
-            app:layout_anchor="@id/changeProfileNameButton"
-            android:src="@drawable/ic_baseline_image_24"
-            android:visibility="invisible"
-            app:layout_anchorGravity="center|top"
-            android:layout_marginBottom="150dp"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/saveChangesButton"
-            android:layout_width="40dp"
-            app:fabCustomSize="40dp"
-            android:layout_height="wrap_content"
-            android:visibility="invisible"
-            android:src="@drawable/ic_baseline_done_24"
-            app:layout_anchor="@id/changeProfileIconButton"
-            app:layout_anchorGravity="center|top"
-            android:layout_marginBottom="210dp"/>
-
-        <LinearLayout
-            android:id="@+id/overlay"
-            android:layout_width="match_parent"
-            android:alpha="0.75"
-            android:background="@color/black"
-            android:visibility="invisible"
-            android:layout_height="match_parent"
-            android:orientation="vertical" />
-
-        <TextView
-            android:id="@+id/changeProfileNameLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            app:layout_anchor="@id/changeProfileNameButton"
-            android:visibility="invisible"
-            app:layout_anchorGravity="left|center_vertical"
-            android:translationX="-70dp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
-            android:text="Change title"
-            android:textAppearance="?android:attr/textAppearanceMedium"/>
-
-        <TextView
-            android:id="@+id/changeProfileIconLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_anchor="@id/changeProfileIconButton"
-            app:layout_anchorGravity="left|center_vertical"
-            android:translationX="-70dp"
-            android:textSize="16sp"
-            android:visibility="invisible"
-            android:textColor="@color/white"
-            android:textStyle="bold"
-            android:text="Change icon"
-            android:textAppearance="?android:attr/textAppearanceMedium"/>
-
-        <TextView
-            android:id="@+id/saveChangesLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_anchor="@id/saveChangesButton"
-            app:layout_anchorGravity="left|center_vertical"
-            android:translationX="-70dp"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:visibility="invisible"
-            android:textColor="@color/white"
-            android:text="Create profile"
-            android:textAppearance="?android:attr/textAppearanceMedium"/>
-        -->
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

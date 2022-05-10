@@ -11,16 +11,29 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.activities.ProfileDetailsActivity.Companion.INPUT_TITLE_REQUEST_KEY
+import com.example.volumeprofiler.databinding.TextInputDialogBinding
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class ProfileNameInputDialog: DialogFragment() {
 
-    private var editText: EditText? = null
+    private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
-    override fun onDestroyView() {
-        editText = null
-        super.onDestroyView()
+    private var bindingImpl: TextInputDialogBinding? = null
+    private val binding: TextInputDialogBinding
+    get() = bindingImpl!!
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        super.onCreateDialog(savedInstanceState)
+
+        AlertDialog.Builder(requireContext()).apply {
+            setView(layoutInflater.inflate(R.layout.text_input_dialog, null))
+            return show()
+        }
     }
 
     override fun onCreateView(
@@ -29,77 +42,28 @@ class ProfileNameInputDialog: DialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         super.onCreateView(inflater, container, savedInstanceState)
-        return inflater.inflate(R.layout.text_input_dialog, container, false)
+
+        bindingImpl = TextInputDialogBinding.inflate(layoutInflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setCallbacks(view)
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        super.onCreateDialog(savedInstanceState)
-        val builder: AlertDialog.Builder = AlertDialog.Builder(requireContext())
-        inflateLayout(builder)
-        return builder.show()
-    }
-
-    private fun setCallbacks(view: View): Unit {
-        val positiveButton: Button = view.findViewById(R.id.positiveButton)
-        val negativeButton: Button = view.findViewById(R.id.negativeButton)
-        editText = view.findViewById(R.id.textInputEditText)
-        editText?.setOnKeyListener(object : View.OnKeyListener {
-
-            override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {
-                if (keyCode == KeyEvent.KEYCODE_ENTER) {
-                    if (editText!!.text!!.isNotEmpty()) {
-                        changeTitle()
-                    }
-                    return true
+        binding.positiveButton.setOnClickListener {
+            binding.textInputEditText.text.toString().also {
+                viewModel.title.value = it.ifEmpty {
+                    "No title"
                 }
-                return false
             }
-        })
-        editText?.text = SpannableStringBuilder(arguments?.getString(EXTRA_TITLE))
-        positiveButton.setOnClickListener {
-            if (editText!!.text!!.isNotEmpty()) {
-                changeTitle()
-            }
+            dismiss()
         }
-        negativeButton.setOnClickListener {
-            finish()
+        binding.negativeButton.setOnClickListener {
+            dismiss()
         }
     }
 
-    private fun changeTitle(): Unit {
-        parentFragmentManager.setFragmentResult(INPUT_TITLE_REQUEST_KEY, Bundle().apply {
-            this.putString(EXTRA_TITLE, editText?.text.toString())
-        })
-        finish()
-    }
-
-    private fun finish(): Unit {
-        dialog?.dismiss()
-    }
-
-    private fun inflateLayout(builder: AlertDialog.Builder): Unit {
-        val layoutInflater: LayoutInflater = layoutInflater
-        val view: View = layoutInflater.inflate(R.layout.text_input_dialog, null)
-        builder.setView(view)
-    }
-
-    companion object {
-
-        const val TAG: String = "ProfileNameInputDialogTag"
-        const val EXTRA_TITLE: String = "extra_title"
-
-        fun newInstance(title: String): ProfileNameInputDialog {
-            val bundle: Bundle = Bundle().apply {
-                this.putString(EXTRA_TITLE, title)
-            }
-            return ProfileNameInputDialog().apply {
-                this.arguments = bundle
-            }
-        }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        bindingImpl = null
     }
 }

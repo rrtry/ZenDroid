@@ -102,7 +102,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
                 launch {
                     viewModel.activityEventsFlow.collect {
                         when (it) {
-                            is ShowDialogFragment -> showTitleInputDialog()
+                            is ShowDialogFragment -> showDialog()
                             is OnUpdateProfileEvent -> onUpdate(it.profile)
                             is OnInsertProfileEvent -> onInsert(it.profile)
                             is OnRemoveProfileEvent -> onCancel()
@@ -179,9 +179,8 @@ class ProfileDetailsActivity: AppCompatActivity(),
             .commit()
     }
 
-    private fun showTitleInputDialog() {
-        ProfileNameInputDialog
-            .newInstance(viewModel.title.value)
+    private fun showDialog() {
+        ProfileNameInputDialog()
             .show(supportFragmentManager, null)
     }
 

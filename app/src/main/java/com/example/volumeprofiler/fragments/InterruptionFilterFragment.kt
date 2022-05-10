@@ -94,7 +94,7 @@ class InterruptionFilterFragment: Fragment() {
             ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance(detailsViewModel.getProfile())
             ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance(detailsViewModel.getProfile())
             ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityCategoriesDialog.newInstance(detailsViewModel.getProfile())
-            else -> ProfileNameInputDialog.newInstance(detailsViewModel.title.value)
+            else -> throw IllegalArgumentException("Unknown dialog type")
         }
     }
 
