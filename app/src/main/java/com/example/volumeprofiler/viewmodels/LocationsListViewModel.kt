@@ -31,19 +31,22 @@ class LocationsListViewModel @Inject constructor(
 
     fun removeGeofence(location: LocationRelation) {
         viewModelScope.launch {
+            removeGeofence(location)
             channel.send(ViewEvent.OnGeofenceRemoved(location))
         }
     }
 
-    fun disableGeofence(location: LocationRelation) {
+    fun disableGeofence(relation: LocationRelation) {
         viewModelScope.launch {
-            channel.send(ViewEvent.OnGeofenceDisabled(location))
+            disableGeofence(relation.location)
+            channel.send(ViewEvent.OnGeofenceDisabled(relation))
         }
     }
 
-    fun enableGeofence(location: LocationRelation) {
+    fun enableGeofence(relation: LocationRelation) {
         viewModelScope.launch {
-            channel.send(ViewEvent.OnGeofenceEnabled(location))
+            enableGeofence(relation.location)
+            channel.send(ViewEvent.OnGeofenceEnabled(relation))
         }
     }
 
@@ -53,25 +56,19 @@ class LocationsListViewModel @Inject constructor(
         }
     }
 
-    private fun updateLocation(location: Location) {
-        viewModelScope.launch {
-            locationRepository.updateLocation(location)
-        }
-    }
-
     fun removeLocation(location: Location) {
         viewModelScope.launch {
             locationRepository.removeLocation(location)
         }
     }
 
-    fun enableGeofence(location: Location) {
+    private suspend fun enableGeofence(location: Location) {
         location.enabled = true
-        updateLocation(location)
+        locationRepository.updateLocation(location)
     }
 
-    fun disableGeofence(location: Location) {
+    private suspend fun disableGeofence(location: Location) {
         location.enabled = false
-        updateLocation(location)
+        locationRepository.updateLocation(location)
     }
 }

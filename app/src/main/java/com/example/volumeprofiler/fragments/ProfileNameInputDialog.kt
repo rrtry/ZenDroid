@@ -40,7 +40,7 @@ class ProfileNameInputDialog: DialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
         bindingImpl = TextInputDialogBinding.inflate(layoutInflater, container, false)
@@ -49,11 +49,11 @@ class ProfileNameInputDialog: DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        binding.textInputEditText.setText(viewModel.title.value)
         binding.positiveButton.setOnClickListener {
             binding.textInputEditText.text.toString().also {
-                viewModel.title.value = it.ifEmpty {
-                    "No title"
-                }
+                viewModel.title.value = it.ifEmpty { "No title" }
             }
             dismiss()
         }

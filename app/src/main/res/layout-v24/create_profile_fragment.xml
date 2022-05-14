@@ -114,8 +114,8 @@
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="8dp"
                 android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
-                android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser)}"
-                android:progress="@{viewModel.callVolume}"
+                android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser, ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_VOICE_CALL))}"
+                android:progress="@{viewModel.callVolume - ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_VOICE_CALL)}"
                 app:layout_constraintEnd_toStartOf="@+id/playCallRingtone"
                 app:layout_constraintStart_toEndOf="@+id/imageView10"
                 app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
@@ -366,8 +366,8 @@
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
                     android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
-                    android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser)}"
-                    android:progress="@{viewModel.alarmVolume}"
+                    android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser, ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_ALARM))}"
+                    android:progress="@{viewModel.alarmVolume - ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_ALARM)}"
                     app:layout_constraintEnd_toStartOf="@+id/playAlarmRingtone"
                     app:layout_constraintStart_toEndOf="@+id/alarmIcon"
                     app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />

@@ -2,6 +2,7 @@ package com.example.volumeprofiler.activities
 
 import android.os.Bundle
 import android.transition.*
+import android.util.Log
 import android.view.Gravity
 import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
@@ -38,6 +39,7 @@ import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
 import java.time.LocalDateTime
 import java.time.LocalTime
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType.*
+import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
 class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
@@ -149,8 +151,10 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                     }
                 }
                 launch {
-                    viewModel.profilesStateFlow.collect {
-                        setEntity(it)
+                    viewModel.profilesStateFlow.collectLatest {
+                        if (it.isNotEmpty()) {
+                            setEntity(it)
+                        }
                     }
                 }
             }

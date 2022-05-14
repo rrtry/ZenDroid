@@ -1,7 +1,10 @@
 package com.example.volumeprofiler.activities
 
+import android.media.AudioManager
+import android.media.AudioManager.*
 import android.os.Bundle
 import android.transition.Fade
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem

@@ -68,6 +68,13 @@ class GeofenceManager @Inject constructor(
         return foregroundLocationApproved && backgroundLocationApproved
     }
 
+    fun isGeofenceEnabled(location: LocationRelation): Boolean {
+        return getGeofencePendingIntent(
+            location.location,
+            location.onEnterProfile,
+            location.onExitProfile) != null
+    }
+
     @RequiresPermission(ACCESS_FINE_LOCATION)
     fun addGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
         geofencingClient.addGeofences(getGeofencingRequest(listOf(location)), createGeofencingPendingIntent(location, enterProfile, exitProfile))
@@ -79,8 +86,9 @@ class GeofenceManager @Inject constructor(
                 }
     }
 
+    @RequiresPermission(ACCESS_FINE_LOCATION)
     fun removeGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
-        val pendingIntent: PendingIntent? = getGeofencingPendingIntent(location, enterProfile, exitProfile)
+        val pendingIntent: PendingIntent? = getGeofencePendingIntent(location, enterProfile, exitProfile)
         if (pendingIntent != null) {
             geofencingClient.removeGeofences(pendingIntent)
                 .addOnSuccessListener {
@@ -130,7 +138,7 @@ class GeofenceManager @Inject constructor(
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
-    private fun getGeofencingPendingIntent(location: Location,enterProfile: Profile, exitProfile: Profile): PendingIntent? {
+    private fun getGeofencePendingIntent(location: Location, enterProfile: Profile, exitProfile: Profile): PendingIntent? {
         Intent(context, GeofenceReceiver::class.java).apply {
 
             action = ACTION_GEOFENCE_TRANSITION

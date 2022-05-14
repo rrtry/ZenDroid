@@ -5,6 +5,7 @@ import android.app.NotificationManager.*
 import android.content.Context
 import android.media.AudioManager
 import android.content.Context.*
+import android.content.Intent
 import com.example.volumeprofiler.entities.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -25,6 +26,7 @@ import com.example.volumeprofiler.util.ID_SCHEDULER
 import com.example.volumeprofiler.util.createAlarmAlertNotification
 import com.example.volumeprofiler.util.postNotification
 import java.util.*
+import kotlin.math.E
 
 @Singleton
 @Suppress("deprecation")
@@ -37,7 +39,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     private val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     private val telephonyManager: TelephonyManager = context.getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-    private val vibrator: Vibrator = context.getSystemService(VIBRATOR_SERVICE) as Vibrator
 
     fun setProfile(profile: Profile) {
 
@@ -104,17 +105,17 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     private fun setSilentMode(streamType: Int, flags: Int = 0) {
-        if (vibrator.hasVibrator()) {
+        if (audioManager.ringerMode == RINGER_MODE_VIBRATE) {
             adjustUnmuteStream(streamType)
         }
         audioManager.adjustStreamVolume(streamType, ADJUST_MUTE, flags)
     }
 
     private fun setVibrateMode(streamType: Int, flags: Int = 0) {
-        if (vibrator.hasVibrator()) {
+        if (audioManager.isStreamMute(streamType)) {
             adjustUnmuteStream(streamType)
-            audioManager.setStreamVolume(streamType, 0, flags)
         }
+        audioManager.setStreamVolume(streamType, 0, flags)
     }
 
     fun setStreamVolume(streamType: Int, index: Int, flags: Int) {
@@ -157,6 +158,26 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_UNMUTE, 0)
         }
+    }
+
+    fun isVolumeValid(streamType: Int, index: Int): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            return index >= audioManager.getStreamMinVolume(streamType)
+        }
+        if (streamType == STREAM_ALARM || streamType == STREAM_VOICE_CALL) {
+            return index >= 1
+        }
+        return index >= 0
+    }
+
+    fun getStreamMinVolume(streamType: Int): Int {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            return audioManager.getStreamMinVolume(streamType)
+        }
+        if (streamType == STREAM_ALARM || streamType == STREAM_VOICE_CALL) {
+            return 1
+        }
+        return 0
     }
 
     fun isNotificationPolicyAccessGranted(): Boolean {
@@ -228,9 +249,21 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     companion object {
 
         @JvmStatic
+        fun getStreamMinVolume(context: Context, streamType: Int): Int {
+            val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return audioManager.getStreamMinVolume(streamType)
+            }
+            if (streamType == STREAM_VOICE_CALL || streamType == STREAM_ALARM) {
+                return 1
+            }
+            return 0
+        }
+
+        @JvmStatic
         fun getStreamMaxVolume(context: Context, streamType: Int): Int {
             val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
-            return audioManager.getStreamMaxVolume(streamType)
+            return audioManager.getStreamMaxVolume(streamType) - getStreamMinVolume(context, streamType)
         }
     }
 }

@@ -1,150 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<androidx.cardview.widget.CardView xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/cardView"
-    android:animateLayoutChanges="true"
+<layout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginBottom="7dp"
-    android:layout_marginStart="7dp"
-    android:layout_marginEnd="7dp"
-    android:layout_marginTop="7dp"
-    app:cardCornerRadius="5dp">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <data>
+        <import type="com.example.volumeprofiler.util.TextUtil"/>
+        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
+
+        <variable
+            name="viewModel"
+            type="com.example.volumeprofiler.viewmodels.SchedulerViewModel" />
+
+        <variable
+            name="alarmRelation"
+            type="com.example.volumeprofiler.entities.AlarmRelation" />
+
+        <variable
+            name="listener"
+            type="com.example.volumeprofiler.fragments.SchedulerFragment.AlarmEditListener" />
+    </data>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
+        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="7dp"
+        android:layout_marginStart="7dp"
+        android:layout_marginEnd="7dp"
+        android:layout_marginTop="7dp"
+        app:cardCornerRadius="5dp">
 
-        <TextView
-            android:id="@+id/startTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:text="8:30 AM"
-            android:textSize="30sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/labelImageButton" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-        <View
-            android:id="@+id/clockViewSeparator"
-            android:layout_width="5dp"
-            android:layout_height="1dp"
-            android:background="@color/white"
-            app:layout_constraintTop_toTopOf="@+id/startTime"
-            app:layout_constraintBottom_toBottomOf="@+id/startTime"
-            app:layout_constraintStart_toEndOf="@+id/startTime"
-            android:layout_marginStart="8dp"/>
+            <TextView
+                android:id="@+id/startTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:text="@{TextUtil.formatLocalTime(context, alarmRelation.alarm.startTime)}"
+                android:textSize="30sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/labelImageButton" />
 
-        <TextView
-            android:id="@+id/endTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="1:00 PM"
-            android:textSize="30sp"
-            app:layout_constraintBottom_toBottomOf="@+id/startTime"
-            app:layout_constraintStart_toEndOf="@+id/clockViewSeparator"
-            app:layout_constraintTop_toTopOf="@+id/startTime" />
+            <View
+                android:id="@+id/clockViewSeparator"
+                android:layout_width="5dp"
+                android:layout_height="1dp"
+                android:background="@color/white"
+                app:layout_constraintTop_toTopOf="@+id/startTime"
+                app:layout_constraintBottom_toBottomOf="@+id/startTime"
+                app:layout_constraintStart_toEndOf="@+id/startTime"
+                android:layout_marginStart="8dp"/>
 
-        <Switch
-            android:id="@+id/scheduleSwitch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:clickable="false"
-            android:focusable="false"
-            android:transitionName="alarmDetailsTransition"
-            app:layout_constraintBottom_toBottomOf="@+id/endTime"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toEndOf="@+id/endTime"
-            app:layout_constraintTop_toTopOf="@+id/endTime" />
+            <TextView
+                android:id="@+id/endTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@{TextUtil.formatLocalTime(context, alarmRelation.alarm.endTime)}"
+                android:textSize="30sp"
+                app:layout_constraintBottom_toBottomOf="@+id/startTime"
+                app:layout_constraintStart_toEndOf="@+id/clockViewSeparator"
+                app:layout_constraintTop_toTopOf="@+id/startTime" />
 
-        <TextView
-            android:id="@+id/occurrencesTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:text="Sun, Mon, Tue, Sat"
-            app:layout_constraintStart_toEndOf="@+id/imageView4"
-            app:layout_constraintTop_toBottomOf="@+id/startTime" />
+            <Switch
+                android:id="@+id/scheduleSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:checked="@{alarmRelation.alarm.scheduled}"
+                android:onCheckedChanged="@{(button, bool)-> bool ? viewModel.scheduleAlarm(alarmRelation) : viewModel.cancelAlarm(alarmRelation)}"
+                app:layout_constraintBottom_toBottomOf="@+id/endTime"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="1.0"
+                app:layout_constraintStart_toEndOf="@+id/endTime"
+                app:layout_constraintTop_toTopOf="@+id/endTime" />
 
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="22dp"
-            android:layout_height="23dp"
-            android:layout_marginStart="16dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/profileName"
-            android:src="@drawable/baseline_notifications_active_black_24dp" />
+            <TextView
+                android:id="@+id/occurrencesTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="@{TextUtil.formatWeekDays(alarmRelation.alarm.scheduledDays, alarmRelation.alarm.startTime, alarmRelation.alarm.endTime)}"
+                app:layout_constraintStart_toEndOf="@+id/imageView4"
+                app:layout_constraintTop_toBottomOf="@+id/startTime" />
 
-        <TextView
-            android:id="@+id/profileName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:text="Profile"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView3"
-            app:layout_constraintTop_toBottomOf="@+id/imageView4" />
+            <ImageView
+                android:id="@+id/imageView3"
+                android:layout_width="22dp"
+                android:layout_height="23dp"
+                android:layout_marginStart="16dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/profileName"
+                android:src="@drawable/baseline_notifications_active_black_24dp" />
 
-        <ImageView
-            android:id="@+id/imageView4"
-            android:layout_width="22dp"
-            android:layout_height="20dp"
-            android:layout_marginStart="16dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/occurrencesTextView"
-            android:src="@drawable/baseline_calendar_today_black_24dp" />
+            <TextView
+                android:id="@+id/profileName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:text="@{BindingConverters.formatAlarmProfiles(alarmRelation)}"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/imageView3"
+                app:layout_constraintTop_toBottomOf="@+id/imageView4" />
 
-        <ImageButton
-            android:id="@+id/deleteAlarmButton"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
-            android:background="?attr/selectableItemBackground"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="9dp"
-            app:layout_constraintBottom_toBottomOf="@+id/profileName"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/profileName"
-            android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
+            <ImageView
+                android:id="@+id/imageView4"
+                android:layout_width="22dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="16dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/occurrencesTextView"
+                android:src="@drawable/baseline_calendar_today_black_24dp" />
 
-        <ImageButton
-            android:id="@+id/editAlarmButton"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
-            android:layout_marginEnd="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            app:layout_constraintBottom_toBottomOf="@+id/deleteAlarmButton"
-            app:layout_constraintEnd_toStartOf="@+id/deleteAlarmButton"
-            app:layout_constraintTop_toTopOf="@+id/deleteAlarmButton"
-            android:src="@drawable/baseline_drive_file_rename_outline_black_24dp" />
+            <ImageButton
+                android:id="@+id/deleteAlarmButton"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:background="?attr/selectableItemBackground"
+                android:layout_marginEnd="8dp"
+                android:onClick="@{() -> viewModel.removeAlarm(alarmRelation)}"
+                android:layout_marginBottom="9dp"
+                app:layout_constraintBottom_toBottomOf="@+id/profileName"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/profileName"
+                android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
 
-        <ImageView
-            android:id="@+id/labelImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:src="@drawable/ic_baseline_label_24" />
+            <ImageButton
+                android:id="@+id/editAlarmButton"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginEnd="16dp"
+                android:onClick="@{() -> listener.onEdit(alarmRelation)}"
+                android:background="?android:attr/selectableItemBackground"
+                app:layout_constraintBottom_toBottomOf="@+id/deleteAlarmButton"
+                app:layout_constraintEnd_toStartOf="@+id/deleteAlarmButton"
+                app:layout_constraintTop_toTopOf="@+id/deleteAlarmButton"
+                android:src="@drawable/baseline_drive_file_rename_outline_black_24dp" />
 
-        <TextView
-            android:id="@+id/eventTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="TextView"
-            app:layout_constraintBottom_toBottomOf="@+id/labelImageButton"
-            app:layout_constraintStart_toEndOf="@+id/labelImageButton"
-            app:layout_constraintTop_toTopOf="@+id/labelImageButton" />
+            <ImageView
+                android:id="@+id/labelImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:src="@drawable/ic_baseline_label_24" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.cardview.widget.CardView>
+            <TextView
+                android:id="@+id/eventTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@{alarmRelation.alarm.title}"
+                app:layout_constraintBottom_toBottomOf="@+id/labelImageButton"
+                app:layout_constraintStart_toEndOf="@+id/labelImageButton"
+                app:layout_constraintTop_toTopOf="@+id/labelImageButton" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+</layout>

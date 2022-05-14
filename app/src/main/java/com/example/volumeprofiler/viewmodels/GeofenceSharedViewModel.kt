@@ -72,7 +72,6 @@ class GeofenceSharedViewModel @Inject constructor(
 
     fun onExpandableFabClick() {
         viewModelScope.launch {
-            Log.i("GeofenceViewModel", "onExpandableFabClick")
             eventChannel.send(ViewEvent.ToggleFloatingActionMenu)
         }
     }
@@ -91,15 +90,12 @@ class GeofenceSharedViewModel @Inject constructor(
 
     fun onApplyChangesButtonClick() {
         viewModelScope.launch {
-            val location: Location? = getLocation(profilesStateFlow.value)
-            if (location != null) {
+            getLocation(profilesStateFlow.value)?.let {
                 if (locationId != null) {
-                    eventChannel.send(ViewEvent.OnUpdateGeofenceEvent(location))
+                    eventChannel.send(ViewEvent.OnUpdateGeofenceEvent(it))
                 } else {
-                    eventChannel.send(ViewEvent.OnInsertGeofenceEvent(location))
+                    eventChannel.send(ViewEvent.OnInsertGeofenceEvent(it))
                 }
-            } else {
-                eventChannel.send(ViewEvent.OnWrongInputEvent)
             }
         }
     }

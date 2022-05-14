@@ -116,7 +116,7 @@ class MapsActivity : AppCompatActivity(),
     private var floatingMenuVisible: Boolean = false
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
-    private lateinit var mMap: GoogleMap
+    private var mMap: GoogleMap? = null
     private lateinit var profiles: List<Profile>
     private lateinit var taskCancellationSource: CancellationTokenSource
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
@@ -179,8 +179,8 @@ class MapsActivity : AppCompatActivity(),
     private fun captureSnapshot(location: Location) {
         updateCameraBounds(LatLng(location.latitude, location.longitude), location.radius, false)
         Handler(Looper.getMainLooper()).postDelayed({
-            mMap.clear()
-            mMap.snapshot {
+            mMap?.clear()
+            mMap?.snapshot {
                 onSnapshotReady(it, location.previewImageId)
             }
         }, 100)
@@ -229,7 +229,7 @@ class MapsActivity : AppCompatActivity(),
                             is OnUpdateGeofenceEvent -> onUpdate(it.location)
                             is OnInsertGeofenceEvent -> onInsert(it.location)
                             is OnMapStyleChanged -> {
-                                mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(
+                                mMap?.setMapStyle(MapStyleOptions.loadRawResourceStyle(
                                     this@MapsActivity, it.style
                                 ))
                             }
@@ -254,8 +254,10 @@ class MapsActivity : AppCompatActivity(),
                 }
                 launch {
                     viewModel.profilesStateFlow.collect {
-                        profiles = it
-                        setEntity()
+                        if (it.isNotEmpty()) {
+                            profiles = it
+                            setEntity()
+                        }
                     }
                 }
             }
@@ -542,9 +544,9 @@ class MapsActivity : AppCompatActivity(),
     private fun updateCameraBounds(latLng: LatLng, radius: Float, animate: Boolean) {
         MapsUtil.getLatLngBoundsFromCircle(latLng, radius).also { bounds ->
             if (animate) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
+                mMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
             } else {
-                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
+                mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
             }
         }
     }
@@ -553,22 +555,22 @@ class MapsActivity : AppCompatActivity(),
         circle?.let { circle ->
             MapsUtil.getLatLngBoundsFromCircle(circle).also { bounds ->
                 if (animate) {
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
+                    mMap?.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
                 } else {
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
+                    mMap?.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0))
                 }
             }
         }
     }
 
     private fun updatePosition(latLng: LatLng, queryAddress: Boolean) {
-
         addMarker(latLng)
         addCircle(latLng)
-        updateCameraBounds(MapsUtil.isTargetWithinVisibleRegion(
-            mMap, latLng
-        ))
-
+        mMap?.also {
+            updateCameraBounds(MapsUtil.isTargetWithinVisibleRegion(
+                it, latLng
+            ))
+        }
         if (queryAddress) {
             getAddress(latLng)
         } else {
@@ -602,7 +604,7 @@ class MapsActivity : AppCompatActivity(),
 
     private fun addCircle(latLng: LatLng) {
         circle?.remove()
-        circle = mMap.addCircle(CircleOptions()
+        circle = mMap?.addCircle(CircleOptions()
                 .center(latLng)
                 .radius(viewModel.getRadius().toDouble())
                 .strokeColor(Color.TRANSPARENT)
@@ -611,7 +613,7 @@ class MapsActivity : AppCompatActivity(),
 
     private fun addMarker(latLng: LatLng) {
         marker?.remove()
-        marker = mMap.addMarker(MarkerOptions().position(latLng))
+        marker = mMap?.addMarker(MarkerOptions().position(latLng))
     }
 
     private fun getLocaleLocation() {
@@ -694,10 +696,10 @@ class MapsActivity : AppCompatActivity(),
     @SuppressLint("PotentialBehaviorOverride")
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap.setOnInfoWindowLongClickListener(this)
-        mMap.setOnMapClickListener(this)
-        mMap.setOnCameraMoveStartedListener(this)
-        mMap.setOnMarkerDragListener(this)
+        mMap?.setOnInfoWindowLongClickListener(this)
+        mMap?.setOnMapClickListener(this)
+        mMap?.setOnCameraMoveStartedListener(this)
+        mMap?.setOnMarkerDragListener(this)
     }
 
     override fun onInfoWindowLongClick(p0: Marker) {

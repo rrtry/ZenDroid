@@ -4,8 +4,6 @@ import androidx.lifecycle.*
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.database.repositories.AlarmRepository
-import com.example.volumeprofiler.database.repositories.EventRepository
-import com.example.volumeprofiler.entities.EventRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +14,6 @@ import javax.inject.Inject
 @HiltViewModel
 class SchedulerViewModel @Inject constructor(
     private val alarmRepository: AlarmRepository,
-    private val eventRepository: EventRepository
 ): ViewModel() {
 
     val alarmsFlow: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
@@ -32,21 +29,21 @@ class SchedulerViewModel @Inject constructor(
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val viewEvents: Flow<ViewEvent> = channel.receiveAsFlow()
 
-    fun sendScheduleAlarmEvent(alarmRelation: AlarmRelation) {
+    fun scheduleAlarm(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
             scheduleAlarm(alarmRelation.alarm)
             channel.send(ViewEvent.OnAlarmSet(alarmRelation, getScheduledAlarms()))
         }
     }
 
-    fun sendCancelAlarmEvent(alarmRelation: AlarmRelation) {
+    fun cancelAlarm(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
             cancelAlarm(alarmRelation.alarm)
             channel.send(ViewEvent.OnAlarmCancelled(alarmRelation, getScheduledAlarms()))
         }
     }
 
-    fun sendRemoveAlarmEvent(alarmRelation: AlarmRelation) {
+    fun removeAlarm(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
             removeAlarm(alarmRelation.alarm)
             channel.send(ViewEvent.OnAlarmRemoved(alarmRelation, getScheduledAlarms()))

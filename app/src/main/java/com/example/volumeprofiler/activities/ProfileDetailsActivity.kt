@@ -173,7 +173,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
     private fun openInterruptionsFilterFragment() {
         supportFragmentManager
             .beginTransaction()
-            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
             .replace(R.id.fragmentContainer, InterruptionFilterFragment(), null)
             .addToBackStack(null)
             .commit()

@@ -82,7 +82,6 @@ class ProfileDetailsViewModel @Inject constructor(
         data class GetDefaultRingtoneUri(val type: Int): ViewEvent()
         data class ChangeRingtoneEvent(val ringtoneType: Int): ViewEvent()
         data class ShowPopupWindow(val category: Int): ViewEvent()
-        data class AlarmStreamVolumeChanged(val streamType: Int, val volume: Int): ViewEvent()
         data class StreamVolumeChanged(val streamType: Int, val volume: Int): ViewEvent()
 
         data class OnUpdateProfileEvent(val profile: Profile): ViewEvent()
@@ -145,7 +144,6 @@ class ProfileDetailsViewModel @Inject constructor(
     val suppressedVisualEffects: MutableStateFlow<Int> = MutableStateFlow(0)
     val primaryConversationSenders: MutableStateFlow<Int> = MutableStateFlow(CONVERSATION_SENDERS_ANYONE)
 
-    val storagePermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val phonePermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationPolicyAccessGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val canWriteSettings: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -217,10 +215,6 @@ class ProfileDetailsViewModel @Inject constructor(
         notificationSoundUri.value = profile.notificationSoundUri
         alarmSoundUri.value = profile.alarmSoundUri
 
-        ringtoneUri = profile.phoneRingtoneUri
-        notificationUri = profile.notificationSoundUri
-        alarmUri = profile.alarmSoundUri
-
         streamsUnlinked.value = profile.streamsUnlinked
 
         interruptionFilter.value = profile.interruptionFilter
@@ -237,12 +231,15 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun setEntity(profile: Profile, hasExtras: Boolean) {
         if (!isEntitySet) {
+
             setProfile(profile)
+
             if (hasExtras) {
                 setProfileUUID(profile.id)
             } else {
                 isNew.value = true
             }
+
             isEntitySet = true
         }
     }
@@ -276,10 +273,6 @@ class ProfileDetailsViewModel @Inject constructor(
         return profileUUID.value != null
     }
 
-    fun usesUnlinkedStreams(): Boolean {
-        return streamsUnlinked.value
-    }
-
     private fun setProfileUUID(uuid : UUID) {
         profileUUID.value = uuid
     }
@@ -287,10 +280,11 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onSaveChangesButtonClick() {
         viewModelScope.launch {
             getProfile().let {
-                activityEventChannel.send(
-                    if (updateProfile()) ViewEvent.OnUpdateProfileEvent(it)
-                    else ViewEvent.OnInsertProfileEvent(it)
-                )
+                if (updateProfile()) {
+                    activityEventChannel.send(ViewEvent.OnUpdateProfileEvent(it))
+                } else {
+                    activityEventChannel.send(ViewEvent.OnInsertProfileEvent(it))
+                }
             }
         }
     }
@@ -312,6 +306,16 @@ class ProfileDetailsViewModel @Inject constructor(
             } else {
                 fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
+        }
+    }
+
+    fun setStreamVolume(streamType: Int, volume: Int) {
+        when (streamType) {
+            STREAM_MUSIC -> mediaVolume.value = volume
+            STREAM_VOICE_CALL -> callVolume.value = volume
+            STREAM_NOTIFICATION -> notificationVolume.value = volume
+            STREAM_RING -> ringVolume.value = volume
+            STREAM_ALARM -> alarmVolume.value = volume
         }
     }
 
@@ -440,20 +444,24 @@ class ProfileDetailsViewModel @Inject constructor(
         mediaVolume.value = index
     }
 
-    fun onAlarmStreamVolumeChanged(index: Int, fromUser: Boolean) {
+    fun onAlarmStreamVolumeChanged(index: Int, fromUser: Boolean, streamMinVolume: Int) {
+        val volume: Int = index + streamMinVolume
         if (fromUser) {
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.AlarmStreamVolumeChanged(STREAM_ALARM, index))
+                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_ALARM, volume))
             }
         }
+        alarmVolume.value = volume
     }
 
-    fun onVoiceCallStreamVolumeChanged(index: Int, fromUser: Boolean) {
+    fun onVoiceCallStreamVolumeChanged(index: Int, fromUser: Boolean, streamMinVolume: Int) {
+        val volume: Int = index + streamMinVolume
         if (fromUser) {
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.AlarmStreamVolumeChanged(STREAM_VOICE_CALL, index))
+                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_VOICE_CALL, volume))
             }
         }
+        callVolume.value = volume
     }
 
     fun onInterruptionFilterLayoutClick() {

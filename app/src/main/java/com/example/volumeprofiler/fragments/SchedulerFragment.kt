@@ -37,7 +37,6 @@ import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.interfaces.*
-import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.ui.animations.AnimUtil
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
@@ -56,6 +55,11 @@ class SchedulerFragment: Fragment(),
     ActionModeProvider<Long>,
     FragmentSwipedListener,
     MainActivity.OptionsItemSelectedListener {
+
+    interface AlarmEditListener {
+
+        fun onEdit(alarmRelation: AlarmRelation)
+    }
 
     private var showDialog: Boolean = false
 
@@ -86,14 +90,7 @@ class SchedulerFragment: Fragment(),
     }
 
     override fun onSelected(itemId: Int) {
-        when (itemId) {
-            R.id.action_show_scheduled_for_today -> {
 
-            }
-            else -> {
-
-            }
-        }
     }
 
     override fun onAttach(context: Context) {
@@ -150,7 +147,6 @@ class SchedulerFragment: Fragment(),
                             }
                             is SchedulerViewModel.ViewEvent.OnAlarmCancelled -> {
                                 scheduleManager.cancelAlarm(it.relation.alarm)
-                                alarmAdapter.updateAlarmState(it.relation.alarm)
                                 profileManager.setScheduledProfile(it.scheduledAlarms)
                             }
                             is SchedulerViewModel.ViewEvent.OnAlarmSet -> {
@@ -162,7 +158,6 @@ class SchedulerFragment: Fragment(),
                                 )
 
                                 profileManager.setScheduledProfile(it.scheduledAlarms)
-                                alarmAdapter.updateAlarmState(it.relation.alarm)
 
                                 activity?.showSnackBar(
                                     scheduleManager.getNextOccurrenceFormatted(
@@ -220,21 +215,14 @@ class SchedulerFragment: Fragment(),
 
     private inner class AlarmViewHolder(private val binding: AlarmItemViewBinding) :
         RecyclerView.ViewHolder(binding.root),
-        View.OnClickListener,
-        ViewHolderItemDetailsProvider<Long> {
+        ViewHolderItemDetailsProvider<Long>,
+        AlarmEditListener {
 
         init {
-            binding.root.setOnClickListener(this)
             ViewCompat.setTransitionName(binding.startTime, SHARED_TRANSITION_START_TIME)
             ViewCompat.setTransitionName(binding.endTime, SHARED_TRANSITION_END_TIME)
             ViewCompat.setTransitionName(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH)
             ViewCompat.setTransitionName(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
-        }
-
-        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Long> {
-            return ItemDetails(bindingAdapterPosition,
-                alarmAdapter.getItemAtPosition(bindingAdapterPosition).alarm.id
-            )
         }
 
         private fun createTransitionAnimationOptions(): ActivityOptionsCompat {
@@ -246,45 +234,25 @@ class SchedulerFragment: Fragment(),
                 androidx.core.util.Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR))
         }
 
-        fun updateScheduledState(scheduled: Boolean) {
-            binding.scheduleSwitch.isChecked = scheduled
+        override fun onEdit(alarmRelation: AlarmRelation) {
+            startAlarmDetailsActivity(
+                alarmRelation,
+                createTransitionAnimationOptions())
+        }
+
+        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Long> {
+            return ItemDetails(bindingAdapterPosition,
+                alarmAdapter.getItemAtPosition(bindingAdapterPosition).alarm.id
+            )
         }
 
         fun bind(alarmRelation: AlarmRelation) {
-
-            val alarm: Alarm = alarmRelation.alarm
-            val startProfile: Profile = alarmRelation.startProfile
-            val endProfile: Profile = alarmRelation.endProfile
-
-            binding.eventTitle.text = alarm.title
-            binding.editAlarmButton.setOnClickListener {
-                startAlarmDetailsActivity(
-                    alarmAdapter.getItemAtPosition(bindingAdapterPosition),
-                    createTransitionAnimationOptions())
-            }
-            binding.deleteAlarmButton.setOnClickListener {
-                viewModel.sendRemoveAlarmEvent(
-                    alarmAdapter.getItemAtPosition(bindingAdapterPosition)
-                )
-            }
-            binding.startTime.text = TextUtil.formatLocalTime(requireContext(), alarm.startTime)
-            binding.endTime.text = TextUtil.formatLocalTime(requireContext(), alarm.endTime)
-            binding.occurrencesTextView.text = TextUtil.formatWeekDays(
-                alarm.scheduledDays, alarm.startTime, alarm.endTime
-            )
-            binding.profileName.text = "${startProfile.title} - ${endProfile.title}"
-            binding.scheduleSwitch.isChecked = alarm.isScheduled
-        }
-
-        override fun onClick(v: View?) {
-            alarmAdapter.getItemAtPosition(bindingAdapterPosition).also {
-                if (!tracker.isSelected(it.alarm.id)) {
-                    if (it.alarm.isScheduled) {
-                        viewModel.sendCancelAlarmEvent(it)
-                    } else {
-                        viewModel.sendScheduleAlarmEvent(it)
-                    }
-                }
+            binding.also {
+                it.alarmRelation = alarmRelation
+                it.listener = this
+                it.viewModel = viewModel
+                it.lifecycleOwner = viewLifecycleOwner
+                it.executePendingBindings()
             }
         }
     }
@@ -301,6 +269,7 @@ class SchedulerFragment: Fragment(),
 
         override fun getChangePayload(oldItem: AlarmRelation, newItem: AlarmRelation): Any? {
             super.getChangePayload(oldItem, newItem)
+
             if (oldItem.alarm.isScheduled != newItem.alarm.isScheduled) {
                 return getScheduledStatePayload(newItem.alarm.isScheduled)
             }
@@ -308,13 +277,6 @@ class SchedulerFragment: Fragment(),
         }
 
     }), ListAdapterItemProvider<Long> {
-
-        fun updateAlarmState(alarm: Alarm) {
-            notifyItemChanged(
-                getItemPosition(alarm.id),
-                getScheduledStatePayload(alarm.isScheduled)
-            )
-        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {
             return AlarmViewHolder(
@@ -325,19 +287,6 @@ class SchedulerFragment: Fragment(),
             )
         }
 
-        fun refresh() {
-            currentList.also {
-                submitList(null)
-                submitList(it)
-            }
-        }
-
-        fun getItemPosition(id: Long): Int {
-            return currentList.indexOfFirst {
-                it.alarm.id == id
-            }
-        }
-
         @Suppress("unchecked_cast")
         override fun onBindViewHolder(
             holder: AlarmViewHolder,
@@ -345,14 +294,10 @@ class SchedulerFragment: Fragment(),
             payloads: MutableList<Any>
         ) {
             if (payloads.isNotEmpty()) {
-                (payloads as MutableList<Bundle>).forEach { bundle ->
-                    bundle.keySet().forEach {
-                        when (it) {
-                            SELECTION_CHANGED_MARKER -> {
-                                AnimUtil.selected(holder.itemView, tracker.isSelected(getItem(position).alarm.id))
-                            }
-                            SCHEDULED_STATE_CHANGED -> holder.updateScheduledState(bundle.getBoolean(it))
-                        }
+                payloads.forEach { i ->
+                    when (i) {
+                        is Bundle -> holder.bind(getItem(position))
+                        SELECTION_CHANGED_MARKER -> AnimUtil.selected(holder.itemView, tracker.isSelected(getItem(position).alarm.id))
                     }
                 }
             } else super.onBindViewHolder(holder, position, payloads)
@@ -368,6 +313,26 @@ class SchedulerFragment: Fragment(),
 
         override fun onBindViewHolder(holder: AlarmViewHolder, position: Int) {
             holder.bind(getItem(position))
+        }
+
+        fun refresh() {
+            currentList.also {
+                submitList(null)
+                submitList(it)
+            }
+        }
+
+        fun getItemPosition(id: Long): Int {
+            return currentList.indexOfFirst {
+                it.alarm.id == id
+            }
+        }
+
+        fun updateAlarmState(alarm: Alarm) {
+            notifyItemChanged(
+                getItemPosition(alarm.id),
+                getScheduledStatePayload(alarm.isScheduled)
+            )
         }
 
         fun getItemAtPosition(position: Int): AlarmRelation {
@@ -391,7 +356,7 @@ class SchedulerFragment: Fragment(),
 
     override fun onActionItemRemove() {
         tracker.selection.forEach { selection ->
-            viewModel.sendRemoveAlarmEvent(
+            viewModel.removeAlarm(
                 alarmAdapter.currentList.first {
                     it.alarm.id == selection
                 }

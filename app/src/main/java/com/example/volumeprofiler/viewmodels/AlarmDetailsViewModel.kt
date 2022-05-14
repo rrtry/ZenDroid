@@ -1,9 +1,7 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.volumeprofiler.core.ScheduleCalendar
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
@@ -19,7 +17,6 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
 import java.util.*
 import javax.inject.Inject
 
@@ -149,13 +146,10 @@ class AlarmDetailsViewModel @Inject constructor(
         return profilesStateFlow.value[startProfileSpinnerPosition.value]
     }
 
-    private fun getPosition(uuid: UUID, profiles: List<Profile>): Int {
-        for ((index, i) in profiles.withIndex()) {
-            if (i.id == uuid) {
-                return index
-            }
+    private fun getIndex(uuid: UUID, profiles: List<Profile>): Int {
+        return profiles.indexOfFirst {
+            it.id == uuid
         }
-        return 0
     }
 
     fun setEntity(alarmRelation: AlarmRelation, profiles: List<Profile>) {
@@ -173,8 +167,8 @@ class AlarmDetailsViewModel @Inject constructor(
             alarmId = alarm.id
             isScheduled = alarm.isScheduled
 
-            startProfileSpinnerPosition.value = getPosition(startProfile.id, profiles)
-            endProfileSpinnerPosition.value = getPosition(endProfile.id, profiles)
+            startProfileSpinnerPosition.value = getIndex(startProfile.id, profiles)
+            endProfileSpinnerPosition.value = getIndex(endProfile.id, profiles)
 
             entitySet = true
         }

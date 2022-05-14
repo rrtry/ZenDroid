@@ -29,7 +29,6 @@ import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
@@ -46,7 +45,6 @@ import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.interfaces.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
@@ -192,14 +190,14 @@ class ProfilesListFragment: Fragment(),
         activity = null
     }
 
-    private inner class ProfileHolder(private val adapterBinding: ProfileItemViewBinding):
-            RecyclerView.ViewHolder(adapterBinding.root),
+    private inner class ProfileHolder(private val binding: ProfileItemViewBinding):
+            RecyclerView.ViewHolder(binding.root),
             ViewHolderItemDetailsProvider<String>,
             View.OnClickListener {
 
         init {
-            adapterBinding.root.setOnClickListener(this)
-            adapterBinding.expandableView.visibility = View.GONE
+            binding.root.setOnClickListener(this)
+            binding.expandableView.visibility = View.GONE
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> {
@@ -208,21 +206,20 @@ class ProfilesListFragment: Fragment(),
 
         private fun expand(animate: Boolean) {
             if (animate) {
-                TransitionManager.beginDelayedTransition(binding.root, AutoTransition())
-                adapterBinding.expandButton.animate().rotation(180.0f).start()
+                TransitionManager.beginDelayedTransition(this@ProfilesListFragment.binding.root, AutoTransition())
+                binding.expandButton.animate().rotation(180.0f).start()
+            } else {
+                binding.expandButton.rotation = 180f
             }
-            else {
-                adapterBinding.expandButton.rotation = 180f
-            }
-            adapterBinding.itemSeparator.visibility = View.VISIBLE
-            adapterBinding.expandableView.visibility = View.VISIBLE
+            binding.itemSeparator.visibility = View.VISIBLE
+            binding.expandableView.visibility = View.VISIBLE
         }
 
         private fun collapse() {
-            TransitionManager.beginDelayedTransition(binding.root, AutoTransition())
-            adapterBinding.itemSeparator.visibility = View.GONE
-            adapterBinding.expandableView.visibility = View.GONE
-            adapterBinding.expandButton.animate().rotation(0f).start()
+            TransitionManager.beginDelayedTransition(this@ProfilesListFragment.binding.root, AutoTransition())
+            binding.itemSeparator.visibility = View.GONE
+            binding.expandableView.visibility = View.GONE
+            binding.expandButton.animate().rotation(0f).start()
         }
 
         private fun setViewScale(isSelected: Boolean) {
@@ -233,7 +230,7 @@ class ProfilesListFragment: Fragment(),
 
         fun bind(profile: Profile, isSelected: Boolean, animate: Boolean) {
 
-            adapterBinding.checkBox.text = profile.title
+            binding.checkBox.text = profile.title
 
             if (animate) {
                 AnimUtil.selected(itemView, isSelected)
@@ -241,19 +238,19 @@ class ProfilesListFragment: Fragment(),
                 setViewScale(isSelected)
             }
             preferencesManager.isProfileEnabled(profile).let {
-                adapterBinding.checkBox.isChecked = it
+                binding.checkBox.isChecked = it
                 if (it) {
                     viewModel.lastSelected = profile.id
                 }
             }
-            adapterBinding.expandButton.setOnClickListener {
-                if (adapterBinding.expandableView.isVisible) {
+            binding.expandButton.setOnClickListener {
+                if (binding.expandableView.isVisible) {
                     collapse()
                 } else {
                     expand(true)
                 }
             }
-            adapterBinding.editProfileButton.setOnClickListener {
+            binding.editProfileButton.setOnClickListener {
                 startActivity(Intent(
                     requireContext(),
                     ProfileDetailsActivity::class.java
@@ -261,7 +258,7 @@ class ProfilesListFragment: Fragment(),
                     putExtra(EXTRA_PROFILE, profile)
                 })
             }
-            adapterBinding.removeProfileButton.setOnClickListener {
+            binding.removeProfileButton.setOnClickListener {
                 viewModel.removeProfile(profile)
             }
         }

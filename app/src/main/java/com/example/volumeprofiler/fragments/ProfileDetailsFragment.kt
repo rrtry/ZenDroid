@@ -151,7 +151,6 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -197,9 +196,6 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
                                     }
                                     detailsViewModel.setPlaybackState(it.streamType, true)
                                 }
-                            }
-                            is ProfileDetailsViewModel.ViewEvent.AlarmStreamVolumeChanged -> {
-                                changePlaybackVolume(it.streamType, it.volume)
                             }
                             is ProfileDetailsViewModel.ViewEvent.ChangeRingerMode -> {
                                 updateRingerMode(it.streamType)
@@ -285,14 +281,14 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         phonePermissionLauncher.unregister()
     }
 
-    private fun startSystemSettingsActivity(): Unit {
+    private fun startSystemSettingsActivity() {
         systemPreferencesLauncher.launch(
             Intent(ACTION_MANAGE_WRITE_SETTINGS,
                 Uri.parse("package:${requireContext().packageName}"))
         )
     }
 
-    private fun startRingtonePickerActivity(type: Int): Unit {
+    private fun startRingtonePickerActivity(type: Int) {
         val contract: RingtonePickerContract = ringtoneActivityLauncher.contract as RingtonePickerContract
         when (type) {
             TYPE_RINGTONE -> contract.existingUri = detailsViewModel.phoneRingtoneUri.value
@@ -330,24 +326,16 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    private fun registerForRingtonePickerResult(): Unit {
-        val contract: RingtonePickerContract = RingtonePickerContract()
-        ringtoneActivityLauncher = registerForActivityResult(contract) {
-            if (it != null) {
-                when (contract.ringtoneType) {
-                    TYPE_RINGTONE -> {
-                        detailsViewModel.phoneRingtoneUri.value = it
-                        detailsViewModel.ringtoneUri = it
+    private fun registerForRingtonePickerResult() {
+        RingtonePickerContract().apply {
+            ringtoneActivityLauncher = registerForActivityResult(this) {
+                it?.also {
+                    when (ringtoneType) {
+                        TYPE_RINGTONE -> detailsViewModel.phoneRingtoneUri.value = it
+                        TYPE_NOTIFICATION -> detailsViewModel.notificationSoundUri.value = it
+                        TYPE_ALARM -> detailsViewModel.alarmSoundUri.value = it
+                        else -> Log.i("EditProfileFragment", "unknown ringtone type")
                     }
-                    TYPE_NOTIFICATION -> {
-                        detailsViewModel.notificationSoundUri.value = it
-                        detailsViewModel.notificationUri = it
-                    }
-                    TYPE_ALARM -> {
-                        detailsViewModel.alarmSoundUri.value = it
-                        detailsViewModel.alarmUri = it
-                    }
-                    else -> Log.i("EditProfileFragment", "unknown ringtone type")
                 }
             }
         }
@@ -389,14 +377,15 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    @Suppress("deprecation")
     private fun createVibrateEffect() {
-        vibrator?.let {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                it.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                it.vibrate(100)
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
             }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                vibrator?.vibrate(VibrationEffect.createOneShot(100, 100))
+            }
+            else -> vibrator?.vibrate(100)
         }
     }
 

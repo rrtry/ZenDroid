@@ -16,6 +16,8 @@ abstract class BaseDialog: DialogFragment() {
     protected var categoriesMask: Int = 0
     private var argsSet: Boolean = false
 
+    abstract fun applyChanges(mask: Int)
+
     private fun removeBit(category: Int) {
         categoriesMask = categoriesMask and category.inv()
     }
@@ -83,8 +85,6 @@ abstract class BaseDialog: DialogFragment() {
     protected fun getListView(): ListView {
         return (dialog as AlertDialog).listView
     }
-
-    abstract fun applyChanges(mask: Int): Unit
 
     companion object {
 

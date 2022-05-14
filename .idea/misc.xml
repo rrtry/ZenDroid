@@ -109,14 +109,14 @@
         <entry key="app/src/main/res/layout-v23/zen_preferences_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout-v24/create_profile_fragment.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/layout-v24/zen_preferences_fragment.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.33926521239954077" />
+        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout-v28/zen_preferences_fragment.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/layout-v30/create_profile_fragment.xml" value="0.33926521239954077" />
+        <entry key="app/src/main/res/layout-v30/create_profile_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout-v30/zen_preferences_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout-v31/map_decoration_item.xml" value="0.44655797101449274" />
         <entry key="app/src/main/res/layout/activity_intro.xml" value="0.17346014492753623" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.5" />
-        <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.1" />
         <entry key="app/src/main/res/layout/alarms_fragment.xml" value="0.26494427558257344" />
         <entry key="app/src/main/res/layout/bottom_sheet_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout/calendar_event_activity.xml" value="0.14969604863221886" />

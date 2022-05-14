@@ -27,6 +27,7 @@ import android.graphics.BitmapFactory
 import android.media.ThumbnailUtils
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.selection.SelectionTracker
@@ -44,14 +45,13 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
 
+    private val viewModel: LocationsListViewModel by viewModels()
+
     private val locationAdapter: LocationAdapter by lazy {
-        LocationAdapter()
-    }
+        LocationAdapter() }
 
     private var _binding: LocationsListFragmentBinding? = null
     private val binding: LocationsListFragmentBinding get() = _binding!!
-
-    private val viewModel: LocationsListViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -66,11 +66,11 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
         return binding.root
     }
 
-    private fun startMapActivity(locationRelation: LocationRelation? = null): Unit {
+    private fun startMapActivity(locationRelation: LocationRelation? = null) {
         startActivity(MapsActivity.newIntent(requireContext(), locationRelation))
     }
 
-    private fun updateAdapterData(list: List<LocationRelation>): Unit {
+    private fun updateAdapterData(list: List<LocationRelation>) {
         if (list.isEmpty()) {
             binding.hintLocations.visibility = View.VISIBLE
         } else {
@@ -101,6 +101,7 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
         }
     }
 
+    @Suppress("MissingPermission")
     private fun removeGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
@@ -120,6 +121,7 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
         locationAdapter.updateGeofenceState(locationRelation, true)
     }
 
+    @Suppress("MissingPermission")
     private fun disableGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
@@ -185,27 +187,7 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
             return oldItem == newItem
         }
 
-        override fun getChangePayload(oldItem: LocationRelation, newItem: LocationRelation): Any? {
-            super.getChangePayload(oldItem, newItem)
-
-            if (oldItem.location.enabled != newItem.location.enabled) {
-                return getEnabledStatePayload(newItem.location.enabled)
-            }
-            return null
-        }
-
     }), ListAdapterItemProvider<String> {
-
-        fun updateGeofenceState(relation: LocationRelation, enabled: Boolean) {
-            notifyItemChanged(
-                currentList.indexOfFirst { relation.location.id == it.location.id },
-                enabled
-            )
-        }
-
-        fun getItemAtPosition(position: Int): LocationRelation {
-            return getItem(position)
-        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LocationViewHolder {
             return LocationViewHolder(
@@ -223,15 +205,13 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
             payloads: MutableList<Any>
         ) {
             if (payloads.isNotEmpty()) {
-                (payloads as MutableList<Bundle>).forEach { bundle ->
-                    bundle.keySet().forEach {
-                        when (it) {
-                            SelectionTracker.SELECTION_CHANGED_MARKER -> {
+                payloads.forEach {
+                    when (it) {
+                        is Bundle -> {
+                            holder.updateEnabledState(it.getBoolean(PAYLOAD_GEOFENCE_CHANGED))
+                        }
+                        SelectionTracker.SELECTION_CHANGED_MARKER -> {
 
-                            }
-                            PAYLOAD_GEOFENCE_ENABLED -> {
-                                holder.updateEnabledState(bundle.getBoolean(it, false))
-                            }
                         }
                     }
                 }
@@ -248,6 +228,17 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
 
         override fun getPosition(key: String): Int {
             return currentList.indexOfFirst { key == it.location.id.toString() }
+        }
+
+        fun updateGeofenceState(relation: LocationRelation, enabled: Boolean) {
+            notifyItemChanged(
+                currentList.indexOfFirst { relation.location.id == it.location.id },
+                getEnabledStatePayload(enabled)
+            )
+        }
+
+        fun getItemAtPosition(position: Int): LocationRelation {
+            return getItem(position)
         }
     }
 
@@ -271,12 +262,12 @@ class LocationsListFragment: Fragment(), FabContainer, FragmentSwipedListener {
 
     companion object {
 
+        private const val PAYLOAD_GEOFENCE_CHANGED: String = "geofence_changed"
+
         fun getEnabledStatePayload(enabled: Boolean): Bundle {
             return Bundle().apply {
-                putBoolean(PAYLOAD_GEOFENCE_ENABLED, enabled)
+                putBoolean(PAYLOAD_GEOFENCE_CHANGED, enabled)
             }
         }
-
-        private const val PAYLOAD_GEOFENCE_ENABLED: String = "payload_geofence_enabled"
     }
 }

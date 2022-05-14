@@ -3,6 +3,7 @@ package com.example.volumeprofiler.util.ui
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import androidx.databinding.BindingConversion
+import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.util.interruptionPolicy.*
 
 object BindingConverters {
@@ -53,6 +54,12 @@ object BindingConverters {
                 else -> throw IllegalArgumentException("Invalid priority category")
             }
         })
+    }
+
+    @BindingConversion
+    @JvmStatic
+    fun formatAlarmProfiles(alarmRelation: AlarmRelation): String {
+        return "${alarmRelation.startProfile.title} - ${alarmRelation.endProfile.title}"
     }
 
     @BindingConversion

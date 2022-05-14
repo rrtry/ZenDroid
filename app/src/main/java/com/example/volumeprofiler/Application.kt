@@ -18,12 +18,12 @@ class Application: Application(), LifecycleObserver {
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    private fun onStop(): Unit {
+    private fun onStop() {
 
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    private fun onResume(): Unit {
+    private fun onResume() {
 
     }
 

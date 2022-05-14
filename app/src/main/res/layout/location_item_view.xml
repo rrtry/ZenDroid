@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<com.google.android.material.card.MaterialCardView xmlns:tools="http://schemas.android.com/tools"
+<androidx.cardview.widget.CardView xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/cardView"
     android:animateLayoutChanges="true"
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -11,14 +11,12 @@
     android:layout_marginStart="7dp"
     android:layout_marginEnd="7dp"
     android:layout_marginTop="7dp"
-    android:background="?attr/colorOnSecondary"
     app:cardCornerRadius="5dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="?attr/colorPrimary">
+        android:layout_height="match_parent">
 
         <ImageView
             android:id="@+id/locationImageView"
@@ -26,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:src="@drawable/ic_baseline_location_on_24"
+            android:src="@drawable/baseline_location_on_black_24dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -48,7 +46,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/locationImageView"
             android:layout_marginStart="16dp"
-            android:src="@drawable/ic_baseline_volume_up_24"
+            android:src="@drawable/baseline_notifications_active_black_24dp"
             app:layout_constraintBottom_toBottomOf="@+id/geofenceProfiles"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/geofenceProfiles" />
@@ -60,7 +58,6 @@
             android:layout_below="@+id/geofenceTitle"
             android:layout_marginStart="8dp"
             android:layout_toRightOf="@+id/profileImageView"
-            android:text="Priority only - Silent"
             android:textColor="@color/white"
             app:layout_constraintBottom_toBottomOf="@+id/editGeofenceButton"
             app:layout_constraintStart_toEndOf="@+id/profileImageView"
@@ -83,7 +80,7 @@
             android:layout_height="45dp"
             android:layout_marginEnd="8dp"
             android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/baseline_drive_file_rename_outline_grey_400_24dp"
+            android:src="@drawable/baseline_drive_file_rename_outline_black_24dp"
             app:layout_constraintBottom_toBottomOf="@+id/removeGeofenceButton"
             app:layout_constraintEnd_toStartOf="@+id/removeGeofenceButton"
             app:layout_constraintTop_toTopOf="@+id/removeGeofenceButton"
@@ -95,7 +92,7 @@
             android:layout_height="45dp"
             android:layout_marginTop="8dp"
             android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/ic_baseline_delete_forever_24"
+            android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp"
             app:layout_constraintEnd_toEndOf="@+id/enableGeofenceSwitch"
             app:layout_constraintTop_toBottomOf="@+id/enableGeofenceSwitch"
             tools:ignore="NotSibling" />
@@ -113,4 +110,4 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</com.google.android.material.card.MaterialCardView>
+</androidx.cardview.widget.CardView>
