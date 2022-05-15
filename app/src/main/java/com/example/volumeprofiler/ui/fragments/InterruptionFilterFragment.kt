@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.content.Context
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.ViewEvent.*
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
@@ -72,18 +74,10 @@ class InterruptionFilterFragment: Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             detailsViewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
                 when (it) {
-                    ProfileDetailsViewModel.ViewEvent.StartContactsActivity -> {
-                        startFavoriteContactsActivity()
-                    }
-                    is ProfileDetailsViewModel.ViewEvent.ShowPopupWindow -> {
-                        showPopupWindow(it.category)
-                    }
-                    is ProfileDetailsViewModel.ViewEvent.ShowDialogFragment -> {
-                        showDialog(it.dialogType)
-                    }
-                    else -> {
-                        Log.i("EditProfileFragment", "unknown event")
-                    }
+                    StartContactsActivity -> startFavoriteContactsActivity()
+                    is ShowPopupWindow -> showPopupWindow(it.category)
+                    is ShowDialogFragment -> showDialog(it.dialogType)
+                    else -> Log.i("EditProfileFragment", "unknown event")
                 }
             }.collect()
         }
@@ -91,19 +85,19 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
         return when (type) {
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance(detailsViewModel.getProfile())
-            ProfileDetailsViewModel.DialogType.SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance(detailsViewModel.getProfile())
-            ProfileDetailsViewModel.DialogType.PRIORITY -> PriorityCategoriesDialog.newInstance(detailsViewModel.getProfile())
+            SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance(detailsViewModel.getProfile())
+            SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance(detailsViewModel.getProfile())
+            PRIORITY -> PriorityCategoriesDialog.newInstance(detailsViewModel.getProfile())
             else -> throw IllegalArgumentException("Unknown dialog type")
         }
     }
 
-    private fun showDialog(type: ProfileDetailsViewModel.DialogType): Unit {
+    private fun showDialog(type: ProfileDetailsViewModel.DialogType) {
         getFragmentInstance(type).show(requireActivity().supportFragmentManager, null)
     }
 
     @TargetApi(Build.VERSION_CODES.R)
-    private fun showConversationsPopupWindow(popupMenu: PopupMenu): Unit {
+    private fun showConversationsPopupWindow(popupMenu: PopupMenu) {
         popupMenu.inflate(R.menu.dnd_conversations)
         popupMenu.setOnMenuItemClickListener {
             when (it.itemId) {
@@ -125,7 +119,7 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.show()
     }
 
-    private fun showPopupWindow(category: Int): Unit {
+    private fun showPopupWindow(category: Int) {
         val view: View? = when (category) {
             PRIORITY_CATEGORY_MESSAGES -> binding.exceptionsMessagesLayout
             PRIORITY_CATEGORY_CALLS -> binding.exceptionsCallsLayout
@@ -137,13 +131,12 @@ class InterruptionFilterFragment: Fragment() {
             if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
                 showConversationsPopupWindow(popupMenu)
             }
-        }
-        else {
+        } else {
             showExceptionsPopupWindow(popupMenu, category)
         }
     }
 
-    private fun showExceptionsPopupWindow(popupMenu: PopupMenu, category: Int): Unit {
+    private fun showExceptionsPopupWindow(popupMenu: PopupMenu, category: Int) {
         popupMenu.inflate(R.menu.dnd_exceptions)
         popupMenu.setOnMenuItemClickListener {
             if (it.itemId != R.id.none) {
@@ -172,7 +165,7 @@ class InterruptionFilterFragment: Fragment() {
         popupMenu.show()
     }
 
-    private fun startFavoriteContactsActivity(): Unit {
+    private fun startFavoriteContactsActivity() {
         val intent: Intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
