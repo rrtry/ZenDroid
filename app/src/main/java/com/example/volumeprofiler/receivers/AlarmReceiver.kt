@@ -111,19 +111,13 @@ class AlarmReceiver: BroadcastReceiver() {
     companion object {
 
         private fun getAlarm(intent: Intent): Alarm {
-            /*
-            return ParcelableUtil.toParcelable(
-                intent.getByteArrayExtra(EXTRA_ALARM)!!,
-                ParcelableUtil.getParcelableCreator()) as Alarm */
-            return intent.getParcelableExtra<Alarm>(EXTRA_ALARM) ?: throw IllegalStateException("Alarm cannot be null")
+            return intent.getParcelableExtra<Alarm>(EXTRA_ALARM)
+                ?: throw IllegalStateException("Alarm cannot be null")
         }
 
         private fun getProfile(intent: Intent, name: String): Profile {
-            /*
-            return ParcelableUtil.toParcelable(
-                intent.getByteArrayExtra(name)!!,
-                ParcelableUtil.getParcelableCreator()) as Profile */
-            return intent.getParcelableExtra<Profile>(name) ?: throw IllegalStateException("Profile cannot be null")
+            return intent.getParcelableExtra<Profile>(name)
+                ?: throw IllegalStateException("Profile cannot be null")
         }
 
         fun BroadcastReceiver.goAsync(

@@ -26,14 +26,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.VolumeProfiler.NoActionBar">
-        <activity android:name=".activities.IntroActivity"/>
+        <activity android:name="com.example.volumeprofiler.ui.activities.IntroActivity"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name="com.example.volumeprofiler.activities.MapsActivity"
+            android:name="com.example.volumeprofiler.ui.activities.MapsActivity"
             android:configChanges="uiMode"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
@@ -89,14 +89,14 @@
             android:exported="false"/>
 
         <activity
-            android:name=".activities.ProfileDetailsActivity"
+            android:name="com.example.volumeprofiler.ui.activities.ProfileDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
         <activity
-            android:name=".activities.AlarmDetailsActivity"
+            android:name="com.example.volumeprofiler.ui.activities.AlarmDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
-        <activity android:name=".activities.MainActivity"
+        <activity android:name="com.example.volumeprofiler.ui.activities.MainActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar"
             android:exported="true">
             <intent-filter>

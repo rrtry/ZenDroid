@@ -54,7 +54,8 @@ class PlaybackService: Service() {
         listener: MediaPlayer.OnCompletionListener,
         mediaUri: Uri,
         streamType: Int,
-        streamVolume: Int): Unit {
+        streamVolume: Int)
+    {
 
         this.mediaUri = mediaUri
         this.streamType = streamType

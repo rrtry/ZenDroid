@@ -4,8 +4,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
-        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
-        <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
+        <import type="com.example.volumeprofiler.ui.BindingConverters"/>
+        <import type="com.example.volumeprofiler.ui.BindingAdapters"/>
         <import type="com.example.volumeprofiler.core.ProfileManager"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>

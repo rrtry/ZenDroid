@@ -36,7 +36,7 @@ class AlarmDetailsViewModel @Inject constructor(
     val endProfileSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
 
     val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(WEEKDAYS)
-    val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val startTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
     val endTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now().plusMinutes(30))
@@ -69,6 +69,8 @@ class AlarmDetailsViewModel @Inject constructor(
 
     private var alarmId: Long? = null
     private var isScheduled: Boolean = false
+    private var startProfile: Profile? = null
+    private var endProfile: Profile? = null
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val eventsFlow: Flow<ViewEvent> = channel.receiveAsFlow()
@@ -152,12 +154,20 @@ class AlarmDetailsViewModel @Inject constructor(
         }
     }
 
-    fun setEntity(alarmRelation: AlarmRelation, profiles: List<Profile>) {
+    fun setProfiles(profiles: List<Profile>) {
+        alarmId?.also {
+            startProfileSpinnerPosition.value = getIndex(startProfile!!.id, profiles)
+            endProfileSpinnerPosition.value = getIndex(endProfile!!.id, profiles)
+        }
+    }
+
+    fun setEntity(alarmRelation: AlarmRelation) {
         if (!entitySet) {
 
             val alarm: Alarm = alarmRelation.alarm
-            val startProfile: Profile = alarmRelation.startProfile
-            val endProfile: Profile = alarmRelation.endProfile
+
+            startProfile = alarmRelation.startProfile
+            endProfile = alarmRelation.endProfile
 
             title.value = alarm.title
             scheduledDays.value = alarm.scheduledDays
@@ -166,9 +176,6 @@ class AlarmDetailsViewModel @Inject constructor(
             scheduled.value = alarm.isScheduled
             alarmId = alarm.id
             isScheduled = alarm.isScheduled
-
-            startProfileSpinnerPosition.value = getIndex(startProfile.id, profiles)
-            endProfileSpinnerPosition.value = getIndex(endProfile.id, profiles)
 
             entitySet = true
         }
@@ -182,9 +189,9 @@ class AlarmDetailsViewModel @Inject constructor(
             endProfileUUID = getEndProfile().id,
             startTime = startTime.value,
             endTime = endTime.value,
-            zoneId = ZoneId.systemDefault(),
             isScheduled = scheduled.value,
             scheduledDays = scheduledDays.value,
+            zoneId = ZoneId.systemDefault(),
         )
     }
 

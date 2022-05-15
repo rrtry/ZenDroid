@@ -4,23 +4,11 @@ import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 
-const val ALL_SCREEN_OFF_EFFECTS: Int = 0x8c
-const val ALL_SCREEN_ON_EFFECTS: Int = 0xAA
-const val ALL_VISUAL_EFFECTS_SUPPRESSED: Int = 0xAE
-
 fun containsCategory(mask: Int, bit: Int): Boolean {
     return (mask and bit) != 0
 }
 
-fun createMask(list: List<Int>): Int {
-    var mask: Int = 0
-    list.forEach {
-        mask = mask or it
-    }
-    return mask
-}
-
-fun extractPriorityCategories(mask: Int): List<Int> {
+fun getPriorityCategoriesList(mask: Int): List<Int> {
     val categories: MutableList<Int> = mutableListOf(
         PRIORITY_CATEGORY_EVENTS,
         PRIORITY_CATEGORY_REMINDERS,
@@ -65,7 +53,9 @@ fun interruptionPolicyAllowsNotificationStream(
     return if (!notificationAccessGranted) {
         true
     } else {
-        return interruptionFilterAllowsNotifications(notificationInterruptionFilter, notificationPriorityCategories)
+        return interruptionFilterAllowsNotifications(
+            notificationInterruptionFilter,
+            notificationPriorityCategories)
     }
 }
 
@@ -74,7 +64,6 @@ fun interruptionPolicyAllowsNotificationStream(
     notificationPriorityCategories: Int,
     notificationAccessGranted: Boolean,
     streamsUnlinked: Boolean): Boolean {
-
     val state: Boolean = interruptionFilterAllowsNotifications(notificationInterruptionFilter, notificationPriorityCategories)
     return if (!streamsUnlinked) {
         false
@@ -105,7 +94,10 @@ fun interruptionPolicyAllowsRingerStream(
             state
         }
         else {
-            state || interruptionPolicyAllowsNotificationStream(interruptionFilter, priorityCategories, notificationAccessGranted)
+            state || interruptionPolicyAllowsNotificationStream(
+                interruptionFilter,
+                priorityCategories,
+                notificationAccessGranted)
         }
     }
 }
@@ -144,14 +136,8 @@ fun interruptionPolicyAllowsMediaStream(interruptionFilter: Int,
 
 fun canMuteAlarmStream(index: Int): Boolean {
     return when {
-        index > 0 -> {
-            false
-        }
-        Build.VERSION_CODES.P <= Build.VERSION.SDK_INT -> {
-            false
-        }
-        else -> {
-            true
-        }
+        index > 0 -> false
+        Build.VERSION_CODES.P <= Build.VERSION.SDK_INT -> false
+        else -> true
     }
 }

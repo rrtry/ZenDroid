@@ -9,7 +9,7 @@
     You can also add your credentials to an existing key, using these values:
 
     Package name:
-    com.example.volumeprofiler.activities
+    com.example.volumeprofiler.ui.activities
 
     SHA-1 certificate fingerprint:
     73:D0:76:70:23:BE:D9:EC:BC:FE:98:A1:73:3B:3E:8A:C1:DE:20:AB

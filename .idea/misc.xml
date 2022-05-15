@@ -133,7 +133,7 @@
         <entry key="app/src/main/res/layout/map_style_dialog.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_location_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/layout/profile_item_view.xml" value="1.1" />
+        <entry key="app/src/main/res/layout/profile_item_view.xml" value="0.9" />
         <entry key="app/src/main/res/layout/profiles_list_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout/seekbar_scene.xml" value="0.3078125" />
         <entry key="app/src/main/res/layout/suggestion_empty_query_item_view.xml" value="0.3078125" />

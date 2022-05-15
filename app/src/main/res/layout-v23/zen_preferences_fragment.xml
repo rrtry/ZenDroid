@@ -4,8 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
-        <import type="com.example.volumeprofiler.util.ui.BindingConverters"/>
-        <import type="com.example.volumeprofiler.util.ui.BindingAdapters"/>
+        <import type="com.example.volumeprofiler.ui.BindingConverters"/>
+        <import type="com.example.volumeprofiler.ui.BindingAdapters"/>
         <variable
             name="viewModel"
             type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
