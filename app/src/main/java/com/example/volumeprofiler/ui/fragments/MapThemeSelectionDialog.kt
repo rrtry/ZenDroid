@@ -8,7 +8,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.adapters.StyleAdapter
+import com.example.volumeprofiler.ui.StyleAdapter
 import com.example.volumeprofiler.databinding.MapStyleDialogBinding
 import com.example.volumeprofiler.entities.MapStyle
 import com.example.volumeprofiler.util.ViewUtil.Companion.getDrawable

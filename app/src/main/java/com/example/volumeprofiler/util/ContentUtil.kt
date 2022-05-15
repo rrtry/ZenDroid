@@ -162,8 +162,10 @@ class ContentUtil @Inject constructor(
      */
 
     suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
+
         val contentResolver: ContentResolver = context.contentResolver
         val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
+
         return withContext(Dispatchers.IO) {
             var title: String = "Unknown"
             try {

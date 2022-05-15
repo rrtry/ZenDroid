@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
@@ -10,20 +9,14 @@ import android.os.Looper
 import android.util.Log
 import android.view.*
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
-import androidx.recyclerview.widget.ListAdapter
-import androidx.transition.*
 import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity
-import com.example.volumeprofiler.adapters.ItemDetails
-import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.databinding.ProfilesListFragmentBinding
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.ui.Animations
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,15 +27,19 @@ import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 import androidx.fragment.app.*
+import androidx.viewbinding.ViewBinding
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.EXTRA_PROFILE
-import com.example.volumeprofiler.adapters.BaseSelectionObserver
-import com.example.volumeprofiler.adapters.DetailsLookup
-import com.example.volumeprofiler.adapters.KeyProvider
+import com.example.volumeprofiler.selection.BaseSelectionObserver
+import com.example.volumeprofiler.selection.DetailsLookup
+import com.example.volumeprofiler.selection.KeyProvider
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.PreferencesManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
+import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.lang.ref.WeakReference
@@ -52,7 +49,8 @@ import kotlin.NoSuchElementException
 class ProfilesListFragment: Fragment(),
     ActionModeProvider<String>,
     FabContainer,
-    FragmentSwipedListener {
+    FragmentSwipedListener,
+    SelectableListItemInteractionListener<Profile, UUID> {
 
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
@@ -63,9 +61,7 @@ class ProfilesListFragment: Fragment(),
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var eventBus: EventBus
 
-    private val profileAdapter: ProfileAdapter by lazy {
-        ProfileAdapter()
-    }
+    private lateinit var profileAdapter: ProfileAdapter
     private var selectedItems: ArrayList<String> = arrayListOf()
     private lateinit var tracker: SelectionTracker<String>
 
@@ -93,6 +89,7 @@ class ProfilesListFragment: Fragment(),
         bindingImpl = ProfilesListFragmentBinding.inflate(inflater, container, false)
 
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
+        profileAdapter = ProfileAdapter(binding.recyclerView, WeakReference(this))
         binding.recyclerView.adapter = profileAdapter
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
 
@@ -113,6 +110,7 @@ class ProfilesListFragment: Fragment(),
         return binding.root
     }
 
+    @Suppress("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
@@ -120,33 +118,10 @@ class ProfilesListFragment: Fragment(),
                 launch {
                     viewModel.viewEventFlow.onEach {
                         when (it) {
-                            is ProfileSetViewEvent -> {
-                                if (preferencesManager.isProfileEnabled(it.profile)) {
-                                    profileManager.setDefaultProfile()
-                                    profileAdapter.setSelection(null)
-                                } else {
-                                    profileManager.setProfile(it.profile)
-                                    profileAdapter.setSelection(it.profile)
-                                }
-                            }
-                            is CancelAlarmsViewEvent -> {
-                                scheduleManager.cancelAlarms(it.alarms)
-                            }
-                            is RemoveGeofencesViewEvent -> {
-                                it.geofences.forEach { i ->
-                                    deleteThumbnail(requireContext(), i.location.previewImageId)
-                                    geofenceManager.removeGeofence(
-                                        i.location,
-                                        i.onEnterProfile,
-                                        i.onExitProfile
-                                    )
-                                }
-                            }
-                            is ProfileRemoveViewEvent -> {
-                                if (it.profile.id == viewModel.lastSelected) {
-                                    viewModel.lastSelected = null
-                                }
-                            }
+                            is ProfileSetViewEvent -> onProfileSet(it.profile)
+                            is RemoveGeofencesViewEvent -> removeGeofences(it.geofences)
+                            is ProfileRemoveViewEvent -> onProfileRemove(it.profile)
+                            is CancelAlarmsViewEvent -> cancelAlarms(it.alarms)
                         }
                     }.collect()
                 }
@@ -163,7 +138,7 @@ class ProfilesListFragment: Fragment(),
                                 profileAdapter.currentList.first { profile ->
                                     profile.id == it.id
                                 }.also { profile ->
-                                    profileAdapter.setSelection(profile)
+                                    profileAdapter.setSelection(profile, viewModel.lastSelected)
                                 }
                             } catch (e: NoSuchElementException) {
                                 Log.e("ProfilesListFragment", "Invalid profile: ${it.id}")
@@ -190,154 +165,70 @@ class ProfilesListFragment: Fragment(),
         activity = null
     }
 
-    private inner class ProfileHolder(private val binding: ProfileItemViewBinding):
-            RecyclerView.ViewHolder(binding.root),
-            ViewHolderItemDetailsProvider<String>,
-            View.OnClickListener {
+    override fun onEdit(entity: Profile, binding: ViewBinding) {
+        startActivity(Intent(
+            requireContext(),
+            ProfileDetailsActivity::class.java
+        ).apply {
+            putExtra(EXTRA_PROFILE, entity)
+        })
+    }
 
-        init {
-            binding.root.setOnClickListener(this)
-            binding.expandableView.visibility = View.GONE
-        }
+    override fun setSelection(id: UUID?) {
+        viewModel.lastSelected = id
+    }
 
-        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> {
-            return ItemDetails(bindingAdapterPosition, profileAdapter.getItemAtPosition(bindingAdapterPosition).id.toString())
-        }
+    override fun onEnable(entity: Profile) {
+        viewModel.setProfile(entity)
+    }
 
-        private fun expand(animate: Boolean) {
-            if (animate) {
-                TransitionManager.beginDelayedTransition(this@ProfilesListFragment.binding.root, AutoTransition())
-                binding.expandButton.animate().rotation(180.0f).start()
-            } else {
-                binding.expandButton.rotation = 180f
-            }
-            binding.itemSeparator.visibility = View.VISIBLE
-            binding.expandableView.visibility = View.VISIBLE
-        }
+    override fun onDisable(entity: Profile) {
+        viewModel.setProfile(entity)
+    }
 
-        private fun collapse() {
-            TransitionManager.beginDelayedTransition(this@ProfilesListFragment.binding.root, AutoTransition())
-            binding.itemSeparator.visibility = View.GONE
-            binding.expandableView.visibility = View.GONE
-            binding.expandButton.animate().rotation(0f).start()
-        }
+    override fun onRemove(entity: Profile) {
+        viewModel.removeProfile(entity)
+    }
 
-        private fun setViewScale(isSelected: Boolean) {
-            val scale: Float = if (isSelected) 0.8f else 1.0f
-            itemView.scaleX = scale
-            itemView.scaleY = scale
-        }
+    override fun isSelected(entity: Profile): Boolean {
+        return tracker.isSelected(entity.id.toString())
+    }
 
-        fun bind(profile: Profile, isSelected: Boolean, animate: Boolean) {
+    override fun isEnabled(entity: Profile): Boolean {
+        return preferencesManager.isProfileEnabled(entity)
+    }
 
-            binding.checkBox.text = profile.title
-
-            if (animate) {
-                Animations.selected(itemView, isSelected)
-            } else {
-                setViewScale(isSelected)
-            }
-            preferencesManager.isProfileEnabled(profile).let {
-                binding.checkBox.isChecked = it
-                if (it) {
-                    viewModel.lastSelected = profile.id
-                }
-            }
-            binding.expandButton.setOnClickListener {
-                if (binding.expandableView.isVisible) {
-                    collapse()
-                } else {
-                    expand(true)
-                }
-            }
-            binding.editProfileButton.setOnClickListener {
-                startActivity(Intent(
-                    requireContext(),
-                    ProfileDetailsActivity::class.java
-                ).apply {
-                    putExtra(EXTRA_PROFILE, profile)
-                })
-            }
-            binding.removeProfileButton.setOnClickListener {
-                viewModel.removeProfile(profile)
-            }
-        }
-
-        override fun onClick(v: View?) {
-            profileAdapter.getItemAtPosition(bindingAdapterPosition).also {
-                if (!tracker.isSelected(it.id.toString())) {
-                    viewModel.setProfile(it)
-                }
-            }
+    private fun cancelAlarms(alarms: List<AlarmRelation>?) {
+        alarms?.let {
+            scheduleManager.cancelAlarms(it)
         }
     }
 
-    private inner class ProfileAdapter : ListAdapter<Profile, ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
-
-        override fun areItemsTheSame(oldItem: Profile, newItem: Profile): Boolean {
-            return oldItem.id == newItem.id
-        }
-
-        override fun areContentsTheSame(oldItem: Profile, newItem: Profile): Boolean {
-            return oldItem == newItem
-        }
-
-    }), ListAdapterItemProvider<String> {
-
-        fun setSelection(profile: Profile?) {
-            profile?.id?.also {
-                updatePreviousProfileView()
-                updateCurrentProfileView(it)
-                viewModel.lastSelected = it
-                return
-            }
-            updatePreviousProfileView()
-            viewModel.lastSelected = null
-        }
-
-        private fun updatePreviousProfileView() {
-            viewModel.lastSelected?.let {
-                notifyItemChanged(getPosition(it), true)
-            }
-        }
-
-        private fun updateCurrentProfileView(uuid: UUID) {
-            notifyItemChanged(getPosition(uuid), true)
-        }
-
-        private fun getPosition(id: UUID): Int {
-            return currentList.indexOfFirst {
-                it.id == id
-            }
-        }
-
-        private fun isSelected(tracker: SelectionTracker<String>, position: Int): Boolean {
-            return tracker.isSelected(getItemAtPosition(position).id.toString())
-        }
-
-        fun getItemAtPosition(position: Int): Profile {
-            return getItem(position)
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileHolder {
-            return ProfileHolder(
-                ProfileItemViewBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+    @Suppress("MissingPermission")
+    private fun removeGeofences(geofences: List<LocationRelation>) {
+        geofences.forEach { i ->
+            deleteThumbnail(requireContext(), i.location.previewImageId)
+            geofenceManager.removeGeofence(
+                i.location,
+                i.onEnterProfile,
+                i.onExitProfile
             )
         }
+    }
 
-        override fun onBindViewHolder(holder: ProfileHolder, @SuppressLint("RecyclerView") position: Int) {
-            holder.bind(
-                getItem(position),
-                isSelected(tracker, position),
-                true)
+    private fun onProfileRemove(profile: Profile) {
+        if (profile.id == viewModel.lastSelected) {
+            viewModel.lastSelected = null
         }
+    }
 
-        override fun getItemKey(position: Int): String {
-            return getItemAtPosition(position).id.toString()
-        }
-
-        override fun getPosition(key: String): Int {
-            return currentList.indexOfFirst { key == it.id.toString() }
+    private fun onProfileSet(profile: Profile) {
+        if (preferencesManager.isProfileEnabled(profile)) {
+            profileManager.setDefaultProfile()
+            profileAdapter.setSelection(null, viewModel.lastSelected)
+        } else {
+            profileManager.setProfile(profile)
+            profileAdapter.setSelection(profile, viewModel.lastSelected)
         }
     }
 

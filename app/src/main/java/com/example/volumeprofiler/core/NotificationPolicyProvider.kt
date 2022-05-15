@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.util.interruptionPolicy
+package com.example.volumeprofiler.core
 
 import android.os.Build
 import android.app.NotificationManager.*
@@ -64,7 +64,11 @@ fun interruptionPolicyAllowsNotificationStream(
     notificationPriorityCategories: Int,
     notificationAccessGranted: Boolean,
     streamsUnlinked: Boolean): Boolean {
-    val state: Boolean = interruptionFilterAllowsNotifications(notificationInterruptionFilter, notificationPriorityCategories)
+
+    val state: Boolean = interruptionFilterAllowsNotifications(
+        notificationInterruptionFilter,
+        notificationPriorityCategories)
+
     return if (!streamsUnlinked) {
         false
     } else if (notificationAccessGranted) {
@@ -92,8 +96,7 @@ fun interruptionPolicyAllowsRingerStream(
         }
         if (streamsUnlinked) {
             state
-        }
-        else {
+        } else {
             state || interruptionPolicyAllowsNotificationStream(
                 interruptionFilter,
                 priorityCategories,

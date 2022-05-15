@@ -2,10 +2,11 @@ package com.example.volumeprofiler.core
 
 import android.app.NotificationManager
 import android.app.NotificationManager.*
+import android.app.NotificationManager.Policy.PRIORITY_CATEGORY_CALLS
+import android.app.NotificationManager.Policy.PRIORITY_CATEGORY_REPEAT_CALLERS
 import android.content.Context
 import android.media.AudioManager
 import android.content.Context.*
-import android.content.Intent
 import com.example.volumeprofiler.entities.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -13,7 +14,6 @@ import javax.inject.Singleton
 import android.media.AudioManager.*
 import android.net.Uri
 import android.os.Build
-import android.os.Vibrator
 import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
@@ -26,7 +26,6 @@ import com.example.volumeprofiler.util.ID_SCHEDULER
 import com.example.volumeprofiler.util.createAlarmAlertNotification
 import com.example.volumeprofiler.util.postNotification
 import java.util.*
-import kotlin.math.E
 
 @Singleton
 @Suppress("deprecation")
@@ -119,7 +118,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     fun setStreamVolume(streamType: Int, index: Int, flags: Int) {
-        adjustUnmuteStream(streamType)
         audioManager.setStreamVolume(streamType, index, flags)
     }
 
@@ -160,7 +158,20 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         }
     }
 
-    fun isVolumeValid(streamType: Int, index: Int): Boolean {
+    fun isRingerAudible(profile: Profile): Boolean {
+
+        val interruptionFilter: Int = profile.interruptionFilter
+        val priorityCategories: Int = profile.priorityCategories
+        val streamsUnlinked: Boolean = profile.streamsUnlinked
+
+        val callsPrioritized: Boolean = interruptionFilter == INTERRUPTION_FILTER_PRIORITY &&
+                ((priorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0 ||
+                (priorityCategories and PRIORITY_CATEGORY_CALLS) != 0)
+
+        return streamsUnlinked && (callsPrioritized || interruptionFilter == INTERRUPTION_FILTER_ALL)
+    }
+
+    private fun isVolumeValid(streamType: Int, index: Int): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             return index >= audioManager.getStreamMinVolume(streamType)
         }

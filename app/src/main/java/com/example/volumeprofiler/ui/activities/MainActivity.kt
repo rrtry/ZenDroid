@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.ui.activities
 
+import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
 import android.view.LayoutInflater
@@ -41,7 +42,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
 
-    private var currentPosition: Int = 0
+    private var currentPosition: Int = 2
     private val selectedFragment: Fragment
     get() {
         return pagerAdapter.fragments[binding.pager.currentItem]
@@ -58,7 +59,6 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
             if (currentPosition != position) {
                 (selectedFragment as FabContainer).onAnimateFab(binding.fab)
             }
-
             currentPosition = position
         }
     }
@@ -74,15 +74,11 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         }
 
         fun notifyFragmentChanged(currentPosition: Int, nextPosition: Int) {
-            (fragments[currentPosition] as FragmentSwipedListener).run {
+            (fragments[currentPosition] as FragmentSwipedListener).apply {
                 if (currentPosition != nextPosition) {
                     onSwipe()
                 }
             }
-        }
-
-        override fun getItemId(position: Int): Long {
-            return position.toLong()
         }
 
         override fun getItemCount(): Int = 3
@@ -156,7 +152,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         setSupportActionBar(binding.toolbar)
 
         savedInstanceState?.let {
-            currentPosition = it.getInt(EXTRA_PAGER_POSITION, 0)
+            currentPosition = it.getInt(EXTRA_PAGER_POSITION, 2)
         }
 
         pagerAdapter = ScreenSlidePagerAdapter(this)

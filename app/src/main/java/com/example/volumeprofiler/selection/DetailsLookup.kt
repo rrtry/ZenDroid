@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters
+package com.example.volumeprofiler.selection
 
 import android.view.MotionEvent
 import android.view.View

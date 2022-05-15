@@ -29,7 +29,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.adapters.SuggestionsAdapter
+import com.example.volumeprofiler.ui.SuggestionsAdapter
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.databinding.GoogleMapsActivityBinding

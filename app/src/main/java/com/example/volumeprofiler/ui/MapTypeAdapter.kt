@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters
+package com.example.volumeprofiler.ui
 
 import android.view.LayoutInflater
 import android.view.View

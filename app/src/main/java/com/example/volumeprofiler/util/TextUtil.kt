@@ -102,11 +102,12 @@ class TextUtil {
         }
 
         @JvmStatic
-        fun formatWeekDays(scheduledDays: Int, startTime: LocalTime, endTime: LocalTime): String {
+        fun formatWeekDays(scheduledDays: Int): String {
             return when (scheduledDays) {
                 WeekDay.ALL_DAYS -> "Every day"
                 WeekDay.NONE -> "Not repeating"
                 else -> {
+
                     val days: List<WeekDay> = WeekDay.values.filter { (scheduledDays and it.value) != 0 }
                     val displayStyle: TextStyle = if (days.size == 1) TextStyle.FULL else TextStyle.SHORT
 

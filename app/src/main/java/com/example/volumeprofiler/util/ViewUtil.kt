@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.R
 import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
 import com.google.android.material.snackbar.Snackbar
@@ -57,6 +58,11 @@ class ViewUtil {
                 dip,
                 resources.displayMetrics
             ).roundToInt()
+        }
+
+        fun RecyclerView.isViewPartiallyVisible(view: View): Boolean {
+            return layoutManager?.isViewPartiallyVisible(view, false, false)
+                ?: throw IllegalStateException("LayoutManager is null")
         }
 
         fun showInterruptionPolicyAccessExplanation(fragmentManager: FragmentManager) {

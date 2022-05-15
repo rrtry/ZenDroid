@@ -1,11 +1,9 @@
-package com.example.volumeprofiler.adapters
+package com.example.volumeprofiler.ui
 
-import android.annotation.SuppressLint
 import android.app.SearchManager.SUGGEST_COLUMN_TEXT_1
 import android.content.Context
 import android.database.Cursor
 import android.database.MatrixCursor
-import android.provider.BaseColumns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup

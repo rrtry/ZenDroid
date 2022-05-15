@@ -1,7 +1,5 @@
-package com.example.volumeprofiler.adapters
+package com.example.volumeprofiler.ui
 
-import android.content.res.ColorStateList
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,8 +7,6 @@ import androidx.annotation.IntegerRes
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.databinding.MapDecorationItemBinding
 import com.example.volumeprofiler.entities.MapStyle
-import com.google.android.material.shape.CornerFamily
-import com.google.android.material.shape.EdgeTreatment
 import java.lang.ref.WeakReference
 
 class StyleAdapter(

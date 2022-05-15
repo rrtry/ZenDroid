@@ -9,8 +9,6 @@ import javax.inject.Inject
 import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
-import android.app.NotificationManager.*
-import android.app.NotificationManager.Policy.*
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
@@ -23,21 +21,23 @@ class PhoneStateReceiver: BroadcastReceiver() {
 
             preferencesManager.getEnabledProfile()?.let { profile ->
 
-                val includesCallsPriority: Boolean = profile.interruptionFilter == INTERRUPTION_FILTER_PRIORITY &&
-                        (profile.priorityCategories and PRIORITY_CATEGORY_REPEAT_CALLERS) != 0 ||
-                        (profile.priorityCategories and PRIORITY_CATEGORY_CALLS) != 0
-
-                if (profile.streamsUnlinked && (includesCallsPriority || profile.interruptionFilter == INTERRUPTION_FILTER_ALL)) {
+                if (profileManager.isRingerAudible(profile)) {
 
                     val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
 
                     if (phoneState == EXTRA_STATE_RINGING) {
                         profileManager.setRingerMode(
-                            STREAM_RING, profile.ringVolume, profile.ringerMode, FLAG_ALLOW_RINGER_MODES
+                            STREAM_RING,
+                            profile.ringVolume,
+                            profile.ringerMode,
+                            FLAG_ALLOW_RINGER_MODES
                         )
                     } else if (phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) {
                         profileManager.setRingerMode(
-                            STREAM_NOTIFICATION, profile.notificationVolume, profile.notificationMode, FLAG_ALLOW_RINGER_MODES
+                            STREAM_NOTIFICATION,
+                            profile.notificationVolume,
+                            profile.notificationMode,
+                            FLAG_ALLOW_RINGER_MODES
                         )
                     }
                 }

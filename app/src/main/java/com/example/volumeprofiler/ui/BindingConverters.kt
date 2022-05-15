@@ -3,8 +3,9 @@ package com.example.volumeprofiler.ui
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import androidx.databinding.BindingConversion
+import com.example.volumeprofiler.core.containsCategory
+import com.example.volumeprofiler.core.getPriorityCategoriesList
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.util.interruptionPolicy.*
 
 object BindingConverters {
 

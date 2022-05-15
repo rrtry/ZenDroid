@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.adapters
+package com.example.volumeprofiler.selection
 
 import androidx.recyclerview.selection.ItemKeyProvider
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider

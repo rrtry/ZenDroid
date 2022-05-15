@@ -15,10 +15,6 @@
         <variable
             name="alarmRelation"
             type="com.example.volumeprofiler.entities.AlarmRelation" />
-
-        <variable
-            name="listener"
-            type="com.example.volumeprofiler.ui.fragments.SchedulerFragment.AlarmEditListener" />
     </data>
 
     <androidx.cardview.widget.CardView
@@ -42,7 +38,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
-                android:text="@{TextUtil.formatLocalTime(context, alarmRelation.alarm.startTime)}"
                 android:textSize="30sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/labelImageButton" />
@@ -62,7 +57,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="@{TextUtil.formatLocalTime(context, alarmRelation.alarm.endTime)}"
                 android:textSize="30sp"
                 app:layout_constraintBottom_toBottomOf="@+id/startTime"
                 app:layout_constraintStart_toEndOf="@+id/clockViewSeparator"
@@ -73,8 +67,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
-                android:checked="@{alarmRelation.alarm.scheduled}"
-                android:onCheckedChanged="@{(button, bool)-> bool ? viewModel.scheduleAlarm(alarmRelation) : viewModel.cancelAlarm(alarmRelation)}"
                 app:layout_constraintBottom_toBottomOf="@+id/endTime"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="1.0"
@@ -87,7 +79,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="16dp"
-                android:text="@{TextUtil.formatWeekDays(alarmRelation.alarm.scheduledDays, alarmRelation.alarm.startTime, alarmRelation.alarm.endTime)}"
                 app:layout_constraintStart_toEndOf="@+id/imageView4"
                 app:layout_constraintTop_toBottomOf="@+id/startTime" />
 
@@ -107,7 +98,6 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
-                android:text="@{BindingConverters.formatAlarmProfiles(alarmRelation)}"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView3"
                 app:layout_constraintTop_toBottomOf="@+id/imageView4" />
@@ -127,7 +117,6 @@
                 android:layout_height="45dp"
                 android:background="?attr/selectableItemBackground"
                 android:layout_marginEnd="8dp"
-                android:onClick="@{() -> viewModel.removeAlarm(alarmRelation)}"
                 android:layout_marginBottom="9dp"
                 app:layout_constraintBottom_toBottomOf="@+id/profileName"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -139,7 +128,6 @@
                 android:layout_width="45dp"
                 android:layout_height="45dp"
                 android:layout_marginEnd="16dp"
-                android:onClick="@{() -> listener.onEdit(alarmRelation)}"
                 android:background="?android:attr/selectableItemBackground"
                 app:layout_constraintBottom_toBottomOf="@+id/deleteAlarmButton"
                 app:layout_constraintEnd_toStartOf="@+id/deleteAlarmButton"
@@ -161,7 +149,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="@{alarmRelation.alarm.title}"
                 app:layout_constraintBottom_toBottomOf="@+id/labelImageButton"
                 app:layout_constraintStart_toEndOf="@+id/labelImageButton"
                 app:layout_constraintTop_toTopOf="@+id/labelImageButton" />

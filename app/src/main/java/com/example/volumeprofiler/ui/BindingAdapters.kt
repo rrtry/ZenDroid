@@ -16,7 +16,7 @@ import android.widget.*
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.util.interruptionPolicy.*
+import com.example.volumeprofiler.core.*
 import com.google.android.material.appbar.CollapsingToolbarLayout
 
 object BindingAdapters {
@@ -87,7 +87,8 @@ object BindingAdapters {
     : Unit {
         setAlarmIcon(imageView, interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter, priorityCategories, policyAccessGranted
-        ) && !canMuteAlarmStream(index))
+        ) && !canMuteAlarmStream(index)
+        )
     }
 
     @JvmStatic
@@ -102,7 +103,8 @@ object BindingAdapters {
             mediaInterruptionFilter,
             mediaPriorityCategories,
             policyAccessGranted
-        ))
+        )
+        )
     }
 
     @JvmStatic
@@ -119,7 +121,8 @@ object BindingAdapters {
             ringerPriorityCategories,
             policyAccessGranted,
             streamsUnlinked
-        ))
+        )
+        )
     }
 
     @JvmStatic
@@ -134,7 +137,8 @@ object BindingAdapters {
             alarmInterruptionFilter,
             alarmPriorityCategories,
             policyAccessGranted
-        ))
+        )
+        )
     }
 
     @JvmStatic
@@ -205,7 +209,8 @@ object BindingAdapters {
     @BindingAdapter("repeatingCallersPriorityCategories", "callSenders")
     fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: Int, callSenders: Int): Unit {
         if (callSenders == PRIORITY_SENDERS_ANY
-            && containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)) {
+            && containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)
+        ) {
             view.isChecked = true
         } else {
             view.isChecked = containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)
@@ -231,7 +236,8 @@ object BindingAdapters {
             interruptionFilter,
             priorityCategories,
             policyAccessGranted,
-            streamsUnlinked))
+            streamsUnlinked)
+        )
     }
 
     @JvmStatic
@@ -289,7 +295,8 @@ object BindingAdapters {
                 ringerIconInterruptionFilter,
                 ringerPriorityCategories,
                 notificationAccessGranted,
-                streamsUnlinked)) {
+                streamsUnlinked)
+        ) {
             setSilentIcon(icon)
         } else {
             when (ringerMode) {
@@ -313,7 +320,8 @@ object BindingAdapters {
                 notificationInterruptionFilter,
                 notificationPriorityCategories,
                 notificationAccessGranted,
-                streamsUnlinked)) {
+                streamsUnlinked)
+        ) {
             setSilentIcon(icon)
         } else {
             when (notificationMode) {
@@ -409,7 +417,8 @@ object BindingAdapters {
                     interruptionFilterRinger,
                     silentModePriorityCategories,
                     notificationAccessGranted,
-                    streamsUnlinked))
+                    streamsUnlinked)
+            )
         }
     }
 }

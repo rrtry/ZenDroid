@@ -11,7 +11,7 @@ import android.app.NotificationManager.Policy.*
 import android.media.AudioManager.*
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.util.ContentUtil
-import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsRingerStream
+import com.example.volumeprofiler.core.interruptionPolicyAllowsRingerStream
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -27,9 +27,9 @@ import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAUL
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
-import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsAlarmsStream
-import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsMediaStream
-import com.example.volumeprofiler.util.interruptionPolicy.interruptionPolicyAllowsNotificationStream
+import com.example.volumeprofiler.core.interruptionPolicyAllowsAlarmsStream
+import com.example.volumeprofiler.core.interruptionPolicyAllowsMediaStream
+import com.example.volumeprofiler.core.interruptionPolicyAllowsNotificationStream
 import kotlinx.coroutines.FlowPreview
 
 @HiltViewModel
