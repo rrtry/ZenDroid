@@ -54,7 +54,7 @@ class SuppressedEffectsOnDialog : BaseDialog() {
                 return view
             }
         }
-        resources.getStringArray(arrayRes).map {
+        resources.getStringArray(arrayRes).forEach {
             arrayAdapter.add(it)
         }
         listView.adapter = arrayAdapter

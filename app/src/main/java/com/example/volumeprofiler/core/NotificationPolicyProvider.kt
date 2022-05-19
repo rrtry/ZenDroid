@@ -4,6 +4,14 @@ import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 
+const val ALL_NOTIFICATIONS_SUPPRESSED: Int = SUPPRESSED_EFFECT_LIGHTS or
+            SUPPRESSED_EFFECT_FULL_SCREEN_INTENT or
+            SUPPRESSED_EFFECT_AMBIENT or
+            SUPPRESSED_EFFECT_BADGE or
+            SUPPRESSED_EFFECT_STATUS_BAR or
+            SUPPRESSED_EFFECT_PEEK or
+            SUPPRESSED_EFFECT_NOTIFICATION_LIST
+
 fun containsCategory(mask: Int, bit: Int): Boolean {
     return (mask and bit) != 0
 }

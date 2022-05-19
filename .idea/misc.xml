@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="../Android/Sdk/platforms/android-31/data/res/layout/simple_list_item_multiple_choice.xml" value="0.5364102564102564" />
         <entry key="..\:/Users/user/AppData/Local/Android/Sdk/platforms/android-30/data/res/layout/list_content.xml" value="0.575" />
         <entry key="..\:/Users/user/AppData/Local/Android/Sdk/platforms/android-30/data/res/layout/select_dialog_item.xml" value="0.575" />
         <entry key="..\:/Users/user/AppData/Local/Android/Sdk/platforms/android-30/data/res/layout/select_dialog_multichoice.xml" value="0.575" />
@@ -109,9 +110,9 @@
         <entry key="app/src/main/res/layout-v23/zen_preferences_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout-v24/create_profile_fragment.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/layout-v24/zen_preferences_fragment.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.1" />
+        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.5647948164146869" />
         <entry key="app/src/main/res/layout-v28/zen_preferences_fragment.xml" value="0.5447916666666667" />
-        <entry key="app/src/main/res/layout-v30/create_profile_fragment.xml" value="0.1" />
+        <entry key="app/src/main/res/layout-v30/create_profile_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout-v30/zen_preferences_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout-v31/map_decoration_item.xml" value="0.44655797101449274" />
         <entry key="app/src/main/res/layout/activity_intro.xml" value="0.17346014492753623" />
@@ -133,6 +134,7 @@
         <entry key="app/src/main/res/layout/map_style_dialog.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_location_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.5447916666666667" />
+        <entry key="app/src/main/res/layout/notification_restrictions_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout/profile_item_view.xml" value="0.9" />
         <entry key="app/src/main/res/layout/profiles_list_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout/seekbar_scene.xml" value="0.3078125" />

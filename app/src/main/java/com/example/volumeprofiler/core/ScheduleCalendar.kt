@@ -42,7 +42,7 @@ class ScheduleCalendar(
     }
 
     private fun isDayInSchedule(mask: Int, day: DayOfWeek): Boolean {
-        return (mask and WeekDay.fromDay(day.value)) != 0
+        return (mask and WeekDay.fromDay(day.value)) != WeekDay.NONE
     }
 
     private fun isValid(): Boolean {

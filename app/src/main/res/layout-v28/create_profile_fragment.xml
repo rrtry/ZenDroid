@@ -414,9 +414,7 @@
                 notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
-                android:paddingTop="8dp"
                 android:onClick="@{() -> viewModel.onInterruptionFilterLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
@@ -428,23 +426,24 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="16dp"
                     android:text="Do Not disturb"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
 
                 <TextView
                     android:id="@+id/interruptionFilterPolicy"
-                    app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle"
-                    app:layout_constraintStart_toStartOf="parent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/doNotDisturbTitle"
-                    android:paddingStart="35dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
+                    android:layout_marginTop="4dp"
                     android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/doNotDisturbTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
@@ -453,7 +452,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingTop="16dp"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onRingtoneLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
@@ -466,7 +464,8 @@
                     app:layout_constraintStart_toStartOf="parent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginStart="35dp"
                     android:text="Phone ringtone"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
@@ -474,13 +473,14 @@
                 <TextView
                     android:id="@+id/phoneRingtone"
                     android:layout_width="wrap_content"
-                    app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp"
                     android:text="@{viewModel.phoneRingtoneTitle}"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/phoneRingtoneTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle" />
 
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
@@ -490,7 +490,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onNotificationSoundLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
@@ -503,7 +502,8 @@
                     android:layout_height="wrap_content"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="16dp"
                     android:text="Default notification sound"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp" />
@@ -512,14 +512,14 @@
                     android:id="@+id/notificationSound"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp"
                     android:clickable="false"
-                    android:paddingStart="35dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
                     android:text="@{viewModel.notificationRingtoneTitle}"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/notificationSoundTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
@@ -529,7 +529,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="?attr/selectableItemBackground"
-                android:paddingTop="16dp"
                 android:onClick="@{() -> viewModel.onAlarmSoundLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
@@ -537,26 +536,27 @@
 
                 <TextView
                     android:id="@+id/alarmSoundTitle"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="16dp"
                     android:text="Default alarm sound"
                     android:textColor="?android:attr/textColorPrimary"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/alarmSound"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle"
-                    app:layout_constraintStart_toStartOf="parent"
-                    android:paddingStart="35dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp"
                     android:text="@{viewModel.alarmRingtoneTitle}"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/alarmSoundTitle"
+                    app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
@@ -565,7 +565,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
-                android:paddingTop="16dp"
                 preferencesInterruptionFilter="@{viewModel.interruptionFilter}"
                 android:onClick="@{() -> viewModel.onPreferencesLayoutClick()}"
                 app:layout_constraintEnd_toStartOf="parent"
@@ -576,10 +575,12 @@
                     android:id="@+id/doNotDisturbPreferencesTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="16dp"
                     android:text="Priority only allows"
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
@@ -587,25 +588,24 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/doNotDisturbPreferencesTitle"
-                    android:paddingStart="35dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="8dp"
+                    android:layout_marginTop="4dp"
                     android:text="@{BindingConverters.interruptionRulesToString(viewModel.notificationPolicyAccessGranted)}"
                     android:textSize="14sp"
-                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_marginBottom="8dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/doNotDisturbPreferencesTitle"
                     app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <com.example.volumeprofiler.views.SwitchableConstraintLayout
                 android:id="@+id/vibrateForCallsLayout"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:background="?attr/selectableItemBackground"
-                android:orientation="horizontal"
-                android:paddingTop="16dp"
                 canWriteSettings="@{viewModel.canWriteSettings}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onVibrateForCallsLayoutClick()}"
-                android:paddingBottom="16dp"
+                android:orientation="horizontal"
+                android:paddingBottom="8dp"
                 app:layout_constraintStart_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/interruptionFilterPreferencesLayout">
@@ -614,22 +614,26 @@
                     android:id="@+id/vibrateForCallsTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="35dp"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
                     android:text="Also vibrate for calls"
                     android:textColor="?android:attr/textColorPrimary"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <Switch
                     android:id="@+id/vibrateForCallsSwitch"
                     shouldVibrateForCalls="@{viewModel.vibrateForCalls}"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:clickable="false"
                     android:layout_marginEnd="16dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:clickable="false"
+                    app:layout_constraintBottom_toBottomOf="@id/vibrateForCallsTitle"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintStart_toStartOf="@id/vibrateForCallsTitle"
+                    app:layout_constraintTop_toTopOf="@id/vibrateForCallsTitle" />
             </com.example.volumeprofiler.views.SwitchableConstraintLayout>
 
             <ImageButton
@@ -656,15 +660,13 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneLayout" />
 
-            <!-- Visual interruptions section -->
-
             <TextView
                 android:id="@+id/Title2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
                 android:layout_marginTop="16dp"
-                android:text="Custom restrictions"
+                android:text="Restrict notifications"
                 android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -675,6 +677,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                visualsInterruptionFilter="@{viewModel.interruptionFilter}"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onSuppressedEffectsOnLayoutClick()}"
                 app:layout_constraintStart_toStartOf="parent"
@@ -698,10 +701,9 @@
                     android:layout_below="@id/blockWhenScreenIsOnTitle"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="16dp"
-                    android:text="Prevent notifications \nfrom peeking or popping on screen"
+                    android:text="Prevent notifications from peeking or popping on screen"
                     android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="@+id/blockWhenScreenIsOnTitle"
                     app:layout_constraintStart_toStartOf="@+id/blockWhenScreenIsOnTitle"
                     app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOnTitle" />
 
@@ -713,6 +715,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="32dp"
                 android:onClick="@{() -> viewModel.onSuppressedEffectsOffLayoutClick()}"
+                visualsInterruptionFilter="@{viewModel.interruptionFilter}"
                 notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 android:background="?attr/selectableItemBackground"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -737,10 +740,9 @@
                     android:layout_below="@id/blockWhenScreenIsOffTitle"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="16dp"
-                    android:text="Prevent notifications \nfrom turning on the screen"
+                    android:text="Prevent notifications from turning on the screen"
                     android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="@+id/blockWhenScreenIsOffTitle"
                     app:layout_constraintStart_toStartOf="@+id/blockWhenScreenIsOffTitle"
                     app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOffTitle" />
 

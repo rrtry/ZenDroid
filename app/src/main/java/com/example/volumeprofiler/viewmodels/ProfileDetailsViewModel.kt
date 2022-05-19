@@ -11,13 +11,13 @@ import android.app.NotificationManager.Policy.*
 import android.media.AudioManager.*
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.util.ContentUtil
-import com.example.volumeprofiler.core.interruptionPolicyAllowsRingerStream
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
+import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
@@ -27,9 +27,6 @@ import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAUL
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
-import com.example.volumeprofiler.core.interruptionPolicyAllowsAlarmsStream
-import com.example.volumeprofiler.core.interruptionPolicyAllowsMediaStream
-import com.example.volumeprofiler.core.interruptionPolicyAllowsNotificationStream
 import kotlinx.coroutines.FlowPreview
 
 @HiltViewModel
@@ -40,17 +37,17 @@ class ProfileDetailsViewModel @Inject constructor(
         private val contentUtil: ContentUtil
 ): ViewModel() {
 
-    private val activityEventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
-    private val fragmentEventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    private val activityChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    private val fragmentChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
 
-    val fragmentEventsFlow: Flow<ViewEvent> = fragmentEventChannel.receiveAsFlow()
-    val activityEventsFlow: Flow<ViewEvent> = activityEventChannel.receiveAsFlow()
+    val fragmentEventsFlow: Flow<ViewEvent> = fragmentChannel.receiveAsFlow()
+    val activityEventsFlow: Flow<ViewEvent> = activityChannel.receiveAsFlow()
 
     init {
         viewModelScope.launch {
             val ringtoneType: List<Int> = listOf(TYPE_ALARM, TYPE_NOTIFICATION, TYPE_RINGTONE)
             for (i in ringtoneType) {
-                fragmentEventChannel.send(ViewEvent.GetDefaultRingtoneUri(i))
+                fragmentChannel.send(ViewEvent.GetDefaultRingtoneUri(i))
             }
         }
     }
@@ -59,13 +56,10 @@ class ProfileDetailsViewModel @Inject constructor(
     private var previousRingerVolume: Int = STREAM_RING_DEFAULT_VOLUME
     private var previousNotificationVolume: Int = STREAM_NOTIFICATION_DEFAULT_VOLUME
 
-    var ringtoneUri: Uri = Uri.EMPTY
-    var alarmUri: Uri = Uri.EMPTY
-    var notificationUri: Uri = Uri.EMPTY
-
     sealed class ViewEvent {
 
-        object NavigateToNextFragment: ViewEvent()
+        object ShowInterruptionFilterFragment: ViewEvent()
+        object ShowNotificationRestrictionsFragment: ViewEvent()
         object NotificationPolicyRequestEvent: ViewEvent()
         object PhonePermissionRequestEvent: ViewEvent()
         object ShowPopupWindowEvent: ViewEvent()
@@ -89,11 +83,17 @@ class ProfileDetailsViewModel @Inject constructor(
         data class OnRemoveProfileEvent(val profile: Profile): ViewEvent()
     }
 
+    enum class FragmentType {
+        PROFILE_EDITOR,
+        INTERRUPTION_FILTER,
+        VISUAL_EFFECTS
+    }
+
     enum class DialogType {
-        PRIORITY,
+        PRIORITY_CATEGORIES,
         SUPPRESSED_EFFECTS_ON,
         SUPPRESSED_EFFECTS_OFF,
-        TITLE
+        PROFILE_TITLE
     }
 
     private val isNew: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -281,9 +281,9 @@ class ProfileDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             getProfile().let {
                 if (updateProfile()) {
-                    activityEventChannel.send(ViewEvent.OnUpdateProfileEvent(it))
+                    activityChannel.send(ViewEvent.OnUpdateProfileEvent(it))
                 } else {
-                    activityEventChannel.send(ViewEvent.OnInsertProfileEvent(it))
+                    activityChannel.send(ViewEvent.OnInsertProfileEvent(it))
                 }
             }
         }
@@ -294,7 +294,7 @@ class ProfileDetailsViewModel @Inject constructor(
             vibrateForCalls.value = vibrateForCalls.value xor 1
         } else {
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
@@ -302,9 +302,9 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onNotificationSoundLayoutClick() {
         viewModelScope.launch {
             if (canWriteSettings.value) {
-                fragmentEventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_NOTIFICATION))
+                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_NOTIFICATION))
             } else {
-                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
@@ -370,20 +370,20 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onStopRingtonePlayback(streamType: Int) {
         viewModelScope.launch {
             if (isRingtonePlaying(streamType)) {
-                fragmentEventChannel.send(ViewEvent.StopRingtonePlayback(streamType))
+                fragmentChannel.send(ViewEvent.StopRingtonePlayback(streamType))
             }
         }
     }
 
     fun onStartRingtonePlayback(streamType: Int) {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.StartRingtonePlayback(streamType))
+            fragmentChannel.send(ViewEvent.StartRingtonePlayback(streamType))
         }
     }
 
     fun onResumeRingtonePlayback(streamType: Int, position: Int) {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ResumeRingtonePlayback(streamType, position))
+            fragmentChannel.send(ViewEvent.ResumeRingtonePlayback(streamType, position))
         }
     }
 
@@ -395,22 +395,22 @@ class ProfileDetailsViewModel @Inject constructor(
                 ViewEvent.StartRingtonePlayback(streamType)
             }
             setPlaybackState(getPlayingRingtone(), false)
-            fragmentEventChannel.send(event)
+            fragmentChannel.send(event)
         }
     }
 
     fun onExpandableFabClick() {
         viewModelScope.launch {
-            activityEventChannel.send(ViewEvent.ToggleFloatingActionMenu)
+            activityChannel.send(ViewEvent.ToggleFloatingActionMenu)
         }
     }
 
     fun onRingtoneLayoutClick() {
         viewModelScope.launch {
             if (canWriteSettings.value) {
-                fragmentEventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_RINGTONE))
+                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_RINGTONE))
             } else {
-                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
@@ -420,7 +420,17 @@ class ProfileDetailsViewModel @Inject constructor(
             if (phonePermissionGranted.value) {
                 streamsUnlinked.value = !streamsUnlinked.value
             } else {
-                fragmentEventChannel.send(ViewEvent.PhonePermissionRequestEvent)
+                fragmentChannel.send(ViewEvent.PhonePermissionRequestEvent)
+            }
+        }
+    }
+
+    fun onNotificationRestrictionsLayoutClick() {
+        viewModelScope.launch {
+            if (notificationPolicyAccessGranted.value) {
+                fragmentChannel.send(ViewEvent.ShowNotificationRestrictionsFragment)
+            } else {
+                fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
             }
         }
     }
@@ -428,9 +438,9 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onAlarmSoundLayoutClick() {
         viewModelScope.launch {
             if (canWriteSettings.value) {
-                fragmentEventChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_ALARM))
+                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_ALARM))
             } else {
-                fragmentEventChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
             }
         }
     }
@@ -438,7 +448,7 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onMediaStreamVolumeChanged(index: Int, fromUser: Boolean) {
         if (fromUser) {
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_MUSIC, index))
+                fragmentChannel.send(ViewEvent.StreamVolumeChanged(STREAM_MUSIC, index))
             }
         }
         mediaVolume.value = index
@@ -448,7 +458,7 @@ class ProfileDetailsViewModel @Inject constructor(
         val volume: Int = index + streamMinVolume
         if (fromUser) {
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_ALARM, volume))
+                fragmentChannel.send(ViewEvent.StreamVolumeChanged(STREAM_ALARM, volume))
             }
         }
         alarmVolume.value = volume
@@ -458,7 +468,7 @@ class ProfileDetailsViewModel @Inject constructor(
         val volume: Int = index + streamMinVolume
         if (fromUser) {
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(STREAM_VOICE_CALL, volume))
+                fragmentChannel.send(ViewEvent.StreamVolumeChanged(STREAM_VOICE_CALL, volume))
             }
         }
         callVolume.value = volume
@@ -467,9 +477,9 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onInterruptionFilterLayoutClick() {
         viewModelScope.launch {
             if (notificationPolicyAccessGranted.value) {
-                fragmentEventChannel.send(ViewEvent.ShowPopupWindowEvent)
+                fragmentChannel.send(ViewEvent.ShowPopupWindowEvent)
             } else {
-                fragmentEventChannel.send(ViewEvent.NotificationPolicyRequestEvent)
+                fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
             }
         }
     }
@@ -503,9 +513,9 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onPreferencesLayoutClick() {
         viewModelScope.launch {
             if (notificationPolicyAccessGranted.value) {
-                fragmentEventChannel.send(ViewEvent.NavigateToNextFragment)
+                fragmentChannel.send(ViewEvent.ShowInterruptionFilterFragment)
             } else {
-                fragmentEventChannel.send(ViewEvent.NotificationPolicyRequestEvent)
+                fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
             }
         }
     }
@@ -516,7 +526,7 @@ class ProfileDetailsViewModel @Inject constructor(
             STREAM_RING -> ringVolume.value = 0
         }
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ChangeRingerMode(streamType, showToast, vibrate))
+            fragmentChannel.send(ViewEvent.ChangeRingerMode(streamType, showToast, vibrate))
             onStopRingtonePlayback(getPlayingRingtone())
         }
     }
@@ -535,14 +545,14 @@ class ProfileDetailsViewModel @Inject constructor(
                 }
             }
             viewModelScope.launch {
-                fragmentEventChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
+                fragmentChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
             }
         }
     }
 
     fun onCallsLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CALLS))
+            fragmentChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CALLS))
         }
     }
 
@@ -565,43 +575,51 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun onStarredContactsLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.StartContactsActivity)
+            fragmentChannel.send(ViewEvent.StartContactsActivity)
         }
+    }
+
+    fun onMuteNotificationsLayoutClick() {
+        suppressedVisualEffects.value = 0x0
+    }
+
+    fun onRestrictNotificationsLayoutClick() {
+        suppressedVisualEffects.value = ALL_NOTIFICATIONS_SUPPRESSED
     }
 
     fun onConversationsLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CONVERSATIONS))
+            fragmentChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CONVERSATIONS))
         }
     }
 
     fun onMessagesLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_MESSAGES))
+            fragmentChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_MESSAGES))
         }
     }
 
     fun onPriorityInterruptionsLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.PRIORITY))
+            fragmentChannel.send(ViewEvent.ShowDialogFragment(DialogType.PRIORITY_CATEGORIES))
         }
     }
 
     fun onSuppressedEffectsOnLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_ON))
+            fragmentChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_ON))
         }
     }
 
     fun onChangeTitleButtonClick() {
         viewModelScope.launch {
-            activityEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.TITLE))
+            activityChannel.send(ViewEvent.ShowDialogFragment(DialogType.PROFILE_TITLE))
         }
     }
 
     fun onSuppressedEffectsOffLayoutClick() {
         viewModelScope.launch {
-            fragmentEventChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_OFF))
+            fragmentChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_OFF))
         }
     }
 
@@ -664,7 +682,7 @@ class ProfileDetailsViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        activityEventChannel.close()
-        fragmentEventChannel.close()
+        activityChannel.close()
+        fragmentChannel.close()
     }
 }

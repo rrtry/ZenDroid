@@ -19,6 +19,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.core.*
 import com.google.android.material.appbar.CollapsingToolbarLayout
 
+@SuppressLint("UseSwitchCompatOrMaterialCode")
 object BindingAdapters {
 
     private const val DRAWABLE_ALARM_ON: Int = R.drawable.baseline_alarm_deep_purple_300_24dp
@@ -83,12 +84,10 @@ object BindingAdapters {
         alarmInterruptionFilter: Int,
         priorityCategories: Int,
         policyAccessGranted: Boolean,
-        index: Int)
-    : Unit {
+        index: Int): Unit {
         setAlarmIcon(imageView, interruptionPolicyAllowsAlarmsStream(
-            alarmInterruptionFilter, priorityCategories, policyAccessGranted
-        ) && !canMuteAlarmStream(index)
-        )
+            alarmInterruptionFilter, priorityCategories, policyAccessGranted)
+                && !canMuteAlarmStream(index))
     }
 
     @JvmStatic
@@ -102,9 +101,7 @@ object BindingAdapters {
         setEnabledState(viewGroup, interruptionPolicyAllowsMediaStream(
             mediaInterruptionFilter,
             mediaPriorityCategories,
-            policyAccessGranted
-        )
-        )
+            policyAccessGranted))
     }
 
     @JvmStatic
@@ -120,9 +117,7 @@ object BindingAdapters {
             ringerInterruptionFilter,
             ringerPriorityCategories,
             policyAccessGranted,
-            streamsUnlinked
-        )
-        )
+            streamsUnlinked))
     }
 
     @JvmStatic
@@ -136,9 +131,7 @@ object BindingAdapters {
         setEnabledState(viewGroup, interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter,
             alarmPriorityCategories,
-            policyAccessGranted
-        )
-        )
+            policyAccessGranted))
     }
 
     @JvmStatic
@@ -170,9 +163,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("storagePermissionGranted")
     fun bindRingtoneLayout(view: View, storagePermissionGranted: Boolean): Unit {
-        (view as SwitchableConstraintLayout).apply {
-            disabled = !storagePermissionGranted
-        }
+        setEnabledState(view, storagePermissionGranted)
     }
 
     @JvmStatic
@@ -335,9 +326,7 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("canWriteSettings")
     fun bindVibrateForCallsLayout(viewGroup: View, canWriteSettings: Boolean): Unit {
-        (viewGroup as SwitchableConstraintLayout).apply {
-            disabled = !canWriteSettings
-        }
+        setEnabledState(viewGroup, canWriteSettings)
     }
 
     @JvmStatic
@@ -371,7 +360,6 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("shouldVibrateForCalls")
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
     fun bindVibrateForCallsSwitch(view: Switch, shouldVibrateForCalls: Int) {
         view.isChecked = shouldVibrateForCalls == 1
     }
@@ -379,23 +367,28 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("notificationPolicyAccessGranted")
     fun bindInterruptionFilterLayout(viewGroup: View, notificationPolicyAccessGranted: Boolean): Unit {
-        (viewGroup as SwitchableConstraintLayout).apply {
-            disabled = !notificationPolicyAccessGranted
-        }
+        setEnabledState(viewGroup, notificationPolicyAccessGranted)
+    }
+
+    @JvmStatic
+    @BindingAdapter("visualsInterruptionFilter", "notificationPolicyAccessGranted")
+    fun bindNotificationsVisualsLayout(viewGroup: View, interruptionFilter: Int, notificationAccessGranted: Boolean) {
+        setEnabledState(
+            viewGroup,
+            interruptionFilter != INTERRUPTION_FILTER_ALL && notificationAccessGranted
+        )
     }
 
     @JvmStatic
     @BindingAdapter("preferencesInterruptionFilter", "notificationPolicyAccess")
     fun bindInterruptionPreferencesLayout(viewGroup: ViewGroup, interruptionFilter: Int, notificationPolicyAccess: Boolean): Unit {
-        if (notificationPolicyAccess) {
-            setEnabledState(viewGroup, interruptionFilter == INTERRUPTION_FILTER_PRIORITY)
-        } else {
-            setEnabledState(viewGroup, false)
-        }
+        setEnabledState(
+            viewGroup,
+            interruptionFilter == INTERRUPTION_FILTER_PRIORITY && notificationPolicyAccess
+        )
     }
 
     @JvmStatic
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
     @BindingAdapter("streamsUnlinked")
     fun bindUnlinkStreamsSwitch(switch: Switch, streamsUnlinked: Boolean): Unit {
         switch.isChecked = streamsUnlinked

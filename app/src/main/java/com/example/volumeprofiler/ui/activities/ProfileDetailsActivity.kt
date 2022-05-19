@@ -53,29 +53,31 @@ class ProfileDetailsActivity: AppCompatActivity(),
     @Inject lateinit var geofenceManager: GeofenceManager
 
     private var showExplanationDialog: Boolean = true
-    private var elapsedTime: Long = 0
+    private var elapsedTime: Long = 0L
 
     private var scheduledAlarms: List<AlarmRelation>? = null
     private var registeredGeofences: List<LocationRelation>? = null
 
     override fun onUpdate(profile: Profile) {
-
         if (preferencesManager.isProfileEnabled(profile)) {
             profileManager.setProfile(profile)
         }
-
         geofenceManager.updateGeofenceProfile(registeredGeofences, profile)
         scheduleManager.updateAlarmProfile(scheduledAlarms, profile)
 
         lifecycleScope.launch {
             viewModel.updateProfile(profile)
-        }.invokeOnCompletion { finish() }
+        }.invokeOnCompletion {
+            finish()
+        }
     }
 
     override fun onInsert(profile: Profile) {
         lifecycleScope.launch {
             viewModel.addProfile(profile)
-        }.invokeOnCompletion { finish() }
+        }.invokeOnCompletion {
+            finish()
+        }
     }
 
     override fun onCancel() {
@@ -96,7 +98,9 @@ class ProfileDetailsActivity: AppCompatActivity(),
             elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
             showExplanationDialog = it.getBoolean(EXTRA_SHOW_DIALOG, false)
         }
+
         openProfileDetailsFragment()
+
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -187,8 +191,6 @@ class ProfileDetailsActivity: AppCompatActivity(),
     override fun onFragmentReplace(fragment: Int) {
         if (fragment == INTERRUPTION_FILTER_FRAGMENT) {
             openInterruptionsFilterFragment()
-        } else {
-            supportFragmentManager.popBackStackImmediate()
         }
     }
 
@@ -200,9 +202,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
                 showSnackbar(binding.root, "Press back button again to exit", LENGTH_LONG)
             }
             elapsedTime = System.currentTimeMillis()
-        } else {
-            super.onBackPressed()
-        }
+        } else super.onBackPressed()
     }
 
     companion object {
@@ -213,6 +213,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
         const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
         const val EXTRA_PROFILE = "extra_profile"
         const val INTERRUPTION_FILTER_FRAGMENT: Int = 0
+        const val NOTIFICATION_RESTRICTIONS_FRAGMENT: Int = 1
 
         fun newIntent(context: Context, profile: Profile?): Intent {
             return Intent(context, ProfileDetailsActivity::class.java).apply {
