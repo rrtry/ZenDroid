@@ -3,6 +3,7 @@ package com.example.volumeprofiler.ui.fragments
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
@@ -60,6 +61,7 @@ abstract class BaseDialog: DialogFragment() {
             builder.setTitle(title)
                 .setMultiChoiceItems(arrayRes, null)
                 { _, which, isChecked ->
+                    Log.i("DialogFragment", getListView().getChildAt(0).id.toString())
                     categories[which].also { category ->
                         if (isChecked) {
                             addBit(category)

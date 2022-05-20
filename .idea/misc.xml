@@ -135,6 +135,7 @@
         <entry key="app/src/main/res/layout/maps_select_location_fragment.xml" value="0.5" />
         <entry key="app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.5447916666666667" />
         <entry key="app/src/main/res/layout/notification_restrictions_fragment.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/notification_visibility_category_view.xml" value="0.3078125" />
         <entry key="app/src/main/res/layout/profile_item_view.xml" value="0.9" />
         <entry key="app/src/main/res/layout/profiles_list_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout/seekbar_scene.xml" value="0.3078125" />
