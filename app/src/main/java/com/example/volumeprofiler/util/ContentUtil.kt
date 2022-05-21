@@ -8,11 +8,8 @@ import android.provider.MediaStore
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import android.Manifest.permission.*
 import android.annotation.SuppressLint
 import android.content.ContentUris
-import android.media.Ringtone
-import android.media.RingtoneManager
 import android.provider.CalendarContract
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,7 +30,6 @@ class ContentUtil @Inject constructor(
         return builder
     }
 
-    /*
     fun queryCurrentEventInstance(
         id: Int, startMillis: Long,
         token: Int, cookie: Any?,
@@ -78,11 +74,11 @@ class ContentUtil @Inject constructor(
             null, null)
     }
 
-    fun queryEventNextInstances(id: Int, token: Int, cookie: Any?, callback: ContentQueryHandler.AsyncQueryCallback): Unit {
+    fun queryEventNextInstances(id: Int, token: Int, cookie: Any?, callback: ContentQueryHandler.AsyncQueryCallback) {
 
         val now: LocalDateTime = LocalDateTime.now()
-        val startMillis: Long = ScheduleManager.toEpochMilli(now)
-        val endMillis: Long = ScheduleManager.toEpochMilli(now.plusYears(1))
+        val startMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         val builder: Uri.Builder = buildInstancesUri(startMillis, endMillis)
         val projection: Array<String> = arrayOf(
@@ -113,8 +109,8 @@ class ContentUtil @Inject constructor(
         )
 
         val now: LocalDateTime = LocalDateTime.now()
-        val startMillis: Long = ScheduleManager.toEpochMilli(now)
-        val endMillis: Long = ScheduleManager.toEpochMilli(now.plusYears(1))
+        val startMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endMillis: Long = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         val builder: Uri.Builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
         ContentUris.appendId(builder, startMillis)
@@ -152,14 +148,13 @@ class ContentUtil @Inject constructor(
                         cursor.getString(0)
                     }
                 }
-                ""
+                "Unknown"
             } catch (e: java.lang.IllegalArgumentException) {
-                ""
+                "Unknown"
             }
         }
         return title
     }
-     */
 
     suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
 

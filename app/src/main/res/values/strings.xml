@@ -17,7 +17,7 @@
         <item>Don\'t turn on screen</item>
         <item>Don\'t wake for notifications</item>
         <item>Hide notification dots on app icons</item>
-        <item>Hide status bar icons at top of screen</item>
+        <item>Hide status bar icons</item>
         <item>Don\'t pop notifications on screen</item>
         <item>Hide from pull-down shade</item>
     </string-array>
@@ -43,7 +43,7 @@
     </string-array>
     <string-array name="screenIsOn">
         <item>Hide notification dots on app icons</item>
-        <item>Hide status bar icons at top of the screen</item>
+        <item>Hide status bar icons</item>
         <item>Don\'t pop notifications on screen</item>
         <item>Hide from notifications list</item>
     </string-array>

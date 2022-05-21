@@ -3,7 +3,6 @@ package com.example.volumeprofiler.ui.fragments
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
-import android.util.Log
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import com.example.volumeprofiler.R
@@ -12,45 +11,48 @@ abstract class BaseDialog: DialogFragment() {
 
     protected abstract val title: String
     protected abstract val arrayRes: Int
-    protected abstract val categories: List<Int>
+    protected abstract val values: List<Int>
 
-    protected var categoriesMask: Int = 0
+    protected var mask: Int = 0
     private var argsSet: Boolean = false
 
     abstract fun applyChanges(mask: Int)
+    abstract fun onValueAdded(position: Int, value: Int)
+    abstract fun onValueRemoved(position: Int, value: Int)
 
-    private fun removeBit(category: Int) {
-        categoriesMask = categoriesMask and category.inv()
+    private fun removeValue(category: Int) {
+        mask = mask and category.inv()
     }
 
-    private fun addBit(category: Int) {
-        categoriesMask = categoriesMask or category
+    private fun addValue(category: Int) {
+        mask = mask or category
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState != null) {
-            categoriesMask = savedInstanceState.getInt(EXTRA_MASK, 0)
-            argsSet = savedInstanceState.getBoolean(EXTRA_SET_ARGUMENTS, false)
+        savedInstanceState?.apply {
+            mask = getInt(EXTRA_MASK, 0)
+            argsSet = getBoolean(EXTRA_SET_ARGUMENTS, false)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(EXTRA_MASK, categoriesMask)
+        outState.putInt(EXTRA_MASK, mask)
         outState.putBoolean(EXTRA_SET_ARGUMENTS, argsSet)
     }
 
     override fun onResume() {
         super.onResume()
         if (!argsSet) {
-            categoriesMask = requireArguments().getInt(EXTRA_MASK, 0)
+            mask = requireArguments().getInt(EXTRA_MASK, 0)
             argsSet = true
         }
-        val listView: ListView = getListView()
-        for ((index, category) in categories.withIndex()) {
-            if ((categoriesMask and category) != 0) {
-                listView.setItemChecked(index, true)
+        getListView().apply {
+            values.forEachIndexed { index, category ->
+                if ((mask and category) != 0) {
+                    setItemChecked(index, true)
+                }
             }
         }
     }
@@ -59,25 +61,22 @@ abstract class BaseDialog: DialogFragment() {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
             builder.setTitle(title)
-                .setMultiChoiceItems(arrayRes, null)
-                { _, which, isChecked ->
-                    Log.i("DialogFragment", getListView().getChildAt(0).id.toString())
-                    categories[which].also { category ->
+                .setMultiChoiceItems(arrayRes, null) { _, which, isChecked ->
+                    values[which].also { category ->
                         if (isChecked) {
-                            addBit(category)
-                        } else if ((categoriesMask and category) != 0) {
-                            removeBit(category)
+                            addValue(category)
+                            onValueAdded(which, category)
+                        } else if ((mask and category) != 0) {
+                            removeValue(category)
+                            onValueRemoved(which, category)
                         }
+                        // notifyDataSetChanged()
                     }
-                    (getListView().adapter as ArrayAdapter<*>)
-                        .notifyDataSetChanged()
                 }
-                .setPositiveButton(R.string.apply)
-                { _, _ ->
-                    applyChanges(categoriesMask)
+                .setPositiveButton(R.string.apply) { _, _ ->
+                    applyChanges(mask)
                 }
-                .setNegativeButton(R.string.cancel)
-                { dialog, _ ->
+                .setNegativeButton(R.string.cancel) { dialog, _ ->
                     dialog.dismiss()
                 }
             builder.create()
@@ -86,6 +85,10 @@ abstract class BaseDialog: DialogFragment() {
 
     protected fun getListView(): ListView {
         return (dialog as AlertDialog).listView
+    }
+
+    private fun notifyDataSetChanged() {
+        (getListView().adapter as ArrayAdapter<*>).notifyDataSetChanged()
     }
 
     companion object {

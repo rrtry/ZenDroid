@@ -16,6 +16,7 @@ import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import com.example.volumeprofiler.entities.Profile
 import android.app.NotificationManager.*
 import android.content.*
+import android.content.Context.VIBRATOR_MANAGER_SERVICE
 import android.content.Context.VIBRATOR_SERVICE
 import android.media.*
 import android.media.AudioManager.*
@@ -346,7 +347,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         viewModel.canWriteSettings.value = canWrite(requireContext())
     }
 
-    private fun registerForSystemSettingsResult(): Unit {
+    private fun registerForSystemSettingsResult() {
         systemPreferencesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             canWrite(requireContext()).let {
                 viewModel.canWriteSettings.value = it

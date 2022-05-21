@@ -21,7 +21,7 @@ class PriorityCategoriesDialog: BaseDialog() {
         R.array.priorityCategoriesApi23
     }
 
-    override val categories: List<Int> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    override val values: List<Int> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         listOf(
             PRIORITY_CATEGORY_ALARMS,
             PRIORITY_CATEGORY_MEDIA,
@@ -38,6 +38,14 @@ class PriorityCategoriesDialog: BaseDialog() {
 
     override fun applyChanges(mask: Int) {
         viewModel.priorityCategories.value = mask
+    }
+
+    override fun onValueAdded(position: Int, value: Int) {
+
+    }
+
+    override fun onValueRemoved(position: Int, value: Int) {
+
     }
 
     companion object {

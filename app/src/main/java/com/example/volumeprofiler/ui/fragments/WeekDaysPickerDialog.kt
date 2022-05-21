@@ -14,7 +14,7 @@ class WeekDaysPickerDialog: BaseDialog() {
 
     override val title: String = "Weekdays"
     override val arrayRes: Int = R.array.daysOfWeek
-    override val categories: List<Int> = listOf(
+    override val values: List<Int> = listOf(
         MONDAY.value,
         TUESDAY.value,
         WEDNESDAY.value,
@@ -26,6 +26,14 @@ class WeekDaysPickerDialog: BaseDialog() {
 
     override fun applyChanges(mask: Int) {
         viewModel.scheduledDays.value = mask
+    }
+
+    override fun onValueAdded(position: Int, value: Int) {
+
+    }
+
+    override fun onValueRemoved(position: Int, value: Int) {
+
     }
 
     companion object {

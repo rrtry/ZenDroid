@@ -9,6 +9,7 @@ import javax.inject.Inject
 import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
+import android.util.Log
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
@@ -26,6 +27,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
                     val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
 
                     if (phoneState == EXTRA_STATE_RINGING) {
+                        Log.i("PhoneStateReceiver", "STATE_RINGING")
                         profileManager.setRingerMode(
                             STREAM_RING,
                             profile.ringVolume,
@@ -33,6 +35,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
                             FLAG_ALLOW_RINGER_MODES
                         )
                     } else if (phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) {
+                        Log.i("PhoneStateReceiver", "STATE_OFFHOOK")
                         profileManager.setRingerMode(
                             STREAM_NOTIFICATION,
                             profile.notificationVolume,

@@ -18,7 +18,7 @@ class SuppressedEffectsOffDialog : BaseDialog() {
 
     override val title: String = "When screen is off"
     override val arrayRes: Int = R.array.screenIsOff
-    override val categories: List<Int> = listOf(
+    override val values: List<Int> = listOf(
         SUPPRESSED_EFFECT_LIGHTS,
         SUPPRESSED_EFFECT_FULL_SCREEN_INTENT,
         SUPPRESSED_EFFECT_AMBIENT
@@ -26,6 +26,14 @@ class SuppressedEffectsOffDialog : BaseDialog() {
 
     override fun applyChanges(mask: Int) {
         viewModel.suppressedVisualEffects.value = mask
+    }
+
+    override fun onValueAdded(position: Int, value: Int) {
+
+    }
+
+    override fun onValueRemoved(position: Int, value: Int) {
+
     }
 
     companion object {

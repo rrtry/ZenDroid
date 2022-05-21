@@ -4,7 +4,6 @@ import android.annotation.TargetApi
 import android.app.NotificationManager.Policy.*
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -23,22 +22,30 @@ class SuppressedEffectsOnDialog : BaseDialog() {
 
     override val title: String = "When screen is on"
     override val arrayRes: Int = R.array.screenIsOn
-    override val categories: List<Int> = listOf(
+    override val values: List<Int> = listOf(
         SUPPRESSED_EFFECT_BADGE,
         SUPPRESSED_EFFECT_STATUS_BAR,
         SUPPRESSED_EFFECT_PEEK,
         SUPPRESSED_EFFECT_NOTIFICATION_LIST
     )
 
-    private fun isListItemEnabled(position: Int): Boolean {
-        return !(categories[position] == SUPPRESSED_EFFECT_STATUS_BAR
-                && ((categoriesMask and SUPPRESSED_EFFECT_NOTIFICATION_LIST) != 0))
+    override fun applyChanges(mask: Int) {
+        viewModel.suppressedVisualEffects.value = mask
     }
 
+    override fun onValueAdded(position: Int, value: Int) {
+
+    }
+
+    override fun onValueRemoved(position: Int, value: Int) {
+
+    }
+
+    /*
     override fun onResume() {
         val listView: ListView = getListView()
         val arrayAdapter: ArrayAdapter<String> = object : ArrayAdapter<String>(
-            requireContext(), android.R.layout.simple_list_item_multiple_choice
+            requireContext(), R.layout.dialog_multichoice_item
         ) {
 
             override fun isEnabled(position: Int): Boolean {
@@ -62,9 +69,11 @@ class SuppressedEffectsOnDialog : BaseDialog() {
         super.onResume()
     }
 
-    override fun applyChanges(mask: Int) {
-        viewModel.suppressedVisualEffects.value = mask
+    private fun isListItemEnabled(position: Int): Boolean {
+        return !(values[position] == SUPPRESSED_EFFECT_STATUS_BAR
+                && ((mask and SUPPRESSED_EFFECT_NOTIFICATION_LIST) != 0))
     }
+     */
 
     companion object {
 

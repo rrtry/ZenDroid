@@ -14,7 +14,7 @@ data class Profile(
 
     @PrimaryKey
     @Expose
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID = UUID.randomUUID(),
 
     @Expose var title: String,
 

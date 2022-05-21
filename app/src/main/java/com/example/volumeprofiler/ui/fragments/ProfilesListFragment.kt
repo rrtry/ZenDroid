@@ -99,10 +99,22 @@ class ProfilesListFragment: Fragment(),
             KeyProvider(profileAdapter),
             DetailsLookup(binding.recyclerView),
             StorageStrategy.createStringStorage()
-        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
-            .build()
-        tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
+        ).withSelectionPredicate(object : SelectionTracker.SelectionPredicate<String>() {
 
+            override fun canSetStateForKey(key: String, nextState: Boolean): Boolean {
+                return key != HEADER_ID
+            }
+
+            override fun canSetStateAtPosition(position: Int, nextState: Boolean): Boolean {
+                return true
+            }
+
+            override fun canSelectMultiple(): Boolean {
+                return true
+            }
+
+        }).build()
+        tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
         savedInstanceState?.let {
             selectedItems = it.getStringArrayList(EXTRA_SELECTION) as ArrayList<String>
             tracker.setItemsSelected(selectedItems, true)
@@ -152,7 +164,9 @@ class ProfilesListFragment: Fragment(),
 
     override fun onStop() {
         super.onStop()
-        tracker.clearSelection()
+        if (!requireActivity().isChangingConfigurations) {
+            tracker.clearSelection()
+        }
     }
 
     override fun onDestroyView() {
@@ -270,6 +284,7 @@ class ProfilesListFragment: Fragment(),
 
     companion object {
 
+        private const val HEADER_ID: String = "HEADER"
         private const val SELECTION_ID: String = "PROFILE"
         private const val EXTRA_SELECTION: String = "extra_selection"
         private const val EXTRA_RV_STATE: String = "abs_position"

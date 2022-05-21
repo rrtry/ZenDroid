@@ -44,7 +44,6 @@ class SuggestionsAdapter(private val context: Context, cursor: MatrixCursor?):
         lateinit var suggestionText: TextView
         var removeRecentQueryButton: ImageButton? = null
         var itemViewType: Int = IGNORE_ITEM_VIEW_TYPE
-
     }
 
     override fun getItem(position: Int): Cursor {

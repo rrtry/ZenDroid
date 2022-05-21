@@ -1,7 +1,8 @@
 package com.example.volumeprofiler.entities
 
-sealed class ListItem {
+interface ListItem<T> {
 
-    abstract val id: Long
-    abstract val itemViewType: Int
+    var id: T
+    val viewType: Int
+
 }

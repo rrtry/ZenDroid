@@ -115,10 +115,22 @@ class SchedulerFragment: Fragment(),
             KeyProvider(alarmAdapter),
             DetailsLookup(binding.recyclerView),
             StorageStrategy.createLongStorage()
-        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
+        ).withSelectionPredicate(object : SelectionTracker.SelectionPredicate<Long>() {
+            override fun canSetStateForKey(key: Long, nextState: Boolean): Boolean {
+                return key != Long.MAX_VALUE && key != Long.MIN_VALUE
+            }
+
+            override fun canSetStateAtPosition(position: Int, nextState: Boolean): Boolean {
+                return true
+            }
+
+            override fun canSelectMultiple(): Boolean {
+                return true
+            }
+
+        })
             .build()
         tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
-
         return binding.root
     }
 
@@ -213,7 +225,10 @@ class SchedulerFragment: Fragment(),
                 alarmAdapter.getItemPosition(entity.alarm.id)
             )
         } else {
-            startAlarmDetailsActivity(entity, createTransitionAnimationOptions(alarmBinding))
+            startAlarmDetailsActivity(
+                entity,
+                createTransitionAnimationOptions(alarmBinding)
+            )
         }
     }
 

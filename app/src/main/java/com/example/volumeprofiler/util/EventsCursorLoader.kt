@@ -28,7 +28,7 @@ class EventsCursorLoader(
 
         var query: String = ""
         var selectionArgs: Array<String>? = null
-        if (input != null && input.isNotEmpty()) {
+        if (!input.isNullOrEmpty()) {
             query += "${CalendarContract.Events.TITLE} LIKE ? AND "
             selectionArgs = arrayOf("%$input%")
         }
