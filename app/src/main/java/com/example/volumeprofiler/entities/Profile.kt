@@ -6,6 +6,10 @@ import java.util.UUID
 import android.os.Parcelable
 import kotlinx.parcelize.*
 import android.media.AudioManager.*
+import android.media.RingtoneManager
+import android.os.Build
+import android.provider.Settings
+import com.example.volumeprofiler.R
 import com.google.gson.annotations.Expose
 
 @Parcelize
@@ -17,6 +21,7 @@ data class Profile(
     var id: UUID = UUID.randomUUID(),
 
     @Expose var title: String,
+    @Expose var iconRes: Int,
 
     @Expose var mediaVolume: Int = 5,
     @Expose var callVolume: Int = 4,

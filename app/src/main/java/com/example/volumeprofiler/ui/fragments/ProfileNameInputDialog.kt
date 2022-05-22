@@ -37,7 +37,6 @@ class ProfileNameInputDialog: DialogFragment() {
         savedInstanceState: Bundle?
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
-
         bindingImpl = TextInputDialogBinding.inflate(layoutInflater, container, false)
         return binding.root
     }

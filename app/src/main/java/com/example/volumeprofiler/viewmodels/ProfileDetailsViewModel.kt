@@ -83,17 +83,12 @@ class ProfileDetailsViewModel @Inject constructor(
         data class OnRemoveProfileEvent(val profile: Profile): ViewEvent()
     }
 
-    enum class FragmentType {
-        PROFILE_EDITOR,
-        INTERRUPTION_FILTER,
-        VISUAL_EFFECTS
-    }
-
     enum class DialogType {
         PRIORITY_CATEGORIES,
         SUPPRESSED_EFFECTS_ON,
         SUPPRESSED_EFFECTS_OFF,
-        PROFILE_TITLE
+        PROFILE_TITLE,
+        PROFILE_IMAGE
     }
 
     private val isNew: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -109,7 +104,7 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     val title: MutableStateFlow<String> = MutableStateFlow("My profile")
-    val currentFragmentTag: MutableStateFlow<String> = MutableStateFlow(TAG_PROFILE_FRAGMENT)
+    val iconRes: MutableStateFlow<Int> = MutableStateFlow(-1)
     val mediaVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_MUSIC_DEFAULT_VOLUME)
     val callVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_VOICE_CALL_DEFAULT_VOLUME)
     val notificationVolume: MutableStateFlow<Int> = MutableStateFlow(STREAM_NOTIFICATION_DEFAULT_VOLUME)
@@ -120,18 +115,18 @@ class ProfileDetailsViewModel @Inject constructor(
     val notificationSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
     val alarmSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
 
-    val phoneRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val phoneRingtoneTitle: StateFlow<String> = phoneRingtoneUri.map { uri ->  contentUtil.getRingtoneTitle(uri, TYPE_RINGTONE) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "")
+        .stateIn(viewModelScope, WhileSubscribed(1000), "Unknown")
 
-    val notificationRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationRingtoneTitle: StateFlow<String> = notificationSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "")
+        .stateIn(viewModelScope, WhileSubscribed(1000), "Unknown")
+
+    val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM) }
+        .stateIn(viewModelScope, WhileSubscribed(1000), "Unknown")
 
     val alarmRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "")
-
+    val notificationRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val phoneRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val voiceCallRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val musicRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
@@ -201,6 +196,7 @@ class ProfileDetailsViewModel @Inject constructor(
     private fun setProfile(profile: Profile) {
 
         title.value = profile.title
+        iconRes.value = profile.iconRes
 
         mediaVolume.value = profile.mediaVolume
         callVolume.value = profile.callVolume
@@ -248,6 +244,7 @@ class ProfileDetailsViewModel @Inject constructor(
         return Profile(
             if (profileUUID.value == null) UUID.randomUUID() else profileUUID.value!!,
             title.value,
+            iconRes.value,
             mediaVolume.value,
             callVolume.value,
             notificationVolume.value,
@@ -573,18 +570,16 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
+    fun onProfileImageViewClick() {
+        viewModelScope.launch {
+            activityChannel.send(ViewEvent.ShowDialogFragment(DialogType.PROFILE_IMAGE))
+        }
+    }
+
     fun onStarredContactsLayoutClick() {
         viewModelScope.launch {
             fragmentChannel.send(ViewEvent.StartContactsActivity)
         }
-    }
-
-    fun onMuteNotificationsLayoutClick() {
-        suppressedVisualEffects.value = 0x0
-    }
-
-    fun onRestrictNotificationsLayoutClick() {
-        suppressedVisualEffects.value = ALL_NOTIFICATIONS_SUPPRESSED
     }
 
     fun onConversationsLayoutClick() {

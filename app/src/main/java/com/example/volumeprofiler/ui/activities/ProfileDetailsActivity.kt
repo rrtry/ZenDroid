@@ -3,15 +3,27 @@ package com.example.volumeprofiler.ui.activities
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.transition.ChangeBounds
+import android.transition.Fade
+import android.transition.Slide
+import android.transition.TransitionSet
 import android.util.Log
+import android.view.Gravity
+import android.view.View
+import android.view.Window
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
+import androidx.core.view.ViewCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
 import com.example.volumeprofiler.ui.fragments.InterruptionFilterFragment
@@ -35,6 +47,10 @@ import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.DetailsViewContract
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.ui.Animations
+import com.example.volumeprofiler.ui.ScaleTransition
+import com.example.volumeprofiler.ui.fragments.ProfileImageSelectionDialog
+import com.example.volumeprofiler.ui.fragments.ProfilesListFragment.Companion.SHARED_TRANSITION_PROFILE_IMAGE
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
 
 @AndroidEntryPoint
@@ -68,7 +84,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
         lifecycleScope.launch {
             viewModel.updateProfile(profile)
         }.invokeOnCompletion {
-            finish()
+            onCancel()
         }
     }
 
@@ -76,12 +92,13 @@ class ProfileDetailsActivity: AppCompatActivity(),
         lifecycleScope.launch {
             viewModel.addProfile(profile)
         }.invokeOnCompletion {
-            finish()
+            onCancel()
         }
     }
 
     override fun onCancel() {
-        finish()
+        clearLayoutParams()
+        ActivityCompat.finishAfterTransition(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,10 +106,27 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
         setEntity()
 
+        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+        with(window) {
+            sharedElementEnterTransition = TransitionSet().addTransition(ChangeBounds())
+            enterTransition = TransitionSet().apply {
+
+                ordering = TransitionSet.ORDERING_TOGETHER
+                duration = 350
+                addTransition(Fade())
+                addTransition(Slide(Gravity.END))
+
+                excludeTarget(android.R.id.statusBarBackground, true)
+                excludeTarget(android.R.id.navigationBarBackground, true)
+            }
+            allowEnterTransitionOverlap = true
+        }
+
         binding = CreateProfileActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
+        ViewCompat.setTransitionName(binding.profileImage, SHARED_TRANSITION_PROFILE_IMAGE)
 
         savedInstanceState?.let {
             elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
@@ -106,7 +140,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
                 launch {
                     viewModel.activityEventsFlow.collect {
                         when (it) {
-                            is ShowDialogFragment -> showDialog()
+                            is ShowDialogFragment -> showDialog(it.dialogType)
                             is OnUpdateProfileEvent -> onUpdate(it.profile)
                             is OnInsertProfileEvent -> onInsert(it.profile)
                             is OnRemoveProfileEvent -> onCancel()
@@ -183,9 +217,14 @@ class ProfileDetailsActivity: AppCompatActivity(),
             .commit()
     }
 
-    private fun showDialog() {
-        ProfileNameInputDialog()
-            .show(supportFragmentManager, null)
+    private fun showDialog(type: DialogType) {
+        if (type == PROFILE_TITLE) {
+            ProfileNameInputDialog()
+                .show(supportFragmentManager, null)
+        } else if (type == PROFILE_IMAGE) {
+            ProfileImageSelectionDialog()
+                .show(supportFragmentManager, null)
+        }
     }
 
     override fun onFragmentReplace(fragment: Int) {
@@ -197,12 +236,19 @@ class ProfileDetailsActivity: AppCompatActivity(),
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount < 1) {
             if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
-                finish()
+                onCancel()
             } else {
                 showSnackbar(binding.root, "Press back button again to exit", LENGTH_LONG)
             }
             elapsedTime = System.currentTimeMillis()
         } else super.onBackPressed()
+    }
+
+    private fun clearLayoutParams() {
+        (binding.editProfileNameButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
+            behavior = null
+        }
+        binding.editProfileNameButton.hide()
     }
 
     companion object {

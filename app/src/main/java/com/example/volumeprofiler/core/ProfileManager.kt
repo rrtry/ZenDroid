@@ -20,6 +20,7 @@ import android.util.Log
 import android.media.RingtoneManager.*
 import android.provider.Settings.System.VIBRATE_WHEN_RINGING
 import android.telephony.TelephonyManager.CALL_STATE_RINGING
+import com.example.volumeprofiler.R
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.util.ID_SCHEDULER
@@ -125,6 +126,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         return Profile(
                 UUID.randomUUID(),
             "New profile",
+                R.drawable.ic_baseline_do_not_disturb_on_24,
                 audioManager.getStreamVolume(STREAM_MUSIC),
                 audioManager.getStreamVolume(STREAM_VOICE_CALL),
                 audioManager.getStreamVolume(STREAM_NOTIFICATION),

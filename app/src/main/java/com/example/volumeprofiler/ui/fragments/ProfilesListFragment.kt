@@ -8,7 +8,9 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.*
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
@@ -38,6 +40,7 @@ import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.PreferencesManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
+import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
@@ -99,21 +102,7 @@ class ProfilesListFragment: Fragment(),
             KeyProvider(profileAdapter),
             DetailsLookup(binding.recyclerView),
             StorageStrategy.createStringStorage()
-        ).withSelectionPredicate(object : SelectionTracker.SelectionPredicate<String>() {
-
-            override fun canSetStateForKey(key: String, nextState: Boolean): Boolean {
-                return key != HEADER_ID
-            }
-
-            override fun canSetStateAtPosition(position: Int, nextState: Boolean): Boolean {
-                return true
-            }
-
-            override fun canSelectMultiple(): Boolean {
-                return true
-            }
-
-        }).build()
+        ).withSelectionPredicate(SelectionPredicates.createSelectAnything()).build()
         tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
         savedInstanceState?.let {
             selectedItems = it.getStringArrayList(EXTRA_SELECTION) as ArrayList<String>
@@ -179,13 +168,13 @@ class ProfilesListFragment: Fragment(),
         activity = null
     }
 
-    override fun onEdit(entity: Profile, binding: ViewBinding) {
+    override fun onEdit(entity: Profile, binding: ProfileItemViewBinding) {
         startActivity(Intent(
             requireContext(),
             ProfileDetailsActivity::class.java
         ).apply {
             putExtra(EXTRA_PROFILE, entity)
-        })
+        }, createTransitionAnimationOptions(binding).toBundle())
     }
 
     override fun setSelection(id: UUID?) {
@@ -216,6 +205,15 @@ class ProfilesListFragment: Fragment(),
         alarms?.let {
             scheduleManager.cancelAlarms(it)
         }
+    }
+
+    private fun createTransitionAnimationOptions(binding: ProfileItemViewBinding): ActivityOptionsCompat {
+
+        ViewCompat.setTransitionName(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE)
+
+        return ActivityOptionsCompat.makeSceneTransitionAnimation(
+            requireActivity(),
+            androidx.core.util.Pair.create(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE))
     }
 
     @Suppress("MissingPermission")
@@ -284,7 +282,7 @@ class ProfilesListFragment: Fragment(),
 
     companion object {
 
-        private const val HEADER_ID: String = "HEADER"
+        internal const val SHARED_TRANSITION_PROFILE_IMAGE: String = "profile_image"
         private const val SELECTION_ID: String = "PROFILE"
         private const val EXTRA_SELECTION: String = "extra_selection"
         private const val EXTRA_RV_STATE: String = "abs_position"

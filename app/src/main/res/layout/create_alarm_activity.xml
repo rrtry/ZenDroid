@@ -103,8 +103,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:entries="@{viewModel.profilesStateFlow}"
-            android:selectedItemPosition="@={viewModel.startProfileSpinnerPosition}"
+            profiles="@{viewModel.profilesStateFlow}"
+            selectedProfile="@={viewModel.startProfile}"
             app:layout_constraintStart_toStartOf="@+id/profileTitle"
             app:layout_constraintEnd_toStartOf="@+id/spinnerSeparator"
             android:layout_marginEnd="8dp"
@@ -125,8 +125,8 @@
             android:id="@+id/endProfileSpinner"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:entries="@{viewModel.profilesStateFlow}"
-            android:selectedItemPosition="@={viewModel.endProfileSpinnerPosition}"
+            profiles="@{viewModel.profilesStateFlow}"
+            selectedProfile="@={viewModel.endProfile}"
             android:layout_marginEnd="16dp"
             android:layout_marginStart="8dp"
             app:layout_constraintBottom_toTopOf="@+id/separator3"
@@ -200,27 +200,15 @@
             app:layout_constraintStart_toEndOf="@+id/buttonSeparator" />
 
         <View
-            android:id="@+id/separator4"
-            android:layout_width="0dp"
-            android:layout_height="0.5dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="8dp"
-            android:background="@color/gray"
-            app:layout_constraintBottom_toTopOf="@+id/buttonSeparator"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <View
             android:id="@+id/buttonSeparator"
             android:layout_width="0.5dp"
             android:layout_height="0dp"
             android:background="@color/gray"
             android:rotation="180"
             app:layout_constraintBottom_toBottomOf="@+id/cancelButton"
+            app:layout_constraintTop_toTopOf="@+id/cancelButton"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/applyButton" />
+            app:layout_constraintStart_toStartOf="parent" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/eventTitleTextInputLayout"

@@ -13,11 +13,15 @@ import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.view.View
 import android.widget.*
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
+import androidx.databinding.InverseBindingAdapter
+import androidx.databinding.InverseBindingListener
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.adapters.ProfileSpinnerAdapter
 import com.example.volumeprofiler.core.*
-import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.example.volumeprofiler.entities.Profile
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 object BindingAdapters {
@@ -154,12 +158,6 @@ object BindingAdapters {
                 setMediaOffIcon(imageView)
             }
         }
-    }
-
-    @JvmStatic
-    @BindingAdapter("title", "currentFragmentTitle", requireAll = false)
-    fun bindToolbarTitle(view: CollapsingToolbarLayout, title: String, currentFragmentTitle: String): Unit {
-        view.title = title
     }
 
     @JvmStatic
@@ -399,23 +397,44 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("silentModeInterruptionFilter", "silentModePriorityCategories", "notificationAccessGranted", "streamsUnlinked")
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
-    fun bindRingerSilentModeLayout(viewGroup: ViewGroup,
-                                   interruptionFilterRinger: Int,
-                                   silentModePriorityCategories: Int,
-                                   notificationAccessGranted: Boolean,
-                                   streamsUnlinked: Boolean): Unit {
-        if (!notificationAccessGranted) {
-            setEnabledState(viewGroup, true)
-        } else {
-            setEnabledState(viewGroup,
-                interruptionPolicyAllowsRingerStream(
-                    interruptionFilterRinger,
-                    silentModePriorityCategories,
-                    notificationAccessGranted,
-                    streamsUnlinked)
-            )
+    @BindingAdapter("iconRes")
+    fun bindProfileImage(imageView: ImageView, iconRes: Int) {
+        imageView.setImageDrawable(
+            ContextCompat.getDrawable(imageView.context, iconRes)
+        )
+    }
+
+    @JvmStatic
+    @BindingAdapter(value = ["profiles", "selectedProfile", "selectedProfileAttrChanged"], requireAll = false)
+    fun bindProfileSpinner(spinner: Spinner, profiles: List<Profile>?, selectedProfile: Profile?, listener: InverseBindingListener) {
+
+        if (profiles == null) return
+
+        spinner.adapter = ProfileSpinnerAdapter(spinner.context, R.layout.spinner_profile_view, profiles)
+        setCurrentSelection(spinner, selectedProfile)
+        setSpinnerListener(spinner, listener)
+    }
+
+    @JvmStatic
+    @InverseBindingAdapter(attribute = "selectedProfile")
+    fun getSelectedProfile(spinner: Spinner): Profile {
+        return spinner.selectedItem as Profile
+    }
+
+    private fun setSpinnerListener(spinner: Spinner, listener: InverseBindingListener) {
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long)  = listener.onChange()
+            override fun onNothingSelected(adapterView: AdapterView<*>) = listener.onChange()
         }
+    }
+
+    private fun setCurrentSelection(spinner: Spinner, selectedItem: Profile?): Boolean {
+        for (index in 0 until spinner.adapter.count) {
+            if ((spinner.getItemAtPosition(index) as Profile).id == selectedItem?.id) {
+                spinner.setSelection(index)
+                return true
+            }
+        }
+        return false
     }
 }

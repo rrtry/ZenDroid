@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -16,42 +17,61 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <ImageView
+            android:id="@+id/profile_icon"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:src="@drawable/ic_baseline_do_not_disturb_on_24"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/profileTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Total silence"
+            android:textSize="16sp"
+            app:layout_constraintStart_toEndOf="@+id/profile_icon"
+            app:layout_constraintTop_toTopOf="@+id/profile_icon" />
+
+        <TextView
+            android:id="@+id/interruptionFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Priority only"
+            android:textColor="@color/gray"
+            android:textSize="12sp"
+            android:paddingBottom="12dp"
+            app:layout_constraintStart_toStartOf="@+id/profileTitle"
+            app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
+
         <CheckBox
             android:id="@+id/checkBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="4dp"
-            android:focusable="false"
             android:clickable="false"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <View
-            android:layout_width="0.5dp"
-            android:layout_height="0dp"
-            android:layout_marginEnd="8dp"
-            android:background="@android:color/darker_gray"
-            app:layout_constraintBottom_toBottomOf="@+id/expandButton"
-            app:layout_constraintEnd_toStartOf="@+id/expandButton"
-            app:layout_constraintTop_toTopOf="@+id/expandButton" />
+            app:layout_constraintBottom_toBottomOf="@+id/profile_icon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/profileTitle" />
 
         <ImageView
             android:id="@+id/expandButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintBottom_toTopOf="@+id/itemSeparator"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:src="@drawable/baseline_expand_more_grey_500_24dp" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/baseline_expand_more_grey_500_24dp"
+            app:layout_constraintBottom_toBottomOf="@+id/profile_icon"
+            app:layout_constraintEnd_toStartOf="@+id/checkBox"
+            app:layout_constraintTop_toTopOf="@+id/profileTitle" />
 
         <View
             android:id="@+id/itemSeparator"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"
             android:background="@android:color/darker_gray"
@@ -59,58 +79,42 @@
             app:layout_constraintBottom_toTopOf="@+id/expandableView"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/checkBox"
-            app:layout_constraintVertical_bias="0.555" />
+            app:layout_constraintStart_toStartOf="parent" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/expandableView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="visible"
-            app:layout_constraintTop_toBottomOf="@+id/checkBox">
+            android:visibility="invisible"
+            app:layout_constraintTop_toBottomOf="@+id/interruptionFilter">
 
             <ImageButton
                 android:id="@+id/removeProfileButton"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
-                android:background="?attr/selectableItemBackground"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/headsetButton"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp" />
-
-            <ImageButton
-                android:id="@+id/headsetButton"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:background="?attr/selectableItemBackground"
+                android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/editProfileButton"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/removeProfileButton"
-                app:layout_constraintTop_toTopOf="parent"
-                android:src="@drawable/baseline_headset_black_24dp" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <ImageButton
                 android:id="@+id/editProfileButton"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:background="?attr/selectableItemBackground"
+                android:src="@drawable/baseline_drive_file_rename_outline_black_24dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/headsetButton"
-                app:layout_constraintTop_toTopOf="parent"
-                android:src="@drawable/baseline_drive_file_rename_outline_black_24dp" />
+                app:layout_constraintStart_toEndOf="@+id/removeProfileButton"
+                app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

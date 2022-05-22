@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.widget.DiffUtil
@@ -22,7 +23,7 @@ import java.lang.ref.WeakReference
 import java.util.*
 
 class ProfileAdapter(
-    private val viewGroup: ViewGroup,
+    private val recyclerView: RecyclerView,
     listener: WeakReference<SelectableListItemInteractionListener<Profile, UUID>>
 ): ListAdapter<Profile, ProfileAdapter.ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
 
@@ -54,7 +55,7 @@ class ProfileAdapter(
 
         private fun expand(animate: Boolean) {
             if (animate) {
-                TransitionManager.beginDelayedTransition(viewGroup, AutoTransition())
+                TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
                 binding.expandButton.animate().rotation(180.0f).start()
             } else {
                 binding.expandButton.rotation = 180f
@@ -64,7 +65,7 @@ class ProfileAdapter(
         }
 
         private fun collapse() {
-            TransitionManager.beginDelayedTransition(viewGroup, AutoTransition())
+            TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
             binding.itemSeparator.visibility = View.GONE
             binding.expandableView.visibility = View.GONE
             binding.expandButton.animate().rotation(0f).start()
@@ -77,21 +78,10 @@ class ProfileAdapter(
         }
 
         fun bind(profile: Profile, isSelected: Boolean, animate: Boolean) {
-
-            binding.checkBox.text = profile.title
-
-            if (animate) {
-                Animations.selected(itemView, isSelected)
-            } else {
-                setViewScale(isSelected)
-            }
-
-            listener.isEnabled(profile).let {
-                binding.checkBox.isChecked = it
-                if (it) {
-                    listener.setSelection(profile.id)
-                }
-            }
+            binding.profileTitle.text = profile.title
+            binding.profileIcon.setImageDrawable(
+                ContextCompat.getDrawable(binding.root.context, profile.iconRes)
+            )
             binding.expandButton.setOnClickListener {
                 if (binding.expandableView.isVisible) {
                     collapse()
@@ -104,6 +94,17 @@ class ProfileAdapter(
             }
             binding.removeProfileButton.setOnClickListener {
                 listener.onRemove(profile)
+            }
+            listener.isEnabled(profile).let {
+                binding.checkBox.isChecked = it
+                if (it) {
+                    listener.setSelection(profile.id)
+                }
+            }
+            if (animate) {
+                Animations.selected(itemView, isSelected)
+            } else {
+                setViewScale(isSelected)
             }
         }
 

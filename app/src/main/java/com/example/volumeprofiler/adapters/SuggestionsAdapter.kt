@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.ui
+package com.example.volumeprofiler.adapters
 
 import android.app.SearchManager.SUGGEST_COLUMN_TEXT_1
 import android.content.Context

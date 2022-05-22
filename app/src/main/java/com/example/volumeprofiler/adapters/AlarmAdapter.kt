@@ -56,21 +56,6 @@ class AlarmAdapter(
         private val binding: AlarmItemViewBinding
         ): RecyclerView.ViewHolder(binding.root), ViewHolderItemDetailsProvider<Long> {
 
-        init {
-            ViewCompat.setTransitionName(binding.startTime,
-                SHARED_TRANSITION_START_TIME
-            )
-            ViewCompat.setTransitionName(binding.endTime,
-                SHARED_TRANSITION_END_TIME
-            )
-            ViewCompat.setTransitionName(binding.scheduleSwitch,
-                SHARED_TRANSITION_SWITCH
-            )
-            ViewCompat.setTransitionName(binding.clockViewSeparator,
-                SHARED_TRANSITION_SEPARATOR
-            )
-        }
-
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Long> {
             return ItemDetails(
                 bindingAdapterPosition,

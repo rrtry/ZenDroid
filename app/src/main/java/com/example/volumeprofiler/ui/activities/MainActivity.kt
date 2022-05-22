@@ -1,7 +1,9 @@
 package com.example.volumeprofiler.ui.activities
 
-import android.content.Intent
+import android.app.NotificationManager
 import android.os.Bundle
+import android.provider.Settings
+import android.provider.Settings.System.canWrite
 import android.transition.Fade
 import android.view.LayoutInflater
 import android.view.Menu
@@ -180,9 +182,9 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         }
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.contains(false)) {
-                // Not all permissions were granted
-            } else if (canWriteSettings(this) || isNotificationPolicyAccessGranted(this)) {
-                // Grant permissions from notification area
+
+            } else if (!canWriteSettings(this) || !isNotificationPolicyAccessGranted(this)) {
+
             }
         }
     }

@@ -22,4 +22,9 @@
     <style name="Theme.VolumeProfiler.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
     <style name="Theme.VolumeProfiler.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="CollapsingToolbarExpandedText" parent="TextAppearance.Design.CollapsingToolbar.Expanded">
+        <item name="android:textSize" tools:ignore="SpUsage">22dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 </resources>

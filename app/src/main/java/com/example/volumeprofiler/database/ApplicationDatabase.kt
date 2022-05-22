@@ -6,7 +6,7 @@ import androidx.room.TypeConverters
 import com.example.volumeprofiler.database.dao.*
 import com.example.volumeprofiler.entities.*
 
-@Database(entities = [Profile::class, Alarm::class, Location::class, Event::class, LocationSuggestion::class], version = 24, exportSchema = true)
+@Database(entities = [Profile::class, Alarm::class, Location::class, Event::class, LocationSuggestion::class], version = 25, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class ApplicationDatabase: RoomDatabase() {
 

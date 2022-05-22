@@ -9,17 +9,35 @@
     <string name="customRestrictions">Custom restrictions</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
+    <string-array name="profile_icons">
+        <item>@drawable/ic_baseline_do_not_disturb_on_24</item>
+        <item>@drawable/baseline_volume_down_deep_purple_300_24dp</item>
+        <item>@drawable/baseline_notifications_active_black_24dp</item>
+        <item>@drawable/baseline_notifications_off_black_24dp</item>
+        <item>@drawable/baseline_circle_notifications_deep_purple_300_24dp</item>
+        <item>@drawable/baseline_music_note_deep_purple_300_24dp</item>
+        <item>@drawable/baseline_music_off_black_24dp</item>
+        <item>@drawable/baseline_headset_black_24dp</item>
+        <item>@drawable/baseline_vibration_black_24dp</item>
+        <item>@drawable/baseline_call_deep_purple_300_24dp</item>
+        <item>@drawable/ic_baseline_do_not_disturb_on_total_silence_24</item>
+        <item>@drawable/baseline_location_city_black_24dp</item>
+        <item>@drawable/ic_baseline_home_24</item>
+        <item>@drawable/ic_baseline_bedtime_24</item>
+        <item>@drawable/ic_baseline_bedtime_off_24</item>
+        <item>@drawable/ic_baseline_work_24</item>
+        <item>@drawable/ic_baseline_school_24</item>
+        <item>@drawable/baseline_calendar_today_black_24dp</item>
+        <item>@drawable/ic_baseline_fitness_center_24</item>
+        <item>@drawable/ic_baseline_movie_24</item>
+        <item>@drawable/ic_baseline_speaker_notes_off_24</item>
+        <item>@drawable/ic_baseline_priority_high_24</item>
+        <item>@drawable/ic_baseline_phonelink_ring_24</item>
+        <item>@drawable/ic_baseline_menu_book_24</item>
+    </string-array>
     <string-array name="metrics">
         <item>M</item>
         <item>KM</item>
-    </string-array>
-    <string-array name="restrictions">
-        <item>Don\'t turn on screen</item>
-        <item>Don\'t wake for notifications</item>
-        <item>Hide notification dots on app icons</item>
-        <item>Hide status bar icons</item>
-        <item>Don\'t pop notifications on screen</item>
-        <item>Hide from pull-down shade</item>
     </string-array>
     <string-array name="daysOfWeek">
         <item>Monday</item>

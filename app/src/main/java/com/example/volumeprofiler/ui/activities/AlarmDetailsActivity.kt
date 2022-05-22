@@ -9,19 +9,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.transition.addListener
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.transition.Transition
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.ui.fragments.*
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_END_TIME
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
@@ -73,8 +70,8 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             if (alarm.isScheduled) {
                 scheduleManager.scheduleAlarm(
                     alarm,
-                    viewModel.getStartProfile(),
-                    viewModel.getEndProfile()
+                    viewModel.startProfile.value!!,
+                    viewModel.endProfile.value!!
                 )
             }
             profileManager.setScheduledProfile(viewModel.getEnabledAlarms())
@@ -97,7 +94,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     private fun setEntity() {
         intent.getParcelableExtra<AlarmRelation>(EXTRA_ALARM_PROFILE_RELATION)?.let {
-            viewModel.setEntity(it)
+            viewModel.setAlarm(it)
         }
     }
 

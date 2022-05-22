@@ -19,6 +19,17 @@ object BindingConverters {
     }
 
     @JvmStatic
+    fun interruptionFilterToString(interruptionFilter: Int): String {
+        return when (interruptionFilter) {
+            INTERRUPTION_FILTER_ALL -> "Allow all: no notifications are suppressed"
+            INTERRUPTION_FILTER_PRIORITY -> "Priority only: allow only prioritized notifications"
+            INTERRUPTION_FILTER_ALARMS -> "Alarms only: allow only media and alarms"
+            INTERRUPTION_FILTER_NONE -> "Total silence: all notifications are suppressed"
+            else -> "Unknown: interruption filter is unavailable"
+        }
+    }
+
+    @JvmStatic
     fun conversationSendersToString(senders: Int): String {
         return when (senders) {
             CONVERSATION_SENDERS_ANYONE -> "All conversations"
@@ -41,7 +52,7 @@ object BindingConverters {
     @BindingConversion
     @JvmStatic
     fun priorityCategoriesToString(categories: Int): String {
-        val categoriesList: List<Int> = getPriorityCategoriesList(categories)
+        val categoriesList: List<Int> = getPriorityCategoriesList(categories).sorted()
         if (categoriesList.isEmpty()) {
             return "No exceptions"
         }
@@ -55,12 +66,6 @@ object BindingConverters {
                 else -> throw IllegalArgumentException("Invalid priority category")
             }
         })
-    }
-
-    @BindingConversion
-    @JvmStatic
-    fun formatAlarmProfiles(alarmRelation: AlarmRelation): String {
-        return "${alarmRelation.startProfile.title} - ${alarmRelation.endProfile.title}"
     }
 
     @BindingConversion

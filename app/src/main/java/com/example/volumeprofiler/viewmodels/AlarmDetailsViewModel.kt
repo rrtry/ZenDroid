@@ -17,7 +17,6 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,14 +25,14 @@ class AlarmDetailsViewModel @Inject constructor(
         private val alarmRepository: AlarmRepository
 ): ViewModel() {
 
-    private var entitySet: Boolean = false
+    private var alarmSet: Boolean = false
 
     val title: MutableStateFlow<String> = MutableStateFlow("My event")
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
-    val startProfileSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
-    val endProfileSpinnerPosition: MutableStateFlow<Int> = MutableStateFlow(0)
+    val startProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
+    val endProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
 
     val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(WEEKDAYS)
     val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -69,8 +68,6 @@ class AlarmDetailsViewModel @Inject constructor(
 
     private var alarmId: Long? = null
     private var isScheduled: Boolean = false
-    private var startProfile: Profile? = null
-    private var endProfile: Profile? = null
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val eventsFlow: Flow<ViewEvent> = channel.receiveAsFlow()
@@ -140,34 +137,23 @@ class AlarmDetailsViewModel @Inject constructor(
         }
     }
 
-    fun getEndProfile(): Profile {
-        return profilesStateFlow.value[endProfileSpinnerPosition.value]
-    }
-
-    fun getStartProfile(): Profile {
-        return profilesStateFlow.value[startProfileSpinnerPosition.value]
-    }
-
-    private fun getIndex(uuid: UUID, profiles: List<Profile>): Int {
-        return profiles.indexOfFirst {
-            it.id == uuid
-        }
-    }
-
     fun setProfiles(profiles: List<Profile>) {
-        alarmId?.also {
-            startProfileSpinnerPosition.value = getIndex(startProfile!!.id, profiles)
-            endProfileSpinnerPosition.value = getIndex(endProfile!!.id, profiles)
+        if (alarmId == null && !alarmSet) {
+            profiles.first().let {
+                startProfile.value = it
+                endProfile.value = it
+            }
+            alarmSet = true
         }
     }
 
-    fun setEntity(alarmRelation: AlarmRelation) {
-        if (!entitySet) {
+    fun setAlarm(alarmRelation: AlarmRelation) {
+        if (!alarmSet) {
 
             val alarm: Alarm = alarmRelation.alarm
 
-            startProfile = alarmRelation.startProfile
-            endProfile = alarmRelation.endProfile
+            startProfile.value = alarmRelation.startProfile
+            endProfile.value = alarmRelation.endProfile
 
             title.value = alarm.title
             scheduledDays.value = alarm.scheduledDays
@@ -177,7 +163,7 @@ class AlarmDetailsViewModel @Inject constructor(
             alarmId = alarm.id
             isScheduled = alarm.isScheduled
 
-            entitySet = true
+            alarmSet = true
         }
     }
 
@@ -185,8 +171,8 @@ class AlarmDetailsViewModel @Inject constructor(
         return Alarm(
             id = if (alarmId != null) alarmId!! else 0,
             title = title.value.ifEmpty { "No title" },
-            startProfileUUID = getStartProfile().id,
-            endProfileUUID = getEndProfile().id,
+            startProfileUUID = startProfile.value!!.id,
+            endProfileUUID = endProfile.value!!.id,
             startTime = startTime.value,
             endTime = endTime.value,
             isScheduled = scheduled.value,

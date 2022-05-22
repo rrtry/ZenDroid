@@ -24,4 +24,9 @@
         <item name="colorOnPrimary">@color/darker_gray</item>
     </style>
 
+    <style name="CollapsingToolbarExpandedText" parent="TextAppearance.Design.CollapsingToolbar.Expanded">
+        <item name="android:textSize" tools:ignore="SpUsage">22dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 </resources>

@@ -33,7 +33,7 @@ class ContentUtil @Inject constructor(
     fun queryCurrentEventInstance(
         id: Int, startMillis: Long,
         token: Int, cookie: Any?,
-        callback: ContentQueryHandler.AsyncQueryCallback): Unit {
+        callback: ContentQueryHandler.AsyncQueryCallback) {
 
         val builder: Uri.Builder = buildInstancesUri(startMillis)
         val projection: Array<String> = arrayOf(
@@ -55,7 +55,7 @@ class ContentUtil @Inject constructor(
     fun queryMissedEventInstances(
         id: Int, startMillis: Long,
         token: Int, cookie: Any?,
-        callback: ContentQueryHandler.AsyncQueryCallback): Unit {
+        callback: ContentQueryHandler.AsyncQueryCallback) {
 
         val builder: Uri.Builder = buildInstancesUri(startMillis, System.currentTimeMillis())
         val projection: Array<String> = arrayOf(

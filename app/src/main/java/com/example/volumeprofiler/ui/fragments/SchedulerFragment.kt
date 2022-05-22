@@ -11,6 +11,7 @@ import android.os.Looper
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -115,20 +116,7 @@ class SchedulerFragment: Fragment(),
             KeyProvider(alarmAdapter),
             DetailsLookup(binding.recyclerView),
             StorageStrategy.createLongStorage()
-        ).withSelectionPredicate(object : SelectionTracker.SelectionPredicate<Long>() {
-            override fun canSetStateForKey(key: Long, nextState: Boolean): Boolean {
-                return key != Long.MAX_VALUE && key != Long.MIN_VALUE
-            }
-
-            override fun canSetStateAtPosition(position: Int, nextState: Boolean): Boolean {
-                return true
-            }
-
-            override fun canSelectMultiple(): Boolean {
-                return true
-            }
-
-        })
+        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
             .build()
         tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
         return binding.root
@@ -198,13 +186,19 @@ class SchedulerFragment: Fragment(),
         alarmAdapter.submitList(alarms)
     }
 
-    private fun createTransitionAnimationOptions(alarmBinding: AlarmItemViewBinding): ActivityOptionsCompat {
+    private fun createTransitionAnimationOptions(binding: AlarmItemViewBinding): ActivityOptionsCompat {
+
+        ViewCompat.setTransitionName(binding.startTime, SHARED_TRANSITION_START_TIME)
+        ViewCompat.setTransitionName(binding.endTime, SHARED_TRANSITION_END_TIME)
+        ViewCompat.setTransitionName(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH)
+        ViewCompat.setTransitionName(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
+
         return ActivityOptionsCompat.makeSceneTransitionAnimation(
             requireActivity(),
-            androidx.core.util.Pair.create(alarmBinding.startTime, SHARED_TRANSITION_START_TIME),
-            androidx.core.util.Pair.create(alarmBinding.endTime, SHARED_TRANSITION_END_TIME),
-            androidx.core.util.Pair.create(alarmBinding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
-            androidx.core.util.Pair.create(alarmBinding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR))
+            androidx.core.util.Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
+            androidx.core.util.Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
+            androidx.core.util.Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
+            androidx.core.util.Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR))
     }
 
     override fun onEdit(entity: AlarmRelation, alarmBinding: AlarmItemViewBinding) {
