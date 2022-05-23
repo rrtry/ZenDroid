@@ -11,6 +11,7 @@ import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
@@ -128,8 +129,7 @@ class ProfilesListFragment: Fragment(),
                 }
                 launch {
                     viewModel.profilesFlow.collect { list ->
-                        sharedViewModel.showDialog.value = list.isEmpty()
-                        profileAdapter.submitList(list)
+                        updateProfileAdapter(list)
                     }
                 }
                 launch {
@@ -205,6 +205,14 @@ class ProfilesListFragment: Fragment(),
         alarms?.let {
             scheduleManager.cancelAlarms(it)
         }
+    }
+
+    private fun updateProfileAdapter(profiles: List<Profile>) {
+        profiles.isEmpty().let { isEmpty ->
+            sharedViewModel.showDialog.value = isEmpty
+            binding.placeHolderText.isVisible = isEmpty
+        }
+        profileAdapter.submitList(profiles)
     }
 
     private fun createTransitionAnimationOptions(binding: ProfileItemViewBinding): ActivityOptionsCompat {

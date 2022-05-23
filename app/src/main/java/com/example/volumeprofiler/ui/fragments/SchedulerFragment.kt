@@ -12,6 +12,7 @@ import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -177,12 +178,8 @@ class SchedulerFragment: Fragment(),
         }
     }
 
-    private fun setPlaceholderVisibility(empty: Boolean) {
-        binding.hintScheduler.visibility = if (empty) View.VISIBLE else View.GONE
-    }
-
     private fun updateAlarmAdapter(alarms: List<AlarmRelation>) {
-        setPlaceholderVisibility(alarms.isEmpty())
+        binding.hintScheduler.isVisible = alarms.isEmpty()
         alarmAdapter.submitList(alarms)
     }
 

@@ -137,9 +137,10 @@
         <entry key="app/src/main/res/layout/create_alarm_activity.xml" value="0.18590704647676162" />
         <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.1" />
         <entry key="app/src/main/res/layout/create_profile_fragment.xml" value="0.26494427558257344" />
+        <entry key="app/src/main/res/layout/dialog_multichoice_item.xml" value="0.5364102564102564" />
         <entry key="app/src/main/res/layout/event_item_view.xml" value="0.3078125" />
         <entry key="app/src/main/res/layout/google_maps_activity.xml" value="0.1" />
-        <entry key="app/src/main/res/layout/image_selection_dialog_layout.xml" value="1.69375" />
+        <entry key="app/src/main/res/layout/image_selection_dialog_layout.xml" value="0.3200218818380744" />
         <entry key="app/src/main/res/layout/location_item_view.xml" value="0.26494427558257344" />
         <entry key="app/src/main/res/layout/location_recent_query_item_view.xml" value="0.5" />
         <entry key="app/src/main/res/layout/location_suggestion_item_view.xml" value="0.38858695652173914" />

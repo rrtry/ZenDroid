@@ -169,7 +169,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
             } else {
                 binding.appBar.setExpanded(true, true)
             }
-            Animations.scale(binding.menuSaveChangesButton, !it)
+            Animations.scale(binding.toolbarEditTitleButton, !it)
         }
     }
 
@@ -245,10 +245,10 @@ class ProfileDetailsActivity: AppCompatActivity(),
     }
 
     private fun clearLayoutParams() {
-        (binding.editProfileNameButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
+        (binding.saveChangesButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
             behavior = null
         }
-        binding.editProfileNameButton.hide()
+        binding.saveChangesButton.hide()
     }
 
     companion object {

@@ -19,6 +19,7 @@ import com.example.volumeprofiler.interfaces.SelectableListItemInteractionListen
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.Animations
+import com.example.volumeprofiler.ui.BindingConverters.interruptionFilterToString
 import java.lang.ref.WeakReference
 import java.util.*
 
@@ -78,10 +79,11 @@ class ProfileAdapter(
         }
 
         fun bind(profile: Profile, isSelected: Boolean, animate: Boolean) {
+
             binding.profileTitle.text = profile.title
-            binding.profileIcon.setImageDrawable(
-                ContextCompat.getDrawable(binding.root.context, profile.iconRes)
-            )
+            binding.interruptionFilter.text = interruptionFilterToString(profile.interruptionFilter)
+            binding.profileIcon.setImageDrawable(ContextCompat.getDrawable(binding.root.context, profile.iconRes))
+
             binding.expandButton.setOnClickListener {
                 if (binding.expandableView.isVisible) {
                     collapse()
