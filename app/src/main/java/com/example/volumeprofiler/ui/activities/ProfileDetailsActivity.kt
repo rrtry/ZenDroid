@@ -72,7 +72,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
     private var showExplanationDialog: Boolean = true
     private var elapsedTime: Long = 0L
     private val withTransition: Boolean
-    get() = intent.extras != null
+    get() = intent.extras?.get(EXTRA_PROFILE) != null
 
     private var scheduledAlarms: List<AlarmRelation>? = null
     private var registeredGeofences: List<LocationRelation>? = null
@@ -142,7 +142,6 @@ class ProfileDetailsActivity: AppCompatActivity(),
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
-
         ViewCompat.setTransitionName(binding.profileImage, SHARED_TRANSITION_PROFILE_IMAGE)
 
         savedInstanceState?.let {
