@@ -69,7 +69,7 @@ class InterruptionFilterFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        ViewCompat.setNestedScrollingEnabled(binding.scrollView, false)
+        callback?.setNestedScrollingEnabled(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
             detailsViewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {

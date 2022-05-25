@@ -2,7 +2,10 @@ package com.example.volumeprofiler.ui.activities
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.transition.ChangeBounds
 import android.transition.Fade
 import android.transition.Slide
@@ -16,42 +19,41 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
-import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
-import com.example.volumeprofiler.R
-import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
-import com.example.volumeprofiler.ui.fragments.InterruptionFilterFragment
-import com.example.volumeprofiler.ui.fragments.ProfileDetailsFragment
-import com.example.volumeprofiler.ui.fragments.ProfileNameInputDialog
-import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
-import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.entities.Profile
-import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.ViewEvent.*
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.volumeprofiler.R
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.PreferencesManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
+import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
+import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
+import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.DetailsViewContract
-import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
+import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
 import com.example.volumeprofiler.ui.Animations
-import com.example.volumeprofiler.ui.ScaleTransition
+import com.example.volumeprofiler.ui.fragments.InterruptionFilterFragment
+import com.example.volumeprofiler.ui.fragments.ProfileDetailsFragment
 import com.example.volumeprofiler.ui.fragments.ProfileImageSelectionDialog
+import com.example.volumeprofiler.ui.fragments.ProfileNameInputDialog
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment.Companion.SHARED_TRANSITION_PROFILE_IMAGE
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.example.volumeprofiler.util.*
+import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
+import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.ViewEvent.*
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class ProfileDetailsActivity: AppCompatActivity(),
@@ -70,6 +72,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
     private var showExplanationDialog: Boolean = true
     private var elapsedTime: Long = 0L
+    private var verticalOffset: Int = 0
 
     private var scheduledAlarms: List<AlarmRelation>? = null
     private var registeredGeofences: List<LocationRelation>? = null
@@ -97,11 +100,21 @@ class ProfileDetailsActivity: AppCompatActivity(),
     }
 
     override fun onCancel() {
-        binding.appBar.setExpanded(true, true)
-        /*
-        binding.appBar.setExpanded(false, false)
-        clearLayoutParams()
-        ActivityCompat.finishAfterTransition(this) */
+
+        val finish = { delay: Long ->
+            Handler(Looper.getMainLooper()).postDelayed({
+                clearLayoutParams()
+                ActivityCompat.finishAfterTransition(this)
+            }, delay)
+        }
+
+        val scroll: Boolean = isViewBelowToolbar(binding.profileImage)
+        val delay: Long = if (scroll) 500 else 0
+
+        if (scroll) {
+            dispatchNestedScrollToTop()
+        }
+        finish(delay)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,6 +142,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
+
         ViewCompat.setTransitionName(binding.profileImage, SHARED_TRANSITION_PROFILE_IMAGE)
 
         savedInstanceState?.let {
@@ -234,6 +248,30 @@ class ProfileDetailsActivity: AppCompatActivity(),
         if (fragment == INTERRUPTION_FILTER_FRAGMENT) {
             openInterruptionsFilterFragment()
         }
+    }
+
+    override fun setNestedScrollingEnabled(enabled: Boolean) {
+        ViewCompat.setNestedScrollingEnabled(binding.nestedScrollView, enabled)
+    }
+
+    private fun isViewBelowToolbar(view: View): Boolean {
+
+        val minHeight: Int = binding.appBar.minimumHeightForVisibleOverlappingContent
+        val descendantRect: Rect = Rect()
+
+        binding.toolbarLayout.offsetDescendantRectToMyCoords(view, descendantRect)
+        return descendantRect.bottom >= minHeight
+    }
+
+    private fun dispatchNestedScrollToTop() {
+
+        val toolbarHeight: Int = binding.toolbar.height
+
+        binding.nestedScrollView.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL)
+        binding.nestedScrollView.dispatchNestedPreScroll(0, toolbarHeight, null, null)
+        binding.nestedScrollView.dispatchNestedScroll(0, 0, 0, 0, intArrayOf(0, -toolbarHeight))
+        binding.nestedScrollView.smoothScrollTo(0, binding.nestedScrollView.top - toolbarHeight)
+        binding.appBar.setExpanded(true, true)
     }
 
     override fun onBackPressed() {

@@ -238,6 +238,9 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        callbacks?.setNestedScrollingEnabled(true)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
