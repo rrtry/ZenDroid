@@ -97,8 +97,11 @@ class ProfileDetailsActivity: AppCompatActivity(),
     }
 
     override fun onCancel() {
+        binding.appBar.setExpanded(true, true)
+        /*
+        binding.appBar.setExpanded(false, false)
         clearLayoutParams()
-        ActivityCompat.finishAfterTransition(this)
+        ActivityCompat.finishAfterTransition(this) */
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
