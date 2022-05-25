@@ -48,7 +48,6 @@ import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.ViewEvent.*
-import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -72,7 +71,8 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
     private var showExplanationDialog: Boolean = true
     private var elapsedTime: Long = 0L
-    private var verticalOffset: Int = 0
+    private val withTransition: Boolean
+    get() = intent.extras != null
 
     private var scheduledAlarms: List<AlarmRelation>? = null
     private var registeredGeofences: List<LocationRelation>? = null
@@ -103,12 +103,12 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
         val finish = { delay: Long ->
             Handler(Looper.getMainLooper()).postDelayed({
-                clearLayoutParams()
+                detachFloatingActionButton()
                 ActivityCompat.finishAfterTransition(this)
             }, delay)
         }
 
-        val scroll: Boolean = isViewBelowToolbar(binding.profileImage)
+        val scroll: Boolean = isViewBelowToolbar(binding.profileImage) && withTransition
         val delay: Long = if (scroll) 500 else 0
 
         if (scroll) {
@@ -254,6 +254,13 @@ class ProfileDetailsActivity: AppCompatActivity(),
         ViewCompat.setNestedScrollingEnabled(binding.nestedScrollView, enabled)
     }
 
+    private fun detachFloatingActionButton() {
+        (binding.saveChangesButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
+            behavior = null
+        }
+        binding.saveChangesButton.hide()
+    }
+
     private fun isViewBelowToolbar(view: View): Boolean {
 
         val minHeight: Int = binding.appBar.minimumHeightForVisibleOverlappingContent
@@ -283,13 +290,6 @@ class ProfileDetailsActivity: AppCompatActivity(),
             }
             elapsedTime = System.currentTimeMillis()
         } else super.onBackPressed()
-    }
-
-    private fun clearLayoutParams() {
-        (binding.saveChangesButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
-            behavior = null
-        }
-        binding.saveChangesButton.hide()
     }
 
     companion object {
