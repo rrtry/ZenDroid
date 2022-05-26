@@ -39,6 +39,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
                 android:textSize="30sp"
+                android:transitionName="shared_transition_start_time"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/labelImageButton" />
 
@@ -46,6 +47,7 @@
                 android:id="@+id/clockViewSeparator"
                 android:layout_width="5dp"
                 android:layout_height="1dp"
+                android:transitionName="shared_transition_separator"
                 android:background="@color/white"
                 app:layout_constraintTop_toTopOf="@+id/startTime"
                 app:layout_constraintBottom_toBottomOf="@+id/startTime"
@@ -56,6 +58,7 @@
                 android:id="@+id/endTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:transitionName="shared_transition_end_time"
                 android:layout_marginStart="8dp"
                 android:textSize="30sp"
                 app:layout_constraintBottom_toBottomOf="@+id/startTime"
@@ -67,6 +70,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
+                android:transitionName="shared_transition_switch"
                 app:layout_constraintBottom_toBottomOf="@+id/endTime"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="1.0"

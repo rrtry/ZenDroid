@@ -184,12 +184,6 @@ class SchedulerFragment: Fragment(),
     }
 
     private fun createTransitionAnimationOptions(binding: AlarmItemViewBinding): ActivityOptionsCompat {
-
-        ViewCompat.setTransitionName(binding.startTime, SHARED_TRANSITION_START_TIME)
-        ViewCompat.setTransitionName(binding.endTime, SHARED_TRANSITION_END_TIME)
-        ViewCompat.setTransitionName(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH)
-        ViewCompat.setTransitionName(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
-
         return ActivityOptionsCompat.makeSceneTransitionAnimation(
             requireActivity(),
             androidx.core.util.Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
@@ -311,10 +305,10 @@ class SchedulerFragment: Fragment(),
         }
 
         private const val SCHEDULED_STATE_CHANGED: String = "scheduled"
-        internal const val SHARED_TRANSITION_SEPARATOR: String = "separator"
-        internal const val SHARED_TRANSITION_START_TIME: String = "start_time"
-        internal const val SHARED_TRANSITION_END_TIME: String = "end_time"
-        internal const val SHARED_TRANSITION_SWITCH: String = "SwitchSharedTransition"
+        internal const val SHARED_TRANSITION_SEPARATOR: String = "shared_transition_separator"
+        internal const val SHARED_TRANSITION_START_TIME: String = "shared_transition_start_time"
+        internal const val SHARED_TRANSITION_END_TIME: String = "shared_transition_end_time"
+        internal const val SHARED_TRANSITION_SWITCH: String = "shared_transition_switch"
         private const val SELECTION_ID: String = "alarm"
 
     }

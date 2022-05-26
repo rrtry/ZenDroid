@@ -52,6 +52,7 @@
                         iconRes="@{viewModel.iconRes}"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
+                        android:transitionName="shared_transition_profile_image"
                         android:onClick="@{() -> viewModel.onProfileImageViewClick()}"
                         android:layout_gravity="center"
                         app:layout_constraintBottom_toBottomOf="parent"

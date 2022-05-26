@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 import androidx.fragment.app.*
-import androidx.viewbinding.ViewBinding
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.EXTRA_PROFILE
@@ -216,9 +215,6 @@ class ProfilesListFragment: Fragment(),
     }
 
     private fun createTransitionAnimationOptions(binding: ProfileItemViewBinding): ActivityOptionsCompat {
-
-        ViewCompat.setTransitionName(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE)
-
         return ActivityOptionsCompat.makeSceneTransitionAnimation(
             requireActivity(),
             androidx.core.util.Pair.create(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE))
@@ -290,7 +286,7 @@ class ProfilesListFragment: Fragment(),
 
     companion object {
 
-        internal const val SHARED_TRANSITION_PROFILE_IMAGE: String = "profile_image"
+        const val SHARED_TRANSITION_PROFILE_IMAGE: String = "shared_transition_profile_image"
         private const val SELECTION_ID: String = "PROFILE"
         private const val EXTRA_SELECTION: String = "extra_selection"
         private const val EXTRA_RV_STATE: String = "abs_position"

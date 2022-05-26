@@ -48,10 +48,12 @@ import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.ViewEvent.*
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.abs
 
 
 @AndroidEntryPoint
@@ -59,7 +61,8 @@ class ProfileDetailsActivity: AppCompatActivity(),
     EditProfileActivityCallbacks,
     ActivityCompat.OnRequestPermissionsResultCallback,
     DetailsViewContract<Profile>,
-    FragmentManager.OnBackStackChangedListener {
+    FragmentManager.OnBackStackChangedListener,
+    AppBarLayout.OnOffsetChangedListener {
 
     private val viewModel by viewModels<ProfileDetailsViewModel>()
     private lateinit var binding: CreateProfileActivityBinding
@@ -71,6 +74,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
     private var showExplanationDialog: Boolean = true
     private var elapsedTime: Long = 0L
+    private var verticalOffset: Int = 0
     private val withTransition: Boolean
     get() = intent.extras?.get(EXTRA_PROFILE) != null
 
@@ -108,8 +112,8 @@ class ProfileDetailsActivity: AppCompatActivity(),
             }, delay)
         }
 
-        val scroll: Boolean = isViewBelowToolbar(binding.profileImage) && withTransition
-        val delay: Long = if (scroll) 500 else 0
+        val scroll: Boolean = isToolbarContentVisible() && withTransition
+        val delay: Long = if (scroll) DELAY else 0
 
         if (scroll) {
             dispatchNestedScrollToTop()
@@ -120,6 +124,10 @@ class ProfileDetailsActivity: AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        savedInstanceState?.let {
+            elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
+            showExplanationDialog = it.getBoolean(EXTRA_SHOW_DIALOG, false)
+        }
         setEntity()
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
@@ -137,17 +145,12 @@ class ProfileDetailsActivity: AppCompatActivity(),
             }
             allowEnterTransitionOverlap = true
         }
-
         binding = CreateProfileActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
-        ViewCompat.setTransitionName(binding.profileImage, SHARED_TRANSITION_PROFILE_IMAGE)
 
-        savedInstanceState?.let {
-            elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
-            showExplanationDialog = it.getBoolean(EXTRA_SHOW_DIALOG, false)
-        }
+        binding.appBar.addOnOffsetChangedListener(this)
 
         openProfileDetailsFragment()
 
@@ -249,6 +252,10 @@ class ProfileDetailsActivity: AppCompatActivity(),
         }
     }
 
+    override fun onOffsetChanged(appBarLayout: AppBarLayout?, verticalOffset: Int) {
+        this.verticalOffset = verticalOffset
+    }
+
     override fun setNestedScrollingEnabled(enabled: Boolean) {
         ViewCompat.setNestedScrollingEnabled(binding.nestedScrollView, enabled)
     }
@@ -260,13 +267,8 @@ class ProfileDetailsActivity: AppCompatActivity(),
         binding.saveChangesButton.hide()
     }
 
-    private fun isViewBelowToolbar(view: View): Boolean {
-
-        val minHeight: Int = binding.appBar.minimumHeightForVisibleOverlappingContent
-        val descendantRect: Rect = Rect()
-
-        binding.toolbarLayout.offsetDescendantRectToMyCoords(view, descendantRect)
-        return descendantRect.bottom >= minHeight
+    private fun isToolbarContentVisible(): Boolean {
+        return binding.toolbarLayout.scrimVisibleHeightTrigger + abs(verticalOffset) > binding.toolbarLayout.height
     }
 
     private fun dispatchNestedScrollToTop() {
@@ -288,13 +290,16 @@ class ProfileDetailsActivity: AppCompatActivity(),
                 showSnackbar(binding.root, "Press back button again to exit", LENGTH_LONG)
             }
             elapsedTime = System.currentTimeMillis()
-        } else super.onBackPressed()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     companion object {
 
         private const val EXTRA_ELAPSED_TIME: String = "key_elapsed_time"
         private const val EXTRA_SHOW_DIALOG: String = "extra_show_dialog"
+        private const val DELAY: Long = 700
 
         const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"
         const val EXTRA_PROFILE = "extra_profile"

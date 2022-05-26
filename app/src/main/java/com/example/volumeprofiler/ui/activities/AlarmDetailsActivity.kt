@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -20,10 +19,6 @@ import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.ui.fragments.*
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_END_TIME
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_START_TIME
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
 import com.example.volumeprofiler.interfaces.DetailsViewContract
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.DISMISS_TIME_WINDOW
@@ -118,16 +113,9 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             }
             allowEnterTransitionOverlap = true
         }
-
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
-
-        ViewCompat.setTransitionName(binding.startTime, SHARED_TRANSITION_START_TIME)
-        ViewCompat.setTransitionName(binding.endTime, SHARED_TRANSITION_END_TIME)
-        ViewCompat.setTransitionName(binding.enableAlarmSwitch, SHARED_TRANSITION_SWITCH)
-        ViewCompat.setTransitionName(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
-
         setContentView(binding.root)
 
         lifecycleScope.launch {
