@@ -1,5 +1,7 @@
 package com.example.volumeprofiler.interfaces
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+
 interface FabContainerCallbacks {
 
     fun showSnackBar(
@@ -9,4 +11,6 @@ interface FabContainerCallbacks {
     )
 
     fun requestPermissions(permissions: Array<String>)
+
+    fun getFloatingActionButton(): FloatingActionButton
 }

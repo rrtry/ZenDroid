@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
+import android.util.Log
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
@@ -52,6 +53,7 @@ import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel.ViewEvent.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
@@ -71,7 +73,7 @@ class SchedulerFragment: Fragment(),
 
     private var showDialog: Boolean = false
 
-    private var activity: FabContainerCallbacks? = null
+    private var callback: FabContainerCallbacks? = null
     private var bindingImpl: AlarmsFragmentBinding? = null
     private val binding: AlarmsFragmentBinding get() = bindingImpl!!
 
@@ -109,14 +111,14 @@ class SchedulerFragment: Fragment(),
         timeFormatChangeObserver = TimeFormatChangeObserver(Handler(Looper.getMainLooper())) {
             alarmAdapter.refresh()
         }
-        activity = requireActivity() as FabContainerCallbacks
+        callback = requireActivity() as FabContainerCallbacks
         registerTimeFormatObserver()
         registerLocaleChangeReceiver()
     }
 
     override fun onDetach() {
         super.onDetach()
-        activity = null
+        callback = null
         unregisterTimeFormatObserver()
         unregisterLocaleChangeReceiver()
     }
@@ -179,15 +181,19 @@ class SchedulerFragment: Fragment(),
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.viewEvents
-                        .onEach {
-                            sharedViewModel.viewEvents.resetReplayCache()
+                        .onStart {
+                            if (sharedViewModel.viewEvents.replayCache.isNotEmpty() &&
+                                sharedViewModel.viewEvents.replayCache.last() is OnFloatingActionButtonClick
+                            ) {
+                                sharedViewModel.viewEvents.resetReplayCache()
+                            }
                         }
                         .collect {
                             when (it) {
                                 is OnMenuOptionSelected -> onSelected(it.itemId)
-                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fab, it.fragment)
+                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                                 is OnSwiped -> onFragmentSwiped(it.fragment)
-                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fab, it.fragment)
+                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
                             }
                         }
                 }
@@ -308,7 +314,7 @@ class SchedulerFragment: Fragment(),
             relation.endProfile
         )
         profileManager.updateScheduledProfile(alarms)
-        activity?.showSnackBar(
+        callback?.showSnackBar(
             scheduleManager.getNextOccurrenceFormatted(
                 relation
             ), Snackbar.LENGTH_LONG, null)
@@ -330,15 +336,15 @@ class SchedulerFragment: Fragment(),
         }
     }
 
-    private fun updateFloatingActionButton(fab: FloatingActionButton, fragment: Int) {
+    private fun updateFloatingActionButton(fragment: Int) {
         if (fragment == SCHEDULER_FRAGMENT) {
-            onAnimateFab(fab)
+            onAnimateFab(callback!!.getFloatingActionButton())
         }
     }
 
-    private fun onFloatingActionButtonClick(fab: FloatingActionButton, fragment: Int) {
+    private fun onFloatingActionButtonClick(fragment: Int) {
         if (fragment == SCHEDULER_FRAGMENT) {
-            onFabClick(fab)
+            onFabClick(callback!!.getFloatingActionButton())
         }
     }
 

@@ -25,6 +25,7 @@ import com.example.volumeprofiler.interfaces.FabContainerCallbacks
 import com.example.volumeprofiler.util.canWriteSettings
 import com.example.volumeprofiler.util.isNotificationPolicyAccessGranted
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
@@ -53,7 +54,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
             viewModel.onFragmentSwiped(currentPosition)
             onPrepareOptionsMenu(binding.toolbar.menu)
-            viewModel.updateFloatingActionButton(binding.fab, position)
+            viewModel.updateFloatingActionButton(position)
 
             currentPosition = position
         }
@@ -92,6 +93,10 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         permissionRequestLauncher.launch(permissions)
     }
 
+    override fun getFloatingActionButton(): FloatingActionButton {
+        return binding.fab
+    }
+
     override fun onBackPressed() {
         if (binding.pager.currentItem == 0) {
             super.onBackPressed()
@@ -112,9 +117,13 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        super.onCreateOptionsMenu(menu)
-        menuInflater.inflate(R.menu.action_item_selection, menu)
-        return true
+        return if (currentPosition == SCHEDULER_FRAGMENT) {
+            super.onCreateOptionsMenu(menu)
+            menuInflater.inflate(R.menu.action_item_selection, menu)
+            true
+        } else {
+            false
+        }
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
@@ -136,7 +145,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         setSupportActionBar(binding.toolbar)
 
         savedInstanceState?.let {
-            currentPosition = it.getInt(EXTRA_PAGER_POSITION, 2)
+            currentPosition = it.getInt(EXTRA_PAGER_POSITION, -1)
         }
 
         pagerAdapter = ScreenSlidePagerAdapter(this)
@@ -160,7 +169,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
             }
         }.attach()
         binding.fab.setOnClickListener {
-            viewModel.onFloatingActionButtonClicked(binding.fab, binding.pager.currentItem)
+            viewModel.onFloatingActionButtonClicked(binding.pager.currentItem)
         }
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.contains(false)) {

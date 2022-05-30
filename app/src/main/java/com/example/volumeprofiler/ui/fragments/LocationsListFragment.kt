@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -20,18 +21,27 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.core.content.res.ResourcesCompat
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.LocationAdapter
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.interfaces.FabContainer
+import com.example.volumeprofiler.interfaces.FabContainerCallbacks
 import com.example.volumeprofiler.interfaces.FragmentSwipedListener
 import com.example.volumeprofiler.interfaces.ListItemInteractionListener
+import com.example.volumeprofiler.ui.activities.MainActivity
+import com.example.volumeprofiler.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel.ViewEvent.*
+import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import java.lang.ref.WeakReference
+import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
 class LocationsListFragment: Fragment(),
@@ -43,11 +53,23 @@ class LocationsListFragment: Fragment(),
     @Inject lateinit var profileManager: ProfileManager
 
     private val viewModel: LocationsListViewModel by viewModels()
+    private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
     private lateinit var locationAdapter: LocationAdapter
+    private var callback: FabContainerCallbacks? = null
 
     private var _binding: LocationsListFragmentBinding? = null
     private val binding: LocationsListFragmentBinding get() = _binding!!
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callback = requireActivity() as FabContainerCallbacks
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback = null
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -80,6 +102,24 @@ class LocationsListFragment: Fragment(),
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.viewEvents
+                        .onStart {
+                            if (sharedViewModel.viewEvents.replayCache.isNotEmpty() &&
+                                sharedViewModel.viewEvents.replayCache.last() is OnFloatingActionButtonClick
+                            ) {
+                                sharedViewModel.viewEvents.resetReplayCache()
+                            }
+                        }
+                        .collect {
+                            when (it) {
+                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fragment)
+                                is OnSwiped -> onFragmentSwiped(it.fragment)
+                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
+                                else -> Log.i("ProfilesListFragment", "Unknown viewEvent: $it")
+                            }
+                        }
+                }
                 launch {
                     viewModel.viewEvents.collect {
                         when (it) {
@@ -148,18 +188,34 @@ class LocationsListFragment: Fragment(),
         return false
     }
 
+    private fun updateFloatingActionButton(fragment: Int) {
+        if (fragment == LOCATIONS_FRAGMENT) {
+            onAnimateFab(callback!!.getFloatingActionButton())
+        }
+    }
+
+    private fun onFragmentSwiped(fragment: Int) {
+        if (fragment == LOCATIONS_FRAGMENT) {
+            onSwipe()
+        }
+    }
+
+    private fun onFloatingActionButtonClick(fragment: Int) {
+        if (fragment == LOCATIONS_FRAGMENT) {
+            onFabClick(callback!!.getFloatingActionButton())
+        }
+    }
+
     override fun onFabClick(fab: FloatingActionButton) {
         startMapActivity()
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {
-        Handler(Looper.getMainLooper()).post {
-            fab.setImageDrawable(
-                ResourcesCompat.getDrawable(
-                    resources, R.drawable.ic_baseline_location_on_24, context?.theme
-                )
+        fab.setImageDrawable(
+            ResourcesCompat.getDrawable(
+                resources, R.drawable.ic_baseline_location_on_24, context?.theme
             )
-        }
+        )
     }
 
     override fun onSwipe() {

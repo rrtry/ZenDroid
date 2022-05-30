@@ -119,7 +119,6 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         } else {
             relation.startProfile.title
         }
-
         var millisBetween: Long = ChronoUnit.MILLIS.between(
             ZonedDateTime.now(), scheduleCalendar.getNextOccurrence()
         )

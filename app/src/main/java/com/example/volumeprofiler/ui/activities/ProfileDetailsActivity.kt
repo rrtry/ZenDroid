@@ -82,7 +82,6 @@ class ProfileDetailsActivity: AppCompatActivity(),
                 profile,
                 scheduleManager.getOngoingAlarm(scheduledAlarms))
         }
-
         geofenceManager.updateGeofenceProfile(registeredGeofences, profile)
         scheduleManager.updateAlarmProfile(scheduledAlarms, profile)
 
@@ -110,7 +109,6 @@ class ProfileDetailsActivity: AppCompatActivity(),
         }
         val scroll: Boolean = isToolbarContentVisible() && withTransition
         val delay: Long = if (scroll) DELAY else 0
-
         if (scroll) {
             dispatchNestedScrollToTop()
         }

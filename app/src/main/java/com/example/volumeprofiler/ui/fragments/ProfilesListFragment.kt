@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.Intent
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
@@ -23,9 +21,6 @@ import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -44,6 +39,8 @@ import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.PROFILE_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.*
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
@@ -71,11 +68,11 @@ class ProfilesListFragment: Fragment(),
     private var bindingImpl: ProfilesListFragmentBinding? = null
     private val binding: ProfilesListFragmentBinding get() = bindingImpl!!
 
-    private var activity: FabContainerCallbacks? = null
+    private var callback: FabContainerCallbacks? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        activity = requireActivity() as FabContainerCallbacks
+        callback = requireActivity() as FabContainerCallbacks
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -117,11 +114,20 @@ class ProfilesListFragment: Fragment(),
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    sharedViewModel.viewEvents.collect {
+                    sharedViewModel.viewEvents
+                        .onStart {
+                            if (sharedViewModel.viewEvents.replayCache.isNotEmpty() &&
+                                sharedViewModel.viewEvents.replayCache.last() is OnFloatingActionButtonClick
+                            ) {
+                                sharedViewModel.viewEvents.resetReplayCache()
+                            }
+                        }
+                        .collect {
                             when (it) {
-                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fab, it.fragment)
+                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                                 is OnSwiped -> onFragmentSwiped(it.fragment)
-                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fab, it.fragment)
+                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
+                                else -> Log.i("ProfilesListFragment", "Unknown viewEvent: $it")
                             }
                         }
                 }
@@ -173,7 +179,7 @@ class ProfilesListFragment: Fragment(),
 
     override fun onDetach() {
         super.onDetach()
-        activity = null
+        callback = null
     }
 
     override fun onEdit(entity: Profile, binding: ProfileItemViewBinding) {
@@ -257,9 +263,9 @@ class ProfilesListFragment: Fragment(),
         }
     }
 
-    private fun updateFloatingActionButton(fab: FloatingActionButton, fragment: Int) {
+    private fun updateFloatingActionButton(fragment: Int) {
         if (fragment == PROFILE_FRAGMENT) {
-            onAnimateFab(fab)
+            onAnimateFab(callback!!.getFloatingActionButton())
         }
     }
 
@@ -269,9 +275,9 @@ class ProfilesListFragment: Fragment(),
         }
     }
 
-    private fun onFloatingActionButtonClick(fab: FloatingActionButton, fragment: Int) {
+    private fun onFloatingActionButtonClick(fragment: Int) {
         if (fragment == PROFILE_FRAGMENT) {
-            onFabClick(fab)
+            onFabClick(callback!!.getFloatingActionButton())
         }
     }
 
