@@ -3,7 +3,7 @@ package com.example.volumeprofiler.ui.fragments
 import android.os.Bundle
 import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.util.WeekDay.*
+import com.example.volumeprofiler.core.WeekDay.*
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 

@@ -2,8 +2,7 @@ package com.example.volumeprofiler.core
 
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.entities.RecentAlarm
-import com.example.volumeprofiler.util.WeekDay
+import com.example.volumeprofiler.entities.OngoingAlarm
 import java.time.*
 import java.time.temporal.TemporalAdjuster
 import java.time.temporal.TemporalAdjusters
@@ -65,23 +64,31 @@ class ScheduleCalendar(
         }
     }
 
-    internal fun getRecentAlarm(alarms: List<AlarmRelation>): RecentAlarm? {
+    internal fun getOngoingAlarm(alarms: List<AlarmRelation>?): OngoingAlarm? {
+        if (alarms.isNullOrEmpty()) {
+            return null
+        }
 
-        val recentAlarms: List<RecentAlarm> = alarms.mapNotNull {
+        val nextAlarmTime: ZonedDateTime = alarms.minOf { nextAlarm ->
+            this.alarm = nextAlarm.alarm
+            getNextOccurrence()!!
+        }
 
-            this.alarm = it.alarm
+        return alarms.mapNotNull { relation ->
 
+            alarm = relation.alarm
             val previousTime: ZonedDateTime? = getPreviousOccurrence()
+
             if (previousTime != null) {
-                RecentAlarm(
-                    if (meetsSchedule) it.startProfile else it.endProfile,
+                OngoingAlarm(
+                    if (meetsSchedule) relation.startProfile else relation.endProfile,
+                    nextAlarmTime,
                     previousTime,
-                    it.alarm
+                    relation.alarm
                 )
             } else null
-        }
-        return recentAlarms.maxByOrNull {
-            it.time
+        }.maxByOrNull {
+            it.from
                 .toInstant()
                 .toEpochMilli()
         }

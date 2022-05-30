@@ -1,9 +1,6 @@
 package com.example.volumeprofiler.ui.activities
 
-import android.app.NotificationManager
 import android.os.Bundle
-import android.provider.Settings
-import android.provider.Settings.System.canWrite
 import android.transition.Fade
 import android.view.LayoutInflater
 import android.view.Menu
@@ -11,6 +8,7 @@ import android.view.MenuItem
 import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -24,9 +22,9 @@ import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment
 import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.FabContainerCallbacks
-import com.example.volumeprofiler.interfaces.FragmentSwipedListener
 import com.example.volumeprofiler.util.canWriteSettings
 import com.example.volumeprofiler.util.isNotificationPolicyAccessGranted
+import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
@@ -40,53 +38,38 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         fun onSelected(itemId: Int)
     }
 
+    private val viewModel: MainActivityViewModel by viewModels()
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
 
     private var currentPosition: Int = 2
-    private val selectedFragment: Fragment
-    get() {
-        return pagerAdapter.fragments[binding.pager.currentItem]
-    }
 
     private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
         override fun onPageSelected(position: Int) {
             super.onPageSelected(position)
 
-            pagerAdapter.notifyFragmentChanged(currentPosition, position)
+            viewModel.onFragmentSwiped(currentPosition)
             onPrepareOptionsMenu(binding.toolbar.menu)
+            viewModel.updateFloatingActionButton(binding.fab, position)
 
-            if (currentPosition != position) {
-                (selectedFragment as FabContainer).onAnimateFab(binding.fab)
-            }
             currentPosition = position
         }
     }
 
     private class ScreenSlidePagerAdapter(fa: FragmentActivity) : FragmentStateAdapter(fa) {
 
-        val fragments: List<Fragment> by lazy {
-            listOf(
-                ProfilesListFragment(),
-                SchedulerFragment(),
-                LocationsListFragment()
-            )
-        }
-
-        fun notifyFragmentChanged(currentPosition: Int, nextPosition: Int) {
-            (fragments[currentPosition] as FragmentSwipedListener).apply {
-                if (currentPosition != nextPosition) {
-                    onSwipe()
-                }
-            }
-        }
-
         override fun getItemCount(): Int = 3
 
         override fun createFragment(position: Int): Fragment {
-            return fragments[position]
+            return when (position) {
+                PROFILE_FRAGMENT -> ProfilesListFragment()
+                SCHEDULER_FRAGMENT -> SchedulerFragment()
+                LOCATIONS_FRAGMENT -> LocationsListFragment()
+                else -> throw IllegalArgumentException("No fragment at position $position")
+            }
         }
     }
 
@@ -124,8 +107,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         super.onOptionsItemSelected(item)
-        (selectedFragment as OptionsItemSelectedListener)
-            .onSelected(item.itemId)
+        viewModel.onMenuOptionSelected(item.itemId)
         return true
     }
 
@@ -178,7 +160,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
             }
         }.attach()
         binding.fab.setOnClickListener {
-            (selectedFragment as FabContainer).onFabClick(binding.fab)
+            viewModel.onFloatingActionButtonClicked(binding.fab, binding.pager.currentItem)
         }
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             if (!it.values.contains(false)) {
@@ -196,9 +178,9 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
     companion object {
 
-        private const val PROFILE_FRAGMENT: Int = 0
-        private const val SCHEDULER_FRAGMENT: Int = 1
-        private const val LOCATIONS_FRAGMENT: Int = 2
+        const val PROFILE_FRAGMENT: Int = 0
+        const val SCHEDULER_FRAGMENT: Int = 1
+        const val LOCATIONS_FRAGMENT: Int = 2
         private const val EXTRA_PAGER_POSITION: String = "position"
     }
 }

@@ -2,6 +2,7 @@ package com.example.volumeprofiler.ui.activities
 
 import android.os.Bundle
 import android.transition.*
+import android.util.Log
 import android.view.Gravity
 import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
@@ -33,6 +34,8 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 
 @AndroidEntryPoint
 class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
@@ -50,6 +53,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     // Intended for non-recurring events
     private var start: LocalDateTime? = null
     private var end: LocalDateTime? = null
+    private var scheduledAlarms: List<AlarmRelation>? = null
 
     private fun onApply(alarm: Alarm, update: Boolean) {
         lifecycleScope.launch {
@@ -69,7 +73,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                     viewModel.endProfile.value!!
                 )
             }
-            profileManager.setScheduledProfile(viewModel.getEnabledAlarms())
+            profileManager.updateScheduledProfile(viewModel.getEnabledAlarms())
         }.invokeOnCompletion {
             ActivityCompat.finishAfterTransition(this)
         }
@@ -134,6 +138,15 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                             is OnUpdateAlarmEvent -> onUpdate(it.alarm)
                             is OnCancelChangesEvent -> onCancel()
                         }
+                    }
+                }
+                launch {
+                    viewModel.alarms.map { alarms ->
+                        alarms.filter { relation ->
+                            relation.alarm.isScheduled
+                        }
+                    }.collect {
+                        scheduledAlarms = it
                     }
                 }
                 launch {

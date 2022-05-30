@@ -9,17 +9,20 @@ import android.os.Build
 import android.util.Log
 import com.example.volumeprofiler.Application.Companion.ACTION_GEOFENCE_TRANSITION
 import com.example.volumeprofiler.core.GeofenceManager
+import com.example.volumeprofiler.core.NotificationDelegate
+import com.example.volumeprofiler.core.PreferencesManager
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFENCE_ENTER
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFENCE_EXIT
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.database.repositories.LocationRepository
+import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.receivers.AlarmReceiver.Companion.goAsync
 import com.example.volumeprofiler.util.*
-import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.Geofence.*
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import javax.inject.Inject
@@ -30,6 +33,8 @@ class GeofenceReceiver: BroadcastReceiver() {
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var repository: LocationRepository
     @Inject lateinit var geofenceManager: GeofenceManager
+    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var preferencesManager: PreferencesManager
 
     override fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
@@ -44,17 +49,23 @@ class GeofenceReceiver: BroadcastReceiver() {
                 }
 
                 val title: String = intent.getStringExtra(EXTRA_TITLE)!!
+                val geofence: Location = getExtra(intent, EXTRA_GEOFENCE)
+
                 when (geofencingEvent.geofenceTransition) {
                     GEOFENCE_TRANSITION_ENTER, GEOFENCE_TRANSITION_DWELL -> {
-                        getProfile(intent, EXTRA_ENTER_PROFILE).also {
-                            profileManager.setProfile(it)
-                            postNotification(context!!, createGeofenceEnterNotification(context, it.title, title), ID_GEOFENCE)
+                        getExtra<Profile>(intent, EXTRA_ENTER_PROFILE).also {
+                            profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
+                            notificationDelegate.postGeofenceEnterNotification(
+                                it.title, title
+                            )
                         }
                     }
                     GEOFENCE_TRANSITION_EXIT -> {
-                        getProfile(intent, EXTRA_EXIT_PROFILE).also {
-                            profileManager.setProfile(it)
-                            postNotification(context!!, createGeofenceExitNotification(context, it.title, title), ID_GEOFENCE)
+                        getExtra<Profile>(intent, EXTRA_EXIT_PROFILE).also {
+                            profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
+                            notificationDelegate.postGeofenceExitNotification(
+                                it.title, title
+                            )
                         }
                     }
                 }
@@ -96,13 +107,14 @@ class GeofenceReceiver: BroadcastReceiver() {
 
     companion object {
 
-        fun getProfile(intent: Intent, name: String): Profile {
+        fun <T> getExtra(intent: Intent, name: String): T {
             return ParcelableUtil.toParcelable(
                 intent.getByteArrayExtra(name)!!,
                 ParcelableUtil.getParcelableCreator())
         }
 
         const val EXTRA_TITLE: String = "extra_title"
+        const val EXTRA_GEOFENCE: String = "extra_geofence"
         const val EXTRA_ENTER_PROFILE: String = "extra_enter_profile"
         const val EXTRA_EXIT_PROFILE: String = "extra_exit_profile"
     }

@@ -17,14 +17,14 @@ class EventBus @Inject constructor() {
         data class UpdateAlarmState(val alarm: Alarm): Event()
     }
 
-    private val mutableEventsFlow: MutableSharedFlow<Event> = MutableSharedFlow(replay = 1, extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val mutableEventsFlow: MutableSharedFlow<Event> = MutableSharedFlow(replay = 1, extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val sharedFlow: SharedFlow<Event> = mutableEventsFlow
 
     fun onProfileChanged(id: UUID) {
         mutableEventsFlow.tryEmit(Event.ProfileChanged(id))
     }
 
-    fun updateAlarmState(alarm: Alarm): Unit {
-        mutableEventsFlow.tryEmit(Event.UpdateAlarmState(alarm))
+    suspend fun updateAlarmState(alarm: Alarm): Unit {
+        mutableEventsFlow.emit(Event.UpdateAlarmState(alarm))
     }
 }

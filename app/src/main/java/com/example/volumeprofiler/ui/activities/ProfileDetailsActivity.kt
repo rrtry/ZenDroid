@@ -2,7 +2,6 @@ package com.example.volumeprofiler.ui.activities
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,7 +11,6 @@ import android.transition.Slide
 import android.transition.TransitionSet
 import android.util.Log
 import android.view.Gravity
-import android.view.View
 import android.view.Window
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -21,15 +19,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction
+import androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_OPEN
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.core.GeofenceManager
-import com.example.volumeprofiler.core.PreferencesManager
-import com.example.volumeprofiler.core.ProfileManager
-import com.example.volumeprofiler.core.ScheduleManager
+import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.databinding.CreateProfileActivityBinding
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
@@ -41,7 +36,6 @@ import com.example.volumeprofiler.ui.fragments.InterruptionFilterFragment
 import com.example.volumeprofiler.ui.fragments.ProfileDetailsFragment
 import com.example.volumeprofiler.ui.fragments.ProfileImageSelectionDialog
 import com.example.volumeprofiler.ui.fragments.ProfileNameInputDialog
-import com.example.volumeprofiler.ui.fragments.ProfilesListFragment.Companion.SHARED_TRANSITION_PROFILE_IMAGE
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
@@ -54,7 +48,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
-
 
 @AndroidEntryPoint
 class ProfileDetailsActivity: AppCompatActivity(),
@@ -71,6 +64,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var geofenceManager: GeofenceManager
+    @Inject lateinit var notificationDelegate: NotificationDelegate
 
     private var showExplanationDialog: Boolean = true
     private var elapsedTime: Long = 0L
@@ -83,8 +77,12 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
     override fun onUpdate(profile: Profile) {
         if (preferencesManager.isProfileEnabled(profile)) {
-            profileManager.setProfile(profile)
+            profileManager.setProfile(profile, true)
+            notificationDelegate.updateNotification(
+                profile,
+                scheduleManager.getOngoingAlarm(scheduledAlarms))
         }
+
         geofenceManager.updateGeofenceProfile(registeredGeofences, profile)
         scheduleManager.updateAlarmProfile(scheduledAlarms, profile)
 
@@ -104,14 +102,12 @@ class ProfileDetailsActivity: AppCompatActivity(),
     }
 
     override fun onCancel() {
-
         val finish = { delay: Long ->
             Handler(Looper.getMainLooper()).postDelayed({
                 detachFloatingActionButton()
                 ActivityCompat.finishAfterTransition(this)
             }, delay)
         }
-
         val scroll: Boolean = isToolbarContentVisible() && withTransition
         val delay: Long = if (scroll) DELAY else 0
 
@@ -151,7 +147,6 @@ class ProfileDetailsActivity: AppCompatActivity(),
         setContentView(binding.root)
 
         binding.appBar.addOnOffsetChangedListener(this)
-
         openProfileDetailsFragment()
 
         lifecycleScope.launch {
@@ -230,7 +225,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
     private fun openInterruptionsFilterFragment() {
         supportFragmentManager
             .beginTransaction()
-            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+            .setTransition(TRANSIT_FRAGMENT_OPEN)
             .replace(R.id.fragmentContainer, InterruptionFilterFragment(), null)
             .addToBackStack(null)
             .commit()

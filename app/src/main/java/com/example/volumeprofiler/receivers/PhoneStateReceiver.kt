@@ -20,7 +20,7 @@ class PhoneStateReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.action == ACTION_PHONE_STATE_CHANGED) {
 
-            preferencesManager.getEnabledProfile()?.let { profile ->
+            preferencesManager.getProfile()?.let { profile ->
 
                 if (profileManager.isRingerAudible(profile)) {
 

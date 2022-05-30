@@ -2,6 +2,7 @@ package com.example.volumeprofiler.entities
 
 import android.os.Parcelable
 import androidx.room.*
+import com.google.gson.annotations.Expose
 import java.util.UUID
 import kotlinx.parcelize.Parcelize
 import java.time.LocalDateTime
@@ -16,7 +17,7 @@ import java.time.ZoneId
 data class Alarm(@PrimaryKey(autoGenerate = true)
                  @ColumnInfo(name = "eventId")
                  var id: Long,
-                 var title: String = "No title",
+                 @Expose var title: String = "No title",
 
                  @ColumnInfo(index = true)
                  var startProfileUUID: UUID,

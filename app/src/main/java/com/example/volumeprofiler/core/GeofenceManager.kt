@@ -21,6 +21,10 @@ import javax.inject.Singleton
 import android.Manifest.permission.*
 import android.annotation.SuppressLint
 import com.example.volumeprofiler.entities.LocationRelation
+import com.example.volumeprofiler.receivers.GeofenceReceiver.Companion.EXTRA_ENTER_PROFILE
+import com.example.volumeprofiler.receivers.GeofenceReceiver.Companion.EXTRA_EXIT_PROFILE
+import com.example.volumeprofiler.receivers.GeofenceReceiver.Companion.EXTRA_GEOFENCE
+import com.example.volumeprofiler.receivers.GeofenceReceiver.Companion.EXTRA_TITLE
 import com.example.volumeprofiler.util.ParcelableUtil
 import com.example.volumeprofiler.util.checkPermission
 
@@ -66,13 +70,6 @@ class GeofenceManager @Inject constructor(
             true
         }
         return foregroundLocationApproved && backgroundLocationApproved
-    }
-
-    fun isGeofenceEnabled(location: LocationRelation): Boolean {
-        return getGeofencePendingIntent(
-            location.location,
-            location.onEnterProfile,
-            location.onExitProfile) != null
     }
 
     @RequiresPermission(ACCESS_FINE_LOCATION)
@@ -129,9 +126,10 @@ class GeofenceManager @Inject constructor(
         Intent(context, GeofenceReceiver::class.java).apply {
 
             action = ACTION_GEOFENCE_TRANSITION
-            putExtra(GeofenceReceiver.EXTRA_TITLE, location.title)
-            putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
-            putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
+            putExtra(EXTRA_TITLE, location.title)
+            putExtra(EXTRA_GEOFENCE, ParcelableUtil.toByteArray(location))
+            putExtra(EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
+            putExtra(EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
 
             return PendingIntent.getBroadcast(context, location.id, this, PendingIntent.FLAG_UPDATE_CURRENT)
         }
@@ -142,9 +140,9 @@ class GeofenceManager @Inject constructor(
         Intent(context, GeofenceReceiver::class.java).apply {
 
             action = ACTION_GEOFENCE_TRANSITION
-            putExtra(GeofenceReceiver.EXTRA_TITLE, location.title)
-            putExtra(GeofenceReceiver.EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
-            putExtra(GeofenceReceiver.EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
+            putExtra(EXTRA_TITLE, location.title)
+            putExtra(EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
+            putExtra(EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
 
             return PendingIntent.getBroadcast(context, location.id, this, PendingIntent.FLAG_NO_CREATE)
         }

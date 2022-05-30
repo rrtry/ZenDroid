@@ -24,7 +24,7 @@ import java.lang.ref.WeakReference
 import java.util.*
 
 class ProfileAdapter(
-    private val recyclerView: RecyclerView,
+    private val viewGroup: ViewGroup,
     listener: WeakReference<SelectableListItemInteractionListener<Profile, UUID>>
 ): ListAdapter<Profile, ProfileAdapter.ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
 
@@ -56,7 +56,7 @@ class ProfileAdapter(
 
         private fun expand(animate: Boolean) {
             if (animate) {
-                TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
+                TransitionManager.beginDelayedTransition(viewGroup, AutoTransition())
                 binding.expandButton.animate().rotation(180.0f).start()
             } else {
                 binding.expandButton.rotation = 180f
@@ -66,7 +66,7 @@ class ProfileAdapter(
         }
 
         private fun collapse() {
-            TransitionManager.beginDelayedTransition(recyclerView, AutoTransition())
+            TransitionManager.beginDelayedTransition(viewGroup, AutoTransition())
             binding.itemSeparator.visibility = View.GONE
             binding.expandableView.visibility = View.GONE
             binding.expandButton.animate().rotation(0f).start()

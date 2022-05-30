@@ -43,10 +43,6 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         }
     }
 
-    fun getOngoingAlarm(): Alarm? {
-        return scheduleCalendar.currentAlarm
-    }
-
     fun scheduleAlarm(alarm: Alarm, startProfile: Profile, endProfile: Profile): Boolean {
 
         scheduleCalendar.now = ZonedDateTime.now()
@@ -108,9 +104,9 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         return scheduleCalendar.meetsSchedule
     }
 
-    fun getRecentAlarm(events: List<AlarmRelation>): RecentAlarm? {
+    fun getOngoingAlarm(events: List<AlarmRelation>?): OngoingAlarm? {
         scheduleCalendar.now = ZonedDateTime.now()
-        return scheduleCalendar.getRecentAlarm(events)
+        return scheduleCalendar.getOngoingAlarm(events)
     }
 
     fun getNextOccurrenceFormatted(relation: AlarmRelation): String {

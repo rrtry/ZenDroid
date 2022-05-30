@@ -2,8 +2,9 @@ package com.example.volumeprofiler.entities
 
 import java.time.ZonedDateTime
 
-data class RecentAlarm(
+data class OngoingAlarm(
     val profile: Profile,
-    val time: ZonedDateTime,
+    val until: ZonedDateTime,
+    val from: ZonedDateTime,
     val alarm: Alarm
 )

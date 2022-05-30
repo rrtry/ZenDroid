@@ -7,8 +7,9 @@ import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
-import com.example.volumeprofiler.util.WeekDay
-import com.example.volumeprofiler.util.WeekDay.Companion.WEEKDAYS
+import com.example.volumeprofiler.core.WeekDay
+import com.example.volumeprofiler.core.WeekDay.Companion.ALL_DAYS
+import com.example.volumeprofiler.core.WeekDay.Companion.WEEKDAYS
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -28,13 +29,14 @@ class AlarmDetailsViewModel @Inject constructor(
     private var alarmSet: Boolean = false
 
     val title: MutableStateFlow<String> = MutableStateFlow("My event")
+    val alarms: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
 
     val startProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
     val endProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
 
-    val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(WEEKDAYS)
+    val scheduledDays: MutableStateFlow<Int> = MutableStateFlow(ALL_DAYS)
     val scheduled: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val startTime: MutableStateFlow<LocalTime> = MutableStateFlow(LocalTime.now())
@@ -139,9 +141,11 @@ class AlarmDetailsViewModel @Inject constructor(
 
     fun setProfiles(profiles: List<Profile>) {
         if (alarmId == null && !alarmSet) {
-            profiles.first().let {
-                startProfile.value = it
-                endProfile.value = it
+            profiles.random().let { profile ->
+                startProfile.value = profile
+            }
+            profiles.random().let { profile ->
+                endProfile.value = profile
             }
             alarmSet = true
         }

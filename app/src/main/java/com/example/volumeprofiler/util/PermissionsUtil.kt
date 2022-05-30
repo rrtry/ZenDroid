@@ -46,18 +46,6 @@ fun getCategoryName(permission: String): String {
     }
 }
 
-fun sendPermissionsNotification(context: Context, profileManager: ProfileManager, profile: Profile): Unit {
-    sendSystemPreferencesAccessNotification(context, profileManager)
-    getDeniedPermissionsForProfile(context, profile).apply {
-        if (isNotEmpty()) {
-            postNotification(
-                context, createMissingPermissionNotification(
-                    context, this.toList()
-                ), ID_PERMISSIONS)
-        }
-    }
-}
-
 fun getDeniedPermissionsForProfile(context: Context, profile: Profile): Array<String> {
     val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 

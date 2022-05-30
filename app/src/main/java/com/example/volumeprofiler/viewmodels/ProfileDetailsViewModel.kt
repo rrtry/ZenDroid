@@ -348,6 +348,10 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
+    fun isMediaPlaying(): Boolean {
+        return getPlayingRingtone() != -1
+    }
+
     fun getPlayingRingtone(): Int {
         val streams: Map<Int, Boolean> = mapOf(
             STREAM_MUSIC to musicRingtonePlaying.value,

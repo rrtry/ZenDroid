@@ -142,7 +142,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
             viewModel.playerPosition = it.getCurrentPosition()
         }
         activity?.let {
-            viewModel.resumePlayback = it.isChangingConfigurations
+            viewModel.resumePlayback = it.isChangingConfigurations && viewModel.isMediaPlaying()
             it.unbindService(serviceConnection)
         }
         viewModel.setPlaybackState(

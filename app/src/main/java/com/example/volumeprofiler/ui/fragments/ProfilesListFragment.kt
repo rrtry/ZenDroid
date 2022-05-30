@@ -10,7 +10,6 @@ import android.util.Log
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.selection.*
@@ -19,6 +18,7 @@ import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity
 import com.example.volumeprofiler.databinding.ProfilesListFragmentBinding
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
@@ -32,18 +32,17 @@ import javax.inject.Inject
 import androidx.fragment.app.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.ProfileAdapter
+import com.example.volumeprofiler.core.*
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.EXTRA_PROFILE
 import com.example.volumeprofiler.selection.BaseSelectionObserver
 import com.example.volumeprofiler.selection.DetailsLookup
 import com.example.volumeprofiler.selection.KeyProvider
-import com.example.volumeprofiler.core.GeofenceManager
-import com.example.volumeprofiler.core.PreferencesManager
-import com.example.volumeprofiler.core.ProfileManager
-import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
+import com.example.volumeprofiler.ui.activities.MainActivity.Companion.PROFILE_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
@@ -63,6 +62,7 @@ class ProfilesListFragment: Fragment(),
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var eventBus: EventBus
+    @Inject lateinit var notificationDelegate: NotificationDelegate
 
     private lateinit var profileAdapter: ProfileAdapter
     private var selectedItems: ArrayList<String> = arrayListOf()
@@ -92,7 +92,7 @@ class ProfilesListFragment: Fragment(),
         bindingImpl = ProfilesListFragmentBinding.inflate(inflater, container, false)
 
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        profileAdapter = ProfileAdapter(binding.recyclerView, WeakReference(this))
+        profileAdapter = ProfileAdapter(binding.constraintLayout, WeakReference(this))
         binding.recyclerView.adapter = profileAdapter
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
 
@@ -117,9 +117,18 @@ class ProfilesListFragment: Fragment(),
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
+                    sharedViewModel.viewEvents.collect {
+                            when (it) {
+                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fab, it.fragment)
+                                is OnSwiped -> onFragmentSwiped(it.fragment)
+                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fab, it.fragment)
+                            }
+                        }
+                }
+                launch {
                     viewModel.viewEventFlow.onEach {
                         when (it) {
-                            is ProfileSetViewEvent -> onProfileSet(it.profile)
+                            is ProfileSetViewEvent -> onProfileSet(it)
                             is RemoveGeofencesViewEvent -> removeGeofences(it.geofences)
                             is ProfileRemoveViewEvent -> onProfileRemove(it.profile)
                             is CancelAlarmsViewEvent -> cancelAlarms(it.alarms)
@@ -238,13 +247,31 @@ class ProfilesListFragment: Fragment(),
         }
     }
 
-    private fun onProfileSet(profile: Profile) {
-        if (preferencesManager.isProfileEnabled(profile)) {
-            profileManager.setDefaultProfile()
-            profileAdapter.setSelection(null, viewModel.lastSelected)
-        } else {
-            profileManager.setProfile(profile)
-            profileAdapter.setSelection(profile, viewModel.lastSelected)
+    private fun onProfileSet(event: ProfileSetViewEvent) {
+        if (!preferencesManager.isProfileEnabled(event.profile)) {
+            profileManager.setProfile(event.profile, TRIGGER_TYPE_MANUAL, null)
+            profileAdapter.setSelection(event.profile, viewModel.lastSelected)
+            notificationDelegate.updateNotification(
+                event.profile, scheduleManager.getOngoingAlarm(event.alarms)
+            )
+        }
+    }
+
+    private fun updateFloatingActionButton(fab: FloatingActionButton, fragment: Int) {
+        if (fragment == PROFILE_FRAGMENT) {
+            onAnimateFab(fab)
+        }
+    }
+
+    private fun onFragmentSwiped(fragment: Int) {
+        if (fragment == PROFILE_FRAGMENT) {
+            onSwipe()
+        }
+    }
+
+    private fun onFloatingActionButtonClick(fab: FloatingActionButton, fragment: Int) {
+        if (fragment == PROFILE_FRAGMENT) {
+            onFabClick(fab)
         }
     }
 
@@ -253,13 +280,11 @@ class ProfilesListFragment: Fragment(),
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {
-        Handler(Looper.getMainLooper()).post {
-            fab.setImageDrawable(
-                ResourcesCompat.getDrawable(
-                    resources, R.drawable.ic_baseline_do_not_disturb_on_24, context?.theme
-                )
+        fab.setImageDrawable(
+            ResourcesCompat.getDrawable(
+                resources, R.drawable.ic_baseline_do_not_disturb_on_24, context?.theme
             )
-        }
+        )
     }
 
     override fun onActionItemRemove() {

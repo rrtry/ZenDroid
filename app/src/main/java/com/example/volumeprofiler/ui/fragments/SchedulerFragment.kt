@@ -5,13 +5,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.ACTION_LOCALE_CHANGED
 import android.content.IntentFilter
+import android.database.ContentObserver
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings.System.TIME_12_24
+import android.provider.Settings.System.getUriFor
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.ViewCompat
+import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
 import androidx.core.view.isVisible
 import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
@@ -36,18 +40,19 @@ import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.interfaces.*
+import com.example.volumeprofiler.ui.activities.MainActivity.Companion.SCHEDULER_FRAGMENT
 import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel.ViewEvent.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
 class SchedulerFragment: Fragment(),
@@ -73,6 +78,23 @@ class SchedulerFragment: Fragment(),
     private lateinit var tracker: SelectionTracker<Long>
     private lateinit var alarmAdapter: AlarmAdapter
 
+    private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
+    private class TimeFormatChangeObserver(
+        handler: Handler,
+        private val onChange: () -> Unit
+    ): ContentObserver(handler) {
+
+        override fun onChange(selfChange: Boolean) {
+            super.onChange(selfChange)
+            onChange()
+        }
+
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            super.onChange(selfChange, uri)
+            onChange()
+        }
+    }
+
     private val localeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -84,7 +106,22 @@ class SchedulerFragment: Fragment(),
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
+        timeFormatChangeObserver = TimeFormatChangeObserver(Handler(Looper.getMainLooper())) {
+            alarmAdapter.refresh()
+        }
         activity = requireActivity() as FabContainerCallbacks
+        registerTimeFormatObserver()
+        registerLocaleChangeReceiver()
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        activity = null
+        unregisterTimeFormatObserver()
+        unregisterLocaleChangeReceiver()
+    }
+
+    private fun registerLocaleChangeReceiver() {
         requireActivity().registerReceiver(
             localeReceiver,
             IntentFilter().apply {
@@ -93,9 +130,22 @@ class SchedulerFragment: Fragment(),
         )
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        activity = null
+    private fun registerTimeFormatObserver() {
+        requireContext().contentResolver.registerContentObserver(
+            getUriFor(TIME_12_24),
+            true,
+            timeFormatChangeObserver!!
+        )
+    }
+
+    private fun unregisterTimeFormatObserver() {
+        timeFormatChangeObserver?.let {
+            requireContext().contentResolver.unregisterContentObserver(it)
+        }
+        timeFormatChangeObserver = null
+    }
+
+    private fun unregisterLocaleChangeReceiver() {
         requireActivity().unregisterReceiver(localeReceiver)
     }
 
@@ -127,6 +177,20 @@ class SchedulerFragment: Fragment(),
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.viewEvents
+                        .onEach {
+                            sharedViewModel.viewEvents.resetReplayCache()
+                        }
+                        .collect {
+                            when (it) {
+                                is OnMenuOptionSelected -> onSelected(it.itemId)
+                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fab, it.fragment)
+                                is OnSwiped -> onFragmentSwiped(it.fragment)
+                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fab, it.fragment)
+                            }
+                        }
+                }
                 launch {
                     viewModel.viewEvents.collect {
                         when (it) {
@@ -243,7 +307,7 @@ class SchedulerFragment: Fragment(),
             relation.startProfile,
             relation.endProfile
         )
-        profileManager.setScheduledProfile(alarms)
+        profileManager.updateScheduledProfile(alarms)
         activity?.showSnackBar(
             scheduleManager.getNextOccurrenceFormatted(
                 relation
@@ -252,12 +316,30 @@ class SchedulerFragment: Fragment(),
 
     private fun onAlarmCancelled(alarmRelation: AlarmRelation, alarms: List<AlarmRelation>) {
         scheduleManager.cancelAlarm(alarmRelation.alarm)
-        profileManager.setScheduledProfile(alarms)
+        profileManager.updateScheduledProfile(alarms)
     }
 
     private fun onAlarmRemoved(alarmRelation: AlarmRelation, alarms: List<AlarmRelation>) {
         scheduleManager.cancelAlarm(alarmRelation.alarm)
-        profileManager.setScheduledProfile(alarms)
+        profileManager.updateScheduledProfile(alarms)
+    }
+
+    private fun onFragmentSwiped(fragment: Int) {
+        if (fragment == SCHEDULER_FRAGMENT) {
+            onSwipe()
+        }
+    }
+
+    private fun updateFloatingActionButton(fab: FloatingActionButton, fragment: Int) {
+        if (fragment == SCHEDULER_FRAGMENT) {
+            onAnimateFab(fab)
+        }
+    }
+
+    private fun onFloatingActionButtonClick(fab: FloatingActionButton, fragment: Int) {
+        if (fragment == SCHEDULER_FRAGMENT) {
+            onFabClick(fab)
+        }
     }
 
     override fun onFabClick(fab: FloatingActionButton) {
@@ -265,13 +347,11 @@ class SchedulerFragment: Fragment(),
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {
-        Handler(Looper.getMainLooper()).post {
-            fab.setImageDrawable(
-                ResourcesCompat.getDrawable(
-                    resources, R.drawable.ic_baseline_access_time_24, context?.theme
-                )
+        fab.setImageDrawable(
+            ResourcesCompat.getDrawable(
+                resources, R.drawable.ic_baseline_access_time_24, context?.theme
             )
-        }
+        )
     }
 
     override fun onActionItemRemove() {

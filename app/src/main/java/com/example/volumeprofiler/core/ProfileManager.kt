@@ -21,11 +21,11 @@ import android.media.RingtoneManager.*
 import android.provider.Settings.System.VIBRATE_WHEN_RINGING
 import android.telephony.TelephonyManager.CALL_STATE_RINGING
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
+import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.eventBus.EventBus
-import com.example.volumeprofiler.util.ID_SCHEDULER
-import com.example.volumeprofiler.util.createAlarmAlertNotification
-import com.example.volumeprofiler.util.postNotification
 import java.util.*
 
 @Singleton
@@ -35,12 +35,13 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var scheduleManager: ScheduleManager
+    @Inject lateinit var notificationDelegate: NotificationDelegate
 
     private val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     private val telephonyManager: TelephonyManager = context.getSystemService(TELEPHONY_SERVICE) as TelephonyManager
 
-    fun setProfile(profile: Profile) {
+    fun setProfile(profile: Profile, updatePreferences: Boolean = false) {
 
         if (notificationManager.currentInterruptionFilter != INTERRUPTION_FILTER_ALL) {
             setInterruptionFilter(INTERRUPTION_FILTER_ALL)
@@ -67,7 +68,14 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         setRingtoneUri(profile.alarmSoundUri, TYPE_ALARM)
         setVibrateWhenRingingBehavior(profile.isVibrateForCallsActive)
 
-        preferencesManager.setEnabledProfile(profile)
+        if (updatePreferences) {
+            preferencesManager.setProfile(profile)
+        }
+    }
+
+    fun <T> setProfile(profile: Profile, triggerType: Int, trigger: T?) {
+        setProfile(profile, false)
+        preferencesManager.setProfile(profile, triggerType, trigger)
         eventBus.onProfileChanged(profile.id)
     }
 
@@ -76,23 +84,20 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     fun setDefaultProfile() {
-        setProfile(getDefaultProfile())
-        preferencesManager.clearPreferences()
+        // TODO implement
     }
 
-    fun setScheduledProfile(alarms: List<AlarmRelation>) {
-        scheduleManager.getRecentAlarm(alarms)?.let {
-
-            setProfile(it.profile)
-
-            postNotification(
-                context,
-                createAlarmAlertNotification(
-                    context,
-                    it.alarm.title,
-                    it.profile.title,
-                    it.time.toLocalTime()
-                ), ID_SCHEDULER)
+    fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
+        scheduleManager.getOngoingAlarm(alarms)?.let { ongoingAlarm ->
+            Log.i("AlarmDetailsActivity", "until: ${ongoingAlarm.until.toLocalTime()}")
+            setProfile<Alarm>(ongoingAlarm.profile, TRIGGER_TYPE_ALARM, ongoingAlarm.alarm)
+            notificationDelegate.updateNotification(ongoingAlarm.profile, ongoingAlarm)
+            return
+        }
+        preferencesManager.getProfile()?.let { currentProfile ->
+            setProfile(currentProfile, TRIGGER_TYPE_MANUAL, null)
+            notificationDelegate.updateNotification(currentProfile, null)
+            return
         }
     }
 

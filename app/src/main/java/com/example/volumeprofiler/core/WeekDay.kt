@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.util
+package com.example.volumeprofiler.core
 
 enum class WeekDay(val num: Int, val value: Int) {
 

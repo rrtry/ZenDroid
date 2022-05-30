@@ -5,17 +5,22 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.os.Build
+import android.os.Parcelable
 import com.example.volumeprofiler.Application.Companion.ACTION_ALARM
+import com.example.volumeprofiler.core.NotificationDelegate
 import com.example.volumeprofiler.core.PreferencesManager
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.entities.Alarm
+import com.example.volumeprofiler.entities.OngoingAlarm
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import java.time.LocalTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -25,53 +30,52 @@ class AlarmReceiver: BroadcastReceiver() {
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var alarmRepository: AlarmRepository
     @Inject lateinit var preferencesManager: PreferencesManager
+    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var eventBus: EventBus
 
     override fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
             ACTION_ALARM -> {
                 goAsync(context!!, GlobalScope, Dispatchers.Default) {
                     onAlarm(
-                        context, getAlarm(intent),
-                        getProfile(intent, EXTRA_START_PROFILE),
-                        getProfile(intent, EXTRA_END_PROFILE)
+                        getExtra(intent, EXTRA_ALARM),
+                        getExtra(intent, EXTRA_START_PROFILE),
+                        getExtra(intent, EXTRA_END_PROFILE)
                     )
                 }
             }
             ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED, ACTION_TIME_CHANGED -> {
                 goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                    updateAlarmInstances(context)
+                    updateAlarmInstances()
                 }
             }
             ACTION_BOOT_COMPLETED -> {
                 if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
                     goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                        updateAlarmInstances(context)
+                        updateAlarmInstances()
                     }
                 }
             }
         }
     }
 
-    private suspend fun onAlarm(context: Context, alarm: Alarm, startProfile: Profile, endProfile: Profile) {
+    private suspend fun onAlarm(alarm: Alarm, startProfile: Profile, endProfile: Profile) {
         scheduleManager.scheduleAlarm(alarm, startProfile, endProfile).also { scheduled ->
             if (!scheduled) {
                 scheduleManager.cancelAlarm(alarm)
                 cancelAlarm(alarm)
+                eventBus.updateAlarmState(alarm)
             }
         }
 
-        val profile: Profile = if (!scheduleManager.meetsSchedule()) endProfile else startProfile
-        val time: LocalTime = if (!scheduleManager.meetsSchedule()) alarm.endTime else alarm.startTime
+        val profile: Profile = if (scheduleManager.meetsSchedule()) startProfile else endProfile
+        val nextAlarm: OngoingAlarm? = getNextAlarm()
 
-        profileManager.setProfile(profile)
-        postNotification(
-            context,
-            createAlarmAlertNotification(
-                context,
-                alarm.title,
-                profile.title,
-                time
-            ), ID_SCHEDULER)
+        val triggerType: Int = if (nextAlarm != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL
+        val trigger: Alarm? = if (triggerType == TRIGGER_TYPE_ALARM) alarm else null
+
+        profileManager.setProfile<Alarm?>(profile, triggerType, trigger)
+        notificationDelegate.updateNotification(profile, nextAlarm)
     }
 
     private suspend fun cancelAlarm(alarm: Alarm) {
@@ -82,7 +86,14 @@ class AlarmReceiver: BroadcastReceiver() {
         }
     }
 
-    private suspend fun updateAlarmInstances(context: Context) {
+    private suspend fun getNextAlarm(): OngoingAlarm? {
+        alarmRepository.getEnabledAlarms()?.let { enabledAlarms ->
+            return scheduleManager.getOngoingAlarm(enabledAlarms)
+        }
+        return null
+    }
+
+    private suspend fun updateAlarmInstances() {
         alarmRepository.getEnabledAlarms()?.let { enabledAlarms ->
             enabledAlarms.forEach {
                 scheduleManager.scheduleAlarm(it.alarm, it.startProfile, it.endProfile).also { scheduled ->
@@ -92,32 +103,23 @@ class AlarmReceiver: BroadcastReceiver() {
                     }
                 }
             }
-            scheduleManager.getRecentAlarm(enabledAlarms)?.let {
-
-                profileManager.setProfile(it.profile)
-
-                postNotification(
-                    context,
-                    createAlarmAlertNotification(
-                        context,
-                        it.alarm.title,
-                        it.profile.title,
-                        it.time.toLocalTime()
-                    ), ID_SCHEDULER)
+            scheduleManager.getOngoingAlarm(enabledAlarms)?.let {
+                profileManager.setProfile<Alarm>(it.profile, TRIGGER_TYPE_ALARM, it.alarm)
+                notificationDelegate.postAlarmAlertNotification(
+                    it.alarm.title,
+                    it.profile.title,
+                    it.profile.iconRes,
+                    it.until.toLocalTime()
+                )
             }
         }
     }
 
     companion object {
 
-        private fun getAlarm(intent: Intent): Alarm {
-            return intent.getParcelableExtra<Alarm>(EXTRA_ALARM)
-                ?: throw IllegalStateException("Alarm cannot be null")
-        }
-
-        private fun getProfile(intent: Intent, name: String): Profile {
-            return intent.getParcelableExtra<Profile>(name)
-                ?: throw IllegalStateException("Profile cannot be null")
+        private fun <T: Parcelable> getExtra(intent: Intent, name: String): T {
+            return intent.getParcelableExtra(EXTRA_ALARM)
+                ?: throw IllegalStateException("$name cannot be null")
         }
 
         fun BroadcastReceiver.goAsync(
