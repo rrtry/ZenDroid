@@ -83,14 +83,9 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         return telephonyManager.callState == CALL_STATE_RINGING
     }
 
-    fun setDefaultProfile() {
-        // TODO implement
-    }
-
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
         scheduleManager.getOngoingAlarm(alarms)?.let { ongoingAlarm ->
-            Log.i("AlarmDetailsActivity", "until: ${ongoingAlarm.until.toLocalTime()}")
-            setProfile<Alarm>(ongoingAlarm.profile, TRIGGER_TYPE_ALARM, ongoingAlarm.alarm)
+            setProfile(ongoingAlarm.profile, TRIGGER_TYPE_ALARM, ongoingAlarm.alarm)
             notificationDelegate.updateNotification(ongoingAlarm.profile, ongoingAlarm)
             return
         }

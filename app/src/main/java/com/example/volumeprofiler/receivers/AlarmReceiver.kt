@@ -109,7 +109,7 @@ class AlarmReceiver: BroadcastReceiver() {
                     it.alarm.title,
                     it.profile.title,
                     it.profile.iconRes,
-                    it.until.toLocalTime()
+                    it
                 )
             }
         }

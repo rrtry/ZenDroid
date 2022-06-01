@@ -99,8 +99,8 @@ class AlarmDetailsViewModel @Inject constructor(
         }
     }
 
-    fun updateAlarm(alarm: Alarm) {
-        viewModelScope.launch {
+    suspend fun updateAlarm(alarm: Alarm) {
+        withContext(viewModelScope.coroutineContext) {
             alarmRepository.updateAlarm(alarm)
         }
     }

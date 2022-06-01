@@ -12,7 +12,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
-import android.util.Log
 import android.view.*
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
@@ -52,8 +51,6 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel.ViewEvent.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
@@ -181,17 +178,10 @@ class SchedulerFragment: Fragment(),
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.viewEvents
-                        .onStart {
-                            if (sharedViewModel.viewEvents.replayCache.isNotEmpty() &&
-                                sharedViewModel.viewEvents.replayCache.last() is OnFloatingActionButtonClick
-                            ) {
-                                sharedViewModel.viewEvents.resetReplayCache()
-                            }
-                        }
                         .collect {
                             when (it) {
                                 is OnMenuOptionSelected -> onSelected(it.itemId)
-                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fragment)
+                                is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                                 is OnSwiped -> onFragmentSwiped(it.fragment)
                                 is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
                             }

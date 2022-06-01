@@ -20,10 +20,7 @@ import com.example.volumeprofiler.databinding.ActivityMainBinding
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment
-import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.FabContainerCallbacks
-import com.example.volumeprofiler.util.canWriteSettings
-import com.example.volumeprofiler.util.isNotificationPolicyAccessGranted
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
@@ -44,18 +41,15 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     private lateinit var binding: ActivityMainBinding
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
-
-    private var currentPosition: Int = 2
+    private var currentPosition: Int = PROFILE_FRAGMENT
 
     private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
         override fun onPageSelected(position: Int) {
             super.onPageSelected(position)
-
-            viewModel.onFragmentSwiped(currentPosition)
             onPrepareOptionsMenu(binding.toolbar.menu)
-            viewModel.updateFloatingActionButton(position)
-
+            viewModel.onFragmentSwiped(currentPosition)
+            viewModel.animateFloatingActionButton(position)
             currentPosition = position
         }
     }
@@ -128,11 +122,10 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         super.onPrepareOptionsMenu(menu)
-        return currentPosition == SCHEDULER_FRAGMENT
+        return binding.pager.currentItem == SCHEDULER_FRAGMENT
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)
@@ -145,7 +138,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         setSupportActionBar(binding.toolbar)
 
         savedInstanceState?.let {
-            currentPosition = it.getInt(EXTRA_PAGER_POSITION, -1)
+            currentPosition = it.getInt(EXTRA_PAGER_POSITION, 0)
         }
 
         pagerAdapter = ScreenSlidePagerAdapter(this)
@@ -172,12 +165,13 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
             viewModel.onFloatingActionButtonClicked(binding.pager.currentItem)
         }
         permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            if (!it.values.contains(false)) {
 
-            } else if (!canWriteSettings(this) || !isNotificationPolicyAccessGranted(this)) {
-
-            }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.viewEvents.resetReplayCache()
     }
 
     override fun onDestroy() {

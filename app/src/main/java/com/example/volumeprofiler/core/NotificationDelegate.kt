@@ -86,7 +86,7 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
             TRIGGER_TYPE_MANUAL -> postCurrentProfileNotification(profile.title, profile.iconRes, ongoingAlarm)
             TRIGGER_TYPE_ALARM -> postAlarmAlertNotification(
                 preferencesManager.getTrigger<Alarm>().title,
-                profile.title, profile.iconRes, ongoingAlarm!!.until.toLocalTime())
+                profile.title, profile.iconRes, ongoingAlarm!!)
         }
     }
 
@@ -187,7 +187,7 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         val contentText: String = if (until == null) {
             "'$title' will stay until you turn it off"
         } else {
-            "'$title' is on until ${TextUtil.formatLocalTime(context, until)}"
+            "'$title' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until.toLocalDateTime())}"
         }
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(title)
@@ -204,10 +204,10 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         notificationManager.notify(ID_PROFILE, builder.build())
     }
 
-    fun postAlarmAlertNotification(alarmTitle: String, profileTitle: String, icon: Int, until: LocalTime) {
+    fun postAlarmAlertNotification(alarmTitle: String, profileTitle: String, icon: Int, ongoingAlarm: OngoingAlarm) {
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(alarmTitle)
-            .setContentText("'$profileTitle' is on until ${TextUtil.formatLocalTime(context, until)}")
+            .setContentText("'$profileTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until.toLocalDateTime())}")
             .setSmallIcon(icon)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(

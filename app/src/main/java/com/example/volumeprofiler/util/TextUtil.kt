@@ -123,6 +123,24 @@ class TextUtil {
             return (DateFormat.getTimeFormat(context) as SimpleDateFormat).toPattern()
         }
 
+        fun formatNextAlarmDateTime(context: Context, until: LocalDateTime): String {
+
+            var dateString: String = ""
+
+            val now: LocalDateTime = LocalDateTime.now()
+            val dayOfWeekFormatted: String = until.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+            val monthFormatted: String = until.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+
+            if (until.dayOfYear != now.dayOfYear) {
+                dateString += "$dayOfWeekFormatted, "
+            }
+            if (until.dayOfWeek == now.dayOfWeek && until.dayOfYear != now.dayOfYear) {
+                dateString += "${until.dayOfMonth} $monthFormatted, "
+            }
+            dateString += formatLocalTime(context, until.toLocalTime())
+            return dateString
+        }
+
         @JvmStatic
         fun formatLocalTime(context: Context, localTime: LocalTime): String {
             DateTimeFormatter

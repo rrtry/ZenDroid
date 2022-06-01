@@ -13,6 +13,8 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.volumeprofiler.core.PreferencesManager
+import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
@@ -49,6 +51,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var contentUtil: ContentUtil
     @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var preferencesManager: PreferencesManager
 
     // Intended for non-recurring events
     private var start: LocalDateTime? = null
@@ -75,7 +78,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             }
             profileManager.updateScheduledProfile(viewModel.getEnabledAlarms())
         }.invokeOnCompletion {
-            ActivityCompat.finishAfterTransition(this)
+            onCancel()
         }
     }
 

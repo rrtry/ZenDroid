@@ -44,14 +44,6 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         return sharedPreferences.getInt(PREFS_TRIGGER_TYPE, -1)
     }
 
-    fun setManualTriggerType() {
-        sharedPreferences
-            .edit()
-            .putInt(PREFS_TRIGGER_TYPE, TRIGGER_TYPE_MANUAL)
-            .remove(PREFS_TRIGGER)
-            .apply()
-    }
-
     fun <T> getTrigger(): T {
         sharedPreferences.getString(PREFS_TRIGGER, null).also {
             return gson.fromJson(it, getType(getTriggerType()))
@@ -66,17 +58,24 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         }
     }
 
+    fun <T> setTrigger(triggerType: Int, trigger: T) {
+        sharedPreferences.edit()
+            .putInt(PREFS_TRIGGER_TYPE, triggerType)
+            .putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggerType)))
+            .apply()
+    }
+
     fun setProfile(profile: Profile) {
         sharedPreferences.edit()
             .putString(PREFS_PROFILE, gson.toJson(profile))
             .apply()
     }
 
-    fun <T> setProfile(profile: Profile, triggeredBy: Int = TRIGGER_TYPE_MANUAL, trigger: T?) {
+    fun <T> setProfile(profile: Profile, triggerType: Int = TRIGGER_TYPE_MANUAL, trigger: T?) {
         sharedPreferences.edit()
             .putString(PREFS_PROFILE, gson.toJson(profile))
-            .putInt(PREFS_TRIGGER_TYPE, triggeredBy)
-            .putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggeredBy)))
+            .putInt(PREFS_TRIGGER_TYPE, triggerType)
+            .putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggerType)))
             .apply()
     }
 

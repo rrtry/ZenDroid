@@ -19,8 +19,6 @@ import com.example.volumeprofiler.viewmodels.LocationsListViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.activityViewModels
@@ -33,15 +31,12 @@ import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.FabContainerCallbacks
 import com.example.volumeprofiler.interfaces.FragmentSwipedListener
 import com.example.volumeprofiler.interfaces.ListItemInteractionListener
-import com.example.volumeprofiler.ui.activities.MainActivity
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel.ViewEvent.*
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import java.lang.ref.WeakReference
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
 class LocationsListFragment: Fragment(),
@@ -104,16 +99,9 @@ class LocationsListFragment: Fragment(),
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.viewEvents
-                        .onStart {
-                            if (sharedViewModel.viewEvents.replayCache.isNotEmpty() &&
-                                sharedViewModel.viewEvents.replayCache.last() is OnFloatingActionButtonClick
-                            ) {
-                                sharedViewModel.viewEvents.resetReplayCache()
-                            }
-                        }
                         .collect {
                             when (it) {
-                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fragment)
+                                is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                                 is OnSwiped -> onFragmentSwiped(it.fragment)
                                 is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
                                 else -> Log.i("ProfilesListFragment", "Unknown viewEvent: $it")

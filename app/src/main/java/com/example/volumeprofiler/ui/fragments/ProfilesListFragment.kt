@@ -39,7 +39,6 @@ import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.PROFILE_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
@@ -62,8 +61,9 @@ class ProfilesListFragment: Fragment(),
     @Inject lateinit var notificationDelegate: NotificationDelegate
 
     private lateinit var profileAdapter: ProfileAdapter
-    private var selectedItems: ArrayList<String> = arrayListOf()
     private lateinit var tracker: SelectionTracker<String>
+
+    private var selectedItems: ArrayList<String> = arrayListOf()
 
     private var bindingImpl: ProfilesListFragmentBinding? = null
     private val binding: ProfilesListFragmentBinding get() = bindingImpl!!
@@ -73,6 +73,11 @@ class ProfilesListFragment: Fragment(),
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as FabContainerCallbacks
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -115,16 +120,9 @@ class ProfilesListFragment: Fragment(),
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.viewEvents
-                        .onStart {
-                            if (sharedViewModel.viewEvents.replayCache.isNotEmpty() &&
-                                sharedViewModel.viewEvents.replayCache.last() is OnFloatingActionButtonClick
-                            ) {
-                                sharedViewModel.viewEvents.resetReplayCache()
-                            }
-                        }
                         .collect {
                             when (it) {
-                                is UpdateFloatingActionButton -> updateFloatingActionButton(it.fragment)
+                                is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                                 is OnSwiped -> onFragmentSwiped(it.fragment)
                                 is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
                                 else -> Log.i("ProfilesListFragment", "Unknown viewEvent: $it")
@@ -175,11 +173,6 @@ class ProfilesListFragment: Fragment(),
     override fun onDestroyView() {
         super.onDestroyView()
         bindingImpl = null
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        callback = null
     }
 
     override fun onEdit(entity: Profile, binding: ProfileItemViewBinding) {

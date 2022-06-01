@@ -2,44 +2,45 @@ package com.example.volumeprofiler.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class MainActivityViewModel: ViewModel() {
 
     sealed class ViewEvent {
-
-        data class UpdateFloatingActionButton(val fragment: Int): ViewEvent()
+        data class AnimateFloatingActionButton(val fragment: Int): ViewEvent()
         data class OnSwiped(val fragment: Int): ViewEvent()
         data class OnFloatingActionButtonClick(val fragment: Int): ViewEvent()
         data class OnMenuOptionSelected(val itemId: Int): ViewEvent()
     }
 
-    private val eventsFlow: MutableSharedFlow<ViewEvent?> = MutableSharedFlow<ViewEvent?>(replay = 1)
-    val viewEvents: MutableSharedFlow<ViewEvent?> = eventsFlow
+    val viewEvents: MutableSharedFlow<ViewEvent?> = MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val animateFab: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val showDialog: MutableStateFlow<Boolean> = MutableStateFlow(true)
 
     fun onMenuOptionSelected(itemId: Int) {
         viewModelScope.launch {
-            eventsFlow.emit(ViewEvent.OnMenuOptionSelected(itemId))
+            viewEvents.emit(ViewEvent.OnMenuOptionSelected(itemId))
         }
     }
 
-    fun updateFloatingActionButton(fragment: Int) {
+    fun animateFloatingActionButton(fragment: Int) {
         viewModelScope.launch {
-            eventsFlow.emit(ViewEvent.UpdateFloatingActionButton(fragment))
+            viewEvents.emit(ViewEvent.AnimateFloatingActionButton(fragment))
         }
     }
 
     fun onFragmentSwiped(fragment: Int) {
         viewModelScope.launch {
-            eventsFlow.emit(ViewEvent.OnSwiped(fragment))
+            viewEvents.emit(ViewEvent.OnSwiped(fragment))
         }
     }
 
     fun onFloatingActionButtonClicked(fragment: Int) {
         viewModelScope.launch {
-            eventsFlow.emit(ViewEvent.OnFloatingActionButtonClick(fragment))
+            animateFab.value = false
+            viewEvents.emit(ViewEvent.OnFloatingActionButtonClick(fragment))
         }
     }
 }
