@@ -16,7 +16,6 @@ class MainActivityViewModel: ViewModel() {
     }
 
     val viewEvents: MutableSharedFlow<ViewEvent?> = MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    val animateFab: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val showDialog: MutableStateFlow<Boolean> = MutableStateFlow(true)
 
     fun onMenuOptionSelected(itemId: Int) {
@@ -39,7 +38,6 @@ class MainActivityViewModel: ViewModel() {
 
     fun onFloatingActionButtonClicked(fragment: Int) {
         viewModelScope.launch {
-            animateFab.value = false
             viewEvents.emit(ViewEvent.OnFloatingActionButtonClick(fragment))
         }
     }

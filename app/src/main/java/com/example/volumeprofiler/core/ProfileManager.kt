@@ -92,7 +92,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         preferencesManager.getProfile()?.let { currentProfile ->
             setProfile(currentProfile, TRIGGER_TYPE_MANUAL, null)
             notificationDelegate.updateNotification(currentProfile, null)
-            return
         }
     }
 
