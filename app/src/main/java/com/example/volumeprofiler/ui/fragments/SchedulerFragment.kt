@@ -41,6 +41,7 @@ import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.SCHEDULER_FRAGMENT
+import com.example.volumeprofiler.util.TimeFormatChangeObserver
 import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
@@ -78,21 +79,6 @@ class SchedulerFragment: Fragment(),
     private lateinit var alarmAdapter: AlarmAdapter
 
     private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
-    private class TimeFormatChangeObserver(
-        handler: Handler,
-        private val onChange: () -> Unit
-    ): ContentObserver(handler) {
-
-        override fun onChange(selfChange: Boolean) {
-            super.onChange(selfChange)
-            onChange()
-        }
-
-        override fun onChange(selfChange: Boolean, uri: Uri?) {
-            super.onChange(selfChange, uri)
-            onChange()
-        }
-    }
 
     private val localeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 

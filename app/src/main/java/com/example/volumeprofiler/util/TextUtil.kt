@@ -4,10 +4,14 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
 import android.content.Context
+import android.provider.Settings
+import android.provider.Settings.System.TIME_12_24
+import android.provider.Settings.System.getInt
 import android.text.format.DateFormat
 import com.example.volumeprofiler.core.WeekDay
 import java.text.SimpleDateFormat
 import java.time.*
+import java.time.format.DateTimeFormatterBuilder
 import java.time.format.FormatStyle
 
 class TextUtil {
@@ -143,11 +147,17 @@ class TextUtil {
 
         @JvmStatic
         fun formatLocalTime(context: Context, localTime: LocalTime): String {
-            DateTimeFormatter
-                .ofPattern(getTimeFormat(context))
-                .withZone(ZoneOffset.UTC).also {
-                    return localTime.format(it)
-                }
+            return try {
+                val format: Int = getInt(context.contentResolver, TIME_12_24)
+                DateTimeFormatter
+                    .ofPattern(if (format == 24) "HH:mm" else "hh:mm a")
+                    .format(localTime)
+            } catch (e: Settings.SettingNotFoundException) {
+                DateTimeFormatter
+                    .ofLocalizedTime(FormatStyle.SHORT)
+                    .withLocale(Locale.getDefault())
+                    .format(localTime)
+            }
         }
     }
 }

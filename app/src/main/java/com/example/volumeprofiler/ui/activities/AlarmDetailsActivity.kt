@@ -1,6 +1,10 @@
 package com.example.volumeprofiler.ui.activities
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings.System.TIME_12_24
+import android.provider.Settings.System.getUriFor
 import android.transition.*
 import android.util.Log
 import android.view.Gravity
@@ -57,6 +61,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     private var start: LocalDateTime? = null
     private var end: LocalDateTime? = null
     private var scheduledAlarms: List<AlarmRelation>? = null
+    private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
 
     private fun onApply(alarm: Alarm, update: Boolean) {
         lifecycleScope.launch {
@@ -125,6 +130,8 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
         binding.lifecycleOwner = this
         setContentView(binding.root)
 
+        registerTimeFormatChangeObserver()
+
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -169,6 +176,21 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     override fun onDestroy() {
         super.onDestroy()
         phonePermissionLauncher.unregister()
+        unregisterTimeFormatChangeObserver()
+    }
+
+    private fun registerTimeFormatChangeObserver() {
+        timeFormatChangeObserver = TimeFormatChangeObserver(
+            Handler(Looper.getMainLooper()))
+        {
+            binding.invalidateAll()
+        }
+        contentResolver.registerContentObserver(getUriFor(TIME_12_24), true, timeFormatChangeObserver!!)
+    }
+
+    private fun unregisterTimeFormatChangeObserver() {
+        timeFormatChangeObserver?.let { contentResolver.unregisterContentObserver(it) }
+        timeFormatChangeObserver = null
     }
 
     private fun showDialog(dialogType: DialogType) {
