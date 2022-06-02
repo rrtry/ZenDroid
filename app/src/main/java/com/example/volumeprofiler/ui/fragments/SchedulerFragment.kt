@@ -91,9 +91,6 @@ class SchedulerFragment: Fragment(),
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        timeFormatChangeObserver = TimeFormatChangeObserver(Handler(Looper.getMainLooper())) {
-            alarmAdapter.refresh()
-        }
         callback = requireActivity() as FabContainerCallbacks
         registerTimeFormatObserver()
         registerLocaleChangeReceiver()
@@ -116,6 +113,9 @@ class SchedulerFragment: Fragment(),
     }
 
     private fun registerTimeFormatObserver() {
+        timeFormatChangeObserver = TimeFormatChangeObserver(Handler(Looper.getMainLooper())) {
+            alarmAdapter.refresh()
+        }
         requireContext().contentResolver.registerContentObserver(
             getUriFor(TIME_12_24),
             true,
