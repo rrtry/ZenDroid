@@ -118,7 +118,7 @@ class AlarmReceiver: BroadcastReceiver() {
     companion object {
 
         private fun <T: Parcelable> getExtra(intent: Intent, name: String): T {
-            return intent.getParcelableExtra(EXTRA_ALARM)
+            return intent.getParcelableExtra(name)
                 ?: throw IllegalStateException("$name cannot be null")
         }
 

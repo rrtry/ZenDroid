@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getInt
 import android.text.format.DateFormat
+import android.util.Log
 import com.example.volumeprofiler.core.WeekDay
 import java.text.SimpleDateFormat
 import java.time.*
@@ -153,6 +154,7 @@ class TextUtil {
                     .ofPattern(if (format == 24) "HH:mm" else "hh:mm a")
                     .format(localTime)
             } catch (e: Settings.SettingNotFoundException) {
+                Log.i("TextUtil", "formatLocalTime")
                 DateTimeFormatter
                     .ofLocalizedTime(FormatStyle.SHORT)
                     .withLocale(Locale.getDefault())
