@@ -1,10 +1,10 @@
 package com.example.volumeprofiler.entities
 
-import java.time.ZonedDateTime
+import java.time.LocalDateTime
 
 data class OngoingAlarm(
-    val profile: Profile,
-    val until: ZonedDateTime,
-    val from: ZonedDateTime,
+    val profile: Profile?,
+    val until: LocalDateTime?,
+    val from: LocalDateTime?,
     val alarm: Alarm
 )

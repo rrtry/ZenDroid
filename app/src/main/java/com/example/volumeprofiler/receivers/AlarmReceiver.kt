@@ -70,7 +70,6 @@ class AlarmReceiver: BroadcastReceiver() {
 
         val profile: Profile = if (scheduleManager.meetsSchedule()) startProfile else endProfile
         val nextAlarm: OngoingAlarm? = getNextAlarm()
-
         val triggerType: Int = if (nextAlarm != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL
         val trigger: Alarm? = if (triggerType == TRIGGER_TYPE_ALARM) alarm else null
 
@@ -103,15 +102,7 @@ class AlarmReceiver: BroadcastReceiver() {
                     }
                 }
             }
-            scheduleManager.getOngoingAlarm(enabledAlarms)?.let {
-                profileManager.setProfile<Alarm>(it.profile, TRIGGER_TYPE_ALARM, it.alarm)
-                notificationDelegate.postAlarmAlertNotification(
-                    it.alarm.title,
-                    it.profile.title,
-                    it.profile.iconRes,
-                    it
-                )
-            }
+            profileManager.updateScheduledProfile(enabledAlarms)
         }
     }
 

@@ -84,9 +84,10 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
             TRIGGER_TYPE_GEOFENCE_ENTER -> postGeofenceEnterNotification(profile.title, preferencesManager.getTrigger<Location>().title)
             TRIGGER_TYPE_GEOFENCE_EXIT -> postGeofenceExitNotification(profile.title, preferencesManager.getTrigger<Location>().title)
             TRIGGER_TYPE_MANUAL -> postCurrentProfileNotification(profile.title, profile.iconRes, ongoingAlarm)
-            TRIGGER_TYPE_ALARM -> postAlarmAlertNotification(
+            TRIGGER_TYPE_ALARM -> postCurrentProfileNotification(
                 preferencesManager.getTrigger<Alarm>().title,
-                profile.title, profile.iconRes, ongoingAlarm!!)
+                profile.iconRes, ongoingAlarm!!
+            )
         }
     }
 
@@ -182,33 +183,21 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         notificationManager.notify(ID_PROFILE, builder.build())
     }
 
-    private fun postCurrentProfileNotification(title: String, icon: Int, ongoingAlarm: OngoingAlarm? = null) {
+    fun postCurrentProfileNotification(
+        contentTitle: String,
+        iconRes: Int,
+        ongoingAlarm: OngoingAlarm?
+    ) {
         val until: LocalTime? = ongoingAlarm?.until?.toLocalTime()
         val contentText: String = if (until == null) {
-            "'$title' will stay until you turn it off"
+            "'$contentTitle' will stay until you turn it off"
         } else {
-            "'$title' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until.toLocalDateTime())}"
+            "'$contentTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until)}"
         }
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(title)
+            .setContentTitle(contentTitle)
             .setContentText(contentText)
-            .setSmallIcon(icon)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel(
-                PROFILE_NOTIFICATION_CHANNEL_ID,
-                PROFILE_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW).also {
-                builder.setChannelId(it.id)
-            }
-        }
-        notificationManager.notify(ID_PROFILE, builder.build())
-    }
-
-    fun postAlarmAlertNotification(alarmTitle: String, profileTitle: String, icon: Int, ongoingAlarm: OngoingAlarm) {
-        val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(alarmTitle)
-            .setContentText("'$profileTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until.toLocalDateTime())}")
-            .setSmallIcon(icon)
+            .setSmallIcon(iconRes)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
                 PROFILE_NOTIFICATION_CHANNEL_ID,

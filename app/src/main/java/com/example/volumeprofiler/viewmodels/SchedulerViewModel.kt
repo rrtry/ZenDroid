@@ -1,6 +1,9 @@
 package com.example.volumeprofiler.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.*
+import com.example.volumeprofiler.core.ScheduleCalendar
+import com.example.volumeprofiler.core.WeekDay
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.database.repositories.AlarmRepository
@@ -9,14 +12,14 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import javax.inject.Inject
 
 @HiltViewModel
 class SchedulerViewModel @Inject constructor(
     private val alarmRepository: AlarmRepository,
 ): ViewModel() {
-
-    val alarmsFlow: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
 
     sealed class ViewEvent {
 
@@ -28,11 +31,23 @@ class SchedulerViewModel @Inject constructor(
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val viewEvents: Flow<ViewEvent> = channel.receiveAsFlow()
+    val alarmsFlow: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
 
-    fun scheduleAlarm(alarmRelation: AlarmRelation) {
+    fun scheduleAlarm(relation: AlarmRelation) {
         viewModelScope.launch {
-            scheduleAlarm(alarmRelation.alarm)
-            channel.send(ViewEvent.OnAlarmSet(alarmRelation, getScheduledAlarms()))
+            if (relation.alarm.scheduledDays == WeekDay.NONE &&
+                !ScheduleCalendar.isValid(ZonedDateTime.now(), relation.alarm))
+            {
+                ScheduleCalendar.getStartAndEndDate(relation.alarm.startTime, relation.alarm.endTime).let { date ->
+                    relation.alarm = relation.alarm.apply {
+                        startDateTime = date.first
+                        endDateTime = date.second
+                    }
+                    alarmRepository.updateAlarm(relation.alarm)
+                }
+            }
+            scheduleAlarm(relation.alarm)
+            channel.send(ViewEvent.OnAlarmSet(relation, getScheduledAlarms()))
         }
     }
 

@@ -104,6 +104,18 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         return scheduleCalendar.meetsSchedule
     }
 
+    fun hasPreviouslyFired(alarm: Alarm): Boolean {
+        scheduleCalendar.now = ZonedDateTime.now()
+        scheduleCalendar.alarm = alarm
+        return scheduleCalendar.getPreviousOccurrence() != null
+    }
+
+    fun isAlarmValid(alarm: Alarm): Boolean {
+        scheduleCalendar.now = ZonedDateTime.now()
+        scheduleCalendar.alarm = alarm
+        return scheduleCalendar.isValid()
+    }
+
     fun getOngoingAlarm(events: List<AlarmRelation>?): OngoingAlarm? {
         scheduleCalendar.now = ZonedDateTime.now()
         return scheduleCalendar.getOngoingAlarm(events)

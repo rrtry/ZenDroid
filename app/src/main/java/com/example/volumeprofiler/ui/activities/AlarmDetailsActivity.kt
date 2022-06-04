@@ -40,7 +40,6 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 
 @AndroidEntryPoint

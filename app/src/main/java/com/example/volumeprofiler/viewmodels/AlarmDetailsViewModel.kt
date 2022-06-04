@@ -2,6 +2,7 @@ package com.example.volumeprofiler.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.volumeprofiler.core.ScheduleCalendar
 import com.example.volumeprofiler.database.repositories.AlarmRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
@@ -45,26 +46,10 @@ class AlarmDetailsViewModel @Inject constructor(
     val startAndEndDate: Flow<Pair<LocalDateTime, LocalDateTime>?> = combine(scheduledDays, startTime, endTime)
     { days, startLocalTime, endLocalTime ->
         if (days == WeekDay.NONE) {
-
-            val now: LocalDateTime = LocalDateTime.now()
-
-            val start: LocalDateTime = now
-                .withHour(startLocalTime.hour)
-                .withMinute(startLocalTime.minute)
-                .withSecond(0)
-                .withNano(0)
-
-            var end: LocalDateTime = now
-                .withHour(endLocalTime.hour)
-                .withMinute(endLocalTime.minute)
-                .withSecond(0)
-                .withNano(0)
-
-            if (start >= end) {
-                end = end.plusDays(1)
-            }
-
-            Pair(start, end)
+            ScheduleCalendar.getStartAndEndDate(
+                startLocalTime,
+                endLocalTime
+            )
         } else null
     }
 

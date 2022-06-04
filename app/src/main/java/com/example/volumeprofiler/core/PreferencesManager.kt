@@ -34,8 +34,10 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
     }
 
     fun getProfile(): Profile? {
-        sharedPreferences.getString(PREFS_PROFILE, null)?.also {
-            return gson.fromJson(it, object: TypeToken<Profile>() {}.type)
+        sharedPreferences.getString(PREFS_PROFILE, null)?.let {
+            return gson.fromJson(
+                it,
+                object: TypeToken<Profile>() {}.type)
         }
         return null
     }
@@ -58,11 +60,23 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         }
     }
 
-    fun <T> setTrigger(triggerType: Int, trigger: T) {
-        sharedPreferences.edit()
-            .putInt(PREFS_TRIGGER_TYPE, triggerType)
-            .putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggerType)))
-            .apply()
+    private fun <T> setTrigger(editor: SharedPreferences.Editor, triggerType: Int, trigger: T?) {
+        editor.apply {
+            if (triggerType == TRIGGER_TYPE_MANUAL) {
+                remove(PREFS_TRIGGER)
+                putInt(PREFS_TRIGGER_TYPE, triggerType)
+            } else {
+                putInt(PREFS_TRIGGER_TYPE, triggerType)
+                putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggerType)))
+            }
+        }
+    }
+
+    fun <T> setTrigger(triggerType: Int, trigger: T?) {
+        sharedPreferences.edit().apply {
+            setTrigger(triggerType, trigger)
+            apply()
+        }
     }
 
     fun setProfile(profile: Profile) {
@@ -72,11 +86,11 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
     }
 
     fun <T> setProfile(profile: Profile, triggerType: Int = TRIGGER_TYPE_MANUAL, trigger: T?) {
-        sharedPreferences.edit()
-            .putString(PREFS_PROFILE, gson.toJson(profile))
-            .putInt(PREFS_TRIGGER_TYPE, triggerType)
-            .putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggerType)))
-            .apply()
+        sharedPreferences.edit().apply {
+            putString(PREFS_PROFILE, gson.toJson(profile))
+            setTrigger(this, triggerType, trigger)
+            apply()
+        }
     }
 
     companion object {

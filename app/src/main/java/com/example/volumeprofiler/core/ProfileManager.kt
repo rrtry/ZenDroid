@@ -25,6 +25,7 @@ import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
+import com.example.volumeprofiler.entities.OngoingAlarm
 import com.example.volumeprofiler.eventBus.EventBus
 import java.util.*
 
@@ -84,14 +85,25 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
-        scheduleManager.getOngoingAlarm(alarms)?.let { ongoingAlarm ->
-            setProfile(ongoingAlarm.profile, TRIGGER_TYPE_ALARM, ongoingAlarm.alarm)
-            notificationDelegate.updateNotification(ongoingAlarm.profile, ongoingAlarm)
-            return
-        }
-        preferencesManager.getProfile()?.let { currentProfile ->
-            setProfile(currentProfile, TRIGGER_TYPE_MANUAL, null)
-            notificationDelegate.updateNotification(currentProfile, null)
+
+        val ongoingAlarm: OngoingAlarm? = scheduleManager.getOngoingAlarm(alarms)
+
+        if (ongoingAlarm != null) {
+            if (scheduleManager.hasPreviouslyFired(ongoingAlarm.alarm)) {
+                if (scheduleManager.isAlarmValid(ongoingAlarm.alarm)) {
+                    setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_ALARM, ongoingAlarm.alarm)
+                } else {
+                    setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_MANUAL, null)
+                }
+                notificationDelegate.updateNotification(ongoingAlarm.profile, ongoingAlarm)
+            } else {
+                notificationDelegate.updateNotification(preferencesManager.getProfile()!!, ongoingAlarm)
+            }
+        } else {
+            preferencesManager.getProfile().let { currentProfile ->
+                setProfile(currentProfile!!, TRIGGER_TYPE_MANUAL, null)
+                notificationDelegate.updateNotification(currentProfile, null)
+            }
         }
     }
 

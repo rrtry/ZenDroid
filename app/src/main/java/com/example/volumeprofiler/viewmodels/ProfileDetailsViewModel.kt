@@ -28,6 +28,7 @@ import com.example.volumeprofiler.entities.Profile.Companion.STREAM_NOTIFICATION
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class ProfileDetailsViewModel @Inject constructor(
@@ -181,14 +182,14 @@ class ProfileDetailsViewModel @Inject constructor(
     var currentMediaUri: Uri? = null
     var playerPosition: Int = -1
 
-    fun addProfile(profile: Profile) {
-        viewModelScope.launch {
+    suspend fun addProfile(profile: Profile) {
+        withContext(viewModelScope.coroutineContext) {
             profileRepository.addProfile(profile)
         }
     }
 
-    fun updateProfile(profile: Profile) {
-        viewModelScope.launch {
+    suspend fun updateProfile(profile: Profile) {
+        withContext(viewModelScope.coroutineContext) {
             profileRepository.updateProfile(profile)
         }
     }
@@ -235,7 +236,6 @@ class ProfileDetailsViewModel @Inject constructor(
             } else {
                 isNew.value = true
             }
-
             isEntitySet = true
         }
     }
@@ -306,16 +306,6 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun setStreamVolume(streamType: Int, volume: Int) {
-        when (streamType) {
-            STREAM_MUSIC -> mediaVolume.value = volume
-            STREAM_VOICE_CALL -> callVolume.value = volume
-            STREAM_NOTIFICATION -> notificationVolume.value = volume
-            STREAM_RING -> ringVolume.value = volume
-            STREAM_ALARM -> alarmVolume.value = volume
-        }
-    }
-
     private fun isRingtonePlaying(streamType: Int): Boolean {
         return when (streamType) {
             STREAM_MUSIC -> musicRingtonePlaying.value
@@ -376,12 +366,6 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onStartRingtonePlayback(streamType: Int) {
-        viewModelScope.launch {
-            fragmentChannel.send(ViewEvent.StartRingtonePlayback(streamType))
-        }
-    }
-
     fun onResumeRingtonePlayback(streamType: Int, position: Int) {
         viewModelScope.launch {
             fragmentChannel.send(ViewEvent.ResumeRingtonePlayback(streamType, position))
@@ -397,12 +381,6 @@ class ProfileDetailsViewModel @Inject constructor(
             }
             setPlaybackState(getPlayingRingtone(), false)
             fragmentChannel.send(event)
-        }
-    }
-
-    fun onExpandableFabClick() {
-        viewModelScope.launch {
-            activityChannel.send(ViewEvent.ToggleFloatingActionMenu)
         }
     }
 
@@ -422,16 +400,6 @@ class ProfileDetailsViewModel @Inject constructor(
                 streamsUnlinked.value = !streamsUnlinked.value
             } else {
                 fragmentChannel.send(ViewEvent.PhonePermissionRequestEvent)
-            }
-        }
-    }
-
-    fun onNotificationRestrictionsLayoutClick() {
-        viewModelScope.launch {
-            if (notificationPolicyAccessGranted.value) {
-                fragmentChannel.send(ViewEvent.ShowNotificationRestrictionsFragment)
-            } else {
-                fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
             }
         }
     }
@@ -580,12 +548,6 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onStarredContactsLayoutClick() {
-        viewModelScope.launch {
-            fragmentChannel.send(ViewEvent.StartContactsActivity)
-        }
-    }
-
     fun onConversationsLayoutClick() {
         viewModelScope.launch {
             fragmentChannel.send(ViewEvent.ShowPopupWindow(PRIORITY_CATEGORY_CONVERSATIONS))
@@ -619,14 +581,6 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onSuppressedEffectsOffLayoutClick() {
         viewModelScope.launch {
             fragmentChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_OFF))
-        }
-    }
-
-    fun onSuppressedEffectLayoutClick(effect: Int) {
-        if (containsSuppressedEffect(effect)) {
-            removeSuppressedEffect(effect)
-        } else {
-            addSuppressedEffect(effect)
         }
     }
 

@@ -3,27 +3,22 @@ package com.example.volumeprofiler.core
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.OngoingAlarm
+import com.example.volumeprofiler.entities.Profile
 import java.time.*
 import java.time.temporal.TemporalAdjuster
 import java.time.temporal.TemporalAdjusters
 
-class ScheduleCalendar(
-    var now: ZonedDateTime,
-) {
+class ScheduleCalendar(var now: ZonedDateTime) {
 
     lateinit var alarm: Alarm
-
     var meetsSchedule: Boolean = false
-        private set
-
-    var currentAlarm: Alarm? = null
         private set
 
     constructor(now: ZonedDateTime, alarm: Alarm): this(now) {
         this.alarm = alarm
     }
 
-    internal fun getNextOccurrence(): ZonedDateTime? {
+    fun getNextOccurrence(): ZonedDateTime? {
         return if (isValid()) {
 
             meetsSchedule = meetsSchedule()
@@ -44,16 +39,11 @@ class ScheduleCalendar(
         return (mask and WeekDay.fromDay(day.value)) != WeekDay.NONE
     }
 
-    private fun isValid(): Boolean {
-        if (alarm.scheduledDays != WeekDay.NONE) {
-            return true
-        }
-        return now
-            .toLocalDateTime()
-            .isBefore(alarm.endDateTime)
+    fun isValid(): Boolean {
+        return isValid(now, alarm)
     }
 
-    private fun getPreviousOccurrence(): ZonedDateTime? {
+    fun getPreviousOccurrence(): ZonedDateTime? {
 
         meetsSchedule = meetsSchedule()
 
@@ -64,33 +54,43 @@ class ScheduleCalendar(
         }
     }
 
-    internal fun getOngoingAlarm(alarms: List<AlarmRelation>?): OngoingAlarm? {
+    private fun getNextAlarmTime(alarms: List<AlarmRelation>): LocalDateTime? {
+        return alarms
+            .mapNotNull {
+                alarm = it.alarm
+                getNextOccurrence()
+            }.minOrNull()?.toLocalDateTime()
+    }
+
+    fun getOngoingAlarm(alarms: List<AlarmRelation>?): OngoingAlarm? {
+
         if (alarms.isNullOrEmpty()) {
             return null
         }
 
-        val nextAlarmTime: ZonedDateTime = alarms.minOf { nextAlarm ->
-            this.alarm = nextAlarm.alarm
-            getNextOccurrence()!!
-        }
+        val nextAlarmTime: LocalDateTime? = getNextAlarmTime(alarms)
 
-        return alarms.mapNotNull { relation ->
+        return try {
+            alarms.map { relation ->
 
-            alarm = relation.alarm
-            val previousTime: ZonedDateTime? = getPreviousOccurrence()
+                alarm = relation.alarm
 
-            if (previousTime != null) {
+                val previousAlarmTime: LocalDateTime? = getPreviousOccurrence()?.toLocalDateTime()
+                val profile: Profile? = if (isRecurring() || previousAlarmTime != null) {
+                    if (meetsSchedule) relation.startProfile else relation.endProfile
+                } else null
+
                 OngoingAlarm(
-                    if (meetsSchedule) relation.startProfile else relation.endProfile,
+                    profile,
                     nextAlarmTime,
-                    previousTime,
+                    previousAlarmTime,
                     relation.alarm
                 )
-            } else null
-        }.maxByOrNull {
-            it.from
-                .toInstant()
-                .toEpochMilli()
+            }.sortedByDescending {
+                it.from
+            }.first()
+        } catch (e: NoSuchElementException) {
+            null
         }
     }
 
@@ -144,14 +144,6 @@ class ScheduleCalendar(
             if (endTime <= now) endTime.plusDays(1) else endTime
         } else {
             alarm.endDateTime!!.atZone(alarm.zoneId)
-        }
-    }
-
-    private fun meetsScheduledHours(localTime: LocalTime, startTime: LocalTime, endTime: LocalTime): Boolean {
-        return if (startTime.isAfter(endTime)) {
-            !localTime.isBefore(startTime) || localTime.isBefore(endTime)
-        } else {
-            !localTime.isBefore(startTime) && localTime.isBefore(endTime)
         }
     }
 
@@ -247,12 +239,61 @@ class ScheduleCalendar(
 
     companion object {
 
-        fun meetsScheduledDate(now: LocalDateTime, startTime: LocalDateTime, endTime: LocalDateTime): Boolean {
-            return if (startTime.isAfter(endTime)) {
-                !now.isBefore(startTime) || now.isBefore(endTime)
-            } else {
-                !now.isBefore(startTime) && now.isBefore(endTime)
+        fun isValid(now: ZonedDateTime, alarm: Alarm): Boolean {
+            if (alarm.scheduledDays != WeekDay.NONE) {
+                return true
             }
+            return now
+                .toLocalDateTime()
+                .isBefore(alarm.endDateTime)
+        }
+
+        private fun meetsScheduledHours(localTime: LocalTime, startTime: LocalTime, endTime: LocalTime): Boolean {
+            return if (startTime >= endTime) {
+                !localTime.isBefore(startTime) || localTime.isBefore(endTime)
+            } else {
+                !localTime.isBefore(startTime) && localTime.isBefore(endTime)
+            }
+        }
+
+        fun getStartAndEndDate(startTime: LocalTime, endTime: LocalTime, scheduleForNextDay: Boolean = false): Pair<LocalDateTime, LocalDateTime> {
+
+            val now: LocalDateTime = LocalDateTime.now()
+
+            var start: LocalDateTime = now
+                .withHour(startTime.hour)
+                .withMinute(startTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+            var end: LocalDateTime = now
+                .withHour(endTime.hour)
+                .withMinute(endTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+            if (scheduleForNextDay) {
+                if (now >= start) {
+                    start = start.plusDays(1)
+                }
+                while (start >= end) {
+                    end = end.plusDays(1)
+                }
+                return Pair(start, end)
+            }
+            if (!meetsScheduledHours(now.toLocalTime(), startTime, endTime)) {
+
+                if (now >= start) {
+                    start = start.plusDays(1)
+                }
+                if (now >= end) {
+                    end = end.plusDays(1)
+                }
+
+            } else if (start >= end) {
+                end = end.plusDays(1)
+            }
+            return Pair(start, end)
         }
     }
 }

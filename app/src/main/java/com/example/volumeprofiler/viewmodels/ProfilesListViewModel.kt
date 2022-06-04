@@ -32,7 +32,6 @@ class ProfilesListViewModel @Inject constructor(
 
     private val viewEventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val viewEventFlow: Flow<ViewEvent> = viewEventChannel.receiveAsFlow()
-
     val profilesFlow: Flow<List<Profile>> = profileRepository.observeProfiles()
 
     var lastSelected: UUID? = null
@@ -45,35 +44,17 @@ class ProfilesListViewModel @Inject constructor(
         }
     }
 
-    fun addProfile(profile: Profile) {
-        viewModelScope.launch {
-            profileRepository.addProfile(profile)
-        }
-    }
-
-    fun updateProfile(profile: Profile) {
-        viewModelScope.launch {
-            profileRepository.updateProfile(profile)
-        }
-    }
-
     fun removeProfile(profile: Profile) {
         viewModelScope.launch {
             val enabledAlarms: List<AlarmRelation> = alarmRepository.getEnabledAlarms() ?: listOf()
-            launch {
-                viewEventChannel.send(ViewEvent.ProfileRemoveViewEvent(profile, enabledAlarms))
-            }
-            launch {
-                viewEventChannel.send(ViewEvent.CancelAlarmsViewEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
-            }
-            launch {
-                viewEventChannel.send(ViewEvent.RemoveGeofencesViewEvent(locationRepository.getLocationsByProfileId(profile.id)))
-            }
+            viewEventChannel.send(ViewEvent.ProfileRemoveViewEvent(profile, enabledAlarms))
+            viewEventChannel.send(ViewEvent.CancelAlarmsViewEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
+            viewEventChannel.send(ViewEvent.RemoveGeofencesViewEvent(locationRepository.getLocationsByProfileId(profile.id)))
             profileRepository.removeProfile(profile)
         }
     }
 
-    override fun onCleared(): Unit {
+    override fun onCleared() {
         super.onCleared()
         viewEventChannel.cancel()
     }
