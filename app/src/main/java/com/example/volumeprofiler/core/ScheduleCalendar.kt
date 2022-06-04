@@ -69,7 +69,6 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         }
 
         val nextAlarmTime: LocalDateTime? = getNextAlarmTime(alarms)
-
         return try {
             alarms.map { relation ->
 
@@ -78,13 +77,15 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 val previousAlarmTime: LocalDateTime? = getPreviousOccurrence()?.toLocalDateTime()
                 val profile: Profile? = if (isRecurring() || previousAlarmTime != null) {
                     if (meetsSchedule) relation.startProfile else relation.endProfile
-                } else null
+                } else {
+                    null
+                }
 
                 OngoingAlarm(
                     profile,
                     nextAlarmTime,
                     previousAlarmTime,
-                    relation.alarm
+                    relation
                 )
             }.sortedByDescending {
                 it.from

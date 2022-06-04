@@ -68,24 +68,32 @@ class AlarmReceiver: BroadcastReceiver() {
             }
         }
 
-        val profile: Profile = if (scheduleManager.meetsSchedule()) startProfile else endProfile
-        val nextAlarm: OngoingAlarm? = getNextAlarm()
-        val triggerType: Int = if (nextAlarm != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL
-        val trigger: Alarm? = if (triggerType == TRIGGER_TYPE_ALARM) alarm else null
+        val profile: Profile = getProfile(alarm, startProfile, endProfile)
+        val ongoingAlarm: OngoingAlarm? = getOngoingAlarm()
 
-        profileManager.setProfile<Alarm?>(profile, triggerType, trigger)
-        notificationDelegate.updateNotification(profile, nextAlarm)
+        profileManager.setProfile<Alarm?>(
+            profile,
+            if (ongoingAlarm != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL,
+            if (ongoingAlarm != null) alarm else null
+        )
+        notificationDelegate.updateNotification(profile, ongoingAlarm)
     }
 
-    private suspend fun cancelAlarm(alarm: Alarm) {
-        withContext(Dispatchers.IO) {
-            alarmRepository.updateAlarm(alarm.apply {
-                isScheduled = false
-            })
+    private fun getProfile(alarm: Alarm, startProfile: Profile, endProfile: Profile): Profile {
+        return if (scheduleManager.meetsSchedule() && scheduleManager.isAlarmValid(alarm)) {
+            startProfile
+        } else {
+            endProfile
         }
     }
 
-    private suspend fun getNextAlarm(): OngoingAlarm? {
+    private suspend fun cancelAlarm(alarm: Alarm) {
+        alarmRepository.updateAlarm(alarm.apply {
+            isScheduled = false
+        })
+    }
+
+    private suspend fun getOngoingAlarm(): OngoingAlarm? {
         alarmRepository.getEnabledAlarms()?.let { enabledAlarms ->
             return scheduleManager.getOngoingAlarm(enabledAlarms)
         }

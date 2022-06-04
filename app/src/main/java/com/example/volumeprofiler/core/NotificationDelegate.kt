@@ -78,27 +78,35 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         return PendingIntent.getActivity(context, REQUEST_LAUNCH_APPLICATION_DETAILS_SETTINGS, intent, PendingIntent.FLAG_IMMUTABLE)
     }
 
-    fun updateNotification(profile: Profile, ongoingAlarm: OngoingAlarm?) {
-        when (preferencesManager.getTriggerType()) {
-            TRIGGER_TYPE_GEOFENCE_ENTER -> {
-                postGeofenceEnterNotification(profile.title, preferencesManager.getTrigger<Location>().title)
+    fun updateNotification(profile: Profile?, ongoingAlarm: OngoingAlarm?) {
+        if (profile != null) {
+            when (preferencesManager.getTriggerType()) {
+                TRIGGER_TYPE_GEOFENCE_ENTER -> {
+                    postGeofenceEnterNotification(profile.title, preferencesManager.getTrigger<Location>().title)
+                }
+                TRIGGER_TYPE_GEOFENCE_EXIT -> {
+                    postGeofenceExitNotification(profile.title, preferencesManager.getTrigger<Location>().title)
+                }
+                TRIGGER_TYPE_MANUAL -> {
+                    postProfileNotification(
+                        profileTitle = profile.title,
+                        iconRes = profile.iconRes,
+                        ongoingAlarm = ongoingAlarm)
+                }
+                TRIGGER_TYPE_ALARM -> {
+                    postProfileNotification(
+                        profileTitle = profile.title,
+                        alarmTitle = preferencesManager.getTrigger<Alarm>().title,
+                        iconRes = profile.iconRes,
+                        ongoingAlarm = ongoingAlarm
+                    )
+                }
             }
-            TRIGGER_TYPE_GEOFENCE_EXIT -> {
-                postGeofenceExitNotification(profile.title, preferencesManager.getTrigger<Location>().title)
-            }
-            TRIGGER_TYPE_MANUAL -> {
-                postCurrentProfileNotification(
-                    profileTitle = profile.title,
-                    iconRes = profile.iconRes,
-                    ongoingAlarm = ongoingAlarm)
-            }
-            TRIGGER_TYPE_ALARM -> {
-                postCurrentProfileNotification(
-                    profileTitle = profile.title,
-                    alarmTitle = preferencesManager.getTrigger<Alarm>().title,
-                    iconRes = profile.iconRes,
-                    ongoingAlarm = ongoingAlarm
-                )
+        } else {
+            ongoingAlarm?.let { ongoingAlarm ->
+                ongoingAlarm.relation.startProfile.also { profile ->
+                    postNextProfileNotification(profile, ongoingAlarm)
+                }
             }
         }
     }
@@ -195,7 +203,27 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         notificationManager.notify(ID_PROFILE, builder.build())
     }
 
-    private fun postCurrentProfileNotification(
+    private fun postNextProfileNotification(
+        profile: Profile,
+        ongoingAlarm: OngoingAlarm
+    ) {
+        val contentText = "next profile is '${profile.title}' set for ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until!!)}"
+        val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(profile.title)
+            .setContentText(contentText)
+            .setSmallIcon(profile.iconRes)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel(
+                PROFILE_NOTIFICATION_CHANNEL_ID,
+                PROFILE_NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW).also {
+                builder.setChannelId(it.id)
+            }
+        }
+        notificationManager.notify(ID_PROFILE, builder.build())
+    }
+
+    private fun postProfileNotification(
         profileTitle: String,
         alarmTitle: String? = null,
         iconRes: Int,

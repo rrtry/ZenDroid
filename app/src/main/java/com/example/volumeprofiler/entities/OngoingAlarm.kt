@@ -6,5 +6,5 @@ data class OngoingAlarm(
     val profile: Profile?,
     val until: LocalDateTime?,
     val from: LocalDateTime?,
-    val alarm: Alarm
+    val relation: AlarmRelation
 )

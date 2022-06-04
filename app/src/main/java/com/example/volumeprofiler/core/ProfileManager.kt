@@ -87,21 +87,24 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
 
         val ongoingAlarm: OngoingAlarm? = scheduleManager.getOngoingAlarm(alarms)
+        val alarm: Alarm? = ongoingAlarm?.relation?.alarm
 
-        if (ongoingAlarm != null) {
-            if (scheduleManager.hasPreviouslyFired(ongoingAlarm.alarm)) {
-                if (scheduleManager.isAlarmValid(ongoingAlarm.alarm)) {
-                    setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_ALARM, ongoingAlarm.alarm)
+        if (alarm != null) {
+
+            if (scheduleManager.hasPreviouslyFired(alarm)) {
+
+                if (scheduleManager.isAlarmValid(alarm)) {
+                    setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_ALARM, alarm)
                 } else {
                     setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_MANUAL, null)
                 }
                 notificationDelegate.updateNotification(ongoingAlarm.profile, ongoingAlarm)
             } else {
-                notificationDelegate.updateNotification(preferencesManager.getProfile()!!, ongoingAlarm)
+                notificationDelegate.updateNotification(preferencesManager.getProfile(), ongoingAlarm)
             }
         } else {
-            preferencesManager.getProfile().let { currentProfile ->
-                setProfile(currentProfile!!, TRIGGER_TYPE_MANUAL, null)
+            preferencesManager.getProfile()?.let { currentProfile ->
+                setProfile(currentProfile, TRIGGER_TYPE_MANUAL, null)
                 notificationDelegate.updateNotification(currentProfile, null)
             }
         }
