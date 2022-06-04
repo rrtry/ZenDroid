@@ -14,7 +14,6 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -81,13 +80,26 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
 
     fun updateNotification(profile: Profile, ongoingAlarm: OngoingAlarm?) {
         when (preferencesManager.getTriggerType()) {
-            TRIGGER_TYPE_GEOFENCE_ENTER -> postGeofenceEnterNotification(profile.title, preferencesManager.getTrigger<Location>().title)
-            TRIGGER_TYPE_GEOFENCE_EXIT -> postGeofenceExitNotification(profile.title, preferencesManager.getTrigger<Location>().title)
-            TRIGGER_TYPE_MANUAL -> postCurrentProfileNotification(profile.title, profile.iconRes, ongoingAlarm)
-            TRIGGER_TYPE_ALARM -> postCurrentProfileNotification(
-                preferencesManager.getTrigger<Alarm>().title,
-                profile.iconRes, ongoingAlarm!!
-            )
+            TRIGGER_TYPE_GEOFENCE_ENTER -> {
+                postGeofenceEnterNotification(profile.title, preferencesManager.getTrigger<Location>().title)
+            }
+            TRIGGER_TYPE_GEOFENCE_EXIT -> {
+                postGeofenceExitNotification(profile.title, preferencesManager.getTrigger<Location>().title)
+            }
+            TRIGGER_TYPE_MANUAL -> {
+                postCurrentProfileNotification(
+                    profileTitle = profile.title,
+                    iconRes = profile.iconRes,
+                    ongoingAlarm = ongoingAlarm)
+            }
+            TRIGGER_TYPE_ALARM -> {
+                postCurrentProfileNotification(
+                    profileTitle = profile.title,
+                    alarmTitle = preferencesManager.getTrigger<Alarm>().title,
+                    iconRes = profile.iconRes,
+                    ongoingAlarm = ongoingAlarm
+                )
+            }
         }
     }
 
@@ -183,19 +195,20 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         notificationManager.notify(ID_PROFILE, builder.build())
     }
 
-    fun postCurrentProfileNotification(
-        contentTitle: String,
+    private fun postCurrentProfileNotification(
+        profileTitle: String,
+        alarmTitle: String? = null,
         iconRes: Int,
         ongoingAlarm: OngoingAlarm?
     ) {
         val until: LocalTime? = ongoingAlarm?.until?.toLocalTime()
         val contentText: String = if (until == null) {
-            "'$contentTitle' will stay until you turn it off"
+            "'$profileTitle' will stay until you turn it off"
         } else {
-            "'$contentTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until)}"
+            "'$profileTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until)}"
         }
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(contentTitle)
+            .setContentTitle(alarmTitle ?: profileTitle)
             .setContentText(contentText)
             .setSmallIcon(iconRes)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
