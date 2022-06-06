@@ -14,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+import android.service.notification.ZenPolicy
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -255,6 +256,7 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         return NotificationChannel(
             channelId, channelName, importance
         ).also { channel ->
+            channel.setBypassDnd(true)
             channel.setShowBadge(false)
             notificationManager.createNotificationChannel(channel)
         }

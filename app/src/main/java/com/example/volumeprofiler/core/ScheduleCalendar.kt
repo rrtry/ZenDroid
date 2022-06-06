@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.core
 
+import android.util.Log
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.OngoingAlarm
@@ -80,7 +81,6 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 } else {
                     null
                 }
-
                 OngoingAlarm(
                     profile,
                     nextAlarmTime,
@@ -128,9 +128,9 @@ class ScheduleCalendar(var now: ZonedDateTime) {
 
             if (isOvernight) instanceStartTime.minusDays(1) else instanceStartTime
 
-        } else if (isValid()) {
-            alarm.startDateTime!!.atZone(alarm.zoneId)
-        } else null
+        } else {
+            alarm.startDateTime!!.atZone(alarm.zoneId) // removed useless isValid() check
+        }
     }
 
     private fun getNextEndTime(): ZonedDateTime {
@@ -187,17 +187,19 @@ class ScheduleCalendar(var now: ZonedDateTime) {
     private fun getPreviousWeekDay(): DayOfWeek {
 
         var previousDay: DayOfWeek = now.dayOfWeek
+        val isOvernight: Boolean = alarm.startTime >= alarm.endTime
 
-        while (true) {
-
+        if (isDayInSchedule(alarm.scheduledDays, previousDay) &&
+            alarm.startTime > now.toLocalTime())
+        {
             previousDay -= 1
+        }
 
-            if (isDayInSchedule(alarm.scheduledDays, previousDay)) {
-                if (alarm.startTime >= alarm.endTime) {
-                    previousDay += 1
-                }
-                break
-            }
+        while (!isDayInSchedule(alarm.scheduledDays, previousDay)) {
+            previousDay -= 1
+        }
+        if (isOvernight) {
+            previousDay += 1
         }
         return previousDay
     }
@@ -282,15 +284,14 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 }
                 return Pair(start, end)
             }
-            if (!meetsScheduledHours(now.toLocalTime(), startTime, endTime)) {
 
+            if (!meetsScheduledHours(now.toLocalTime(), startTime, endTime)) {
                 if (now >= start) {
                     start = start.plusDays(1)
                 }
                 if (now >= end) {
                     end = end.plusDays(1)
                 }
-
             } else if (start >= end) {
                 end = end.plusDays(1)
             }

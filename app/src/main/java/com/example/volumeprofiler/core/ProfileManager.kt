@@ -92,7 +92,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         if (alarm != null) {
 
             if (scheduleManager.hasPreviouslyFired(alarm)) {
-
                 if (scheduleManager.isAlarmValid(alarm)) {
                     setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_ALARM, alarm)
                 } else {
@@ -185,26 +184,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
                 (priorityCategories and PRIORITY_CATEGORY_CALLS) != 0)
 
         return streamsUnlinked && (callsPrioritized || interruptionFilter == INTERRUPTION_FILTER_ALL)
-    }
-
-    private fun isVolumeValid(streamType: Int, index: Int): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            return index >= audioManager.getStreamMinVolume(streamType)
-        }
-        if (streamType == STREAM_ALARM || streamType == STREAM_VOICE_CALL) {
-            return index >= 1
-        }
-        return index >= 0
-    }
-
-    fun getStreamMinVolume(streamType: Int): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            return audioManager.getStreamMinVolume(streamType)
-        }
-        if (streamType == STREAM_ALARM || streamType == STREAM_VOICE_CALL) {
-            return 1
-        }
-        return 0
     }
 
     fun isNotificationPolicyAccessGranted(): Boolean {

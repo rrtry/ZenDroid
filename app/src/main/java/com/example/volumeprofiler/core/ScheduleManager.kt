@@ -7,6 +7,7 @@ import android.app.PendingIntent.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import com.example.volumeprofiler.Application.Companion.ACTION_ALARM
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.receivers.AlarmReceiver

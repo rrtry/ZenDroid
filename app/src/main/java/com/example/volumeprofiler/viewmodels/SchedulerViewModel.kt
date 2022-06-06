@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.*
 import com.example.volumeprofiler.core.ScheduleCalendar
 import com.example.volumeprofiler.core.WeekDay
@@ -12,7 +11,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import javax.inject.Inject
 
@@ -35,9 +33,7 @@ class SchedulerViewModel @Inject constructor(
 
     fun scheduleAlarm(relation: AlarmRelation) {
         viewModelScope.launch {
-            if (relation.alarm.scheduledDays == WeekDay.NONE &&
-                !ScheduleCalendar.isValid(ZonedDateTime.now(), relation.alarm))
-            {
+            if (!ScheduleCalendar.isValid(ZonedDateTime.now(), relation.alarm)) {
                 ScheduleCalendar.getStartAndEndDate(relation.alarm.startTime, relation.alarm.endTime).let { date ->
                     relation.alarm = relation.alarm.apply {
                         startDateTime = date.first
