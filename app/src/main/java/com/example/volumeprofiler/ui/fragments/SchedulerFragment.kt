@@ -1,15 +1,8 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.Intent.ACTION_LOCALE_CHANGED
-import android.content.IntentFilter
-import android.database.ContentObserver
-import android.net.Uri
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.os.*
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
 import android.view.*

@@ -1,11 +1,8 @@
 package com.example.volumeprofiler.ui.activities
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Bundle
-import android.os.UserHandle
 import android.transition.Fade
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -13,7 +10,6 @@ import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment

@@ -90,7 +90,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         val alarm: Alarm? = ongoingAlarm?.relation?.alarm
 
         if (alarm != null) {
-
             if (scheduleManager.hasPreviouslyFired(alarm)) {
                 if (scheduleManager.isAlarmValid(alarm)) {
                     setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_ALARM, alarm)
