@@ -194,7 +194,6 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         {
             previousDay -= 1
         }
-
         while (!isDayInSchedule(alarm.scheduledDays, previousDay)) {
             previousDay -= 1
         }
@@ -223,11 +222,8 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         if (inclusive && isDayInSchedule(alarm.scheduledDays, nextDay)) {
             return nextDay
         }
-        while (true) {
+        while (!isDayInSchedule(alarm.scheduledDays, nextDay)) {
             nextDay += 1
-            if (isDayInSchedule(alarm.scheduledDays, nextDay)) {
-                break
-            }
         }
         return nextDay
     }
