@@ -18,7 +18,6 @@ import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
 import com.example.volumeprofiler.core.*
-import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.TAG_PROFILE_FRAGMENT
 import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.LocationRelation
@@ -73,7 +72,7 @@ class ProfileDetailsViewModel @Inject constructor(
         data class ResumeRingtonePlayback(val streamType: Int, val position: Int): ViewEvent()
 
         data class ShowDialogFragment(val dialogType: DialogType): ViewEvent()
-        data class ChangeRingerMode(val streamType: Int, val showToast: Boolean, val vibrate: Boolean): ViewEvent()
+        data class ChangeRingerMode(val streamType: Int, val showSnackbar: Boolean, val vibrate: Boolean): ViewEvent()
         data class GetDefaultRingtoneUri(val type: Int): ViewEvent()
         data class ChangeRingtoneEvent(val ringtoneType: Int): ViewEvent()
         data class ShowPopupWindow(val category: Int): ViewEvent()
@@ -352,6 +351,13 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
+    fun stopPlayback() {
+        setPlaybackState(
+            getPlayingRingtone(),
+            false
+        )
+    }
+
     fun setPlaybackState(streamType: Int, playing: Boolean) {
         when (streamType) {
             STREAM_MUSIC -> musicRingtonePlaying.value = playing
@@ -477,15 +483,34 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
+    private fun restoreRingerMode(initialValue: Int = 4) {
+        ringVolume.value = initialValue
+        ringerMode.value = RINGER_MODE_NORMAL
+    }
+
+    private fun silenceRinger() {
+        ringVolume.value = 0
+        ringerMode.value = RINGER_MODE_SILENT
+        onStopRingtonePlayback(STREAM_RING)
+    }
+
+    private fun restoreNotificationMode(initialValue: Int) {
+        notificationVolume.value = initialValue
+        notificationMode.value = RINGER_MODE_NORMAL
+    }
+
+    private fun silenceNotifications() {
+        notificationVolume.value = 0
+        notificationMode.value = RINGER_MODE_SILENT
+        onStopRingtonePlayback(STREAM_NOTIFICATION)
+    }
+
     fun onRingerIconClick() {
         if (ringerStreamAllowed()) {
             if (ringerMode.value == RINGER_MODE_SILENT) {
-                ringVolume.value = 4
-                ringerMode.value = RINGER_MODE_NORMAL
+                restoreRingerMode(4)
             } else {
-                ringVolume.value = 0
-                ringerMode.value = RINGER_MODE_SILENT
-                onStopRingtonePlayback(STREAM_RING)
+                silenceRinger()
             }
         }
     }
@@ -493,12 +518,9 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onNotificationIconClick() {
         if (notificationsStreamAllowed()) {
             if (notificationMode.value == RINGER_MODE_SILENT) {
-                notificationVolume.value = 4
-                notificationMode.value = RINGER_MODE_NORMAL
+                restoreNotificationMode(4)
             } else {
-                notificationVolume.value = 0
-                notificationMode.value = RINGER_MODE_SILENT
-                onStopRingtonePlayback(STREAM_NOTIFICATION)
+                silenceNotifications()
             }
         }
     }
@@ -513,32 +535,30 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun onStreamMuted(streamType: Int, showToast: Boolean, vibrate: Boolean) {
-        when (streamType) {
-            STREAM_NOTIFICATION -> notificationVolume.value = 0
-            STREAM_RING -> ringVolume.value = 0
-        }
+    private fun onStreamMuted(streamType: Int, showSnackbar: Boolean, vibrate: Boolean) {
         viewModelScope.launch {
-            fragmentChannel.send(ViewEvent.ChangeRingerMode(streamType, showToast, vibrate))
-            onStopRingtonePlayback(getPlayingRingtone())
+            if (streamType == STREAM_NOTIFICATION) {
+                notificationVolume.value = 0
+            } else if (streamType == STREAM_RING) {
+                ringVolume.value = 0
+            }
+            fragmentChannel.send(ViewEvent.ChangeRingerMode(streamType, showSnackbar, vibrate))
+            onStopRingtonePlayback(streamType)
         }
     }
 
     fun onAlertStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int) {
-        if (fromUser) {
-            when {
-                value == 0 -> onStreamMuted(streamType, false, true)
-                streamType == STREAM_NOTIFICATION -> {
-                    notificationVolume.value = value
-                    notificationMode.value = RINGER_MODE_NORMAL
+        viewModelScope.launch {
+            if (fromUser) {
+                val isMute: Boolean = value == 0
+                when {
+                    isMute -> onStreamMuted(streamType, true, true)
+                    streamType == STREAM_NOTIFICATION -> restoreNotificationMode(value)
+                    streamType == STREAM_RING -> restoreRingerMode(value)
                 }
-                streamType == STREAM_RING -> {
-                    ringVolume.value = value
-                    ringerMode.value = RINGER_MODE_NORMAL
+                if (!isMute) {
+                    fragmentChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
                 }
-            }
-            viewModelScope.launch {
-                fragmentChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
             }
         }
     }

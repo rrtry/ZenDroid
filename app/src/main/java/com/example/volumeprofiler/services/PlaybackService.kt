@@ -32,12 +32,8 @@ class PlaybackService: Service() {
     private set
 
     private var streamVolume: Int = 3
-
-    internal var mediaUri: Uri = Uri.EMPTY
-    private set
-
-    internal var streamType: Int = STREAM_MUSIC
-    private set
+    private var mediaUri: Uri = Uri.EMPTY
+    private var streamType: Int = STREAM_MUSIC
 
     override fun onBind(intent: Intent?): IBinder {
         return LocalBinder(
@@ -79,27 +75,17 @@ class PlaybackService: Service() {
         mediaPlayer?.setOnCompletionListener(listener)
     }
 
-    fun start(listener: MediaPlayer.OnCompletionListener, mediaUri: Uri, streamType: Int, streamVolume: Int): Unit {
-        prepareMediaPlayer(listener, mediaUri, streamType, streamVolume)
+    fun start(listener: MediaPlayer.OnCompletionListener, mediaUri: Uri, streamType: Int, streamVolume: Int) {
         profileManager.setStreamVolume(streamType, streamVolume, 0)
+        prepareMediaPlayer(listener, mediaUri, streamType, streamVolume)
         mediaPlayer?.start()
     }
 
-    fun release(streamType: Int): Unit {
-        mediaPlayer?.let {
-            it.stop()
-            it.release()
-        }
-        mediaPlayer = null
-    }
-
-    fun resume(listener: MediaPlayer.OnCompletionListener, uri: Uri, streamType: Int, streamVolume: Int, position: Int): Unit {
-        prepareMediaPlayer(listener, uri, streamType, streamVolume)
+    fun resume(listener: MediaPlayer.OnCompletionListener, uri: Uri, streamType: Int, streamVolume: Int, position: Int) {
         profileManager.setStreamVolume(streamType, streamVolume, 0)
-        mediaPlayer?.let {
-            it.seekTo(position)
-            it.start()
-        }
+        prepareMediaPlayer(listener, uri, streamType, streamVolume)
+        mediaPlayer?.seekTo(position)
+        mediaPlayer?.start()
     }
 
     fun getCurrentPosition(): Int {
@@ -116,11 +102,9 @@ class PlaybackService: Service() {
         return false
     }
 
-    private fun release(): Unit {
-        mediaPlayer?.let {
-            it.stop()
-            it.release()
-        }
+    fun release() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
         mediaPlayer = null
     }
 }

@@ -16,7 +16,6 @@ import com.example.volumeprofiler.databinding.CreateProfileFragmentBinding
 import com.example.volumeprofiler.entities.Profile
 import android.app.NotificationManager.*
 import android.content.*
-import android.content.Context.VIBRATOR_MANAGER_SERVICE
 import android.content.Context.VIBRATOR_SERVICE
 import android.media.*
 import android.media.AudioManager.*
@@ -97,13 +96,9 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    override fun onCompletion(mp: MediaPlayer?) {
-        mediaService?.release(viewModel.currentStreamType)
-        viewModel.setPlaybackState(viewModel.currentStreamType, false)
-    }
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
+        registerNotificationPolicyChangeReceiver()
         registerForRingtonePickerResult()
         registerForNotificationPolicyResult()
         registerForPhonePermissionResult()
@@ -126,70 +121,88 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
 
     override fun onStart() {
         super.onStart()
-        activity?.let {
+        requireActivity().also {
             Intent(it, PlaybackService::class.java).also { intent ->
                 it.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
             }
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        setNotificationPolicyAccessProperty()
+        setCanWriteSettingsProperty()
+        setPhonePermissionProperty()
+    }
+
     override fun onStop() {
         super.onStop()
-        requireContext().unregisterReceiver(notificationPolicyReceiver)
-        mediaService?.let {
-            viewModel.currentMediaUri = it.mediaUri
-            viewModel.currentStreamType = it.streamType
-            viewModel.playerPosition = it.getCurrentPosition()
+        if (requireActivity().isChangingConfigurations &&
+            viewModel.isMediaPlaying())
+        {
+            viewModel.playerPosition = mediaService?.getCurrentPosition() ?: 0
+            viewModel.resumePlayback = true
         }
-        activity?.let {
-            viewModel.resumePlayback = it.isChangingConfigurations && viewModel.isMediaPlaying()
-            it.unbindService(serviceConnection)
-        }
-        viewModel.setPlaybackState(
-            viewModel.getPlayingRingtone(),
-            false
-        )
+        viewModel.stopPlayback()
+        requireActivity().unbindService(serviceConnection)
         mediaService = null
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        bindingImpl = null
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callbacks = null
+        unregisterNotificationPolicyChangeReceiver()
+        ringtoneActivityLauncher.unregister()
+        notificationPolicyLauncher.unregister()
+        systemPreferencesLauncher.unregister()
+        phonePermissionLauncher.unregister()
+    }
+
+    override fun onCompletion(mp: MediaPlayer?) {
+        mediaService?.release()
+        viewModel.setPlaybackState(viewModel.currentStreamType, false)
     }
 
     private fun onResumeRingtonePlayback(event: ResumeRingtonePlayback) {
         viewModel.currentMediaUri?.let { uri ->
+
             mediaService?.resume(
                 this@ProfileDetailsFragment,
                 uri,
                 viewModel.currentStreamType,
                 viewModel.getStreamVolume(viewModel.currentStreamType),
                 event.position)
+
+            viewModel.setPlaybackState(viewModel.currentStreamType, true)
         }
-        viewModel.setPlaybackState(viewModel.currentStreamType, true)
     }
 
     private fun onStopRingtonePlayback(event: StopRingtonePlayback) {
-        mediaService?.release(event.streamType)
+        mediaService?.release()
         viewModel.setPlaybackState(event.streamType, false)
     }
 
     private fun onStartRingtonePlayback(event: StartRingtonePlayback) {
-        if (viewModel.getStreamVolume(event.streamType) > 0) {
-
-            val ringtoneMap: Map<Int, Int> = mapOf(
-                STREAM_ALARM to TYPE_ALARM,
-                STREAM_NOTIFICATION to TYPE_NOTIFICATION,
-                STREAM_RING to TYPE_RINGTONE,
-                STREAM_MUSIC to TYPE_RINGTONE,
-                STREAM_VOICE_CALL to TYPE_RINGTONE
-            )
+        val vol: Int = viewModel.getStreamVolume(event.streamType)
+        if (vol > 0) {
 
             viewModel.currentMediaUri = viewModel.getRingtoneUri(ringtoneMap[event.streamType]!!)
             viewModel.currentStreamType = event.streamType
             viewModel.currentMediaUri?.let { uri ->
+
                 mediaService?.start(
                     this@ProfileDetailsFragment,
                     uri,
                     event.streamType,
                     viewModel.getStreamVolume(event.streamType))
+
+                viewModel.setPlaybackState(event.streamType, true)
             }
-            viewModel.setPlaybackState(event.streamType, true)
         }
     }
 
@@ -197,6 +210,9 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         updateRingerMode(event.streamType)
         if (event.vibrate) {
             createVibrationEffect()
+        }
+        if (event.showSnackbar) {
+            // TODO: implement
         }
     }
 
@@ -206,9 +222,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
             viewModel.ringVolume.value = 0
             viewModel.ringerMode.value = RINGER_MODE_SILENT
 
-            if (viewModel.currentStreamType == STREAM_RING) {
-                viewModel.onPlayRingtoneButtonClick(STREAM_RING)
-            }
+            viewModel.onStopRingtonePlayback(STREAM_RING)
         }
     }
 
@@ -218,20 +232,18 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
             viewModel.notificationVolume.value = 0
             viewModel.notificationMode.value = RINGER_MODE_SILENT
 
-            if (viewModel.currentStreamType == STREAM_NOTIFICATION) {
-                viewModel.onStopRingtonePlayback(STREAM_NOTIFICATION)
-            }
+            viewModel.onStopRingtonePlayback(STREAM_NOTIFICATION)
         }
     }
 
     private fun onMediaDisallowed(policyAllowsStream: Boolean) {
-        if (!policyAllowsStream && viewModel.currentStreamType == STREAM_MUSIC) {
+        if (!policyAllowsStream) {
             viewModel.onStopRingtonePlayback(STREAM_MUSIC)
         }
     }
 
     private fun onAlarmsDisallowed(policyAllowsStream: Boolean) {
-        if (!policyAllowsStream && viewModel.currentStreamType == STREAM_ALARM) {
+        if (!policyAllowsStream) {
             viewModel.onStopRingtonePlayback(STREAM_ALARM)
         }
     }
@@ -292,34 +304,12 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        requireContext().registerReceiver(
-            notificationPolicyReceiver, IntentFilter(ACTION_NOTIFICATION_POLICY_CHANGED)
-        )
-        setNotificationPolicyProperty()
-        setCanWriteSettingsProperty()
-        setPhonePermissionProperty()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        bindingImpl = null
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        callbacks = null
-        ringtoneActivityLauncher.unregister()
-        notificationPolicyLauncher.unregister()
-        systemPreferencesLauncher.unregister()
-        phonePermissionLauncher.unregister()
-    }
-
     private fun startSystemSettingsActivity() {
         systemPreferencesLauncher.launch(
-            Intent(ACTION_MANAGE_WRITE_SETTINGS,
-                Uri.parse("package:${requireContext().packageName}"))
+            Intent(
+                ACTION_MANAGE_WRITE_SETTINGS,
+                Uri.parse("package:${requireContext().packageName}")
+            )
         )
     }
 
@@ -338,16 +328,27 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         notificationPolicyLauncher.launch(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
     }
 
+    private fun setNotificationPolicyAccessProperty() {
+        viewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
+    }
+
     private fun setPhonePermissionProperty() {
         viewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
     }
 
-    private fun setNotificationPolicyProperty() {
-        viewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
-    }
-
     private fun setCanWriteSettingsProperty() {
         viewModel.canWriteSettings.value = canWrite(requireContext())
+    }
+
+    private fun registerNotificationPolicyChangeReceiver() {
+        requireActivity().registerReceiver(
+            notificationPolicyReceiver,
+            IntentFilter(ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED)
+        )
+    }
+
+    private fun unregisterNotificationPolicyChangeReceiver() {
+        requireActivity().unregisterReceiver(notificationPolicyReceiver)
     }
 
     private fun registerForSystemSettingsResult() {
@@ -432,9 +433,10 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     }
 
     private fun updateRingerMode(streamType: Int, mode: Int) {
-        when (streamType) {
-            STREAM_NOTIFICATION -> viewModel.notificationMode.value = mode
-            STREAM_RING -> viewModel.ringerMode.value = mode
+        if (streamType == STREAM_NOTIFICATION) {
+            viewModel.notificationMode.value = mode
+        } else if (streamType == STREAM_RING) {
+            viewModel.ringerMode.value = mode
         }
     }
 
@@ -493,6 +495,13 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     companion object {
 
         private const val EXTRA_PROFILE = "profile"
+        private val ringtoneMap: Map<Int, Int> = mapOf(
+            STREAM_ALARM to TYPE_ALARM,
+            STREAM_NOTIFICATION to TYPE_NOTIFICATION,
+            STREAM_RING to TYPE_RINGTONE,
+            STREAM_MUSIC to TYPE_RINGTONE,
+            STREAM_VOICE_CALL to TYPE_RINGTONE
+        )
 
         fun newInstance(profile: Profile?): ProfileDetailsFragment {
             val args: Bundle = Bundle()
