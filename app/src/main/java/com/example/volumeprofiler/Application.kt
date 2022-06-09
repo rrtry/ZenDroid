@@ -1,6 +1,7 @@
 package com.example.volumeprofiler
 
 import android.app.Application
+import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver

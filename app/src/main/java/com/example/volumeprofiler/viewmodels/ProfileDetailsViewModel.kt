@@ -117,13 +117,13 @@ class ProfileDetailsViewModel @Inject constructor(
     val alarmSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
 
     val phoneRingtoneTitle: StateFlow<String> = phoneRingtoneUri.map { uri ->  contentUtil.getRingtoneTitle(uri, TYPE_RINGTONE) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "Unknown")
+        .stateIn(viewModelScope, WhileSubscribed(1000), "Not set")
 
     val notificationRingtoneTitle: StateFlow<String> = notificationSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "Unknown")
+        .stateIn(viewModelScope, WhileSubscribed(1000), "Not set")
 
     val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "Unknown")
+        .stateIn(viewModelScope, WhileSubscribed(1000), "Not set")
 
     val alarmRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -272,6 +272,30 @@ class ProfileDetailsViewModel @Inject constructor(
 
     private fun setProfileUUID(uuid : UUID) {
         profileUUID.value = uuid
+    }
+
+    fun setNotificationSoundUri(uri: Uri?) {
+        uri?.let {
+            if (notificationSoundUri.value == Uri.EMPTY) {
+                notificationSoundUri.value = uri
+            }
+        }
+    }
+
+    fun setAlarmSoundUri(uri: Uri?) {
+        uri?.let {
+            if (alarmSoundUri.value == Uri.EMPTY) {
+                alarmSoundUri.value = uri
+            }
+        }
+    }
+
+    fun setPhoneSoundUri(uri: Uri?) {
+        uri?.let {
+            if (phoneRingtoneUri.value == Uri.EMPTY) {
+                phoneRingtoneUri.value = uri
+            }
+        }
     }
 
     fun onSaveChangesButtonClick() {

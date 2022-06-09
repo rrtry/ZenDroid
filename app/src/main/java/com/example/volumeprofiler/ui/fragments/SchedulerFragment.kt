@@ -318,6 +318,13 @@ class SchedulerFragment: Fragment(),
     }
 
     override fun onFabClick(fab: FloatingActionButton) {
+        if (sharedViewModel.showDialog.value) {
+            WarningDialog().show(
+                requireActivity().supportFragmentManager,
+                null
+            )
+            return
+        }
         startActivity(Intent(context, AlarmDetailsActivity::class.java))
     }
 

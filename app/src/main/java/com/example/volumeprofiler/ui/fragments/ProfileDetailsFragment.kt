@@ -180,7 +180,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
                 STREAM_VOICE_CALL to TYPE_RINGTONE
             )
 
-            viewModel.currentMediaUri = getRingtoneUri(ringtoneMap[event.streamType]!!)
+            viewModel.currentMediaUri = viewModel.getRingtoneUri(ringtoneMap[event.streamType]!!)
             viewModel.currentStreamType = event.streamType
             viewModel.currentMediaUri?.let { uri ->
                 mediaService?.start(
@@ -398,20 +398,15 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     }
 
     private fun setDefaultRingtoneUri(type: Int) {
-        val uri: Uri = getActualDefaultRingtoneUri(context, type)
-        when {
-            viewModel.notificationSoundUri.value == Uri.EMPTY && type == TYPE_NOTIFICATION -> {
-                viewModel.notificationSoundUri.value = uri
-            }
-            viewModel.alarmSoundUri.value == Uri.EMPTY && type == TYPE_ALARM -> {
-                viewModel.alarmSoundUri.value = uri
-            }
-            viewModel.phoneRingtoneUri.value == Uri.EMPTY && type == TYPE_RINGTONE -> {
-                viewModel.phoneRingtoneUri.value = uri
-            }
+        val uri: Uri? = getActualDefaultRingtoneUri(context, type)
+        when (type) {
+            TYPE_NOTIFICATION -> viewModel.setNotificationSoundUri(uri)
+            TYPE_ALARM -> viewModel.setAlarmSoundUri(uri)
+            TYPE_RINGTONE -> viewModel.setPhoneSoundUri(uri)
         }
     }
 
+    @Suppress("deprecation")
     private fun createVibrationEffect() {
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
@@ -422,10 +417,6 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
             }
             else -> vibrator?.vibrate(100)
         }
-    }
-
-    private fun getRingtoneUri(type: Int): Uri {
-        return viewModel.getRingtoneUri(type)
     }
 
     private fun changePlaybackVolume(streamType: Int, vol: Int) {
@@ -448,13 +439,14 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     }
 
     private fun updateRingerMode(streamType: Int) {
-        vibrator?.let {
-            if (it.hasVibrator()) {
-                updateRingerMode(streamType, RINGER_MODE_VIBRATE)
-            } else {
-                updateRingerMode(streamType, RINGER_MODE_SILENT)
-            }
+        if (vibrator == null) {
+            updateRingerMode(streamType, RINGER_MODE_SILENT)
+            return
         }
+        updateRingerMode(
+            streamType,
+            if (vibrator!!.hasVibrator()) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
+        )
     }
 
     private fun showPopupMenu() {

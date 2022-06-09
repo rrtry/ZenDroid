@@ -158,11 +158,15 @@ class ContentUtil @Inject constructor(
 
     suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
 
+        if (uri == Uri.EMPTY) {
+            return "Not set"
+        }
+
         val contentResolver: ContentResolver = context.contentResolver
         val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
 
         return withContext(Dispatchers.IO) {
-            var title: String = "Unknown"
+            var title: String = "Not set"
             try {
                 val cursor: Cursor? = contentResolver.query(uri, projection, null, null, null)
                 cursor?.use {
