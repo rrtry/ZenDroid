@@ -535,7 +535,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun onStreamMuted(streamType: Int, showSnackbar: Boolean, vibrate: Boolean) {
+    private fun onStreamMuted(streamType: Int, showSnackbar: Boolean = false, vibrate: Boolean = false) {
         viewModelScope.launch {
             if (streamType == STREAM_NOTIFICATION) {
                 notificationVolume.value = 0
@@ -552,7 +552,7 @@ class ProfileDetailsViewModel @Inject constructor(
             if (fromUser) {
                 val isMute: Boolean = value == 0
                 when {
-                    isMute -> onStreamMuted(streamType, true, true)
+                    isMute -> onStreamMuted(streamType, showSnackbar = true, vibrate = true)
                     streamType == STREAM_NOTIFICATION -> restoreNotificationMode(value)
                     streamType == STREAM_RING -> restoreRingerMode(value)
                 }

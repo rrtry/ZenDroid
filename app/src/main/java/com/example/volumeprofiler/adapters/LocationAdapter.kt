@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
-import com.example.volumeprofiler.interfaces.ListItemInteractionListener
+import com.example.volumeprofiler.interfaces.ListItemActionListener
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
 import com.example.volumeprofiler.util.resolvePath
@@ -22,7 +22,7 @@ import java.lang.ref.WeakReference
 
 class LocationAdapter(
     private val context: Context,
-    listener: WeakReference<ListItemInteractionListener<LocationRelation, LocationItemViewBinding>>
+    listener: WeakReference<ListItemActionListener<LocationRelation>>
 ): ListAdapter<LocationRelation, LocationAdapter.LocationViewHolder>(object : DiffUtil.ItemCallback<LocationRelation>() {
 
     override fun areItemsTheSame(oldItem: LocationRelation, newItem: LocationRelation): Boolean {
@@ -33,13 +33,12 @@ class LocationAdapter(
         return oldItem == newItem
     }
 
-}), ListAdapterItemProvider<String> {
+}), ListAdapterItemProvider<LocationRelation> {
 
-    private val listener: ListItemInteractionListener<LocationRelation, LocationItemViewBinding> = listener.get()!!
+    private val itemActionListener: ListItemActionListener<LocationRelation> = listener.get()!!
 
-    inner class LocationViewHolder(
-        private val binding: LocationItemViewBinding
-    ): RecyclerView.ViewHolder(binding.root), View.OnClickListener {
+    inner class LocationViewHolder(private val binding: LocationItemViewBinding):
+        RecyclerView.ViewHolder(binding.root), View.OnClickListener {
 
         init {
             binding.root.setOnClickListener(this)
@@ -49,7 +48,7 @@ class LocationAdapter(
             binding.enableGeofenceSwitch.isChecked = enabled
         }
 
-        fun bind(locationRelation: LocationRelation, isSelected: Boolean): Unit {
+        fun bind(locationRelation: LocationRelation, isSelected: Boolean) {
 
             val location: Location = locationRelation.location
 
@@ -58,10 +57,10 @@ class LocationAdapter(
             binding.geofenceProfiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
 
             binding.editGeofenceButton.setOnClickListener {
-                listener.onEdit(locationRelation, binding)
+                itemActionListener.onEdit(locationRelation, null)
             }
             binding.removeGeofenceButton.setOnClickListener {
-                listener.onRemove(locationRelation)
+                itemActionListener.onRemove(locationRelation)
             }
             binding.mapSnapshot.post {
                 binding.mapSnapshot.setImageBitmap(
@@ -76,9 +75,9 @@ class LocationAdapter(
         override fun onClick(v: View?) {
             getItemAtPosition(bindingAdapterPosition).also {
                 if (it.location.enabled) {
-                    listener.onDisable(it)
+                    itemActionListener.onDisable(it)
                 } else {
-                    listener.onEnable(it)
+                    itemActionListener.onEnable(it)
                 }
             }
         }
@@ -117,12 +116,12 @@ class LocationAdapter(
         holder.bind(getItem(position), false)
     }
 
-    override fun getItemKey(position: Int): String {
-        return currentList[position].location.id.toString()
+    override fun getItemKey(position: Int): LocationRelation {
+        return currentList[position]
     }
 
-    override fun getPosition(key: String): Int {
-        return currentList.indexOfFirst { key == it.location.id.toString() }
+    override fun getPosition(key: LocationRelation): Int {
+        return currentList.indexOfFirst { key.location.id == it.location.id }
     }
 
     fun updateGeofenceState(relation: LocationRelation, enabled: Boolean) {

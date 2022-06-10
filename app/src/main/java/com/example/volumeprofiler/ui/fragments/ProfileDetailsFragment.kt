@@ -6,7 +6,6 @@ import android.view.*
 import android.widget.PopupMenu
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
@@ -44,15 +43,12 @@ import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.*
 
 @AndroidEntryPoint
-class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
+class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(), MediaPlayer.OnCompletionListener {
 
     @Inject
     lateinit var profileManager: ProfileManager
 
     private val viewModel: ProfileDetailsViewModel by activityViewModels()
-
-    private var bindingImpl: CreateProfileFragmentBinding? = null
-    private val binding: CreateProfileFragmentBinding get() = bindingImpl!!
 
     private lateinit var ringtoneActivityLauncher: ActivityResultLauncher<Int>
     private lateinit var notificationPolicyLauncher: ActivityResultLauncher<Intent>
@@ -112,11 +108,18 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         vibrator = requireContext().getSystemService(VIBRATOR_SERVICE) as Vibrator
     }
 
+    override fun getBinding(
+        inflater: LayoutInflater,
+        container: ViewGroup?
+    ): CreateProfileFragmentBinding {
+        return DataBindingUtil.inflate(inflater, R.layout.create_profile_fragment, container, false)
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        bindingImpl = DataBindingUtil.inflate(inflater, R.layout.create_profile_fragment, container, false)
-        binding.viewModel = viewModel
-        binding.lifecycleOwner = viewLifecycleOwner
-        return binding.root
+        super.onCreateView(inflater, container, savedInstanceState)
+        viewBinding.viewModel = viewModel
+        viewBinding.lifecycleOwner = viewLifecycleOwner
+        return viewBinding.root
     }
 
     override fun onStart() {
@@ -146,11 +149,6 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
         viewModel.stopPlayback()
         requireActivity().unbindService(serviceConnection)
         mediaService = null
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        bindingImpl = null
     }
 
     override fun onDetach() {
@@ -452,7 +450,7 @@ class ProfileDetailsFragment: Fragment(), MediaPlayer.OnCompletionListener {
     }
 
     private fun showPopupMenu() {
-        val popupMenu: PopupMenu = PopupMenu(requireContext(), binding.interruptionFilterLayout)
+        val popupMenu: PopupMenu = PopupMenu(requireContext(), viewBinding.interruptionFilterLayout)
         popupMenu.inflate(R.menu.dnd_mode_menu)
         popupMenu.setOnMenuItemClickListener {
             when (it.itemId) {

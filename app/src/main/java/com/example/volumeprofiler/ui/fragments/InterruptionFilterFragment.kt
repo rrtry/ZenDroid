@@ -12,10 +12,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.core.view.ViewCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
@@ -36,15 +34,11 @@ import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.DialogType.
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 @AndroidEntryPoint
-class InterruptionFilterFragment: Fragment() {
+class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBinding>() {
 
     @Inject
     lateinit var profileManager: ProfileManager
-
     private val detailsViewModel: ProfileDetailsViewModel by activityViewModels()
-
-    private var bindingImpl: ZenPreferencesFragmentBinding? = null
-    private val binding: ZenPreferencesFragmentBinding get() = bindingImpl!!
 
     private var callback: EditProfileActivityCallbacks? = null
 
@@ -53,17 +47,11 @@ class InterruptionFilterFragment: Fragment() {
         callback = requireActivity() as EditProfileActivityCallbacks
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        callback = null
-        bindingImpl = null
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        bindingImpl = DataBindingUtil.inflate(inflater, R.layout.zen_preferences_fragment, container, false)
-        binding.viewModel = detailsViewModel
-        binding.lifecycleOwner = viewLifecycleOwner
-        return binding.root
+        super.onCreateView(inflater, container, savedInstanceState)
+        viewBinding.viewModel = detailsViewModel
+        viewBinding.lifecycleOwner = viewLifecycleOwner
+        return viewBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -81,6 +69,18 @@ class InterruptionFilterFragment: Fragment() {
                 }
             }.collect()
         }
+    }
+
+    override fun getBinding(
+        inflater: LayoutInflater,
+        container: ViewGroup?
+    ): ZenPreferencesFragmentBinding {
+        return DataBindingUtil.inflate(inflater, R.layout.zen_preferences_fragment, container, false)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callback = null
     }
 
     private fun getFragmentInstance(type: ProfileDetailsViewModel.DialogType): DialogFragment {
@@ -121,9 +121,9 @@ class InterruptionFilterFragment: Fragment() {
 
     private fun showPopupWindow(category: Int) {
         val view: View? = when (category) {
-            PRIORITY_CATEGORY_MESSAGES -> binding.exceptionsMessagesLayout
-            PRIORITY_CATEGORY_CALLS -> binding.exceptionsCallsLayout
-            PRIORITY_CATEGORY_CONVERSATIONS -> binding.exceptionsConversationsLayout
+            PRIORITY_CATEGORY_MESSAGES -> viewBinding.exceptionsMessagesLayout
+            PRIORITY_CATEGORY_CALLS -> viewBinding.exceptionsCallsLayout
+            PRIORITY_CATEGORY_CONVERSATIONS -> viewBinding.exceptionsConversationsLayout
             else -> null
         }
         val popupMenu: PopupMenu = PopupMenu(requireContext(), view)

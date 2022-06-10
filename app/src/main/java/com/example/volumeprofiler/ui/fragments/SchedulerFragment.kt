@@ -14,18 +14,13 @@ import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
-import androidx.recyclerview.selection.StorageStrategy
 import androidx.recyclerview.widget.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.AlarmAdapter
 import com.example.volumeprofiler.ui.activities.AlarmDetailsActivity
 import com.example.volumeprofiler.ui.activities.AlarmDetailsActivity.Companion.EXTRA_ALARM_PROFILE_RELATION
 import com.example.volumeprofiler.ui.activities.MainActivity
-import com.example.volumeprofiler.selection.BaseSelectionObserver
-import com.example.volumeprofiler.selection.DetailsLookup
-import com.example.volumeprofiler.selection.KeyProvider
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.AlarmItemViewBinding
@@ -35,7 +30,6 @@ import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.SCHEDULER_FRAGMENT
 import com.example.volumeprofiler.util.TimeFormatChangeObserver
-import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -48,31 +42,26 @@ import com.example.volumeprofiler.viewmodels.SchedulerViewModel.ViewEvent.*
 import kotlinx.coroutines.flow.*
 
 @AndroidEntryPoint
-class SchedulerFragment: Fragment(),
+class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder>(),
     FabContainer,
-    ActionModeProvider<Long>,
-    FragmentSwipedListener,
-    MainActivity.OptionsItemSelectedListener,
-    ListItemInteractionListener<AlarmRelation, AlarmItemViewBinding> {
+    ActionModeProvider<AlarmRelation>,
+    MainActivity.MenuItemSelectedListener {
+
+    override val listItem: Class<AlarmRelation> = AlarmRelation::class.java
+    override val selectionId: String = SELECTION_ID
 
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var profileManager: ProfileManager
+    private lateinit var alarmAdapter: AlarmAdapter
 
     private val viewModel: SchedulerViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
+    private var callback: FabContainerCallbacks? = null
     private var showDialog: Boolean = false
 
-    private var callback: FabContainerCallbacks? = null
-    private var bindingImpl: AlarmsFragmentBinding? = null
-    private val binding: AlarmsFragmentBinding get() = bindingImpl!!
-
-    private lateinit var tracker: SelectionTracker<Long>
-    private lateinit var alarmAdapter: AlarmAdapter
-
     private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
-
     private val localeReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -80,6 +69,21 @@ class SchedulerFragment: Fragment(),
                 alarmAdapter.refresh()
             }
         }
+    }
+
+    override fun getBinding(
+        inflater: LayoutInflater,
+        container: ViewGroup?
+    ): AlarmsFragmentBinding {
+        return AlarmsFragmentBinding.inflate(inflater, container, false)
+    }
+
+    override fun getRecyclerView(): RecyclerView {
+        return viewBinding.recyclerView
+    }
+
+    override fun getAdapter(): ListAdapter<AlarmRelation, AlarmAdapter.AlarmViewHolder> {
+        return alarmAdapter
     }
 
     override fun onAttach(context: Context) {
@@ -127,39 +131,18 @@ class SchedulerFragment: Fragment(),
         requireActivity().unregisterReceiver(localeReceiver)
     }
 
-    override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-    ): View {
-        bindingImpl = AlarmsFragmentBinding.inflate(inflater, container, false)
-
-        alarmAdapter = AlarmAdapter(requireContext(), WeakReference(this))
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        binding.recyclerView.adapter = alarmAdapter
-        binding.recyclerView.itemAnimator = DefaultItemAnimator()
-
-        tracker = SelectionTracker.Builder(
-            SELECTION_ID,
-            binding.recyclerView,
-            KeyProvider(alarmAdapter),
-            DetailsLookup(binding.recyclerView),
-            StorageStrategy.createLongStorage()
-        ).withSelectionPredicate(SelectionPredicates.createSelectAnything())
-            .build()
-        tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
-        return binding.root
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
+        alarmAdapter = AlarmAdapter(requireActivity(), viewBinding.recyclerView, WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.viewEvents
                         .collect {
                             when (it) {
-                                is OnMenuOptionSelected -> onSelected(it.itemId)
+                                is OnMenuOptionSelected -> onMenuOptionSelected(it.itemId)
                                 is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                                 is OnSwiped -> onFragmentSwiped(it.fragment)
                                 is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
@@ -200,60 +183,25 @@ class SchedulerFragment: Fragment(),
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        bindingImpl = null
-    }
-
     private fun startAlarmDetailsActivity(
         alarmRelation: AlarmRelation? = null,
-        activityOptions: ActivityOptionsCompat? = null
+        activityOptions: Bundle? = null
     ) {
         Intent(requireContext(), AlarmDetailsActivity::class.java).apply {
             alarmRelation?.let {
                 putExtra(EXTRA_ALARM_PROFILE_RELATION, it)
             }
-            startActivity(this, activityOptions?.toBundle())
+            startActivity(this, activityOptions)
         }
     }
 
     private fun updateAlarmAdapter(alarms: List<AlarmRelation>) {
-        binding.hintScheduler.isVisible = alarms.isEmpty()
+        viewBinding.hintScheduler.isVisible = alarms.isEmpty()
         alarmAdapter.submitList(alarms)
     }
 
-    private fun createTransitionAnimationOptions(binding: AlarmItemViewBinding): ActivityOptionsCompat {
-        return ActivityOptionsCompat.makeSceneTransitionAnimation(
-            requireActivity(),
-            androidx.core.util.Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
-            androidx.core.util.Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
-            androidx.core.util.Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
-            androidx.core.util.Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR))
-    }
-
-    override fun onEdit(entity: AlarmRelation, alarmBinding: AlarmItemViewBinding) {
-        if (binding.recyclerView.isViewPartiallyVisible(alarmBinding.root)) {
-            binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-
-                    binding.recyclerView.clearOnScrollListeners()
-
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        startAlarmDetailsActivity(entity, createTransitionAnimationOptions(alarmBinding))
-                    }, 100)
-                }
-            })
-            binding.recyclerView.smoothScrollToPosition(
-                alarmAdapter.getItemPosition(entity.alarm.id)
-            )
-        } else {
-            startAlarmDetailsActivity(
-                entity,
-                createTransitionAnimationOptions(alarmBinding)
-            )
-        }
+    override fun onEdit(entity: AlarmRelation, options: Bundle?) {
+        startAlarmDetailsActivity(entity, options)
     }
 
     override fun onEnable(entity: AlarmRelation) {
@@ -269,11 +217,11 @@ class SchedulerFragment: Fragment(),
     }
 
     override fun isSelected(entity: AlarmRelation): Boolean {
-        return tracker.isSelected(entity.alarm.id)
+        return selectionTracker.isSelected(entity)
     }
 
-    override fun onSelected(itemId: Int) {
-        // Empty implementation
+    override fun onMenuOptionSelected(itemId: Int) {
+
     }
 
     private fun onAlarmSet(relation: AlarmRelation, alarms: List<AlarmRelation>) {
@@ -337,25 +285,21 @@ class SchedulerFragment: Fragment(),
     }
 
     override fun onActionItemRemove() {
-        tracker.selection.forEach { selection ->
+        selectionTracker.selection.forEach { selection ->
             viewModel.removeAlarm(
                 alarmAdapter.currentList.first {
-                    it.alarm.id == selection
+                    it.alarm.id == selection.alarm.id
                 }
             )
         }
     }
 
-    override fun getTracker(): SelectionTracker<Long> {
-        return tracker
+    override fun getTracker(): SelectionTracker<AlarmRelation> {
+        return selectionTracker
     }
 
     override fun getFragmentActivity(): FragmentActivity {
         return requireActivity()
-    }
-
-    override fun onSwipe() {
-        tracker.clearSelection()
     }
 
     companion object {

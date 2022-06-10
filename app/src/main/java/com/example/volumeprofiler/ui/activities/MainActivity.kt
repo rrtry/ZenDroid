@@ -3,6 +3,7 @@ package com.example.volumeprofiler.ui.activities
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.transition.Fade
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -28,13 +29,14 @@ import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MOD
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
-    interface OptionsItemSelectedListener {
+    interface MenuItemSelectedListener {
 
-        fun onSelected(itemId: Int)
+        fun onMenuOptionSelected(itemId: Int)
     }
 
     private val viewModel: MainActivityViewModel by viewModels()
@@ -48,8 +50,10 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
         override fun onPageSelected(position: Int) {
             super.onPageSelected(position)
+            if (currentPosition != position) {
+                viewModel.onFragmentSwiped(currentPosition)
+            }
             onPrepareOptionsMenu(binding.toolbar.menu)
-            viewModel.onFragmentSwiped(currentPosition)
             viewModel.animateFloatingActionButton(position)
             currentPosition = position
         }
@@ -172,6 +176,7 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onStop() {
         super.onStop()
         viewModel.viewEvents.resetReplayCache()

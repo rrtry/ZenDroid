@@ -1,6 +1,6 @@
 package com.example.volumeprofiler.interfaces
 
-interface ListAdapterItemProvider <T> {
+interface ListAdapterItemProvider<T> {
 
     fun getItemKey(position: Int): T
 

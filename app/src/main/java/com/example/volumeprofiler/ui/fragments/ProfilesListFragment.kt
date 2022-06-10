@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
@@ -30,9 +31,6 @@ import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.EXTRA_PROFILE
-import com.example.volumeprofiler.selection.BaseSelectionObserver
-import com.example.volumeprofiler.selection.DetailsLookup
-import com.example.volumeprofiler.selection.KeyProvider
 import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
@@ -44,14 +42,15 @@ import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
 @AndroidEntryPoint
-class ProfilesListFragment: Fragment(),
-    ActionModeProvider<String>,
+class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, ProfileAdapter.ProfileHolder>(),
     FabContainer,
-    FragmentSwipedListener,
-    SelectableListItemInteractionListener<Profile, UUID> {
+    ProfileActionListener {
 
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
+
+    private lateinit var adapter: ProfileAdapter
+    private var callback: FabContainerCallbacks? = null
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var scheduleManager: ScheduleManager
@@ -60,15 +59,20 @@ class ProfilesListFragment: Fragment(),
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var notificationDelegate: NotificationDelegate
 
-    private lateinit var profileAdapter: ProfileAdapter
-    private lateinit var tracker: SelectionTracker<String>
+    override val listItem: Class<Profile> = Profile::class.java
+    override val selectionId: String = SELECTION_ID
 
-    private var selectedItems: ArrayList<String> = arrayListOf()
+    override fun getBinding(inflater: LayoutInflater, container: ViewGroup?): ProfilesListFragmentBinding {
+        return ProfilesListFragmentBinding.inflate(inflater, container, false)
+    }
 
-    private var bindingImpl: ProfilesListFragmentBinding? = null
-    private val binding: ProfilesListFragmentBinding get() = bindingImpl!!
+    override fun getRecyclerView(): RecyclerView {
+        return viewBinding.recyclerView
+    }
 
-    private var callback: FabContainerCallbacks? = null
+    override fun getAdapter(): ListAdapter<Profile, ProfileAdapter.ProfileHolder> {
+        return adapter
+    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -80,42 +84,12 @@ class ProfilesListFragment: Fragment(),
         callback = null
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putStringArrayList(EXTRA_SELECTION, selectedItems)
-        outState.putParcelable(EXTRA_RV_STATE, binding.recyclerView.layoutManager?.onSaveInstanceState())
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        bindingImpl = ProfilesListFragmentBinding.inflate(inflater, container, false)
-
-        binding.recyclerView.layoutManager = LinearLayoutManager(context)
-        profileAdapter = ProfileAdapter(binding.constraintLayout, WeakReference(this))
-        binding.recyclerView.adapter = profileAdapter
-        binding.recyclerView.itemAnimator = DefaultItemAnimator()
-
-        tracker = SelectionTracker.Builder(
-            SELECTION_ID,
-            binding.recyclerView,
-            KeyProvider(profileAdapter),
-            DetailsLookup(binding.recyclerView),
-            StorageStrategy.createStringStorage()
-        ).withSelectionPredicate(SelectionPredicates.createSelectAnything()).build()
-        tracker.addObserver(BaseSelectionObserver(WeakReference(this)))
-        savedInstanceState?.let {
-            selectedItems = it.getStringArrayList(EXTRA_SELECTION) as ArrayList<String>
-            tracker.setItemsSelected(selectedItems, true)
-        }
-        return binding.root
-    }
-
     @Suppress("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
+        adapter = ProfileAdapter(requireActivity(), viewBinding.constraintLayout, WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -148,10 +122,10 @@ class ProfilesListFragment: Fragment(),
                     eventBus.sharedFlow.collectLatest {
                         if (it is EventBus.Event.ProfileChanged) {
                             try {
-                                profileAdapter.currentList.first { profile ->
+                                adapter.currentList.first { profile ->
                                     profile.id == it.id
                                 }.also { profile ->
-                                    profileAdapter.setSelection(profile, viewModel.lastSelected)
+                                    adapter.setSelection(profile, viewModel.lastSelected)
                                 }
                             } catch (e: NoSuchElementException) {
                                 Log.e("ProfilesListFragment", "Invalid profile: ${it.id}")
@@ -163,25 +137,13 @@ class ProfilesListFragment: Fragment(),
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        if (!requireActivity().isChangingConfigurations) {
-            tracker.clearSelection()
-        }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        bindingImpl = null
-    }
-
-    override fun onEdit(entity: Profile, binding: ProfileItemViewBinding) {
+    override fun onEdit(entity: Profile, options: Bundle?) {
         startActivity(Intent(
             requireContext(),
             ProfileDetailsActivity::class.java
         ).apply {
             putExtra(EXTRA_PROFILE, entity)
-        }, createTransitionAnimationOptions(binding).toBundle())
+        }, options)
     }
 
     override fun setSelection(id: UUID?) {
@@ -201,7 +163,7 @@ class ProfilesListFragment: Fragment(),
     }
 
     override fun isSelected(entity: Profile): Boolean {
-        return tracker.isSelected(entity.id.toString())
+        return selectionTracker.isSelected(entity)
     }
 
     override fun isEnabled(entity: Profile): Boolean {
@@ -217,15 +179,9 @@ class ProfilesListFragment: Fragment(),
     private fun updateProfileAdapter(profiles: List<Profile>) {
         profiles.isEmpty().let { isEmpty ->
             sharedViewModel.showDialog.value = isEmpty
-            binding.placeHolderText.isVisible = isEmpty
+            viewBinding.placeHolderText.isVisible = isEmpty
         }
-        profileAdapter.submitList(profiles)
-    }
-
-    private fun createTransitionAnimationOptions(binding: ProfileItemViewBinding): ActivityOptionsCompat {
-        return ActivityOptionsCompat.makeSceneTransitionAnimation(
-            requireActivity(),
-            androidx.core.util.Pair.create(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE))
+        adapter.submitList(profiles)
     }
 
     @Suppress("MissingPermission")
@@ -244,12 +200,15 @@ class ProfilesListFragment: Fragment(),
         if (profile.id == viewModel.lastSelected) {
             viewModel.lastSelected = null
         }
+        if (profile.id == preferencesManager.getProfile()?.id) {
+            preferencesManager.clearPreferences()
+        }
     }
 
     private fun onProfileSet(event: ProfileSetViewEvent) {
         if (!preferencesManager.isProfileEnabled(event.profile)) {
             profileManager.setProfile(event.profile, TRIGGER_TYPE_MANUAL, null)
-            profileAdapter.setSelection(event.profile, viewModel.lastSelected)
+            adapter.setSelection(event.profile, viewModel.lastSelected)
             notificationDelegate.updateNotification(
                 event.profile, scheduleManager.getOngoingAlarm(event.alarms)
             )
@@ -287,33 +246,27 @@ class ProfilesListFragment: Fragment(),
     }
 
     override fun onActionItemRemove() {
-        tracker.selection.forEach { selection ->
+        selectionTracker.selection.forEach { selection ->
             viewModel.removeProfile(
-                profileAdapter.currentList.first {
-                    it.id.toString() == selection
+                adapter.currentList.first {
+                    it == selection
                 }
             )
         }
     }
 
-    override fun getTracker(): SelectionTracker<String> {
-        return tracker
+    override fun getTracker(): SelectionTracker<Profile> {
+        return selectionTracker
     }
 
     override fun getFragmentActivity(): FragmentActivity {
         return requireActivity()
     }
 
-    override fun onSwipe() {
-        tracker.clearSelection()
-    }
-
     companion object {
 
         const val SHARED_TRANSITION_PROFILE_IMAGE: String = "shared_transition_profile_image"
         private const val SELECTION_ID: String = "PROFILE"
-        private const val EXTRA_SELECTION: String = "extra_selection"
-        private const val EXTRA_RV_STATE: String = "abs_position"
 
     }
 }

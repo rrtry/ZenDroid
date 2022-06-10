@@ -93,6 +93,13 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         }
     }
 
+    fun clearPreferences() {
+        sharedPreferences
+            .edit()
+            .clear()
+            .apply()
+    }
+
     companion object {
 
         internal const val TRIGGER_TYPE_MANUAL: Int = 0

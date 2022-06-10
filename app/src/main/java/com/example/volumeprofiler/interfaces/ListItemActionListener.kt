@@ -1,10 +1,10 @@
 package com.example.volumeprofiler.interfaces
 
-import androidx.viewbinding.ViewBinding
+import android.os.Bundle
 
-interface ListItemInteractionListener<T, B: ViewBinding> {
+interface ListItemActionListener<T> {
 
-    fun onEdit(entity: T, binding: B)
+    fun onEdit(entity: T, options: Bundle? = null)
 
     fun onEnable(entity: T)
 

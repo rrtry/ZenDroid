@@ -1,9 +1,13 @@
 package com.example.volumeprofiler.adapters
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.selection.ItemDetailsLookup
@@ -15,17 +19,20 @@ import androidx.transition.TransitionManager
 import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
-import com.example.volumeprofiler.interfaces.SelectableListItemInteractionListener
+import com.example.volumeprofiler.interfaces.ProfileActionListener
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.Animations
 import com.example.volumeprofiler.ui.BindingConverters.interruptionFilterToString
+import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
+import com.example.volumeprofiler.ui.fragments.ProfilesListFragment.Companion.SHARED_TRANSITION_PROFILE_IMAGE
 import java.lang.ref.WeakReference
 import java.util.*
 
 class ProfileAdapter(
+    private val activity: Activity,
     private val viewGroup: ViewGroup,
-    listener: WeakReference<SelectableListItemInteractionListener<Profile, UUID>>
+    listener: WeakReference<ProfilesListFragment>
 ): ListAdapter<Profile, ProfileAdapter.ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
 
     override fun areItemsTheSame(oldItem: Profile, newItem: Profile): Boolean {
@@ -36,13 +43,13 @@ class ProfileAdapter(
         return oldItem == newItem
     }
 
-}), ListAdapterItemProvider<String> {
+}), ListAdapterItemProvider<Profile> {
 
-    private val listener: SelectableListItemInteractionListener<Profile, UUID> = listener.get()!!
+    private val profileActionListener = listener.get()!! as ProfileActionListener
 
     inner class ProfileHolder(private val binding: ProfileItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
-        ViewHolderItemDetailsProvider<String>,
+        ViewHolderItemDetailsProvider<Profile>,
         View.OnClickListener {
 
         init {
@@ -50,8 +57,8 @@ class ProfileAdapter(
             binding.expandableView.visibility = View.GONE
         }
 
-        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<String> {
-            return ItemDetails(bindingAdapterPosition, getItemAtPosition(bindingAdapterPosition).id.toString())
+        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Profile> {
+            return ItemDetails(bindingAdapterPosition, getItemAtPosition(bindingAdapterPosition))
         }
 
         private fun expand(animate: Boolean) {
@@ -85,22 +92,18 @@ class ProfileAdapter(
             binding.profileIcon.setImageDrawable(ContextCompat.getDrawable(binding.root.context, profile.iconRes))
 
             binding.expandButton.setOnClickListener {
-                if (binding.expandableView.isVisible) {
-                    collapse()
-                } else {
-                    expand(true)
-                }
+                if (binding.expandableView.isVisible) collapse() else expand(true)
             }
             binding.editProfileButton.setOnClickListener {
-                listener.onEdit(profile, binding)
+                profileActionListener.onEdit(profile, createSceneTransitionAnimation(binding))
             }
             binding.removeProfileButton.setOnClickListener {
-                listener.onRemove(profile)
+                profileActionListener.onRemove(profile)
             }
-            listener.isEnabled(profile).let {
+            profileActionListener.isEnabled(profile).let {
                 binding.checkBox.isChecked = it
                 if (it) {
-                    listener.setSelection(profile.id)
+                    profileActionListener.setSelection(profile.id)
                 }
             }
             if (animate) {
@@ -111,21 +114,28 @@ class ProfileAdapter(
         }
 
         override fun onClick(v: View?) {
-            getItemAtPosition(bindingAdapterPosition).also {
-                listener.onEnable(it)
-            }
+            profileActionListener.onEnable(
+                getItemAtPosition(bindingAdapterPosition)
+            )
         }
+    }
+
+    fun createSceneTransitionAnimation(binding: ProfileItemViewBinding): Bundle? {
+        return ActivityOptionsCompat.makeSceneTransitionAnimation(
+            activity,
+            androidx.core.util.Pair.create(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE)
+        ).toBundle()
     }
 
     fun setSelection(profile: Profile?, currentSelection: UUID?) {
         profile?.id?.also {
             updatePreviousProfileView(currentSelection)
             updateCurrentProfileView(it)
-            listener.setSelection(it)
+            profileActionListener.setSelection(it)
             return
         }
         updatePreviousProfileView(currentSelection)
-        listener.setSelection(null)
+        profileActionListener.setSelection(null)
     }
 
     private fun updatePreviousProfileView(currentSelection: UUID?) {
@@ -161,15 +171,15 @@ class ProfileAdapter(
     override fun onBindViewHolder(holder: ProfileHolder, @SuppressLint("RecyclerView") position: Int) {
         holder.bind(
             getItem(position),
-            listener.isSelected(getItem(position)),
+            profileActionListener.isSelected(getItem(position)),
             true)
     }
 
-    override fun getItemKey(position: Int): String {
-        return getItemAtPosition(position).id.toString()
+    override fun getItemKey(position: Int): Profile {
+        return getItemAtPosition(position)
     }
 
-    override fun getPosition(key: String): Int {
-        return currentList.indexOfFirst { key == it.id.toString() }
+    override fun getPosition(key: Profile): Int {
+        return currentList.indexOfFirst { key == it }
     }
 }
