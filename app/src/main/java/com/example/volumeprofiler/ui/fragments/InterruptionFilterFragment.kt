@@ -20,7 +20,7 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.*
-import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallbacks
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,11 +40,11 @@ class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBind
     lateinit var profileManager: ProfileManager
     private val detailsViewModel: ProfileDetailsViewModel by activityViewModels()
 
-    private var callback: EditProfileActivityCallbacks? = null
+    private var callback: ProfileDetailsActivityCallbacks? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callback = requireActivity() as EditProfileActivityCallbacks
+        callback = requireActivity() as ProfileDetailsActivityCallbacks
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

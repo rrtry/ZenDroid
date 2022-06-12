@@ -1,7 +1,9 @@
 package com.example.volumeprofiler.ui.activities
 
+import android.app.Instrumentation
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -30,13 +32,14 @@ import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.DetailsViewContract
-import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallbacks
 import com.example.volumeprofiler.ui.Animations
 import com.example.volumeprofiler.ui.fragments.InterruptionFilterFragment
 import com.example.volumeprofiler.ui.fragments.ProfileDetailsFragment
 import com.example.volumeprofiler.ui.fragments.ProfileImageSelectionDialog
 import com.example.volumeprofiler.ui.fragments.ProfileNameInputDialog
 import com.example.volumeprofiler.util.*
+import com.example.volumeprofiler.util.ViewUtil.Companion.DISMISS_TIME_WINDOW
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel.*
@@ -50,8 +53,8 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 @AndroidEntryPoint
-class ProfileDetailsActivity: AppCompatActivity(),
-    EditProfileActivityCallbacks,
+class ProfileDetailsDetailsActivity: AppCompatActivity(),
+    ProfileDetailsActivityCallbacks,
     ActivityCompat.OnRequestPermissionsResultCallback,
     DetailsViewContract<Profile>,
     FragmentManager.OnBackStackChangedListener,
@@ -118,15 +121,15 @@ class ProfileDetailsActivity: AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        savedInstanceState?.let {
-            elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
-            showExplanationDialog = it.getBoolean(EXTRA_SHOW_DIALOG, false)
+        if (savedInstanceState != null) {
+            elapsedTime = savedInstanceState.getLong(EXTRA_ELAPSED_TIME, 0)
+            showExplanationDialog = savedInstanceState.getBoolean(EXTRA_SHOW_DIALOG, false)
         }
-        setEntity()
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
-            sharedElementEnterTransition = TransitionSet().addTransition(ChangeBounds())
+            sharedElementEnterTransition = ChangeBounds()
+            sharedElementExitTransition = ChangeBounds()
             enterTransition = TransitionSet().apply {
 
                 ordering = TransitionSet.ORDERING_TOGETHER
@@ -139,12 +142,12 @@ class ProfileDetailsActivity: AppCompatActivity(),
             }
             allowEnterTransitionOverlap = true
         }
+
         binding = CreateProfileActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
-
-        binding.appBar.addOnOffsetChangedListener(this)
+        setEntity()
         openProfileDetailsFragment()
 
         lifecycleScope.launch {
@@ -202,11 +205,16 @@ class ProfileDetailsActivity: AppCompatActivity(),
     override fun onStart() {
         super.onStart()
         binding.toolbar.setNavigationOnClickListener { onBackPressed() }
+        binding.appBar.addOnOffsetChangedListener(this)
         supportFragmentManager.addOnBackStackChangedListener(this)
     }
 
     override fun onStop() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isFinishing) {
+            Instrumentation().callActivityOnSaveInstanceState(this, Bundle())
+        }
         super.onStop()
+        binding.appBar.removeOnOffsetChangedListener(this)
         supportFragmentManager.removeOnBackStackChangedListener(this)
     }
 
@@ -277,7 +285,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
 
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount < 1) {
-            if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
+            if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
                 onCancel()
             } else {
                 showSnackbar(binding.root, "Press back button again to exit", LENGTH_LONG)
@@ -300,7 +308,7 @@ class ProfileDetailsActivity: AppCompatActivity(),
         const val NOTIFICATION_RESTRICTIONS_FRAGMENT: Int = 1
 
         fun newIntent(context: Context, profile: Profile?): Intent {
-            return Intent(context, ProfileDetailsActivity::class.java).apply {
+            return Intent(context, ProfileDetailsDetailsActivity::class.java).apply {
                 profile?.let {
                     putExtra(EXTRA_PROFILE, it)
                 }

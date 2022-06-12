@@ -1,6 +1,6 @@
 package com.example.volumeprofiler.interfaces
 
-interface EditProfileActivityCallbacks {
+interface ProfileDetailsActivityCallbacks {
 
     fun onFragmentReplace(fragment: Int)
     fun setNestedScrollingEnabled(enabled: Boolean)

@@ -11,13 +11,13 @@ import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.ListItemActionListener
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
-import com.example.volumeprofiler.util.resolvePath
 import java.lang.ref.WeakReference
 
 class LocationAdapter(
@@ -63,12 +63,13 @@ class LocationAdapter(
                 itemActionListener.onRemove(locationRelation)
             }
             binding.mapSnapshot.post {
-                binding.mapSnapshot.setImageBitmap(
-                    ThumbnailUtils.extractThumbnail(
-                        BitmapFactory.decodeFile(
-                            resolvePath(context, location.previewImageId
-                    )), binding.mapSnapshot.width, binding.mapSnapshot.height)
-                )
+                BitmapFactory.decodeFile(
+                    FileManager.resolvePath(context, location.previewImageId)
+                )?.let { bitmap ->
+                    binding.mapSnapshot.apply {
+                        setImageBitmap(ThumbnailUtils.extractThumbnail(bitmap, width, height))
+                    }
+                }
             }
         }
 

@@ -19,7 +19,7 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.VolumeProfiler.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="Theme.VolumeProfiler.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar"/>
     <style name="Theme.VolumeProfiler.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
     <style name="CollapsingToolbarExpandedText" parent="TextAppearance.Design.CollapsingToolbar.Expanded">

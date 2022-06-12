@@ -111,7 +111,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
-            sharedElementEnterTransition = TransitionSet().addTransition(ChangeBounds())
+            sharedElementEnterTransition = ChangeBounds()
             enterTransition = TransitionSet().apply {
 
                 ordering = TransitionSet.ORDERING_TOGETHER

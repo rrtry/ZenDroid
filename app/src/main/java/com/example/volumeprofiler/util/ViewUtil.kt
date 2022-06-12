@@ -61,7 +61,7 @@ class ViewUtil {
         }
 
         fun RecyclerView.isViewPartiallyVisible(view: View): Boolean {
-            return layoutManager?.isViewPartiallyVisible(view, false, false)
+            return layoutManager?.isViewPartiallyVisible(view, false, true)
                 ?: throw IllegalStateException("LayoutManager is null")
         }
 

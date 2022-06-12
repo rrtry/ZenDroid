@@ -21,7 +21,7 @@ import android.media.AudioManager.*
 import android.net.Uri
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
-import com.example.volumeprofiler.interfaces.EditProfileActivityCallbacks
+import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallbacks
 import com.example.volumeprofiler.core.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -32,9 +32,9 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
+import com.example.volumeprofiler.ui.activities.ProfileDetailsDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
 import com.example.volumeprofiler.services.PlaybackService
-import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.NOTIFICATION_RESTRICTIONS_FRAGMENT
+import com.example.volumeprofiler.ui.activities.ProfileDetailsDetailsActivity.Companion.NOTIFICATION_RESTRICTIONS_FRAGMENT
 import com.example.volumeprofiler.util.ViewUtil
 import com.example.volumeprofiler.util.checkPermission
 import kotlinx.coroutines.launch
@@ -55,7 +55,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private lateinit var systemPreferencesLauncher: ActivityResultLauncher<Intent>
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
 
-    private var callbacks: EditProfileActivityCallbacks? = null
+    private var callbacksDetails: ProfileDetailsActivityCallbacks? = null
     private var vibrator: Vibrator? = null
 
     private var mediaService: PlaybackService? = null
@@ -99,7 +99,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         registerForNotificationPolicyResult()
         registerForPhonePermissionResult()
         registerForSystemSettingsResult()
-        callbacks = requireActivity() as EditProfileActivityCallbacks
+        callbacksDetails = requireActivity() as ProfileDetailsActivityCallbacks
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -153,7 +153,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
     override fun onDetach() {
         super.onDetach()
-        callbacks = null
+        callbacksDetails = null
         unregisterNotificationPolicyChangeReceiver()
         ringtoneActivityLauncher.unregister()
         notificationPolicyLauncher.unregister()
@@ -249,7 +249,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        callbacks?.setNestedScrollingEnabled(true)
+        callbacksDetails?.setNestedScrollingEnabled(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -270,8 +270,8 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                             NotificationPolicyRequestEvent -> startNotificationPolicyActivity()
                             WriteSystemSettingsRequestEvent -> startSystemSettingsActivity()
 
-                            ShowInterruptionFilterFragment -> callbacks?.onFragmentReplace(INTERRUPTION_FILTER_FRAGMENT)
-                            ShowNotificationRestrictionsFragment -> callbacks?.onFragmentReplace(NOTIFICATION_RESTRICTIONS_FRAGMENT)
+                            ShowInterruptionFilterFragment -> callbacksDetails?.onFragmentReplace(INTERRUPTION_FILTER_FRAGMENT)
+                            ShowNotificationRestrictionsFragment -> callbacksDetails?.onFragmentReplace(NOTIFICATION_RESTRICTIONS_FRAGMENT)
                             ShowPopupWindowEvent -> showPopupMenu()
 
                             else -> Log.i("EditProfileFragment", "unknown event")

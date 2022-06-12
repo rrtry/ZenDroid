@@ -1,24 +1,19 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.app.ActivityOptions
-import android.content.Context
 import android.content.Intent
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
-import androidx.recyclerview.selection.*
 import androidx.recyclerview.widget.*
-import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity
+import com.example.volumeprofiler.ui.activities.ProfileDetailsDetailsActivity
 import com.example.volumeprofiler.databinding.ProfilesListFragmentBinding
 import com.example.volumeprofiler.eventBus.EventBus
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
-import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,8 +25,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
-import com.example.volumeprofiler.ui.activities.ProfileDetailsActivity.Companion.EXTRA_PROFILE
-import com.example.volumeprofiler.databinding.ProfileItemViewBinding
+import com.example.volumeprofiler.ui.activities.ProfileDetailsDetailsActivity.Companion.EXTRA_PROFILE
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
@@ -50,13 +44,13 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
     private lateinit var adapter: ProfileAdapter
-    private var callback: FabContainerCallbacks? = null
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var eventBus: EventBus
+    @Inject lateinit var fileManager: FileManager
     @Inject lateinit var notificationDelegate: NotificationDelegate
 
     override val listItem: Class<Profile> = Profile::class.java
@@ -74,20 +68,15 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         return adapter
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        callback = requireActivity() as FabContainerCallbacks
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        callback = null
-    }
-
     @Suppress("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        adapter = ProfileAdapter(requireActivity(), viewBinding.constraintLayout, WeakReference(this))
+        adapter = ProfileAdapter(
+            requireActivity(),
+            viewBinding.recyclerView,
+            viewBinding.constraintLayout,
+            WeakReference(this))
+
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -107,8 +96,8 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
                     viewModel.viewEventFlow.onEach {
                         when (it) {
                             is ProfileSetViewEvent -> onProfileSet(it)
+                            is ProfileRemoveViewEvent -> onProfileRemove(it)
                             is RemoveGeofencesViewEvent -> removeGeofences(it.geofences)
-                            is ProfileRemoveViewEvent -> onProfileRemove(it.profile)
                             is CancelAlarmsViewEvent -> cancelAlarms(it.alarms)
                         }
                     }.collect()
@@ -140,7 +129,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     override fun onEdit(entity: Profile, options: Bundle?) {
         startActivity(Intent(
             requireContext(),
-            ProfileDetailsActivity::class.java
+            ProfileDetailsDetailsActivity::class.java
         ).apply {
             putExtra(EXTRA_PROFILE, entity)
         }, options)
@@ -185,9 +174,9 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     }
 
     @Suppress("MissingPermission")
-    private fun removeGeofences(geofences: List<LocationRelation>) {
+    private suspend fun removeGeofences(geofences: List<LocationRelation>) {
         geofences.forEach { i ->
-            deleteThumbnail(requireContext(), i.location.previewImageId)
+            fileManager.deleteThumbnail(i.location.previewImageId)
             geofenceManager.removeGeofence(
                 i.location,
                 i.onEnterProfile,
@@ -196,21 +185,32 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         }
     }
 
-    private fun onProfileRemove(profile: Profile) {
+    private fun onProfileRemove(event: ProfileRemoveViewEvent) {
+
+        val profile: Profile = event.profile
+        val alarms: List<AlarmRelation> = event.alarms
+
         if (profile.id == viewModel.lastSelected) {
             viewModel.lastSelected = null
         }
         if (profile.id == preferencesManager.getProfile()?.id) {
             preferencesManager.clearPreferences()
         }
+        notificationDelegate.updateNotification(
+            profile, scheduleManager.getOngoingAlarm(alarms)
+        )
     }
 
     private fun onProfileSet(event: ProfileSetViewEvent) {
-        if (!preferencesManager.isProfileEnabled(event.profile)) {
-            profileManager.setProfile(event.profile, TRIGGER_TYPE_MANUAL, null)
-            adapter.setSelection(event.profile, viewModel.lastSelected)
+
+        val profile: Profile = event.profile
+        val alarms: List<AlarmRelation> = event.alarms
+
+        if (!preferencesManager.isProfileEnabled(profile)) {
+            profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
+            adapter.setSelection(profile, viewModel.lastSelected)
             notificationDelegate.updateNotification(
-                event.profile, scheduleManager.getOngoingAlarm(event.alarms)
+                profile, scheduleManager.getOngoingAlarm(alarms)
             )
         }
     }
@@ -234,7 +234,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     }
 
     override fun onFabClick(fab: FloatingActionButton) {
-        startActivity(Intent(context, ProfileDetailsActivity::class.java))
+        startActivity(Intent(context, ProfileDetailsDetailsActivity::class.java))
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {
@@ -253,14 +253,6 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
                 }
             )
         }
-    }
-
-    override fun getTracker(): SelectionTracker<Profile> {
-        return selectionTracker
-    }
-
-    override fun getFragmentActivity(): FragmentActivity {
-        return requireActivity()
     }
 
     companion object {

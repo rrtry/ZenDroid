@@ -63,8 +63,8 @@ fun interruptionPolicyAllowsNotificationStream(
     notificationInterruptionFilter: Int,
     notificationPriorityCategories: Int,
     notificationAccessGranted: Boolean,
-    streamsUnlinked: Boolean): Boolean {
-
+    streamsUnlinked: Boolean): Boolean
+{
     val state: Boolean = interruptionFilterAllowsNotifications(
         notificationInterruptionFilter,
         notificationPriorityCategories)

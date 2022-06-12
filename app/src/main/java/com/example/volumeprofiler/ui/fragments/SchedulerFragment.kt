@@ -1,13 +1,18 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.app.SharedElementCallback
 import android.content.*
 import android.content.Intent.ACTION_LOCALE_CHANGED
 import android.os.*
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
+import android.util.Log
 import android.view.*
+import android.widget.TextView
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.doOnLayout
+import androidx.core.view.doOnPreDraw
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
 import androidx.core.view.isVisible
 import androidx.fragment.app.*
@@ -44,7 +49,6 @@ import kotlinx.coroutines.flow.*
 @AndroidEntryPoint
 class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder>(),
     FabContainer,
-    ActionModeProvider<AlarmRelation>,
     MainActivity.MenuItemSelectedListener {
 
     override val listItem: Class<AlarmRelation> = AlarmRelation::class.java
@@ -58,7 +62,6 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
     private val viewModel: SchedulerViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
-    private var callback: FabContainerCallbacks? = null
     private var showDialog: Boolean = false
 
     private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
@@ -88,14 +91,12 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callback = requireActivity() as FabContainerCallbacks
         registerTimeFormatObserver()
         registerLocaleChangeReceiver()
     }
 
     override fun onDetach() {
         super.onDetach()
-        callback = null
         unregisterTimeFormatObserver()
         unregisterLocaleChangeReceiver()
     }
@@ -132,10 +133,8 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
         alarmAdapter = AlarmAdapter(requireActivity(), viewBinding.recyclerView, WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
-
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -292,14 +291,6 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
                 }
             )
         }
-    }
-
-    override fun getTracker(): SelectionTracker<AlarmRelation> {
-        return selectionTracker
-    }
-
-    override fun getFragmentActivity(): FragmentActivity {
-        return requireActivity()
     }
 
     companion object {

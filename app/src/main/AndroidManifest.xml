@@ -87,7 +87,7 @@
             android:exported="false"/>
 
         <activity
-            android:name="com.example.volumeprofiler.ui.activities.ProfileDetailsActivity"
+            android:name="com.example.volumeprofiler.ui.activities.ProfileDetailsDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
         <activity

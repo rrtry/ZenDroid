@@ -4,10 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.transition.Fade
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.Window
+import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -45,6 +42,8 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
     private var currentPosition: Int = PROFILE_FRAGMENT
+
+    override var actionMode: ActionMode? = null
 
     private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
@@ -134,6 +133,8 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+        window.requestFeature(Window.FEATURE_CONTENT_TRANSITIONS)
+
         with(window) {
             exitTransition = Fade(Fade.OUT)
             enterTransition = Fade(Fade.IN)

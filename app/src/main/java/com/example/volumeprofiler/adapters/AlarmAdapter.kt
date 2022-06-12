@@ -1,12 +1,9 @@
 package com.example.volumeprofiler.adapters
 
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.app.ActivityOptionsCompat
 import androidx.recyclerview.selection.ItemDetailsLookup
@@ -27,9 +24,10 @@ import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARE
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_START_TIME
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
-import com.example.volumeprofiler.util.TextUtil
-import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
+import com.example.volumeprofiler.util.TextUtil.Companion.formatLocalTime
+import com.example.volumeprofiler.util.TextUtil.Companion.formatWeekDays
 import java.lang.ref.WeakReference
+import androidx.core.util.Pair
 
 class AlarmAdapter(
     private val activity: Activity,
@@ -68,77 +66,47 @@ class AlarmAdapter(
             )
         }
 
+        @SuppressLint("SetTextI18n")
         fun bind(alarmRelation: AlarmRelation) {
 
             val alarm: Alarm = alarmRelation.alarm
 
             binding.scheduleSwitch.isChecked = alarm.isScheduled
-            binding.startTime.text = TextUtil.formatLocalTime(recyclerView.context, alarm.startTime)
-            binding.endTime.text = TextUtil.formatLocalTime(recyclerView.context, alarm.endTime)
-            binding.occurrencesTextView.text = TextUtil.formatWeekDays(alarm.scheduledDays)
+            binding.startTime.text = formatLocalTime(recyclerView.context, alarm.startTime)
+            binding.endTime.text = formatLocalTime(recyclerView.context, alarm.endTime)
+            binding.occurrencesTextView.text = formatWeekDays(alarm.scheduledDays)
             binding.profileName.text = "${alarmRelation.startProfile} - ${alarmRelation.endProfile}"
             binding.eventTitle.text = alarm.title
 
             binding.scheduleSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (buttonView.isPressed) {
                     if (isChecked) {
-                        onEnable(alarmRelation)
+                        itemActionListener.onEnable(alarmRelation)
                     } else {
-                        onDisable(alarmRelation)
+                        itemActionListener.onDisable(alarmRelation)
                     }
                 }
             }
             binding.deleteAlarmButton.setOnClickListener {
-                onRemove(alarmRelation)
+                itemActionListener.onRemove(alarmRelation)
             }
             binding.editAlarmButton.setOnClickListener {
-                onEdit(alarmRelation, binding)
+                itemActionListener.onEditWithScroll(
+                    alarmRelation,
+                    createSceneTransitionAnimation(binding),
+                    binding.root
+                )
             }
         }
-    }
-
-    private fun onDisable(alarmRelation: AlarmRelation) {
-        itemActionListener.onDisable(alarmRelation)
-    }
-
-    private fun onEnable(alarmRelation: AlarmRelation) {
-        itemActionListener.onEnable(alarmRelation)
-    }
-
-    private fun onRemove(alarmRelation: AlarmRelation) {
-        itemActionListener.onRemove(alarmRelation)
-    }
-
-    private fun onEdit(alarmRelation: AlarmRelation, binding: AlarmItemViewBinding) {
-
-        val onEdit = { delay: Long ->
-            Handler(Looper.getMainLooper()).postDelayed({
-                itemActionListener.onEdit(alarmRelation, createSceneTransitionAnimation(binding))
-            }, delay)
-        }
-
-        if (recyclerView.isViewPartiallyVisible(binding.root)) {
-            recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    recyclerView.clearOnScrollListeners()
-                    onEdit(100)
-                }
-            })
-            recyclerView.smoothScrollToPosition(
-                getItemPosition(alarmRelation.alarm.id)
-            )
-        } else onEdit(100)
     }
 
     private fun createSceneTransitionAnimation(binding: AlarmItemViewBinding): Bundle? {
         return ActivityOptionsCompat.makeSceneTransitionAnimation(
             activity,
-            androidx.core.util.Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
-            androidx.core.util.Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
-            androidx.core.util.Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
-            androidx.core.util.Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)).toBundle()
+            Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
+            Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
+            Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
+            Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)).toBundle()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {

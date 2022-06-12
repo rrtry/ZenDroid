@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.LocationAdapter
+import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.interfaces.FabContainer
@@ -51,22 +52,12 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
 
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var fileManager: FileManager
 
     private val viewModel: LocationsListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
     private lateinit var locationAdapter: LocationAdapter
-    private var callback: FabContainerCallbacks? = null
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        callback = requireActivity() as FabContainerCallbacks
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        callback = null
-    }
 
     private fun startMapActivity(locationRelation: LocationRelation? = null) {
         startActivity(MapsActivity.newIntent(requireContext(), locationRelation))
@@ -82,10 +73,8 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
         locationAdapter = LocationAdapter(requireContext(), WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
-
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -118,13 +107,13 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     }
 
     @Suppress("MissingPermission")
-    private fun removeGeofence(locationRelation: LocationRelation) {
+    private suspend fun removeGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
             locationRelation.onEnterProfile,
             locationRelation.onExitProfile
         )
-        deleteThumbnail(requireContext(), locationRelation.location.previewImageId)
+        fileManager.deleteThumbnail(locationRelation.location.previewImageId)
     }
 
     @Suppress("MissingPermission")
@@ -205,14 +194,6 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
                 }.location
             )
         }
-    }
-
-    override fun getTracker(): SelectionTracker<LocationRelation> {
-        return selectionTracker
-    }
-
-    override fun getFragmentActivity(): FragmentActivity {
-        return requireActivity()
     }
 
     override fun getBinding(

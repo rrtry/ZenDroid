@@ -30,6 +30,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.SuggestionsAdapter
+import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.databinding.GoogleMapsActivityBinding
@@ -103,6 +104,7 @@ class MapsActivity : AppCompatActivity(),
 
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var fileManager: FileManager
 
     private val viewModel: GeofenceSharedViewModel by viewModels()
 
@@ -166,11 +168,7 @@ class MapsActivity : AppCompatActivity(),
 
     private fun onSnapshotReady(bitmap: Bitmap?, uuid: UUID) {
         lifecycleScope.launch {
-            bitmap?.also {
-                withContext(Dispatchers.IO) {
-                    writeThumbnail(this@MapsActivity, uuid, it)
-                }
-            }
+            fileManager.writeThumbnail(uuid, bitmap)
         }.invokeOnCompletion {
             finish()
         }
@@ -636,6 +634,7 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    @Suppress("deprecation")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == GeofenceManager.REQUEST_ENABLE_LOCATION_SERVICES) {

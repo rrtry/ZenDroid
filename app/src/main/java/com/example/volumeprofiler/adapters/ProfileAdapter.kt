@@ -2,8 +2,9 @@ package com.example.volumeprofiler.adapters
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,15 +24,18 @@ import com.example.volumeprofiler.interfaces.ProfileActionListener
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.Animations
+import com.example.volumeprofiler.ui.Animations.selected
 import com.example.volumeprofiler.ui.BindingConverters.interruptionFilterToString
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment.Companion.SHARED_TRANSITION_PROFILE_IMAGE
+import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 import java.lang.ref.WeakReference
 import java.util.*
 
 class ProfileAdapter(
     private val activity: Activity,
-    private val viewGroup: ViewGroup,
+    private val recyclerView: RecyclerView,
+    private val container: ViewGroup,
     listener: WeakReference<ProfilesListFragment>
 ): ListAdapter<Profile, ProfileAdapter.ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
 
@@ -63,7 +67,7 @@ class ProfileAdapter(
 
         private fun expand(animate: Boolean) {
             if (animate) {
-                TransitionManager.beginDelayedTransition(viewGroup, AutoTransition())
+                TransitionManager.beginDelayedTransition(container, AutoTransition())
                 binding.expandButton.animate().rotation(180.0f).start()
             } else {
                 binding.expandButton.rotation = 180f
@@ -73,7 +77,7 @@ class ProfileAdapter(
         }
 
         private fun collapse() {
-            TransitionManager.beginDelayedTransition(viewGroup, AutoTransition())
+            TransitionManager.beginDelayedTransition(container, AutoTransition())
             binding.itemSeparator.visibility = View.GONE
             binding.expandableView.visibility = View.GONE
             binding.expandButton.animate().rotation(0f).start()
@@ -87,6 +91,8 @@ class ProfileAdapter(
 
         fun bind(profile: Profile, isSelected: Boolean, animate: Boolean) {
 
+            if (animate) selected(binding.root, isSelected) else setViewScale(isSelected)
+
             binding.profileTitle.text = profile.title
             binding.interruptionFilter.text = interruptionFilterToString(profile.interruptionFilter)
             binding.profileIcon.setImageDrawable(ContextCompat.getDrawable(binding.root.context, profile.iconRes))
@@ -95,7 +101,10 @@ class ProfileAdapter(
                 if (binding.expandableView.isVisible) collapse() else expand(true)
             }
             binding.editProfileButton.setOnClickListener {
-                profileActionListener.onEdit(profile, createSceneTransitionAnimation(binding))
+                profileActionListener.onEditWithScroll(
+                    profile,
+                    createSceneTransitionAnimation(binding),
+                    binding.root)
             }
             binding.removeProfileButton.setOnClickListener {
                 profileActionListener.onRemove(profile)
@@ -106,11 +115,6 @@ class ProfileAdapter(
                     profileActionListener.setSelection(profile.id)
                 }
             }
-            if (animate) {
-                Animations.selected(itemView, isSelected)
-            } else {
-                setViewScale(isSelected)
-            }
         }
 
         override fun onClick(v: View?) {
@@ -120,10 +124,11 @@ class ProfileAdapter(
         }
     }
 
-    fun createSceneTransitionAnimation(binding: ProfileItemViewBinding): Bundle? {
+    private fun createSceneTransitionAnimation(binding: ProfileItemViewBinding): Bundle? {
         return ActivityOptionsCompat.makeSceneTransitionAnimation(
             activity,
-            androidx.core.util.Pair.create(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE)
+            binding.profileIcon,
+            SHARED_TRANSITION_PROFILE_IMAGE
         ).toBundle()
     }
 
