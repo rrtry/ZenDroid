@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.app.SharedElementCallback
 import android.content.Intent
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
@@ -22,6 +23,7 @@ import java.util.*
 import javax.inject.Inject
 import androidx.fragment.app.*
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.adapters.AlarmAdapter
 import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
@@ -68,15 +70,22 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         return adapter
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        setSharedElementCallback()
+        return super.onCreateView(inflater, container, savedInstanceState)
+    }
+
     @Suppress("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         adapter = ProfileAdapter(
             requireActivity(),
-            viewBinding.recyclerView,
             viewBinding.constraintLayout,
             WeakReference(this))
-
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -213,6 +222,23 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
                 profile, scheduleManager.getOngoingAlarm(alarms)
             )
         }
+    }
+
+    private fun setSharedElementCallback() {
+        requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
+
+            override fun onMapSharedElements(
+                names: MutableList<String>?,
+                sharedElements: MutableMap<String, View>?
+            ) {
+                super.onMapSharedElements(names, sharedElements)
+                viewBinding.recyclerView.layoutManager?.getChildAt(childPosition)?.let { child ->
+                    (viewBinding.recyclerView.getChildViewHolder(child) as ProfileAdapter.ProfileHolder).apply {
+                        sharedElements?.put(SHARED_TRANSITION_PROFILE_IMAGE, binding.profileIcon)
+                    }
+                }
+            }
+        })
     }
 
     private fun updateFloatingActionButton(fragment: Int) {

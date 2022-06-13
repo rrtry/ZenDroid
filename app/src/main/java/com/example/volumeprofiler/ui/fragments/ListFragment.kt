@@ -1,14 +1,16 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.app.SharedElementCallback
 import android.content.Context
+import androidx.core.util.Pair
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
-import android.view.ActionMode
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.util.Log
+import android.view.*
+import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityOptionsCompat
 import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.selection.StorageStrategy
@@ -37,6 +39,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         }
 
     protected lateinit var selectionTracker: SelectionTracker<T>
+    protected var childPosition: Int = 0
 
     abstract val selectionId: String
     abstract val listItem: Class<T>
@@ -81,6 +84,12 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         callback = requireActivity() as FabContainerCallbacks
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        childPosition = savedInstanceState?.getInt(EXTRA_CHILD_POSITION, 0) ?: 0
+        requireActivity().postponeEnterTransition()
+    }
+
     override fun onDetach() {
         super.onDetach()
         callback = null
@@ -89,6 +98,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         selectionTracker.onSaveInstanceState(outState)
+        outState.putInt(EXTRA_CHILD_POSITION, childPosition)
     }
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
@@ -99,16 +109,16 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     @Suppress("unchecked_cast")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        getRecyclerView().let {
+        getRecyclerView().let { recyclerView ->
 
-            it.adapter = getAdapter().apply { stateRestorationPolicy = PREVENT_WHEN_EMPTY }
-            it.layoutManager = LinearLayoutManager(context)
+            recyclerView.adapter = getAdapter().apply { stateRestorationPolicy = PREVENT_WHEN_EMPTY }
+            recyclerView.layoutManager = LinearLayoutManager(context)
 
             selectionTracker = SelectionTracker.Builder(
                 selectionId,
-                it,
-                KeyProvider(it.adapter as ListAdapterItemProvider<T>),
-                DetailsLookup<T>(it),
+                recyclerView,
+                KeyProvider(recyclerView.adapter as ListAdapterItemProvider<T>),
+                DetailsLookup<T>(recyclerView),
                 StorageStrategy.createParcelableStorage(listItem)
             ).withSelectionPredicate(SelectionPredicates.createSelectAnything()).build()
             selectionTracker.addObserver(object : SelectionTracker.SelectionObserver<T>() {
@@ -136,9 +146,18 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         }
     }
 
-    final override fun onEditWithScroll(entity: T, options: Bundle?, view: View) {
-
+    override fun onEditWithTransition(
+        entity: T,
+        view: View,
+        vararg sharedViews: Pair<View, String>
+    ) {
         val recyclerView: RecyclerView = getRecyclerView()
+        childPosition = recyclerView.getChildAdapterPosition(view)
+
+        val options: Bundle? = ActivityOptionsCompat.makeSceneTransitionAnimation(
+            requireActivity(),
+            *sharedViews).toBundle()
+
         val onEdit = { delay: Long ->
             Handler(Looper.getMainLooper()).postDelayed({
                 onEdit(entity, options)
@@ -154,9 +173,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                     onEdit(100)
                 }
             })
-            recyclerView.smoothScrollToPosition(
-                recyclerView.getChildAdapterPosition(view)
-            )
+            recyclerView.smoothScrollToPosition(childPosition)
         } else onEdit(0)
     }
 
@@ -172,5 +189,10 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
 
     private fun startActionMode() {
         requireActivity().startActionMode(actionModeCallback)
+    }
+
+    companion object {
+
+        private const val EXTRA_CHILD_POSITION: String = "extra_child_position"
     }
 }

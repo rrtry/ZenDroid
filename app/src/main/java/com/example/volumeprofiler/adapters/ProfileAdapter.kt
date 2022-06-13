@@ -2,14 +2,11 @@ package com.example.volumeprofiler.adapters
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
+import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.widget.DiffUtil
@@ -23,18 +20,15 @@ import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ProfileActionListener
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
-import com.example.volumeprofiler.ui.Animations
 import com.example.volumeprofiler.ui.Animations.selected
 import com.example.volumeprofiler.ui.BindingConverters.interruptionFilterToString
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment.Companion.SHARED_TRANSITION_PROFILE_IMAGE
-import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 import java.lang.ref.WeakReference
 import java.util.*
 
 class ProfileAdapter(
     private val activity: Activity,
-    private val recyclerView: RecyclerView,
     private val container: ViewGroup,
     listener: WeakReference<ProfilesListFragment>
 ): ListAdapter<Profile, ProfileAdapter.ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
@@ -51,7 +45,7 @@ class ProfileAdapter(
 
     private val profileActionListener = listener.get()!! as ProfileActionListener
 
-    inner class ProfileHolder(private val binding: ProfileItemViewBinding):
+    inner class ProfileHolder(val binding: ProfileItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
         ViewHolderItemDetailsProvider<Profile>,
         View.OnClickListener {
@@ -101,10 +95,11 @@ class ProfileAdapter(
                 if (binding.expandableView.isVisible) collapse() else expand(true)
             }
             binding.editProfileButton.setOnClickListener {
-                profileActionListener.onEditWithScroll(
+                profileActionListener.onEditWithTransition(
                     profile,
-                    createSceneTransitionAnimation(binding),
-                    binding.root)
+                    binding.root,
+                    Pair(binding.profileIcon, SHARED_TRANSITION_PROFILE_IMAGE)
+                )
             }
             binding.removeProfileButton.setOnClickListener {
                 profileActionListener.onRemove(profile)
@@ -115,6 +110,7 @@ class ProfileAdapter(
                     profileActionListener.setSelection(profile.id)
                 }
             }
+            binding.root.post { activity.startPostponedEnterTransition() }
         }
 
         override fun onClick(v: View?) {
@@ -122,14 +118,6 @@ class ProfileAdapter(
                 getItemAtPosition(bindingAdapterPosition)
             )
         }
-    }
-
-    private fun createSceneTransitionAnimation(binding: ProfileItemViewBinding): Bundle? {
-        return ActivityOptionsCompat.makeSceneTransitionAnimation(
-            activity,
-            binding.profileIcon,
-            SHARED_TRANSITION_PROFILE_IMAGE
-        ).toBundle()
     }
 
     fun setSelection(profile: Profile?, currentSelection: UUID?) {

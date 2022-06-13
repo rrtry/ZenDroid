@@ -2,10 +2,11 @@ package com.example.volumeprofiler.interfaces
 
 import android.os.Bundle
 import android.view.View
+import androidx.core.util.Pair
 
 interface ListItemActionListener<T> {
 
-    fun onEditWithScroll(entity: T, options: Bundle?, view: View)
+    fun onEditWithTransition(entity: T, view: View, vararg sharedViews: Pair<View, String>)
 
     fun onEdit(entity: T, options: Bundle? = null)
 

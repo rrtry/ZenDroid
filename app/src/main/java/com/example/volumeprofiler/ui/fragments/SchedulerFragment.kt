@@ -3,6 +3,8 @@ package com.example.volumeprofiler.ui.fragments
 import android.app.SharedElementCallback
 import android.content.*
 import android.content.Intent.ACTION_LOCALE_CHANGED
+import android.graphics.Matrix
+import android.graphics.RectF
 import android.os.*
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
@@ -95,6 +97,11 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         registerLocaleChangeReceiver()
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        requireActivity().postponeEnterTransition()
+    }
+
     override fun onDetach() {
         super.onDetach()
         unregisterTimeFormatObserver()
@@ -132,21 +139,31 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         requireActivity().unregisterReceiver(localeReceiver)
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        setSharedElementCallback()
+        return super.onCreateView(inflater, container, savedInstanceState)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
         alarmAdapter = AlarmAdapter(requireActivity(), viewBinding.recyclerView, WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    sharedViewModel.viewEvents
-                        .collect {
-                            when (it) {
-                                is OnMenuOptionSelected -> onMenuOptionSelected(it.itemId)
-                                is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
-                                is OnSwiped -> onFragmentSwiped(it.fragment)
-                                is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
-                            }
+                    sharedViewModel.viewEvents.collect {
+                        when (it) {
+                            is OnMenuOptionSelected -> onMenuOptionSelected(it.itemId)
+                            is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
+                            is OnSwiped -> onFragmentSwiped(it.fragment)
+                            is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
                         }
+                    }
                 }
                 launch {
                     viewModel.viewEvents.collect {
@@ -158,13 +175,9 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
                     }
                 }
                 launch {
-                    viewModel.alarmsFlow
-                        .map {
-                            ScheduleManager.sortInstances(it)
-                        }
-                        .collect {
-                            updateAlarmAdapter(it)
-                        }
+                    viewModel.alarmsFlow.collect {
+                        updateAlarmAdapter(it)
+                    }
                 }
                 launch {
                     sharedViewModel.showDialog.collect {
@@ -256,6 +269,26 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         if (fragment == SCHEDULER_FRAGMENT) {
             onAnimateFab(callback!!.getFloatingActionButton())
         }
+    }
+
+    private fun setSharedElementCallback() {
+        requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
+
+            override fun onMapSharedElements(
+                names: MutableList<String>?,
+                sharedElements: MutableMap<String, View>?
+            ) {
+                super.onMapSharedElements(names, sharedElements)
+                viewBinding.recyclerView.layoutManager?.getChildAt(childPosition)?.let { child ->
+                    (viewBinding.recyclerView.getChildViewHolder(child) as AlarmAdapter.AlarmViewHolder).apply {
+                        sharedElements?.put(SHARED_TRANSITION_START_TIME, binding.startTime)
+                        sharedElements?.put(SHARED_TRANSITION_END_TIME, binding.endTime)
+                        sharedElements?.put(SHARED_TRANSITION_SWITCH, binding.scheduleSwitch)
+                        sharedElements?.put(SHARED_TRANSITION_SEPARATOR, binding.clockViewSeparator)
+                    }
+                }
+            }
+        })
     }
 
     private fun onFloatingActionButtonClick(fragment: Int) {

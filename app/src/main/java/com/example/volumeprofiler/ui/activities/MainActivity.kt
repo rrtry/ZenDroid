@@ -132,9 +132,9 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
 
-        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-        window.requestFeature(Window.FEATURE_CONTENT_TRANSITIONS)
+        currentPosition = savedInstanceState?.getInt(EXTRA_PAGER_POSITION, 0) ?: 0
 
+        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)
             enterTransition = Fade(Fade.IN)
@@ -144,10 +144,6 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-
-        savedInstanceState?.let {
-            currentPosition = it.getInt(EXTRA_PAGER_POSITION, 0)
-        }
 
         pagerAdapter = ScreenSlidePagerAdapter(this)
         binding.pager.adapter = pagerAdapter
@@ -190,9 +186,10 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
     companion object {
 
+        private const val EXTRA_PAGER_POSITION: String = "position"
+
         const val PROFILE_FRAGMENT: Int = 0
         const val SCHEDULER_FRAGMENT: Int = 1
         const val LOCATIONS_FRAGMENT: Int = 2
-        private const val EXTRA_PAGER_POSITION: String = "position"
     }
 }

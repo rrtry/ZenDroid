@@ -5,7 +5,6 @@ import android.app.Activity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.app.ActivityOptionsCompat
 import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.DiffUtil
@@ -56,7 +55,7 @@ class AlarmAdapter(
 
     private val itemActionListener: ListItemActionListener<AlarmRelation> = listener.get()!!
 
-    inner class AlarmViewHolder(private val binding: AlarmItemViewBinding):
+    inner class AlarmViewHolder(val binding: AlarmItemViewBinding):
         RecyclerView.ViewHolder(binding.root), ViewHolderItemDetailsProvider<AlarmRelation> {
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<AlarmRelation> {
@@ -91,22 +90,17 @@ class AlarmAdapter(
                 itemActionListener.onRemove(alarmRelation)
             }
             binding.editAlarmButton.setOnClickListener {
-                itemActionListener.onEditWithScroll(
+                itemActionListener.onEditWithTransition(
                     alarmRelation,
-                    createSceneTransitionAnimation(binding),
-                    binding.root
+                    binding.root,
+                    Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
+                    Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
+                    Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
+                    Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
                 )
             }
+            binding.root.post { activity.startPostponedEnterTransition() }
         }
-    }
-
-    private fun createSceneTransitionAnimation(binding: AlarmItemViewBinding): Bundle? {
-        return ActivityOptionsCompat.makeSceneTransitionAnimation(
-            activity,
-            Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
-            Pair.create(binding.endTime, SHARED_TRANSITION_END_TIME),
-            Pair.create(binding.scheduleSwitch, SHARED_TRANSITION_SWITCH),
-            Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)).toBundle()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {
