@@ -21,7 +21,7 @@ import android.media.AudioManager.*
 import android.net.Uri
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
-import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallbacks
+import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallback
 import com.example.volumeprofiler.core.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -55,7 +55,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private lateinit var systemPreferencesLauncher: ActivityResultLauncher<Intent>
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
 
-    private var callbacksDetails: ProfileDetailsActivityCallbacks? = null
+    private var callbacksDetails: ProfileDetailsActivityCallback? = null
     private var vibrator: Vibrator? = null
 
     private var mediaService: PlaybackService? = null
@@ -99,7 +99,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         registerForNotificationPolicyResult()
         registerForPhonePermissionResult()
         registerForSystemSettingsResult()
-        callbacksDetails = requireActivity() as ProfileDetailsActivityCallbacks
+        callbacksDetails = requireActivity() as ProfileDetailsActivityCallback
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

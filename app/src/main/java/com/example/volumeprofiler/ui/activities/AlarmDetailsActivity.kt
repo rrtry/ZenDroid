@@ -1,6 +1,7 @@
 package com.example.volumeprofiler.ui.activities
 
 import android.app.Instrumentation
+import android.app.SharedElementCallback
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -8,7 +9,6 @@ import android.os.Looper
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
 import android.transition.*
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.Window
@@ -17,12 +17,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.app.SharedElementCallback
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.core.PreferencesManager
-import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
 import com.example.volumeprofiler.databinding.CreateAlarmActivityBinding
@@ -31,10 +29,6 @@ import com.example.volumeprofiler.viewmodels.AlarmDetailsViewModel.DialogType
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.ui.fragments.*
 import com.example.volumeprofiler.interfaces.DetailsViewContract
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_END_TIME
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_START_TIME
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SWITCH
 import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.DISMISS_TIME_WINDOW
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
@@ -90,7 +84,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             }
             profileManager.updateScheduledProfile(viewModel.getEnabledAlarms())
         }.invokeOnCompletion {
-            onCancel()
+            onFinish(update)
         }
     }
 
@@ -102,7 +96,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
         onApply(alarm, false)
     }
 
-    override fun onCancel() {
+    override fun onFinish(result: Boolean) {
         ActivityCompat.finishAfterTransition(this)
     }
 
@@ -134,7 +128,6 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
         binding.lifecycleOwner = this
         setContentView(binding.root)
         setEntity()
-
         registerTimeFormatChangeObserver()
 
         lifecycleScope.launch {
@@ -151,7 +144,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                             is ShowDialogEvent -> showDialog(it.dialogType)
                             is OnCreateAlarmEvent -> onInsert(it.alarm)
                             is OnUpdateAlarmEvent -> onUpdate(it.alarm)
-                            is OnCancelChangesEvent -> onCancel()
+                            is OnCancelChangesEvent -> onFinish(false)
                         }
                     }
                 }
@@ -227,7 +220,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     override fun onBackPressed() {
         if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
-            onCancel()
+            onFinish(false)
         } else {
             showSnackbar(binding.root, "Press back button again to dismiss changes", LENGTH_LONG)
         }

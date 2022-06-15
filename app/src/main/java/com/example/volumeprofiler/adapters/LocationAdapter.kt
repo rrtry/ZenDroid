@@ -38,7 +38,8 @@ class LocationAdapter(
     private val itemActionListener: ListItemActionListener<LocationRelation> = listener.get()!!
 
     inner class LocationViewHolder(private val binding: LocationItemViewBinding):
-        RecyclerView.ViewHolder(binding.root), View.OnClickListener {
+        RecyclerView.ViewHolder(binding.root),
+        View.OnClickListener {
 
         init {
             binding.root.setOnClickListener(this)

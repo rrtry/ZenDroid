@@ -32,13 +32,12 @@ import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.DetailsViewContract
-import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallbacks
+import com.example.volumeprofiler.interfaces.ProfileDetailsActivityCallback
 import com.example.volumeprofiler.ui.Animations
 import com.example.volumeprofiler.ui.fragments.InterruptionFilterFragment
 import com.example.volumeprofiler.ui.fragments.ProfileDetailsFragment
 import com.example.volumeprofiler.ui.fragments.ProfileImageSelectionDialog
 import com.example.volumeprofiler.ui.fragments.ProfileNameInputDialog
-import com.example.volumeprofiler.util.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.DISMISS_TIME_WINDOW
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel
@@ -54,7 +53,7 @@ import kotlin.math.abs
 
 @AndroidEntryPoint
 class ProfileDetailsDetailsActivity: AppCompatActivity(),
-    ProfileDetailsActivityCallbacks,
+    ProfileDetailsActivityCallback,
     ActivityCompat.OnRequestPermissionsResultCallback,
     DetailsViewContract<Profile>,
     FragmentManager.OnBackStackChangedListener,
@@ -69,7 +68,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var notificationDelegate: NotificationDelegate
 
-    private var showExplanationDialog: Boolean = true
+    private var showExplanationDialog: Boolean = false
     private var elapsedTime: Long = 0L
     private var verticalOffset: Int = 0
     private val withTransition: Boolean
@@ -91,7 +90,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
         lifecycleScope.launch {
             viewModel.updateProfile(profile)
         }.invokeOnCompletion {
-            onCancel()
+            onFinish(true)
         }
     }
 
@@ -99,11 +98,11 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
         lifecycleScope.launch {
             viewModel.addProfile(profile)
         }.invokeOnCompletion {
-            onCancel()
+            onFinish(false)
         }
     }
 
-    override fun onCancel() {
+    override fun onFinish(result: Boolean) {
         val finish = { delay: Long ->
             Handler(Looper.getMainLooper()).postDelayed({
                 detachFloatingActionButton()
@@ -112,6 +111,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
         }
         val scroll: Boolean = isToolbarContentVisible() && withTransition
         val delay: Long = if (scroll) DELAY else 0
+
         if (scroll) {
             dispatchNestedScrollToTop()
         }
@@ -158,7 +158,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
                             is ShowDialogFragment -> showDialog(it.dialogType)
                             is OnUpdateProfileEvent -> onUpdate(it.profile)
                             is OnInsertProfileEvent -> onInsert(it.profile)
-                            is OnRemoveProfileEvent -> onCancel()
+                            is OnRemoveProfileEvent -> onFinish(false)
                             else -> Log.i("EditProfileActivity", "unknown event")
                         }
                     }
@@ -286,7 +286,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount < 1) {
             if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
-                onCancel()
+                onFinish(false)
             } else {
                 showSnackbar(binding.root, "Press back button again to exit", LENGTH_LONG)
             }
@@ -300,6 +300,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
 
         private const val EXTRA_ELAPSED_TIME: String = "key_elapsed_time"
         private const val EXTRA_SHOW_DIALOG: String = "extra_show_dialog"
+        private const val EXTRA_SAVED_STATE: String = "extra_saved_state"
         private const val DELAY: Long = 700
 
         const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"

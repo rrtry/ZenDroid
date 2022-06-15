@@ -10,18 +10,13 @@ import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
 import android.util.Log
 import android.view.*
-import android.widget.TextView
-import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.doOnLayout
-import androidx.core.view.doOnPreDraw
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
 import androidx.core.view.isVisible
 import androidx.fragment.app.*
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.AlarmAdapter
@@ -30,7 +25,6 @@ import com.example.volumeprofiler.ui.activities.AlarmDetailsActivity.Companion.E
 import com.example.volumeprofiler.ui.activities.MainActivity
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
-import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.eventBus.EventBus
@@ -71,7 +65,7 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_LOCALE_CHANGED) {
-                alarmAdapter.refresh()
+                alarmAdapter.notifyDataSetChanged()
             }
         }
     }
@@ -87,7 +81,7 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         return viewBinding.recyclerView
     }
 
-    override fun getAdapter(): ListAdapter<AlarmRelation, AlarmAdapter.AlarmViewHolder> {
+    override fun getAdapter(): RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
         return alarmAdapter
     }
 
@@ -95,11 +89,6 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         super.onAttach(context)
         registerTimeFormatObserver()
         registerLocaleChangeReceiver()
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        requireActivity().postponeEnterTransition()
     }
 
     override fun onDetach() {
@@ -119,7 +108,7 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
     private fun registerTimeFormatObserver() {
         timeFormatChangeObserver = TimeFormatChangeObserver(Handler(Looper.getMainLooper())) {
-            alarmAdapter.refresh()
+            alarmAdapter.notifyDataSetChanged()
         }
         requireContext().contentResolver.registerContentObserver(
             getUriFor(TIME_12_24),
@@ -139,18 +128,11 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         requireActivity().unregisterReceiver(localeReceiver)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        setSharedElementCallback()
-        return super.onCreateView(inflater, container, savedInstanceState)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        alarmAdapter = AlarmAdapter(requireActivity(), viewBinding.recyclerView, WeakReference(this))
+        alarmAdapter = AlarmAdapter(listOf(),
+            viewBinding.recyclerView,
+            WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -209,7 +191,8 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
     private fun updateAlarmAdapter(alarms: List<AlarmRelation>) {
         viewBinding.hintScheduler.isVisible = alarms.isEmpty()
-        alarmAdapter.submitList(alarms)
+        alarmAdapter.currentList = alarms
+        alarmAdapter.notifyDataSetChanged()
     }
 
     override fun onEdit(entity: AlarmRelation, options: Bundle?) {
@@ -271,26 +254,6 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         }
     }
 
-    private fun setSharedElementCallback() {
-        requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
-
-            override fun onMapSharedElements(
-                names: MutableList<String>?,
-                sharedElements: MutableMap<String, View>?
-            ) {
-                super.onMapSharedElements(names, sharedElements)
-                viewBinding.recyclerView.layoutManager?.getChildAt(childPosition)?.let { child ->
-                    (viewBinding.recyclerView.getChildViewHolder(child) as AlarmAdapter.AlarmViewHolder).apply {
-                        sharedElements?.put(SHARED_TRANSITION_START_TIME, binding.startTime)
-                        sharedElements?.put(SHARED_TRANSITION_END_TIME, binding.endTime)
-                        sharedElements?.put(SHARED_TRANSITION_SWITCH, binding.scheduleSwitch)
-                        sharedElements?.put(SHARED_TRANSITION_SEPARATOR, binding.clockViewSeparator)
-                    }
-                }
-            }
-        })
-    }
-
     private fun onFloatingActionButtonClick(fragment: Int) {
         if (fragment == SCHEDULER_FRAGMENT) {
             onFabClick(callback!!.getFloatingActionButton())
@@ -326,15 +289,22 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         }
     }
 
-    companion object {
-
-        fun getScheduledStatePayload(scheduled: Boolean): Bundle {
-            return Bundle().apply {
-                putBoolean(SCHEDULED_STATE_CHANGED, scheduled)
+    override fun mapSharedElements(
+        names: MutableList<String>?,
+        sharedElements: MutableMap<String, View>?
+    ) {
+        viewBinding.recyclerView.layoutManager?.findViewByPosition(childPosition)?.let { child ->
+            (viewBinding.recyclerView.getChildViewHolder(child) as AlarmAdapter.AlarmViewHolder).apply {
+                sharedElements?.put(SHARED_TRANSITION_START_TIME, binding.startTime)
+                sharedElements?.put(SHARED_TRANSITION_END_TIME, binding.endTime)
+                sharedElements?.put(SHARED_TRANSITION_SWITCH, binding.scheduleSwitch)
+                sharedElements?.put(SHARED_TRANSITION_SEPARATOR, binding.clockViewSeparator)
             }
         }
+    }
 
-        private const val SCHEDULED_STATE_CHANGED: String = "scheduled"
+    companion object {
+
         internal const val SHARED_TRANSITION_SEPARATOR: String = "shared_transition_separator"
         internal const val SHARED_TRANSITION_START_TIME: String = "shared_transition_start_time"
         internal const val SHARED_TRANSITION_END_TIME: String = "shared_transition_end_time"

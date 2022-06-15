@@ -130,11 +130,11 @@
         <entry key="app/src/main/res/layout-v31/map_decoration_item.xml" value="0.44655797101449274" />
         <entry key="app/src/main/res/layout/activity_intro.xml" value="0.17346014492753623" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.5" />
-        <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/alarm_item_view.xml" value="0.9" />
         <entry key="app/src/main/res/layout/alarms_fragment.xml" value="0.26494427558257344" />
         <entry key="app/src/main/res/layout/bottom_sheet_fragment.xml" value="0.1" />
         <entry key="app/src/main/res/layout/calendar_event_activity.xml" value="0.14969604863221886" />
-        <entry key="app/src/main/res/layout/create_alarm_activity.xml" value="0.18590704647676162" />
+        <entry key="app/src/main/res/layout/create_alarm_activity.xml" value="1.0" />
         <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.1" />
         <entry key="app/src/main/res/layout/create_profile_fragment.xml" value="0.26494427558257344" />
         <entry key="app/src/main/res/layout/dialog_multichoice_item.xml" value="0.5364102564102564" />

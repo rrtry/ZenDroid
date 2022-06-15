@@ -1,9 +1,8 @@
 package com.example.volumeprofiler.ui.activities
 
-import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
-import android.util.Log
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,7 +18,7 @@ import com.example.volumeprofiler.databinding.ActivityMainBinding
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment
-import com.example.volumeprofiler.interfaces.FabContainerCallbacks
+import com.example.volumeprofiler.interfaces.MainActivityCallback
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.BaseTransientBottomBar.ANIMATION_MODE_SLIDE
@@ -29,7 +28,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), FabContainerCallbacks {
+class MainActivity : AppCompatActivity(), MainActivityCallback {
 
     interface MenuItemSelectedListener {
 
@@ -41,20 +40,20 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
     private lateinit var binding: ActivityMainBinding
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
     private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
-    private var currentPosition: Int = PROFILE_FRAGMENT
 
     override var actionMode: ActionMode? = null
+    override var isActivityReturning: Boolean = false
 
     private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
         override fun onPageSelected(position: Int) {
             super.onPageSelected(position)
-            if (currentPosition != position) {
-                viewModel.onFragmentSwiped(currentPosition)
+            if (viewModel.currentFragment.value != position) {
+                viewModel.onFragmentSwiped()
             }
             onPrepareOptionsMenu(binding.toolbar.menu)
             viewModel.animateFloatingActionButton(position)
-            currentPosition = position
+            viewModel.currentFragment.value = position
         }
     }
 
@@ -72,67 +71,12 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         }
     }
 
-    override fun showSnackBar(text: String, length: Int, action: (() -> Unit)?) {
-        Snackbar.make(
-            binding.coordinatorLayout,
-            text,
-            length
-        ).apply {
-            animationMode = ANIMATION_MODE_SLIDE
-            if (action != null) {
-                setAction("Grant") {
-                    action()
-                }
-            }
-        }.show()
+    override fun onActivityReenter(resultCode: Int, data: Intent?) {
+        super.onActivityReenter(resultCode, data)
+        isActivityReturning = true
     }
 
-    override fun requestPermissions(permissions: Array<String>) {
-        permissionRequestLauncher.launch(permissions)
-    }
-
-    override fun getFloatingActionButton(): FloatingActionButton {
-        return binding.fab
-    }
-
-    override fun onBackPressed() {
-        if (binding.pager.currentItem == 0) {
-            super.onBackPressed()
-        } else {
-            binding.pager.currentItem =- 1
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putInt(EXTRA_PAGER_POSITION, currentPosition)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        super.onOptionsItemSelected(item)
-        viewModel.onMenuOptionSelected(item.itemId)
-        return true
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        return if (currentPosition == SCHEDULER_FRAGMENT) {
-            super.onCreateOptionsMenu(menu)
-            menuInflater.inflate(R.menu.action_item_selection, menu)
-            true
-        } else {
-            false
-        }
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        super.onPrepareOptionsMenu(menu)
-        return binding.pager.currentItem == SCHEDULER_FRAGMENT
-    }
-
-    @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        currentPosition = savedInstanceState?.getInt(EXTRA_PAGER_POSITION, 0) ?: 0
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
@@ -143,7 +87,6 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
 
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
-        setSupportActionBar(binding.toolbar)
 
         pagerAdapter = ScreenSlidePagerAdapter(this)
         binding.pager.adapter = pagerAdapter
@@ -184,9 +127,38 @@ class MainActivity : AppCompatActivity(), FabContainerCallbacks {
         binding.pager.unregisterOnPageChangeCallback(onPageChangeCallback)
     }
 
-    companion object {
+    override fun showSnackBar(text: String, length: Int, action: (() -> Unit)?) {
+        Snackbar.make(
+            binding.coordinatorLayout,
+            text,
+            length
+        ).apply {
+            animationMode = ANIMATION_MODE_SLIDE
+            if (action != null) {
+                setAction("Grant") {
+                    action()
+                }
+            }
+        }.show()
+    }
 
-        private const val EXTRA_PAGER_POSITION: String = "position"
+    override fun requestPermissions(permissions: Array<String>) {
+        permissionRequestLauncher.launch(permissions)
+    }
+
+    override fun getFloatingActionButton(): FloatingActionButton {
+        return binding.fab
+    }
+
+    override fun onBackPressed() {
+        if (binding.pager.currentItem == 0) {
+            super.onBackPressed()
+        } else {
+            binding.pager.currentItem =- 1
+        }
+    }
+
+    companion object {
 
         const val PROFILE_FRAGMENT: Int = 0
         const val SCHEDULER_FRAGMENT: Int = 1

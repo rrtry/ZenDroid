@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.adapters
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,20 +27,10 @@ import java.lang.ref.WeakReference
 import java.util.*
 
 class ProfileAdapter(
-    private val activity: Activity,
+    var currentList: List<Profile>,
     private val container: ViewGroup,
     listener: WeakReference<ProfilesListFragment>
-): ListAdapter<Profile, ProfileAdapter.ProfileHolder>(object : DiffUtil.ItemCallback<Profile>() {
-
-    override fun areItemsTheSame(oldItem: Profile, newItem: Profile): Boolean {
-        return oldItem.id == newItem.id
-    }
-
-    override fun areContentsTheSame(oldItem: Profile, newItem: Profile): Boolean {
-        return oldItem == newItem
-    }
-
-}), ListAdapterItemProvider<Profile> {
+): RecyclerView.Adapter<ProfileAdapter.ProfileHolder>(), ListAdapterItemProvider<Profile> {
 
     private val profileActionListener = listener.get()!! as ProfileActionListener
 
@@ -56,7 +45,7 @@ class ProfileAdapter(
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<Profile> {
-            return ItemDetails(bindingAdapterPosition, getItemAtPosition(bindingAdapterPosition))
+            return ItemDetails(bindingAdapterPosition, currentList[bindingAdapterPosition])
         }
 
         private fun expand(animate: Boolean) {
@@ -110,12 +99,14 @@ class ProfileAdapter(
                     profileActionListener.setSelection(profile.id)
                 }
             }
-            binding.root.post { activity.startPostponedEnterTransition() }
+            binding.profileIcon.post {
+                profileActionListener.onSharedViewReady()
+            }
         }
 
         override fun onClick(v: View?) {
             profileActionListener.onEnable(
-                getItemAtPosition(bindingAdapterPosition)
+                currentList[bindingAdapterPosition]
             )
         }
     }
@@ -147,10 +138,6 @@ class ProfileAdapter(
         }
     }
 
-    fun getItemAtPosition(position: Int): Profile {
-        return getItem(position)
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileHolder {
         return ProfileHolder(
             ProfileItemViewBinding.inflate(
@@ -163,16 +150,20 @@ class ProfileAdapter(
 
     override fun onBindViewHolder(holder: ProfileHolder, @SuppressLint("RecyclerView") position: Int) {
         holder.bind(
-            getItem(position),
-            profileActionListener.isSelected(getItem(position)),
+            currentList[position],
+            profileActionListener.isSelected(currentList[position]),
             true)
     }
 
     override fun getItemKey(position: Int): Profile {
-        return getItemAtPosition(position)
+        return currentList[position]
     }
 
     override fun getPosition(key: Profile): Int {
         return currentList.indexOfFirst { key == it }
+    }
+
+    override fun getItemCount(): Int {
+        return currentList.size
     }
 }

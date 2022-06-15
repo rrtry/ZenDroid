@@ -9,12 +9,13 @@ import kotlinx.coroutines.launch
 class MainActivityViewModel: ViewModel() {
 
     sealed class ViewEvent {
-        data class AnimateFloatingActionButton(val fragment: Int): ViewEvent()
-        data class OnSwiped(val fragment: Int): ViewEvent()
-        data class OnFloatingActionButtonClick(val fragment: Int): ViewEvent()
-        data class OnMenuOptionSelected(val itemId: Int): ViewEvent()
+        data class AnimateFloatingActionButton(val fragment: Int) : ViewEvent()
+        data class OnSwiped(val fragment: Int) : ViewEvent()
+        data class OnFloatingActionButtonClick(val fragment: Int) : ViewEvent()
+        data class OnMenuOptionSelected(val itemId: Int) : ViewEvent()
     }
 
+    val currentFragment: MutableStateFlow<Int> = MutableStateFlow(0)
     val viewEvents: MutableSharedFlow<ViewEvent?> = MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val showDialog: MutableStateFlow<Boolean> = MutableStateFlow(true)
 
@@ -30,9 +31,9 @@ class MainActivityViewModel: ViewModel() {
         }
     }
 
-    fun onFragmentSwiped(fragment: Int) {
+    fun onFragmentSwiped() {
         viewModelScope.launch {
-            viewEvents.emit(ViewEvent.OnSwiped(fragment))
+            viewEvents.emit(ViewEvent.OnSwiped(currentFragment.value))
         }
     }
 

@@ -1,11 +1,13 @@
 package com.example.volumeprofiler.interfaces
 
 import android.view.ActionMode
+import androidx.fragment.app.Fragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-interface FabContainerCallbacks {
+interface MainActivityCallback {
 
     var actionMode: ActionMode?
+    var isActivityReturning: Boolean
 
     fun showSnackBar(
         text: String,

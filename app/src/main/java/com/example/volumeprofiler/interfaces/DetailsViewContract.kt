@@ -6,5 +6,5 @@ interface DetailsViewContract <T> {
 
     fun onInsert(item: T)
 
-    fun onCancel()
+    fun onFinish(result: Boolean)
 }

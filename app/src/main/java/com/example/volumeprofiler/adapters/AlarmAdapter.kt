@@ -1,12 +1,10 @@
 package com.example.volumeprofiler.adapters
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.selection.ItemDetailsLookup
-import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -17,8 +15,6 @@ import com.example.volumeprofiler.interfaces.ListItemActionListener
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
-import com.example.volumeprofiler.ui.Animations
-import com.example.volumeprofiler.ui.fragments.SchedulerFragment
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_END_TIME
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_START_TIME
@@ -27,41 +23,26 @@ import com.example.volumeprofiler.util.TextUtil.Companion.formatLocalTime
 import com.example.volumeprofiler.util.TextUtil.Companion.formatWeekDays
 import java.lang.ref.WeakReference
 import androidx.core.util.Pair
+import androidx.recyclerview.selection.SelectionTracker.SELECTION_CHANGED_MARKER
+import com.example.volumeprofiler.ui.Animations.selected
+import java.time.LocalTime
 
 class AlarmAdapter(
-    private val activity: Activity,
+    var currentList: List<AlarmRelation>,
     private val recyclerView: RecyclerView,
     listener: WeakReference<ListItemActionListener<AlarmRelation>>
-) : ListAdapter<AlarmRelation, AlarmAdapter.AlarmViewHolder>(object : DiffUtil.ItemCallback<AlarmRelation>() {
-
-    override fun areItemsTheSame(oldItem: AlarmRelation, newItem: AlarmRelation): Boolean {
-        return oldItem.alarm.id == newItem.alarm.id
-    }
-
-    override fun areContentsTheSame(oldItem: AlarmRelation, newItem: AlarmRelation): Boolean {
-        return oldItem == newItem
-    }
-
-    override fun getChangePayload(oldItem: AlarmRelation, newItem: AlarmRelation): Any? {
-        super.getChangePayload(oldItem, newItem)
-
-        if (oldItem.alarm.isScheduled != newItem.alarm.isScheduled) {
-            return SchedulerFragment.getScheduledStatePayload(newItem.alarm.isScheduled)
-        }
-        return null
-    }
-
-}), ListAdapterItemProvider<AlarmRelation> {
+) : RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder>(), ListAdapterItemProvider<AlarmRelation> {
 
     private val itemActionListener: ListItemActionListener<AlarmRelation> = listener.get()!!
 
     inner class AlarmViewHolder(val binding: AlarmItemViewBinding):
-        RecyclerView.ViewHolder(binding.root), ViewHolderItemDetailsProvider<AlarmRelation> {
+        RecyclerView.ViewHolder(binding.root),
+        ViewHolderItemDetailsProvider<AlarmRelation> {
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<AlarmRelation> {
             return ItemDetails(
                 bindingAdapterPosition,
-                getItemAtPosition(bindingAdapterPosition)
+                currentList[bindingAdapterPosition]
             )
         }
 
@@ -99,7 +80,9 @@ class AlarmAdapter(
                     Pair.create(binding.clockViewSeparator, SHARED_TRANSITION_SEPARATOR)
                 )
             }
-            binding.root.post { activity.startPostponedEnterTransition() }
+            binding.root.post {
+                itemActionListener.onSharedViewReady()
+            }
         }
     }
 
@@ -121,8 +104,21 @@ class AlarmAdapter(
         if (payloads.isNotEmpty()) {
             payloads.forEach { i ->
                 when (i) {
-                    is Bundle -> holder.bind(getItem(position))
-                    SelectionTracker.SELECTION_CHANGED_MARKER -> Animations.selected(holder.itemView, itemActionListener.isSelected(getItem(position)))
+                    is Bundle -> {
+                        i.keySet().forEach { key ->
+                            i.getSerializable(key)?.toString().let { timeFormatted ->
+                                if (key == PAYLOAD_START_TIME_CHANGED) {
+                                    holder.binding.startTime.text = timeFormatted
+                                }
+                                if (key == PAYLOAD_END_TIME_CHANGED) {
+                                    holder.binding.endTime.text = timeFormatted
+                                }
+                            }
+                        }
+                    }
+                    SELECTION_CHANGED_MARKER -> {
+                        selected(holder.itemView, itemActionListener.isSelected(currentList[position]))
+                    }
                 }
             }
         } else super.onBindViewHolder(holder, position, payloads)
@@ -137,14 +133,7 @@ class AlarmAdapter(
     }
 
     override fun onBindViewHolder(holder: AlarmViewHolder, position: Int) {
-        holder.bind(getItem(position))
-    }
-
-    fun refresh() {
-        currentList.also {
-            submitList(null)
-            submitList(it)
-        }
+        holder.bind(currentList[position])
     }
 
     private fun getItemPosition(id: Long): Int {
@@ -156,11 +145,37 @@ class AlarmAdapter(
     fun updateAlarmState(alarm: Alarm) {
         notifyItemChanged(
             getItemPosition(alarm.id),
-            SchedulerFragment.getScheduledStatePayload(alarm.isScheduled)
+            addScheduledStatePayload(Bundle(), alarm.isScheduled)
         )
     }
 
-    fun getItemAtPosition(position: Int): AlarmRelation {
-        return getItem(position)
+    override fun getItemCount(): Int {
+        return currentList.size
+    }
+
+    companion object {
+
+        private fun addStartTimeChangedPayload(payloadsBundle: Bundle, startTime: LocalTime): Bundle {
+            return payloadsBundle.apply {
+                putSerializable(PAYLOAD_START_TIME_CHANGED, startTime)
+            }
+        }
+
+        private fun addEndTimeChangedPayload(payloadsBundle: Bundle, endTime: LocalTime): Bundle {
+            return payloadsBundle.apply {
+                putSerializable(PAYLOAD_END_TIME_CHANGED, endTime)
+            }
+        }
+
+        private fun addScheduledStatePayload(payloadsBundle: Bundle, scheduled: Boolean): Bundle {
+            return payloadsBundle.apply {
+                putBoolean(PAYLOAD_SCHEDULED_STATE_CHANGED, scheduled)
+            }
+        }
+
+        private const val PAYLOAD_SCHEDULED_STATE_CHANGED: String = "scheduled_state"
+        private const val PAYLOAD_START_TIME_CHANGED: String = "start_time"
+        private const val PAYLOAD_END_TIME_CHANGED: String = "end_time"
+
     }
 }

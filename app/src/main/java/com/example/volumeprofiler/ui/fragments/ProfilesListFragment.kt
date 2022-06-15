@@ -2,8 +2,11 @@ package com.example.volumeprofiler.ui.fragments
 
 import android.app.SharedElementCallback
 import android.content.Intent
+import android.graphics.Matrix
+import android.graphics.RectF
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
+import android.os.Parcelable
 import android.util.Log
 import android.view.*
 import androidx.core.content.res.ResourcesCompat
@@ -23,7 +26,6 @@ import java.util.*
 import javax.inject.Inject
 import androidx.fragment.app.*
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.adapters.AlarmAdapter
 import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
@@ -45,7 +47,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     private val viewModel: ProfilesListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
-    private lateinit var adapter: ProfileAdapter
+    private lateinit var profileAdapter: ProfileAdapter
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var scheduleManager: ScheduleManager
@@ -66,24 +68,15 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         return viewBinding.recyclerView
     }
 
-    override fun getAdapter(): ListAdapter<Profile, ProfileAdapter.ProfileHolder> {
-        return adapter
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        setSharedElementCallback()
-        return super.onCreateView(inflater, container, savedInstanceState)
+    override fun getAdapter(): RecyclerView.Adapter<ProfileAdapter.ProfileHolder> {
+        return profileAdapter
     }
 
     @Suppress("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        adapter = ProfileAdapter(
-            requireActivity(),
+        profileAdapter = ProfileAdapter(
+            listOf(),
             viewBinding.constraintLayout,
             WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
@@ -120,10 +113,10 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
                     eventBus.sharedFlow.collectLatest {
                         if (it is EventBus.Event.ProfileChanged) {
                             try {
-                                adapter.currentList.first { profile ->
+                                profileAdapter.currentList.first { profile ->
                                     profile.id == it.id
                                 }.also { profile ->
-                                    adapter.setSelection(profile, viewModel.lastSelected)
+                                    profileAdapter.setSelection(profile, viewModel.lastSelected)
                                 }
                             } catch (e: NoSuchElementException) {
                                 Log.e("ProfilesListFragment", "Invalid profile: ${it.id}")
@@ -179,7 +172,8 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
             sharedViewModel.showDialog.value = isEmpty
             viewBinding.placeHolderText.isVisible = isEmpty
         }
-        adapter.submitList(profiles)
+        profileAdapter.currentList = profiles
+        profileAdapter.notifyDataSetChanged()
     }
 
     @Suppress("MissingPermission")
@@ -217,28 +211,22 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
 
         if (!preferencesManager.isProfileEnabled(profile)) {
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
-            adapter.setSelection(profile, viewModel.lastSelected)
+            profileAdapter.setSelection(profile, viewModel.lastSelected)
             notificationDelegate.updateNotification(
                 profile, scheduleManager.getOngoingAlarm(alarms)
             )
         }
     }
 
-    private fun setSharedElementCallback() {
-        requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
-
-            override fun onMapSharedElements(
-                names: MutableList<String>?,
-                sharedElements: MutableMap<String, View>?
-            ) {
-                super.onMapSharedElements(names, sharedElements)
-                viewBinding.recyclerView.layoutManager?.getChildAt(childPosition)?.let { child ->
-                    (viewBinding.recyclerView.getChildViewHolder(child) as ProfileAdapter.ProfileHolder).apply {
-                        sharedElements?.put(SHARED_TRANSITION_PROFILE_IMAGE, binding.profileIcon)
-                    }
-                }
+    override fun mapSharedElements(
+        names: MutableList<String>?,
+        sharedElements: MutableMap<String, View>?
+    ) {
+        viewBinding.recyclerView.layoutManager?.findViewByPosition(childPosition)?.let { child ->
+            (viewBinding.recyclerView.getChildViewHolder(child) as ProfileAdapter.ProfileHolder).apply {
+                sharedElements?.put(SHARED_TRANSITION_PROFILE_IMAGE, binding.profileIcon)
             }
-        })
+        }
     }
 
     private fun updateFloatingActionButton(fragment: Int) {
@@ -274,7 +262,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     override fun onActionItemRemove() {
         selectionTracker.selection.forEach { selection ->
             viewModel.removeProfile(
-                adapter.currentList.first {
+                profileAdapter.currentList.first {
                     it == selection
                 }
             )

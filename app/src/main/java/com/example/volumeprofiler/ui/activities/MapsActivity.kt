@@ -162,7 +162,7 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-    override fun onCancel() {
+    override fun onFinish(result: Boolean) {
         finish()
     }
 

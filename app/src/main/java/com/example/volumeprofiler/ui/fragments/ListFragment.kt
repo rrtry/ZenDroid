@@ -1,21 +1,18 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.app.SharedElementCallback
 import android.content.Context
 import androidx.core.util.Pair
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
-import android.util.Log
 import android.view.*
-import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.app.SharedElementCallback
 import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.selection.StorageStrategy
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.example.volumeprofiler.selection.DetailsLookup
@@ -31,11 +28,17 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     ActionModeProvider,
     ListItemActionListener<T> {
 
-    protected var callback: FabContainerCallbacks? = null
+    protected var callback: MainActivityCallback? = null
     private var actionMode: ActionMode?
         get() = callback?.actionMode
         set(value) {
             callback?.actionMode = value
+        }
+
+    override var shouldStartDelayedTransition: Boolean
+        get() = callback!!.isActivityReturning
+        set(value) {
+            callback!!.isActivityReturning = value
         }
 
     protected lateinit var selectionTracker: SelectionTracker<T>
@@ -45,7 +48,9 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     abstract val listItem: Class<T>
 
     abstract fun getRecyclerView(): RecyclerView
-    abstract fun getAdapter(): ListAdapter<T, VH>
+    abstract fun getAdapter(): RecyclerView.Adapter<VH>
+    abstract fun mapSharedElements(names: MutableList<String>?,
+                                   sharedElements: MutableMap<String, View>?)
 
     private val actionModeCallback = object : ActionMode.Callback {
 
@@ -81,7 +86,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callback = requireActivity() as FabContainerCallbacks
+        callback = requireActivity() as MainActivityCallback
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,6 +148,16 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                     actionMode?.finish()
                 }
             })
+            requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
+
+                override fun onMapSharedElements(
+                    names: MutableList<String>?,
+                    sharedElements: MutableMap<String, View>?
+                ) {
+                    mapSharedElements(names, sharedElements)
+                    super.onMapSharedElements(names, sharedElements)
+                }
+            })
         }
     }
 
@@ -189,6 +204,11 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
 
     private fun startActionMode() {
         requireActivity().startActionMode(actionModeCallback)
+    }
+
+    override fun onSharedViewReady() {
+        shouldStartDelayedTransition = false
+        requireActivity().startPostponedEnterTransition()
     }
 
     companion object {
