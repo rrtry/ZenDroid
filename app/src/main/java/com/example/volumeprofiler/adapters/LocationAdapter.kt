@@ -85,6 +85,10 @@ class LocationAdapter(
         )
     }
 
+    override fun getItemId(position: Int): Long {
+        return currentList[position].location.id.toLong()
+    }
+
     @Suppress("unchecked_cast")
     override fun onBindViewHolder(
         holder: LocationViewHolder,
