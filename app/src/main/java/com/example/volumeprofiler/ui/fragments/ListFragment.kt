@@ -116,7 +116,10 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         super.onViewCreated(view, savedInstanceState)
         getRecyclerView().let { recyclerView ->
 
-            recyclerView.adapter = getAdapter().apply { stateRestorationPolicy = PREVENT_WHEN_EMPTY }
+            recyclerView.adapter = getAdapter().apply {
+                stateRestorationPolicy = PREVENT_WHEN_EMPTY
+                setHasStableIds(true)
+            }
             recyclerView.layoutManager = LinearLayoutManager(context)
 
             selectionTracker = SelectionTracker.Builder(

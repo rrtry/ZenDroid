@@ -111,6 +111,10 @@ class ProfileAdapter(
         }
     }
 
+    override fun getItemId(position: Int): Long {
+        return currentList[position].id.mostSignificantBits and Long.MAX_VALUE
+    }
+
     fun setSelection(profile: Profile?, currentSelection: UUID?) {
         profile?.id?.also {
             updatePreviousProfileView(currentSelection)

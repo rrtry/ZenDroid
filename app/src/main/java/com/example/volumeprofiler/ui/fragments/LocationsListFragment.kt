@@ -39,6 +39,8 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     FabContainer,
     ListItemActionListener<LocationRelation> {
 
+    private lateinit var locationAdapter: LocationAdapter
+
     override val selectionId: String = SELECTION_ID
     override val listItem: Class<LocationRelation> = LocationRelation::class.java
 
@@ -48,8 +50,6 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
 
     private val viewModel: LocationsListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
-
-    private lateinit var locationAdapter: LocationAdapter
 
     private fun startMapActivity(locationRelation: LocationRelation? = null) {
         startActivity(MapsActivity.newIntent(requireContext(), locationRelation))
@@ -61,11 +61,12 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         } else {
             viewBinding.hintLocations.visibility = View.GONE
         }
-        locationAdapter.submitList(list)
+        locationAdapter.currentList = list
+        locationAdapter.notifyDataSetChanged()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        locationAdapter = LocationAdapter(requireContext(), WeakReference(this))
+        locationAdapter = LocationAdapter(listOf(), requireContext(), WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -199,7 +200,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         return viewBinding.recyclerView
     }
 
-    override fun getAdapter(): ListAdapter<LocationRelation, LocationAdapter.LocationViewHolder> {
+    override fun getAdapter(): RecyclerView.Adapter<LocationAdapter.LocationViewHolder> {
         return locationAdapter
     }
 

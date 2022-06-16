@@ -95,6 +95,10 @@ class AlarmAdapter(
         )
     }
 
+    override fun getItemId(position: Int): Long {
+        return currentList[position].alarm.id
+    }
+
     @Suppress("unchecked_cast")
     override fun onBindViewHolder(
         holder: AlarmViewHolder,

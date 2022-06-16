@@ -21,19 +21,10 @@ import com.example.volumeprofiler.ui.fragments.LocationsListFragment
 import java.lang.ref.WeakReference
 
 class LocationAdapter(
+    var currentList: List<LocationRelation>,
     private val context: Context,
     listener: WeakReference<ListItemActionListener<LocationRelation>>
-): ListAdapter<LocationRelation, LocationAdapter.LocationViewHolder>(object : DiffUtil.ItemCallback<LocationRelation>() {
-
-    override fun areItemsTheSame(oldItem: LocationRelation, newItem: LocationRelation): Boolean {
-        return oldItem.location.id == newItem.location.id
-    }
-
-    override fun areContentsTheSame(oldItem: LocationRelation, newItem: LocationRelation): Boolean {
-        return oldItem == newItem
-    }
-
-}), ListAdapterItemProvider<LocationRelation> {
+): RecyclerView.Adapter<LocationAdapter.LocationViewHolder>(), ListAdapterItemProvider<LocationRelation> {
 
     private val itemActionListener: ListItemActionListener<LocationRelation> = listener.get()!!
 
@@ -75,7 +66,7 @@ class LocationAdapter(
         }
 
         override fun onClick(v: View?) {
-            getItemAtPosition(bindingAdapterPosition).also {
+            currentList[bindingAdapterPosition].also {
                 if (it.location.enabled) {
                     itemActionListener.onDisable(it)
                 } else {
@@ -115,7 +106,7 @@ class LocationAdapter(
     }
 
     override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {
-        holder.bind(getItem(position), false)
+        holder.bind(currentList[position], false)
     }
 
     override fun getItemKey(position: Int): LocationRelation {
@@ -133,7 +124,7 @@ class LocationAdapter(
         )
     }
 
-    fun getItemAtPosition(position: Int): LocationRelation {
-        return getItem(position)
+    override fun getItemCount(): Int {
+        return currentList.size
     }
 }
