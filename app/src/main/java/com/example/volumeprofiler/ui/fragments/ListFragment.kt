@@ -35,14 +35,8 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
             callback?.actionMode = value
         }
 
-    override var shouldStartDelayedTransition: Boolean
-        get() = callback!!.isActivityReturning
-        set(value) {
-            callback!!.isActivityReturning = value
-        }
-
     protected lateinit var selectionTracker: SelectionTracker<T>
-    protected var childPosition: Int = 0
+    private var childPosition: Int = 0
 
     abstract val selectionId: String
     abstract val listItem: Class<T>
@@ -226,7 +220,6 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     }
 
     override fun onSharedViewReady() {
-        shouldStartDelayedTransition = false
         requireActivity().startPostponedEnterTransition()
     }
 

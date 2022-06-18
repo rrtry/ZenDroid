@@ -6,8 +6,6 @@ import androidx.core.util.Pair
 
 interface ListItemActionListener<T> {
 
-    var shouldStartDelayedTransition: Boolean
-
     fun onEditWithTransition(entity: T, view: View, vararg sharedViews: Pair<View, String>)
 
     fun onEdit(entity: T, options: Bundle? = null)

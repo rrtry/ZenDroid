@@ -108,18 +108,25 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
+
             sharedElementEnterTransition = ChangeBounds()
-            enterTransition = TransitionSet().apply {
+            sharedElementExitTransition = ChangeBounds()
 
-                ordering = TransitionSet.ORDERING_TOGETHER
-                duration = 350
-                addTransition(Fade())
-                addTransition(Slide(Gravity.BOTTOM))
+            TransitionSet().also {
 
-                excludeTarget(android.R.id.statusBarBackground, true)
-                excludeTarget(android.R.id.navigationBarBackground, true)
+                it.ordering = TransitionSet.ORDERING_TOGETHER
+                it.duration = 350
+                it.addTransition(Fade())
+                it.addTransition(Slide(Gravity.BOTTOM))
+
+                it.excludeTarget(android.R.id.statusBarBackground, true)
+                it.excludeTarget(android.R.id.navigationBarBackground, true)
+
+                enterTransition = it
+                exitTransition = it
             }
             allowEnterTransitionOverlap = true
         }

@@ -7,7 +7,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 interface MainActivityCallback {
 
     var actionMode: ActionMode?
-    var isActivityReturning: Boolean
 
     fun showSnackBar(
         text: String,

@@ -128,17 +128,21 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
 
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
+
             sharedElementEnterTransition = ChangeBounds()
             sharedElementExitTransition = ChangeBounds()
-            enterTransition = TransitionSet().apply {
 
-                ordering = TransitionSet.ORDERING_TOGETHER
-                duration = 350
-                addTransition(Fade())
-                addTransition(Slide(Gravity.END))
+            TransitionSet().also {
+                it.ordering = TransitionSet.ORDERING_TOGETHER
+                it.duration = 350
+                it.addTransition(Fade())
+                it.addTransition(Slide(Gravity.END))
 
-                excludeTarget(android.R.id.statusBarBackground, true)
-                excludeTarget(android.R.id.navigationBarBackground, true)
+                it.excludeTarget(android.R.id.statusBarBackground, true)
+                it.excludeTarget(android.R.id.navigationBarBackground, true)
+
+                enterTransition = it
+                exitTransition = it
             }
             allowEnterTransitionOverlap = true
         }

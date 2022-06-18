@@ -5,7 +5,6 @@ import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import androidx.core.app.SharedElementCallback
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*

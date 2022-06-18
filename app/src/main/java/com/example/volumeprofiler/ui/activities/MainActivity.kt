@@ -43,7 +43,6 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
 
     override var actionMode: ActionMode? = null
-    override var isActivityReturning: Boolean = false
 
     private val onPageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
 
@@ -72,13 +71,7 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
         }
     }
 
-    override fun onActivityReenter(resultCode: Int, data: Intent?) {
-        super.onActivityReenter(resultCode, data)
-        isActivityReturning = true
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)
@@ -92,7 +85,6 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
         pagerAdapter = ScreenSlidePagerAdapter(this)
         binding.pager.adapter = pagerAdapter
         binding.pager.registerOnPageChangeCallback(onPageChangeCallback)
-        binding.pager.offscreenPageLimit = 1
 
         TabLayoutMediator(binding.tabs, binding.pager) { tab, position ->
             when (position) {
