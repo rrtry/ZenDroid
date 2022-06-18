@@ -18,13 +18,13 @@ import android.util.Log
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.LocationAdapter
 import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.ProfileManager
+import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.ListItemActionListener
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
@@ -35,7 +35,7 @@ import java.lang.ref.WeakReference
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
 
 @AndroidEntryPoint
-class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder>(),
+class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder, LocationItemViewBinding>(),
     FabContainer,
     ListItemActionListener<LocationRelation> {
 
@@ -157,7 +157,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
 
     private fun onFragmentSwiped(fragment: Int) {
         if (fragment == LOCATIONS_FRAGMENT) {
-            onSwipe()
+            onFragmentSwiped()
         }
     }
 
@@ -202,13 +202,6 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
 
     override fun getAdapter(): RecyclerView.Adapter<LocationAdapter.LocationViewHolder> {
         return locationAdapter
-    }
-
-    override fun mapSharedElements(
-        names: MutableList<String>?,
-        sharedElements: MutableMap<String, View>?
-    ) {
-        // empty implementation
     }
 
     companion object {

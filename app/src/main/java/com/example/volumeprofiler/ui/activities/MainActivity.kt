@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.ui.activities
 
+import android.app.SharedElementCallback
 import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
@@ -26,6 +27,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.lang.ref.WeakReference
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainActivityCallback {
@@ -39,7 +41,6 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
-    private lateinit var permissionRequestLauncher: ActivityResultLauncher<Array<String>>
 
     override var actionMode: ActionMode? = null
     override var isActivityReturning: Boolean = false
@@ -91,6 +92,7 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
         pagerAdapter = ScreenSlidePagerAdapter(this)
         binding.pager.adapter = pagerAdapter
         binding.pager.registerOnPageChangeCallback(onPageChangeCallback)
+        binding.pager.offscreenPageLimit = 1
 
         TabLayoutMediator(binding.tabs, binding.pager) { tab, position ->
             when (position) {
@@ -110,9 +112,6 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
         }.attach()
         binding.fab.setOnClickListener {
             viewModel.onFloatingActionButtonClicked(binding.pager.currentItem)
-        }
-        permissionRequestLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-
         }
     }
 
@@ -143,7 +142,7 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
     }
 
     override fun requestPermissions(permissions: Array<String>) {
-        permissionRequestLauncher.launch(permissions)
+
     }
 
     override fun getFloatingActionButton(): FloatingActionButton {

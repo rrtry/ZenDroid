@@ -17,6 +17,7 @@ import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ProfileActionListener
+import com.example.volumeprofiler.interfaces.ViewHolder
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.Animations.selected
@@ -34,10 +35,11 @@ class ProfileAdapter(
 
     private val profileActionListener = listener.get()!! as ProfileActionListener
 
-    inner class ProfileHolder(val binding: ProfileItemViewBinding):
+    inner class ProfileHolder(override val binding: ProfileItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
         ViewHolderItemDetailsProvider<Profile>,
-        View.OnClickListener {
+        View.OnClickListener,
+        ViewHolder<ProfileItemViewBinding> {
 
         init {
             binding.root.setOnClickListener(this)

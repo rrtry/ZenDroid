@@ -22,7 +22,7 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 
-abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder>:
+abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder, IB: ViewBinding>:
     ViewBindingFragment<VB>(),
     FragmentSwipedListener,
     ActionModeProvider,
@@ -49,8 +49,6 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
 
     abstract fun getRecyclerView(): RecyclerView
     abstract fun getAdapter(): RecyclerView.Adapter<VH>
-    abstract fun mapSharedElements(names: MutableList<String>?,
-                                   sharedElements: MutableMap<String, View>?)
 
     private val actionModeCallback = object : ActionMode.Callback {
 
@@ -82,6 +80,21 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
             actionMode = null
             selectionTracker.clearSelection()
         }
+    }
+
+    private fun getChildViewHolderBinding(): IB? {
+        val recyclerView: RecyclerView = getRecyclerView()
+        recyclerView.layoutManager?.findViewByPosition(childPosition)?.let { child ->
+            return (recyclerView.getChildViewHolder(child) as ViewHolder<IB>).binding
+        }
+        return null
+    }
+
+    protected open fun mapSharedElements(
+        names: MutableList<String>?,
+        sharedElements: MutableMap<String, View>?
+    ): IB? {
+        return getChildViewHolderBinding()
     }
 
     override fun onAttach(context: Context) {
@@ -151,16 +164,6 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                     actionMode?.finish()
                 }
             })
-            requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
-
-                override fun onMapSharedElements(
-                    names: MutableList<String>?,
-                    sharedElements: MutableMap<String, View>?
-                ) {
-                    mapSharedElements(names, sharedElements)
-                    super.onMapSharedElements(names, sharedElements)
-                }
-            })
         }
     }
 
@@ -195,7 +198,20 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         } else onEdit(0)
     }
 
-    override fun onSwipe() {
+    protected fun setSharedElementCallback() {
+        requireActivity().setExitSharedElementCallback(object : SharedElementCallback() {
+
+            override fun onMapSharedElements(
+                names: MutableList<String>?,
+                sharedElements: MutableMap<String, View>?
+            ) {
+                super.onMapSharedElements(names, sharedElements)
+                mapSharedElements(names, sharedElements)
+            }
+        })
+    }
+
+    override fun onFragmentSwiped() {
         if (!requireActivity().isChangingConfigurations) {
             selectionTracker.clearSelection()
         }

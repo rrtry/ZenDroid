@@ -211,7 +211,9 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
 
     override fun onStop() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isFinishing) {
-            Instrumentation().callActivityOnSaveInstanceState(this, Bundle())
+            Instrumentation().callActivityOnSaveInstanceState(
+                this, Bundle()
+            )
         }
         super.onStop()
         binding.appBar.removeOnOffsetChangedListener(this)

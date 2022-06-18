@@ -1,10 +1,7 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.app.SharedElementCallback
 import android.content.*
 import android.content.Intent.ACTION_LOCALE_CHANGED
-import android.graphics.Matrix
-import android.graphics.RectF
 import android.os.*
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
@@ -25,6 +22,7 @@ import com.example.volumeprofiler.ui.activities.AlarmDetailsActivity.Companion.E
 import com.example.volumeprofiler.ui.activities.MainActivity
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
+import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.databinding.AlarmsFragmentBinding
 import com.example.volumeprofiler.entities.*
 import com.example.volumeprofiler.eventBus.EventBus
@@ -40,10 +38,12 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.SchedulerViewModel.ViewEvent.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
-class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder>(),
+class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder, AlarmItemViewBinding>(),
     FabContainer,
     MainActivity.MenuItemSelectedListener {
 
@@ -137,6 +137,13 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.currentFragment.collect {
+                        withContext(Dispatchers.Main) {
+                            if (it == SCHEDULER_FRAGMENT) setSharedElementCallback()
+                        }
+                    }
+                }
                 launch {
                     sharedViewModel.viewEvents.collect {
                         when (it) {
@@ -244,7 +251,7 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
     private fun onFragmentSwiped(fragment: Int) {
         if (fragment == SCHEDULER_FRAGMENT) {
-            onSwipe()
+            onFragmentSwiped()
         }
     }
 
@@ -292,15 +299,16 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
     override fun mapSharedElements(
         names: MutableList<String>?,
         sharedElements: MutableMap<String, View>?
-    ) {
-        viewBinding.recyclerView.layoutManager?.findViewByPosition(childPosition)?.let { child ->
-            (viewBinding.recyclerView.getChildViewHolder(child) as AlarmAdapter.AlarmViewHolder).apply {
-                sharedElements?.put(SHARED_TRANSITION_START_TIME, binding.startTime)
-                sharedElements?.put(SHARED_TRANSITION_END_TIME, binding.endTime)
-                sharedElements?.put(SHARED_TRANSITION_SWITCH, binding.scheduleSwitch)
-                sharedElements?.put(SHARED_TRANSITION_SEPARATOR, binding.clockViewSeparator)
-            }
+    ): AlarmItemViewBinding? {
+        Log.i("Transition", "SchedulerFragment")
+        val binding: AlarmItemViewBinding? = super.mapSharedElements(names, sharedElements)
+        binding?.let {
+            sharedElements?.put(SHARED_TRANSITION_START_TIME, binding.startTime)
+            sharedElements?.put(SHARED_TRANSITION_END_TIME, binding.endTime)
+            sharedElements?.put(SHARED_TRANSITION_SWITCH, binding.scheduleSwitch)
+            sharedElements?.put(SHARED_TRANSITION_SEPARATOR, binding.clockViewSeparator)
         }
+        return binding
     }
 
     companion object {

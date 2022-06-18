@@ -1,14 +1,11 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.app.SharedElementCallback
 import android.content.Intent
-import android.graphics.Matrix
-import android.graphics.RectF
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
-import android.os.Parcelable
 import android.util.Log
 import android.view.*
+import androidx.core.app.SharedElementCallback
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
@@ -29,18 +26,21 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.ProfileAdapter
 import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
+import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.ui.activities.ProfileDetailsDetailsActivity.Companion.EXTRA_PROFILE
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.PROFILE_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
 @AndroidEntryPoint
-class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, ProfileAdapter.ProfileHolder>(),
+class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, ProfileAdapter.ProfileHolder, ProfileItemViewBinding>(),
     FabContainer,
     ProfileActionListener {
 
@@ -83,6 +83,13 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.currentFragment.collect {
+                        withContext(Dispatchers.Main) {
+                            if (it == PROFILE_FRAGMENT) setSharedElementCallback()
+                        }
+                    }
+                }
                 launch {
                     sharedViewModel.viewEvents
                         .collect {
@@ -221,12 +228,12 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     override fun mapSharedElements(
         names: MutableList<String>?,
         sharedElements: MutableMap<String, View>?
-    ) {
-        viewBinding.recyclerView.layoutManager?.findViewByPosition(childPosition)?.let { child ->
-            (viewBinding.recyclerView.getChildViewHolder(child) as ProfileAdapter.ProfileHolder).apply {
-                sharedElements?.put(SHARED_TRANSITION_PROFILE_IMAGE, binding.profileIcon)
-            }
+    ): ProfileItemViewBinding? {
+        val binding: ProfileItemViewBinding? = super.mapSharedElements(names, sharedElements)
+        binding?.let {
+            sharedElements?.put(SHARED_TRANSITION_PROFILE_IMAGE, binding.profileIcon)
         }
+        return binding
     }
 
     private fun updateFloatingActionButton(fragment: Int) {
@@ -237,7 +244,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
 
     private fun onFragmentSwiped(fragment: Int) {
         if (fragment == PROFILE_FRAGMENT) {
-            onSwipe()
+            onFragmentSwiped()
         }
     }
 

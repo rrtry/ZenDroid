@@ -24,6 +24,7 @@ import com.example.volumeprofiler.util.TextUtil.Companion.formatWeekDays
 import java.lang.ref.WeakReference
 import androidx.core.util.Pair
 import androidx.recyclerview.selection.SelectionTracker.SELECTION_CHANGED_MARKER
+import com.example.volumeprofiler.interfaces.ViewHolder
 import com.example.volumeprofiler.ui.Animations.selected
 import java.time.LocalTime
 
@@ -35,9 +36,10 @@ class AlarmAdapter(
 
     private val itemActionListener: ListItemActionListener<AlarmRelation> = listener.get()!!
 
-    inner class AlarmViewHolder(val binding: AlarmItemViewBinding):
+    inner class AlarmViewHolder(override val binding: AlarmItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
-        ViewHolderItemDetailsProvider<AlarmRelation> {
+        ViewHolderItemDetailsProvider<AlarmRelation>,
+        ViewHolder<AlarmItemViewBinding> {
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<AlarmRelation> {
             return ItemDetails(
