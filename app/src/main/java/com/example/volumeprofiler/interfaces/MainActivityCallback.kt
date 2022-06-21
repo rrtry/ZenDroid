@@ -14,6 +14,8 @@ interface MainActivityCallback {
         action: (() -> Unit)?
     )
 
+    fun removeSnackbar()
+
     fun requestPermissions(permissions: Array<String>)
 
     fun getFloatingActionButton(): FloatingActionButton

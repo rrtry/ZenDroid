@@ -124,10 +124,6 @@ class TextUtil {
             }
         }
 
-        private fun getTimeFormat(context: Context): String {
-            return (DateFormat.getTimeFormat(context) as SimpleDateFormat).toPattern()
-        }
-
         fun formatNextAlarmDateTime(context: Context, until: LocalDateTime): String {
 
             var dateString: String = ""

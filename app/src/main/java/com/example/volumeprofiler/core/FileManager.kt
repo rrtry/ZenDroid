@@ -2,11 +2,13 @@ package com.example.volumeprofiler.core
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,10 +20,14 @@ class FileManager @Inject constructor(@ApplicationContext val context: Context) 
     suspend fun writeThumbnail(uuid: UUID, bitmap: Bitmap?) {
         if (bitmap != null) {
             withContext(Dispatchers.IO) {
-                FileOutputStream(File(resolvePath(context, uuid))).apply {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, this)
-                    flush()
-                    close()
+                try {
+                    FileOutputStream(File(resolvePath(context, uuid))).apply {
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, this)
+                        flush()
+                        close()
+                    }
+                } catch (e: IOException) {
+                    Log.e("FileManager", "writeThumbnail: $e")
                 }
             }
         }
@@ -29,7 +35,12 @@ class FileManager @Inject constructor(@ApplicationContext val context: Context) 
 
     suspend fun deleteThumbnail(uuid: UUID): Boolean {
         return withContext(Dispatchers.IO) {
-            File(resolvePath(context, uuid)).delete()
+            try {
+                File(resolvePath(context, uuid)).delete()
+            } catch (e: IOException) {
+                Log.e("FileManager", "deleteThumbnail: $e")
+                false
+            }
         }
     }
 

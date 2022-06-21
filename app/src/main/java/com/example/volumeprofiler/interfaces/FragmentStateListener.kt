@@ -1,6 +1,6 @@
 package com.example.volumeprofiler.interfaces
 
-interface FragmentSwipedListener {
+interface FragmentStateListener {
 
     fun onFragmentSwiped()
 }

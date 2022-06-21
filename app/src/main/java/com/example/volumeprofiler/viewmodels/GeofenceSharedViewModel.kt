@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.*
 import com.example.volumeprofiler.database.repositories.LocationRepository
 import com.example.volumeprofiler.database.repositories.ProfileRepository
@@ -23,40 +22,35 @@ class GeofenceSharedViewModel @Inject constructor(
         private val locationRepository: LocationRepository
 ): ViewModel() {
 
+    private val eventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
+    val events: Flow<ViewEvent> = eventChannel.receiveAsFlow()
+
     sealed class ViewEvent {
 
         data class OnMapTypeChanged(val style: Int): ViewEvent()
         data class OnMapStyleChanged(val style: Int): ViewEvent()
         data class OnUpdateGeofenceEvent(val location: Location): ViewEvent()
         data class OnInsertGeofenceEvent(val location: Location): ViewEvent()
-        data class OnRemoveGeofenceEvent(val location: Location): ViewEvent()
 
-        object OnWrongInputEvent: ViewEvent()
         object ToggleFloatingActionMenu: ViewEvent()
         object ObtainCurrentLocation: ViewEvent()
         object ShowMapStylesDialog: ViewEvent()
     }
 
-    private data class PositionPair(var first: Int, var second: Int)
-
     private var entitySet: Boolean = false
+    private var locationId: Int? = null
+    private var isEnabled: Boolean = false
 
-    val title: MutableStateFlow<String?> = MutableStateFlow("My geofence")
-    val latLng: MutableStateFlow<Pair<LatLng, Boolean>?> = MutableStateFlow(null)
+    val title: MutableStateFlow<String> = MutableStateFlow("My geofence")
+    val latLng: MutableStateFlow<Pair<LatLng, Boolean>> = MutableStateFlow(Pair(LatLng(-33.865143, 151.209900), false))
     val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
-    val enterProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
-    val exitProfilePosition: MutableStateFlow<Int> = MutableStateFlow(0)
-    private val locality: MutableStateFlow<String> = MutableStateFlow("")
+    val enterProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
+    val exitProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
     val address: MutableStateFlow<String> = MutableStateFlow("")
+    val locality: MutableStateFlow<String> = MutableStateFlow("")
 
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
-
-    private val eventChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
-    val events: Flow<ViewEvent> = eventChannel.receiveAsFlow()
-
-    private var locationId: Int? = null
-    private var isEnabled: Boolean = false
 
     fun onMapStylesFabClick() {
         viewModelScope.launch {
@@ -82,15 +76,9 @@ class GeofenceSharedViewModel @Inject constructor(
         }
     }
 
-    fun onMapTypeChanged(type: Int) {
-        viewModelScope.launch {
-            eventChannel.send(ViewEvent.OnMapTypeChanged(type))
-        }
-    }
-
     fun onApplyChangesButtonClick() {
         viewModelScope.launch {
-            getLocation(profilesStateFlow.value)?.let {
+            getLocation()?.let {
                 if (locationId != null) {
                     eventChannel.send(ViewEvent.OnUpdateGeofenceEvent(it))
                 } else {
@@ -143,10 +131,8 @@ class GeofenceSharedViewModel @Inject constructor(
     fun setEntity(locationRelation: LocationRelation) {
         if (!entitySet) {
 
-            getPositions(locationRelation).let { positions ->
-                enterProfilePosition.value = positions.first
-                exitProfilePosition.value = positions.second
-            }
+            enterProfile.value = locationRelation.onEnterProfile
+            exitProfile.value = locationRelation.onExitProfile
 
             latLng.value = Pair(
                 LatLng(
@@ -161,56 +147,32 @@ class GeofenceSharedViewModel @Inject constructor(
 
             locationId = locationRelation.location.id
             isEnabled = locationRelation.location.enabled
+            entitySet = true
         }
     }
 
-    private fun getPositions(locationRelation: LocationRelation): PositionPair {
-        return PositionPair(0, 0).apply {
-            for ((index, i) in profilesStateFlow.value.withIndex()) {
-                when (i.id) {
-                    locationRelation.onEnterProfile.id -> first = index
-                    locationRelation.onExitProfile.id -> second = index
-                }
-            }
-        }
+    private fun getLocation(): Location {
+        return Location(
+            id = if (locationId != null) locationId!! else 0,
+            title = title.value.ifEmpty { "No title" },
+            latitude = latLng.value.first.latitude,
+            longitude = latLng.value.first.longitude,
+            address = address.value,
+            locality = locality.value,
+            radius = radius.value,
+            onEnterProfileId = enterProfile.value!!.id,
+            onExitProfileId = exitProfile.value!!.id,
+            enabled = isEnabled
+        )
     }
 
-    private fun getEnterProfile(profiles: List<Profile>): Profile {
-        return profiles[enterProfilePosition.value]
-    }
-
-    private fun getExitProfile(profiles: List<Profile>): Profile {
-        return profiles[exitProfilePosition.value]
-    }
-
-    private fun getLocation(profiles: List<Profile>): Location? {
-        return if (title.value == null || latLng.value == null) {
-            null
-        } else {
-            Location(
-                id = if (locationId != null) locationId!! else 0,
-                title = title.value!!,
-                latitude = latLng.value!!.first.latitude,
-                longitude = latLng.value!!.first.longitude,
-                address = address.value,
-                locality = locality.value,
-                radius = radius.value,
-                onEnterProfileId = getEnterProfile(profiles).id,
-                onExitProfileId = getExitProfile(profiles).id,
-                enabled = isEnabled
-            )
-        }
-    }
-
-    fun getRadius(): Float {
-        return radius.value
-    }
+    fun getRadius(): Float = radius.value
 
     fun setLatLng(latLng: LatLng, queryAddress: Boolean = true) {
         this.latLng.value = Pair(latLng, queryAddress)
     }
 
-    fun setTitle(title: String?) {
+    fun setTitle(title: String) {
         this.title.value = title
     }
 

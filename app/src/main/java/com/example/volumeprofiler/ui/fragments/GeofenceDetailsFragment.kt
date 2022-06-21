@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.widget.*
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -20,14 +19,9 @@ import com.example.volumeprofiler.R
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
-@AndroidEntryPoint
-class GeofenceDetailsFragment: Fragment() {
-
-    private var _binding: MapsSelectLocationFragmentBinding? = null
-    private val binding: MapsSelectLocationFragmentBinding get() = _binding!!
+class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBinding>() {
 
     private val sharedViewModel: GeofenceSharedViewModel by activityViewModels()
-
     private var currentMetrics: Metrics = Metrics.METERS
 
     private val latitudeTextWatcher = object : TextWatcher {
@@ -37,9 +31,9 @@ class GeofenceDetailsFragment: Fragment() {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             s?.let {
                 if (GeoUtil.isLatitude(s.toString())) {
-                    binding.latitudeTextInputLayout.error = null
+                    viewBinding.latitudeTextInputLayout.error = null
                 } else {
-                    binding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
+                    viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
                 }
                 return
             }
@@ -55,9 +49,9 @@ class GeofenceDetailsFragment: Fragment() {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             s?.let {
                 if (GeoUtil.isLongitude(s.toString())) {
-                    binding.longitudeTextInputLayout.error = null
+                    viewBinding.longitudeTextInputLayout.error = null
                 } else {
-                    binding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
+                    viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
                 }
                 return
             }
@@ -66,9 +60,15 @@ class GeofenceDetailsFragment: Fragment() {
         override fun afterTextChanged(s: Editable?) {}
     }
 
+    override fun getBinding(
+        inflater: LayoutInflater,
+        container: ViewGroup?
+    ): MapsSelectLocationFragmentBinding {
+        return MapsSelectLocationFragmentBinding.inflate(inflater, container, false)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         TransitionSet().apply {
             ordering = TransitionSet.ORDERING_TOGETHER
 
@@ -85,17 +85,12 @@ class GeofenceDetailsFragment: Fragment() {
 
     override fun onResume() {
         super.onResume()
-        if (binding.latitudeTextInput.text.isNullOrEmpty()) {
-            binding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
+        if (viewBinding.latitudeTextInput.text.isNullOrEmpty()) {
+            viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
         }
-        if (binding.longitudeEditText.text.isNullOrEmpty()) {
-            binding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
+        if (viewBinding.longitudeEditText.text.isNullOrEmpty()) {
+            viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -108,17 +103,15 @@ class GeofenceDetailsFragment: Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = MapsSelectLocationFragmentBinding.inflate(inflater, container, false)
-
-        binding.latitudeTextInput.addTextChangedListener(latitudeTextWatcher)
-        binding.longitudeEditText.addTextChangedListener(longitudeTextWatcher)
-
-        binding.metricsSpinner.adapter = ArrayAdapter(
+        super.onCreateView(inflater, container, savedInstanceState)
+        viewBinding.latitudeTextInput.addTextChangedListener(latitudeTextWatcher)
+        viewBinding.longitudeEditText.addTextChangedListener(longitudeTextWatcher)
+        viewBinding.metricsSpinner.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
             arrayOf(Metrics.METERS, Metrics.KILOMETERS)
         )
-        binding.metricsSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        viewBinding.metricsSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
 
                 override fun onItemSelected(
                     parent: AdapterView<*>?,
@@ -135,37 +128,37 @@ class GeofenceDetailsFragment: Fragment() {
 
                 }
             }
-        binding.radiusSlider.addOnChangeListener { slider, value, fromUser ->
+        viewBinding.radiusSlider.addOnChangeListener { slider, value, fromUser ->
             if (currentMetrics == Metrics.METERS) {
                 sharedViewModel.setRadius(value)
             } else {
                 sharedViewModel.setRadius(value * 1000)
             }
         }
-        binding.setLocationButton.setOnClickListener { view ->
+        viewBinding.setLocationButton.setOnClickListener { view ->
 
             var valid = true
 
-            if (!GeoUtil.isLatitude(binding.latitudeTextInput.text.toString())) {
+            if (!GeoUtil.isLatitude(viewBinding.latitudeTextInput.text.toString())) {
                 valid = false
-                Animations.shake(binding.latitudeTextInputLayout)
-                binding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
+                Animations.shake(viewBinding.latitudeTextInputLayout)
+                viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
             }
-            if (!GeoUtil.isLongitude(binding.longitudeEditText.text.toString())) {
+            if (!GeoUtil.isLongitude(viewBinding.longitudeEditText.text.toString())) {
                 valid = false
-                Animations.shake(binding.longitudeTextInputLayout)
-                binding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
+                Animations.shake(viewBinding.longitudeTextInputLayout)
+                viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
             }
             if (valid) {
                 sharedViewModel.setLatLng(
                     LatLng(
-                        binding.latitudeTextInput.text.toString().toDouble(),
-                        binding.longitudeEditText.text.toString().toDouble()
+                        viewBinding.latitudeTextInput.text.toString().toDouble(),
+                        viewBinding.longitudeEditText.text.toString().toDouble()
                     )
                 )
             }
         }
-        return binding.root
+        return viewBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -175,15 +168,15 @@ class GeofenceDetailsFragment: Fragment() {
                 launch {
                     sharedViewModel.title.collect { title ->
                         title?.also {
-                            binding.titleEditText.setText(it)
+                            viewBinding.titleEditText.setText(it)
                         }
                     }
                 }
                 launch {
                     sharedViewModel.latLng.collect { latLng ->
                         latLng?.also {
-                            binding.latitudeTextInput.setText(it.first.latitude.toString())
-                            binding.longitudeEditText.setText(it.first.longitude.toString())
+                            viewBinding.latitudeTextInput.setText(it.first.latitude.toString())
+                            viewBinding.longitudeEditText.setText(it.first.longitude.toString())
                         }
                     }
                 }
@@ -195,13 +188,13 @@ class GeofenceDetailsFragment: Fragment() {
 
         currentMetrics = metrics
 
-        binding.radiusSlider.valueTo = metrics.max
-        binding.radiusSlider.valueFrom = metrics.min
+        viewBinding.radiusSlider.valueTo = metrics.max
+        viewBinding.radiusSlider.valueFrom = metrics.min
 
         if (metrics == Metrics.KILOMETERS) {
-            binding.radiusSlider.value = sharedViewModel.getRadius() / 1000
+            viewBinding.radiusSlider.value = sharedViewModel.getRadius() / 1000
         } else {
-            binding.radiusSlider.value = if (sharedViewModel.getRadius() > Metrics.METERS.max) {
+            viewBinding.radiusSlider.value = if (sharedViewModel.getRadius() > Metrics.METERS.max) {
                 Metrics.METERS.max
             } else {
                 sharedViewModel.getRadius()

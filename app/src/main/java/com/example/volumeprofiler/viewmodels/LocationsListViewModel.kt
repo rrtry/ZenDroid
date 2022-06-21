@@ -31,7 +31,7 @@ class LocationsListViewModel @Inject constructor(
 
     fun removeGeofence(location: LocationRelation) {
         viewModelScope.launch {
-            removeGeofence(location)
+            removeLocation(location.location)
             channel.send(ViewEvent.OnGeofenceRemoved(location))
         }
     }

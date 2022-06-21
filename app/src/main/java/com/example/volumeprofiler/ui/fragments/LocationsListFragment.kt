@@ -45,11 +45,14 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     override val listItem: Class<LocationRelation> = LocationRelation::class.java
 
     @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var fileManager: FileManager
 
     private val viewModel: LocationsListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
+
+    override fun onPermissionResult(permission: String, granted: Boolean) {
+
+    }
 
     private fun startMapActivity(locationRelation: LocationRelation? = null) {
         startActivity(MapsActivity.newIntent(requireContext(), locationRelation))

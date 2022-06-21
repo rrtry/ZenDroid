@@ -23,8 +23,6 @@ class ViewUtil {
 
     companion object {
 
-        internal const val DISMISS_TIME_WINDOW: Int = 2000
-
         fun Fragment.getDrawable(drawableRes: Int): Drawable {
             return ResourcesCompat.getDrawable(
                 requireContext().resources, drawableRes, requireContext().theme
@@ -41,7 +39,8 @@ class ViewUtil {
             message: String,
             length: Int,
             title: String? = null,
-            action: (() -> Unit)? = null) {
+            action: (() -> Unit)? = null)
+        {
             Snackbar.make(view, message, length).apply {
                 animationMode = ANIMATION_MODE_SLIDE
                 if (action != null) {
@@ -49,7 +48,8 @@ class ViewUtil {
                         action()
                     }
                 }
-            }.show()
+                show()
+            }
         }
 
         fun Context.convertDipToPx(dip: Float): Int {
@@ -107,7 +107,7 @@ class ViewUtil {
             )
         }
 
-        fun showSystemSettingsPermissionExplanation(fragmentManager: FragmentManager): Unit {
+        fun showSystemSettingsPermissionExplanation(fragmentManager: FragmentManager) {
             showPermissionRationaleDialog(
                 fragmentManager,
                 WRITE_SETTINGS,
@@ -119,14 +119,17 @@ class ViewUtil {
         private fun showPermissionRationaleDialog(fragmentManager: FragmentManager,
                                                   permission: String,
                                                   message: Int,
-                                                  drawable: Int, requestMultiplePermissionsOnResult: Boolean = false): Unit {
-            val dialog: DialogFragment = PermissionExplanationDialog.newInstance(
+                                                  drawable: Int, requestMultiplePermissionsOnResult: Boolean = false) {
+            PermissionExplanationDialog.newInstance(
                 permission,
                 message,
                 drawable,
                 requestMultiplePermissionsOnResult
-            )
-            dialog.show(fragmentManager, null)
+            ).apply {
+                show(fragmentManager, null)
+            }
         }
+
+        internal const val DISMISS_TIME_WINDOW: Int = 2000
     }
 }

@@ -1,15 +1,11 @@
 package com.example.volumeprofiler.util
 
 import android.Manifest.permission.*
-import android.app.NotificationManager
 import android.content.Context
-import android.content.Context.NOTIFICATION_SERVICE
 import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.volumeprofiler.core.ProfileManager
-import com.example.volumeprofiler.entities.Profile
 import java.lang.IllegalArgumentException
 
 fun Fragment.checkPermission(permission: String): Boolean {
@@ -22,11 +18,6 @@ fun Context.checkPermission(permission: String): Boolean {
 
 private fun checkSelfPermission(context: Context, permission: String): Boolean {
     return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-}
-
-fun isNotificationPolicyAccessGranted(context: Context): Boolean {
-    val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-    return notificationManager.isNotificationPolicyAccessGranted
 }
 
 fun canWriteSettings(context: Context): Boolean {
@@ -44,24 +35,4 @@ fun getCategoryName(permission: String): String {
             "Unknown permission $permission"
         )
     }
-}
-
-fun getDeniedPermissionsForProfile(context: Context, profile: Profile): Array<String> {
-    val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-    val permissions: MutableList<String> = mutableListOf()
-    if (!canWriteSettings(context)) {
-        permissions.add(WRITE_SETTINGS)
-    }
-    if (!notificationManager.isNotificationPolicyAccessGranted) {
-        permissions.add(ACCESS_NOTIFICATION_POLICY)
-    }
-    if (profile.streamsUnlinked && !context.checkPermission(READ_PHONE_STATE)) {
-        permissions.add(READ_PHONE_STATE)
-    }
-    return permissions.toTypedArray()
-}
-
-fun shouldShowPermissionSuggestion(context: Context, profile: Profile): Boolean {
-    return getDeniedPermissionsForProfile(context, profile).isNotEmpty()
 }

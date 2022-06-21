@@ -7,9 +7,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.selection.SelectionTracker
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
@@ -17,6 +15,10 @@ import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.ListItemActionListener
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
+import com.example.volumeprofiler.interfaces.ViewHolder
+import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
+import com.example.volumeprofiler.selection.ItemDetails
+import com.example.volumeprofiler.ui.Animations.selected
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
 import java.lang.ref.WeakReference
 
@@ -28,12 +30,18 @@ class LocationAdapter(
 
     private val itemActionListener: ListItemActionListener<LocationRelation> = listener.get()!!
 
-    inner class LocationViewHolder(private val binding: LocationItemViewBinding):
+    inner class LocationViewHolder(override val binding: LocationItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
+        ViewHolderItemDetailsProvider<LocationRelation>,
+        ViewHolder<LocationItemViewBinding>,
         View.OnClickListener {
 
         init {
             binding.root.setOnClickListener(this)
+        }
+
+        override fun getItemDetails(): ItemDetailsLookup.ItemDetails<LocationRelation> {
+            return ItemDetails(bindingAdapterPosition, currentList[bindingAdapterPosition])
         }
 
         fun updateEnabledState(enabled: Boolean) {
@@ -42,8 +50,9 @@ class LocationAdapter(
 
         fun bind(locationRelation: LocationRelation, isSelected: Boolean) {
 
-            val location: Location = locationRelation.location
+            if (isSelected) selected(binding.root, isSelected)
 
+            val location: Location = locationRelation.location
             binding.geofenceTitle.text = location.title
             binding.enableGeofenceSwitch.isChecked = location.enabled
             binding.geofenceProfiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
@@ -97,13 +106,8 @@ class LocationAdapter(
     ) {
         if (payloads.isNotEmpty()) {
             payloads.forEach {
-                when (it) {
-                    is Bundle -> {
-                        holder.updateEnabledState(it.getBoolean(LocationsListFragment.PAYLOAD_GEOFENCE_CHANGED))
-                    }
-                    SelectionTracker.SELECTION_CHANGED_MARKER -> {
-
-                    }
+                if (it is Bundle) {
+                    holder.updateEnabledState(it.getBoolean(LocationsListFragment.PAYLOAD_GEOFENCE_CHANGED))
                 }
             }
         } else super.onBindViewHolder(holder, position, payloads)

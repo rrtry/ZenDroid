@@ -1,12 +1,8 @@
 package com.example.volumeprofiler.ui.activities
 
-import android.app.SharedElementCallback
-import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
 import android.view.*
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
@@ -27,7 +23,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import java.lang.ref.WeakReference
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainActivityCallback {
@@ -41,6 +36,7 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var pagerAdapter: ScreenSlidePagerAdapter
+    private var snackbar: Snackbar? = null
 
     override var actionMode: ActionMode? = null
 
@@ -118,8 +114,12 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
         binding.pager.unregisterOnPageChangeCallback(onPageChangeCallback)
     }
 
+    override fun removeSnackbar() {
+        snackbar?.dismiss()
+    }
+
     override fun showSnackBar(text: String, length: Int, action: (() -> Unit)?) {
-        Snackbar.make(
+        snackbar = Snackbar.make(
             binding.coordinatorLayout,
             text,
             length
@@ -130,7 +130,8 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
                     action()
                 }
             }
-        }.show()
+            show()
+        }
     }
 
     override fun requestPermissions(permissions: Array<String>) {

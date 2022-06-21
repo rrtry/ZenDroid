@@ -109,10 +109,14 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     fun setRingerMode(streamType: Int, streamVolume: Int, mode: Int, flags: Int = 0) {
-        when (mode) {
-            RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, flags)
-            RINGER_MODE_VIBRATE -> setVibrateMode(streamType, flags)
-            RINGER_MODE_SILENT -> setSilentMode(streamType, flags)
+        try {
+            when (mode) {
+                RINGER_MODE_NORMAL -> setStreamVolume(streamType, streamVolume, flags)
+                RINGER_MODE_VIBRATE -> setVibrateMode(streamType, flags)
+                RINGER_MODE_SILENT -> setSilentMode(streamType, flags)
+            }
+        } catch (e: SecurityException) {
+            Log.e("ProfileManager", "setRingerMode: $e")
         }
     }
 
@@ -131,7 +135,11 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     fun setStreamVolume(streamType: Int, index: Int, flags: Int) {
-        audioManager.setStreamVolume(streamType, index, flags)
+        try {
+            audioManager.setStreamVolume(streamType, index, flags)
+        } catch (e: SecurityException) {
+            Log.e("ProfileManager", "setStreamVolume $e")
+        }
     }
 
     fun getDefaultProfile(): Profile {
@@ -247,7 +255,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         try {
             Settings.System.putInt(context.contentResolver, VIBRATE_WHEN_RINGING, state)
         } catch (e: SecurityException) {
-            Log.e("ProfileManager", "Failed to change system settings", e)
+            // Log.e("ProfileManager", "Failed to change system settings", e)
         }
     }
 

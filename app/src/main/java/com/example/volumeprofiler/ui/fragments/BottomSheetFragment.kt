@@ -5,7 +5,7 @@ import android.view.*
 import androidx.fragment.app.Fragment
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.ui.activities.MapsActivity
-import java.lang.IllegalArgumentException
+import kotlin.IllegalArgumentException
 
 class BottomSheetFragment: Fragment(), MapsActivity.ItemSelectedListener {
 
@@ -20,7 +20,7 @@ class BottomSheetFragment: Fragment(), MapsActivity.ItemSelectedListener {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString(EXTRA_CURRENT_FRAGMENT, this.currentFragment)
+        outState.putString(EXTRA_CURRENT_FRAGMENT, currentFragment)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -35,22 +35,20 @@ class BottomSheetFragment: Fragment(), MapsActivity.ItemSelectedListener {
     }
 
     private fun findFragmentByTag(tag: String): Fragment {
-        childFragmentManager.findFragmentByTag(tag)?.let {
-            return it
-        }
-        throw IllegalArgumentException("Invalid fragment tag")
+        return childFragmentManager.findFragmentByTag(tag)
+            ?: throw IllegalArgumentException("Invalid fragment tag")
     }
 
-    private fun addFragments(): Unit {
-        val profileFragment = GeofenceProfileFragment()
+    private fun addFragments() {
+        val profileFragment: Fragment = GeofenceProfileFragment()
         childFragmentManager
-                .beginTransaction()
-                .add(R.id.fragmentContainer, GeofenceDetailsFragment(), TAG_GEOFENCE_FRAGMENT)
-                .add(R.id.fragmentContainer, profileFragment, TAG_PROFILE_FRAGMENT).hide(profileFragment)
-                .commit()
+            .beginTransaction()
+            .add(R.id.fragmentContainer, GeofenceDetailsFragment(), TAG_GEOFENCE_FRAGMENT)
+            .add(R.id.fragmentContainer, profileFragment, TAG_PROFILE_FRAGMENT).hide(profileFragment)
+            .commit()
     }
 
-    private fun replaceFragment(tag: String): Unit {
+    private fun replaceFragment(tag: String) {
         if (tag != currentFragment) {
             childFragmentManager
                 .beginTransaction()
@@ -64,7 +62,9 @@ class BottomSheetFragment: Fragment(), MapsActivity.ItemSelectedListener {
     override fun onItemSelected(itemId: Int) {
         val tag: String = if (itemId == R.id.geofence_tab) {
             TAG_GEOFENCE_FRAGMENT
-        } else TAG_PROFILE_FRAGMENT
+        } else {
+            TAG_PROFILE_FRAGMENT
+        }
         replaceFragment(tag)
     }
 

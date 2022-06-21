@@ -1,12 +1,19 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.Manifest.permission.*
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.core.util.Pair
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
+import android.provider.Settings
 import android.view.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.app.SharedElementCallback
 import androidx.recyclerview.selection.SelectionPredicates
@@ -19,12 +26,20 @@ import com.example.volumeprofiler.selection.DetailsLookup
 import com.example.volumeprofiler.selection.KeyProvider
 import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.*
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.core.PreferencesManager
+import com.example.volumeprofiler.core.ProfileManager
+import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
+import com.example.volumeprofiler.util.canWriteSettings
+import com.example.volumeprofiler.util.checkPermission
+import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder, IB: ViewBinding>:
     ViewBindingFragment<VB>(),
-    FragmentSwipedListener,
+    FragmentStateListener,
     ActionModeProvider,
     ListItemActionListener<T> {
 
@@ -43,6 +58,12 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
 
     abstract fun getRecyclerView(): RecyclerView
     abstract fun getAdapter(): RecyclerView.Adapter<VH>
+    abstract fun onPermissionResult(permission: String, granted: Boolean)
+
+    private lateinit var notificationPolicySettingsLauncher: ActivityResultLauncher<Intent>
+    private lateinit var systemSettingsLauncher: ActivityResultLauncher<Intent>
+    private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var notificationManager: NotificationManager
 
     private val actionModeCallback = object : ActionMode.Callback {
 
@@ -76,6 +97,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         }
     }
 
+    @Suppress("unchecked_cast")
     private fun getChildViewHolderBinding(): IB? {
         val recyclerView: RecyclerView = getRecyclerView()
         recyclerView.layoutManager?.findViewByPosition(childPosition)?.let { child ->
@@ -94,6 +116,16 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as MainActivityCallback
+        notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            onPermissionResult(READ_PHONE_STATE, checkPermission(READ_PHONE_STATE))
+        }
+        systemSettingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            onPermissionResult(WRITE_SETTINGS, canWriteSettings(requireContext()))
+        }
+        notificationPolicySettingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            onPermissionResult(ACCESS_NOTIFICATION_POLICY, notificationManager.isNotificationPolicyAccessGranted)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,6 +137,9 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     override fun onDetach() {
         super.onDetach()
         callback = null
+        phonePermissionLauncher.unregister()
+        systemSettingsLauncher.unregister()
+        notificationPolicySettingsLauncher.unregister()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -203,6 +238,41 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                 mapSharedElements(names, sharedElements)
             }
         })
+    }
+
+    protected fun showDeniedPermissionHint(profile: Profile): Boolean {
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            callback?.showSnackBar(
+                "Grant Do Not Disturb access",
+                Snackbar.LENGTH_INDEFINITE)
+            {
+                notificationPolicySettingsLauncher.launch(
+                    Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                )
+            }
+            return true
+        } else if (!canWriteSettings(requireContext())) {
+            callback?.showSnackBar(
+                "Grant System Settings access",
+                Snackbar.LENGTH_INDEFINITE)
+            {
+                systemSettingsLauncher.launch(
+                    Intent(
+                        Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                        Uri.parse("package:${requireContext().packageName}"))
+                )
+            }
+            return true
+        } else if (!checkPermission(READ_PHONE_STATE) && profile.streamsUnlinked) {
+            callback?.showSnackBar(
+                "Grant 'Phone' permission",
+                Snackbar.LENGTH_INDEFINITE)
+            {
+                phonePermissionLauncher.launch(READ_PHONE_STATE)
+            }
+            return true
+        }
+        return false
     }
 
     override fun onFragmentSwiped() {

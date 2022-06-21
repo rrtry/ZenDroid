@@ -17,6 +17,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.*
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.AlarmAdapter
+import com.example.volumeprofiler.core.PreferencesManager
 import com.example.volumeprofiler.ui.activities.AlarmDetailsActivity
 import com.example.volumeprofiler.ui.activities.AlarmDetailsActivity.Companion.EXTRA_ALARM_PROFILE_RELATION
 import com.example.volumeprofiler.ui.activities.MainActivity
@@ -50,9 +51,10 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
     override val listItem: Class<AlarmRelation> = AlarmRelation::class.java
     override val selectionId: String = SELECTION_ID
 
+    @Inject lateinit var preferencesManager: PreferencesManager
+    @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var eventBus: EventBus
-    @Inject lateinit var profileManager: ProfileManager
     private lateinit var alarmAdapter: AlarmAdapter
 
     private val viewModel: SchedulerViewModel by viewModels()
@@ -67,6 +69,13 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
             if (intent?.action == ACTION_LOCALE_CHANGED) {
                 alarmAdapter.notifyDataSetChanged()
             }
+        }
+    }
+
+    override fun onPermissionResult(permission: String, granted: Boolean) {
+        preferencesManager.getProfile()?.let {
+            showDeniedPermissionHint(it)
+            profileManager.setProfile(it, true)
         }
     }
 
