@@ -1,7 +1,6 @@
 package com.example.volumeprofiler.ui.activities
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
-import android.animation.LayoutTransition.CHANGING
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.SearchManager
@@ -9,7 +8,6 @@ import android.content.*
 import android.content.Intent.ACTION_SEARCH
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.location.Geocoder
 import android.os.*
 import android.util.Log
 import android.view.animation.BounceInterpolator
@@ -37,7 +35,6 @@ import com.example.volumeprofiler.ui.fragments.BottomSheetFragment
 import com.example.volumeprofiler.ui.fragments.MapThemeSelectionDialog
 import com.example.volumeprofiler.interfaces.DetailsViewContract
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_LOCATION_SUGGESTION
 import com.example.volumeprofiler.util.ViewUtil.Companion.convertDipToPx
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.ui.FloatingActionMenuController
@@ -62,6 +59,7 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 import java.lang.Runnable
 import java.lang.ref.WeakReference
+import kotlin.collections.HashSet
 
 @AndroidEntryPoint
 class MapsActivity : AppCompatActivity(),
@@ -126,6 +124,14 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onQueryTextChange(query: String?) {
         lifecycleScope.launch {
+            val savedQueries: HashSet<AddressWrapper> = viewModel.getSuggestions(query).map {
+                AddressWrapper(
+                    it.latitude,
+                    it.longitude,
+                    it.address,
+                    true
+                )
+            }.toHashSet()
             val results: List<AddressWrapper> = geocoderUtil.queryAddresses(query)?.map {
                 AddressWrapper(
                     it.latitude,
@@ -134,7 +140,7 @@ class MapsActivity : AppCompatActivity(),
                     false
                 )
             } ?: listOf()
-            binding.searchView.updateAdapter(results)
+            binding.searchView.updateAdapter((savedQueries + results).toList())
         }
     }
 
