@@ -1,21 +1,17 @@
 package com.example.volumeprofiler.ui.activities
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.animation.LayoutTransition.CHANGING
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.SearchManager
-import android.app.SearchManager.SUGGEST_COLUMN_TEXT_1
 import android.content.*
 import android.content.Intent.ACTION_SEARCH
-import android.database.MatrixCursor
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.location.Address
 import android.location.Geocoder
 import android.os.*
-import android.provider.BaseColumns._ID
 import android.util.Log
-import android.view.WindowManager
 import android.view.animation.BounceInterpolator
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
@@ -23,15 +19,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SearchView
 import androidx.core.view.doOnLayout
-import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.adapters.SuggestionsAdapter
 import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.ProfileManager
@@ -44,17 +37,6 @@ import com.example.volumeprofiler.ui.fragments.BottomSheetFragment
 import com.example.volumeprofiler.ui.fragments.MapThemeSelectionDialog
 import com.example.volumeprofiler.interfaces.DetailsViewContract
 import com.example.volumeprofiler.util.*
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_ICON
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_LATITUDE
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_LONGITUDE
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.COLUMN_VIEW_TYPE
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_CONNECTIVITY_ERROR
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_LOCATION_RECENT_QUERY
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ICON_LOCATION_SUGGESTION
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.ID_CONNECTIVITY_ERROR
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.SUGGESTION_TEXT_CONNECTIVITY_ERROR
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_CONNECTIVITY_ERROR
-import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_LOCATION_RECENT_QUERY
 import com.example.volumeprofiler.util.SuggestionQueryColumns.Companion.VIEW_TYPE_LOCATION_SUGGESTION
 import com.example.volumeprofiler.util.ViewUtil.Companion.convertDipToPx
 import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
@@ -74,13 +56,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel.ViewEvent.*
+import com.example.volumeprofiler.views.AddressSearchView
 import com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
-import java.io.IOException
 import java.lang.Runnable
 import java.lang.ref.WeakReference
-import kotlin.collections.HashSet
 
 @AndroidEntryPoint
 class MapsActivity : AppCompatActivity(),
@@ -91,9 +72,10 @@ class MapsActivity : AppCompatActivity(),
         DetailsViewContract<Location>,
         GeofenceManager.LocationRequestListener,
         NetworkStateObserver.NetworkCallback,
-        SuggestionsAdapter.Callback,
         GoogleMap.OnInfoWindowLongClickListener,
-        FloatingActionMenuController.MenuStateListener {
+        FloatingActionMenuController.MenuStateListener,
+        AddressSearchView.OnSuggestionListener,
+        AddressSearchView.OnQueryTextChangeListener {
 
     interface ItemSelectedListener {
 
@@ -103,6 +85,7 @@ class MapsActivity : AppCompatActivity(),
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var fileManager: FileManager
+    @Inject lateinit var geocoderUtil: GeocoderUtil
 
     private val viewModel: GeofenceSharedViewModel by viewModels()
 
@@ -113,7 +96,6 @@ class MapsActivity : AppCompatActivity(),
     private var bindingImpl: GoogleMapsActivityBinding? = null
     private val binding: GoogleMapsActivityBinding get() = bindingImpl!!
 
-    private var isSuggestionClicked: Boolean = false
     private var floatingMenuVisible: Boolean = false
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
@@ -121,32 +103,42 @@ class MapsActivity : AppCompatActivity(),
     private lateinit var taskCancellationSource: CancellationTokenSource
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
 
-    private lateinit var fusedLocationProvider: FusedLocationProviderClient
-    private lateinit var geocoder: Geocoder
     private lateinit var floatingActionMenuController: FloatingActionMenuController
     private lateinit var networkObserver: NetworkStateObserver
 
-    override fun onSuggestionClick(suggestion: LocationSuggestion, itemViewType: Int) {
+    override fun onSuggestionSelected(address: AddressWrapper) {
 
-        isSuggestionClicked = true
-
-        if (itemViewType == VIEW_TYPE_LOCATION_SUGGESTION) {
-            viewModel.addSuggestion(suggestion)
+        viewModel.latLng.value = Pair(LatLng(address.latitude, address.longitude), false)
+        viewModel.address.value = address.address
+        if (!address.recentQuery) {
+            viewModel.addSuggestion(LocationSuggestion(
+                address.address,
+                address.latitude,
+                address.longitude
+            ))
         }
-        viewModel.latLng.value = Pair(LatLng(suggestion.latitude, suggestion.longitude), false)
-        viewModel.address.value = suggestion.address
 
-        binding.searchView.setQuery(suggestion.address, false)
-        binding.searchView.clearFocus()
-
-        isSuggestionClicked = false
+        binding.searchView.setQuery(address.address, false)
+        binding.searchView.closeSuggestions()
     }
 
-    override fun onRemoveRecentQuery(locationSuggestion: LocationSuggestion) {
-        viewModel.removeSuggestion(locationSuggestion).invokeOnCompletion {
-            setLocationSuggestions(binding.searchView.query.toString())
+    override fun onSuggestionRemoved(address: AddressWrapper) = Unit
+
+    override fun onQueryTextChange(query: String?) {
+        lifecycleScope.launch {
+            val results: List<AddressWrapper> = geocoderUtil.queryAddresses(query)?.map {
+                AddressWrapper(
+                    it.latitude,
+                    it.longitude,
+                    it.getAddressLine(0),
+                    false
+                )
+            } ?: listOf()
+            binding.searchView.updateAdapter(results)
         }
     }
+
+    override fun onQueryTextSubmit(query: String?) = Unit
 
     override fun onNetworkAvailable() {
         runOnUiThread {
@@ -212,8 +204,8 @@ class MapsActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (savedInstanceState != null) {
-           floatingMenuVisible = savedInstanceState.getBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, false)
+        savedInstanceState?.let {
+            floatingMenuVisible = it.getBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, false)
         }
 
         bindingImpl = GoogleMapsActivityBinding.inflate(layoutInflater)
@@ -221,17 +213,12 @@ class MapsActivity : AppCompatActivity(),
         binding.lifecycleOwner = this
         setContentView(binding.root)
 
-        fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         networkObserver = NetworkStateObserver(WeakReference(this))
-        geocoder = Geocoder(this, Locale.getDefault())
-        floatingActionMenuController = FloatingActionMenuController(
-            WeakReference(this),
-            floatingMenuVisible
-        )
+        floatingActionMenuController = FloatingActionMenuController(WeakReference(this), floatingMenuVisible)
 
         registerForPermissionRequestResult()
-        setSearchConfiguration()
         setBottomSheetBehavior()
+        setSearchListeners()
         setBottomNavigationListeners()
         addBottomSheetFragment()
         getMap()
@@ -277,16 +264,6 @@ class MapsActivity : AppCompatActivity(),
         )
     }
 
-    private fun setSearchableInfo() {
-        val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
-        binding.searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
-    }
-
-    private fun setSearchConfiguration() {
-        setSearchableInfo()
-        setSearchViewSuggestions()
-    }
-
     private fun addBottomSheetFragment() {
         val fragment: Fragment? = supportFragmentManager.findFragmentById(R.id.containerBottomSheet)
         if (fragment == null) {
@@ -295,6 +272,12 @@ class MapsActivity : AppCompatActivity(),
                 .add(R.id.containerBottomSheet, BottomSheetFragment())
                 .commit()
         }
+    }
+
+    private fun setSearchListeners() {
+        binding.searchView.queryListener = this
+        binding.searchView.adapter = AddressSearchView.AddressAdapter(this)
+        binding.searchView.selectionListener = this
     }
 
     private fun setBottomNavigationListeners() {
@@ -317,7 +300,6 @@ class MapsActivity : AppCompatActivity(),
         bottomSheetBehavior = from(binding.containerBottomSheet)
         bottomSheetBehavior.isFitToContents = false
         bottomSheetBehavior.halfExpandedRatio = 0.5f
-        binding.searchView.doOnPreDraw { view -> bottomSheetBehavior.expandedOffset = view.bottom }
     }
 
     override fun onStart() {
@@ -343,103 +325,6 @@ class MapsActivity : AppCompatActivity(),
                 binding.searchView.setQuery(query, false)
             }
         }
-    }
-
-    private fun setConnectionErrorCursor() {
-        MatrixCursor(arrayOf(_ID, COLUMN_VIEW_TYPE, COLUMN_ICON, SUGGEST_COLUMN_TEXT_1)).apply {
-            addRow(arrayOf(
-                ID_CONNECTIVITY_ERROR.toString(),
-                VIEW_TYPE_CONNECTIVITY_ERROR.toString(),
-                ICON_CONNECTIVITY_ERROR.toString(),
-                SUGGESTION_TEXT_CONNECTIVITY_ERROR))
-            binding.searchView.suggestionsAdapter.changeCursor(this)
-        }
-    }
-
-    private fun setAddressSuggestionsCursor(results: Collection<AddressWrapper>) {
-        val columns: Array<String> = arrayOf(
-                _ID,
-                COLUMN_VIEW_TYPE,
-                COLUMN_ICON,
-                COLUMN_LATITUDE,
-                COLUMN_LONGITUDE,
-                SUGGEST_COLUMN_TEXT_1,
-        )
-        MatrixCursor(columns).apply {
-            results.forEachIndexed { index, location ->
-                val viewType: Int = if (location.recentQuery) {
-                    VIEW_TYPE_LOCATION_RECENT_QUERY
-                } else VIEW_TYPE_LOCATION_SUGGESTION
-
-                val icon: Int = if (location.recentQuery) {
-                    ICON_LOCATION_RECENT_QUERY
-                } else ICON_LOCATION_SUGGESTION
-
-                addRow(arrayOf(
-                    index.toString(),
-                    viewType.toString(),
-                    icon.toString(),
-                    location.latitude.toString(),
-                    location.longitude.toString(),
-                    location.address
-                ))
-            }
-            binding.searchView.suggestionsAdapter.changeCursor(this)
-        }
-    }
-
-    @Suppress("BlockingMethodInNonBlockingContext")
-    private fun setLocationSuggestions(query: String?) {
-        lifecycleScope.launch {
-            val suggestions: List<AddressWrapper> = viewModel.getSuggestions(query)
-            if (query.isNullOrEmpty()) {
-                setAddressSuggestionsCursor(suggestions)
-            } else {
-                val addresses: List<AddressWrapper>? = try {
-                    withContext(Dispatchers.IO) {
-                        geocoder.getFromLocationName(query, 30)?.map {
-                            AddressWrapper(
-                                it.latitude,
-                                it.longitude,
-                                it.getAddressLine(0)
-                            )
-                        }
-                    }
-                } catch (e: IOException) {
-                    setConnectionErrorCursor()
-                    null
-                }
-                if (addresses != null) {
-                    HashSet<AddressWrapper>().apply {
-
-                        addAll(suggestions)
-                        addAll(addresses)
-
-                        setAddressSuggestionsCursor(this)
-                    }
-                } else if (suggestions.isNotEmpty()) {
-                    setAddressSuggestionsCursor(suggestions)
-                }
-            }
-        }
-    }
-
-    private fun setSearchViewSuggestions() {
-        binding.searchView.suggestionsAdapter = SuggestionsAdapter(this, null)
-        binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (!isSuggestionClicked) {
-                    setLocationSuggestions(newText)
-                    return true
-                }
-                return false
-            }
-        })
     }
 
     private fun getMap() {
@@ -470,9 +355,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun updatePosition(latLng: LatLng) {
-        viewModel.latLng.value = Pair(
-            latLng, true
-        )
+        viewModel.latLng.value = Pair(latLng, true)
     }
 
     private fun updateCameraBounds(latLng: LatLng, radius: Float, animate: Boolean) {
@@ -505,13 +388,8 @@ class MapsActivity : AppCompatActivity(),
                 it, latLng
             ))
         }
-        if (queryAddress) getAddress(latLng) else marker?.title = viewModel.address.value
+        if (queryAddress) setAddress(latLng) else marker?.title = viewModel.address.value
         startMarkerAnimation()
-    }
-
-    private fun setAddress(addressLine: String) {
-        viewModel.setAddress(addressLine)
-        marker?.title = addressLine
     }
 
     private fun setMapStyle(style: Int) {
@@ -520,17 +398,11 @@ class MapsActivity : AppCompatActivity(),
         ))
     }
 
-    private fun getAddress(latLng: LatLng) {
+    private fun setAddress(latLng: LatLng) {
         lifecycleScope.launch {
-            val addresses: List<Address>? = withContext(Dispatchers.IO) {
-                try {
-                    geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-                } catch (e: IOException) {
-                    null
-                }
-            }
-            if (!addresses.isNullOrEmpty()) {
-                setAddress(addresses[0].getAddressLine(0))
+            geocoderUtil.getAddressFromLocation(latLng)?.let {
+                viewModel.setAddress(it)
+                marker?.title = it
             }
         }
     }
@@ -583,6 +455,7 @@ class MapsActivity : AppCompatActivity(),
 
     @RequiresPermission(ACCESS_FINE_LOCATION)
     private fun getCurrentLocation() {
+        val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         fusedLocationProvider.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, taskCancellationSource.token)
             .addOnCanceledListener {
                 Log.w("MapsActivity", "Location request was cancelled")
@@ -650,9 +523,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onCameraMoveStarted(reason: Int) {
-        if (reason == REASON_GESTURE) {
-            bottomSheetBehavior.state = STATE_HIDDEN
-        }
+        if (reason == REASON_GESTURE) bottomSheetBehavior.state = STATE_HIDDEN
     }
 
     override fun onMarkerDragStart(marker: Marker) {

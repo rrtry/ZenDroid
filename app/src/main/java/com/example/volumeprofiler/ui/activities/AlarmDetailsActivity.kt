@@ -108,7 +108,6 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
 

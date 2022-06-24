@@ -154,6 +154,7 @@
         <entry key="app/src/main/res/layout/profile_image_view.xml" value="0.5018518518518519" />
         <entry key="app/src/main/res/layout/profile_item_view.xml" value="0.5" />
         <entry key="app/src/main/res/layout/profiles_list_fragment.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/search_view.xml" value="0.4471996579734929" />
         <entry key="app/src/main/res/layout/seekbar_scene.xml" value="0.3078125" />
         <entry key="app/src/main/res/layout/spinner_profile_view.xml" value="0.5277777777777778" />
         <entry key="app/src/main/res/layout/suggestion_empty_query_item_view.xml" value="0.3078125" />

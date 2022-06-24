@@ -34,7 +34,7 @@
             android:name="com.example.volumeprofiler.ui.activities.MapsActivity"
             android:configChanges="uiMode"
             android:launchMode="singleTop"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustPan"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar"
             android:label="@string/title_activity_maps"
             android:exported="true">

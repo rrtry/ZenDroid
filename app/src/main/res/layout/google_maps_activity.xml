@@ -27,15 +27,12 @@
                 android:layout_height="match_parent"
                 tools:context=".ui.activities.MapsActivity"/>
 
-            <androidx.appcompat.widget.SearchView
+            <com.example.volumeprofiler.views.AddressSearchView
                 android:id="@+id/searchView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="10dp"
-                android:background="@color/darker_gray"
-                android:elevation="5dp"
-                app:iconifiedByDefault="false"
-                app:queryHint="Search here" />
+                android:animateLayoutChanges="true"
+                android:layout_margin="10dp" />
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
