@@ -17,11 +17,18 @@ class GeocoderUtil @Inject constructor(@ApplicationContext private val context: 
 
     private val geocoder: Geocoder = Geocoder(context, Locale.getDefault())
 
-    suspend fun queryAddresses(query: String?): List<Address>? {
+    suspend fun queryAddresses(query: String?): List<AddressWrapper>? {
         if (query.isNullOrEmpty() || query.isNullOrBlank()) return null
         return withContext(Dispatchers.IO) {
             try {
-                geocoder.getFromLocationName(query, 30)
+                geocoder.getFromLocationName(query, 30)?.map {
+                    AddressWrapper(
+                        it.latitude,
+                        it.longitude,
+                        it.getAddressLine(0),
+                        false
+                    )
+                }
             } catch (e: IOException) {
                 null
             }

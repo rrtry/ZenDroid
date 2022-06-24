@@ -124,22 +124,8 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onQueryTextChange(query: String?) {
         lifecycleScope.launch {
-            val savedQueries: HashSet<AddressWrapper> = viewModel.getSuggestions(query).map {
-                AddressWrapper(
-                    it.latitude,
-                    it.longitude,
-                    it.address,
-                    true
-                )
-            }.toHashSet()
-            val results: List<AddressWrapper> = geocoderUtil.queryAddresses(query)?.map {
-                AddressWrapper(
-                    it.latitude,
-                    it.longitude,
-                    it.getAddressLine(0),
-                    false
-                )
-            } ?: listOf()
+            val savedQueries: HashSet<AddressWrapper> = viewModel.getSuggestions(query).toHashSet()
+            val results: List<AddressWrapper> = geocoderUtil.queryAddresses(query) ?: listOf()
             binding.searchView.updateAdapter((savedQueries + results).toList())
         }
     }
