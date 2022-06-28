@@ -26,22 +26,18 @@ import com.example.volumeprofiler.selection.DetailsLookup
 import com.example.volumeprofiler.selection.KeyProvider
 import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.*
 import com.example.volumeprofiler.R
-import com.example.volumeprofiler.core.PreferencesManager
-import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
 import com.example.volumeprofiler.util.canWriteSettings
 import com.example.volumeprofiler.util.checkPermission
 import com.google.android.material.snackbar.Snackbar
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder, IB: ViewBinding>:
     ViewBindingFragment<VB>(),
     FragmentStateListener,
     ActionModeProvider,
-    ListItemActionListener<T> {
+    ListViewContract<T> {
 
     protected var callback: MainActivityCallback? = null
     private var actionMode: ActionMode?

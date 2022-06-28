@@ -21,7 +21,7 @@
         android:orientation="vertical"
         android:layout_height="wrap_content">
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/mediaSliderLayout"
             android:layout_width="match_parent"
             mediaInterruptionFilter="@{viewModel.interruptionFilter}"
@@ -87,7 +87,7 @@
                 app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
         <ImageView
             android:id="@+id/imageView10"
@@ -124,7 +124,7 @@
             app:layout_constraintStart_toEndOf="@+id/imageView10"
             app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout" />
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/notificationSliderLayout"
             android:layout_width="match_parent"
             interruptionFilter="@{viewModel.interruptionFilter}"
@@ -195,9 +195,9 @@
                 app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/ringerSliderLayout"
             android:layout_width="match_parent"
             ringerInterruptionFilter="@{viewModel.interruptionFilter}"
@@ -269,9 +269,9 @@
                 app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/unlinkStreamsLayout"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -310,9 +310,9 @@
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="UseSwitchCompatOrMaterialXml" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/alarmSliderLayout"
             android:layout_width="match_parent"
             alarmInterruptionFilter="@{viewModel.interruptionFilter}"
@@ -379,7 +379,7 @@
                 app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
         <View
             android:id="@+id/separator1"
@@ -403,7 +403,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/separator1" />
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/interruptionFilterLayout"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             android:layout_width="match_parent"
@@ -439,9 +439,9 @@
                 android:paddingBottom="8dp"
                 android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
                 android:textSize="14sp" />
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/phoneRingtoneLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -476,9 +476,9 @@
                 android:text="@{viewModel.phoneRingtoneTitle}"
                 android:textSize="14sp" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/notificationSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -514,9 +514,9 @@
                 app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
                 android:text="@{viewModel.notificationRingtoneTitle}"
                 android:textSize="14sp" />
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/alarmSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -551,9 +551,9 @@
                 android:paddingBottom="8dp"
                 android:text="@{viewModel.alarmRingtoneTitle}"
                 android:textSize="14sp" />
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/interruptionFilterPreferencesLayout"
             notificationPolicyAccess="@{viewModel.notificationPolicyAccessGranted}"
             android:layout_width="match_parent"
@@ -588,9 +588,9 @@
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.views.SwitchableConstraintLayout
+        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
             android:id="@+id/vibrateForCallsLayout"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -625,7 +625,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-        </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
         <ImageButton
             android:id="@+id/playCallRingtone"

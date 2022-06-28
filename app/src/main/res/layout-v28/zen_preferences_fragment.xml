@@ -65,7 +65,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <com.example.volumeprofiler.views.SwitchableConstraintLayout
+            <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
                 android:id="@+id/repeatCallersLayout"
                 callSenders="@{viewModel.priorityCallSenders}"
                 priorityCategories="@{viewModel.priorityCategories}"
@@ -113,7 +113,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/repeatCallersDescription" />
-            </com.example.volumeprofiler.views.SwitchableConstraintLayout>
+            </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
 
             <View
                 android:id="@+id/separator2"

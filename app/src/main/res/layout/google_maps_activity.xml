@@ -27,7 +27,7 @@
                 android:layout_height="match_parent"
                 tools:context=".ui.activities.MapsActivity"/>
 
-            <com.example.volumeprofiler.views.AddressSearchView
+            <com.example.volumeprofiler.ui.views.AddressSearchView
                 android:id="@+id/searchView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

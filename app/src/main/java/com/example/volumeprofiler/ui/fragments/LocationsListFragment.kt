@@ -23,10 +23,9 @@ import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.LocationAdapter
 import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
-import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.interfaces.FabContainer
-import com.example.volumeprofiler.interfaces.ListItemActionListener
+import com.example.volumeprofiler.interfaces.ListViewContract
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel.ViewEvent.*
@@ -37,7 +36,7 @@ import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
 @AndroidEntryPoint
 class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder, LocationItemViewBinding>(),
     FabContainer,
-    ListItemActionListener<LocationRelation> {
+    ListViewContract<LocationRelation> {
 
     private lateinit var locationAdapter: LocationAdapter
 

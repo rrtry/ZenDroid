@@ -4,61 +4,25 @@ import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.widget.*
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.transition.*
 import com.example.volumeprofiler.databinding.MapsSelectLocationFragmentBinding
-import com.example.volumeprofiler.util.GeoUtil
 import com.example.volumeprofiler.util.Metrics
 import com.example.volumeprofiler.ui.Animations
 import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel
 import com.google.android.gms.maps.model.LatLng
 import com.example.volumeprofiler.R
-import dagger.hilt.android.AndroidEntryPoint
+import com.example.volumeprofiler.util.MapsUtil
 import kotlinx.coroutines.launch
 
 class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBinding>() {
 
     private val sharedViewModel: GeofenceSharedViewModel by activityViewModels()
     private var currentMetrics: Metrics = Metrics.METERS
-
-    private val latitudeTextWatcher = object : TextWatcher {
-
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            s?.let {
-                if (GeoUtil.isLatitude(s.toString())) {
-                    viewBinding.latitudeTextInputLayout.error = null
-                } else {
-                    viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
-                }
-                return
-            }
-        }
-
-        override fun afterTextChanged(s: Editable?) {}
-    }
-
-    private val longitudeTextWatcher = object : TextWatcher {
-
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            s?.let {
-                if (GeoUtil.isLongitude(s.toString())) {
-                    viewBinding.longitudeTextInputLayout.error = null
-                } else {
-                    viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
-                }
-                return
-            }
-        }
-
-        override fun afterTextChanged(s: Editable?) {}
-    }
 
     override fun getBinding(
         inflater: LayoutInflater,
@@ -78,8 +42,8 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
             enterTransition = this
             exitTransition = this
         }
-        savedInstanceState?.let {
-            currentMetrics = it.getSerializable(EXTRA_CURRENT_METRICS) as Metrics
+        savedInstanceState?.let { bundle ->
+            currentMetrics = bundle.getSerializable(EXTRA_CURRENT_METRICS) as Metrics
         }
     }
 
@@ -104,8 +68,24 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
         savedInstanceState: Bundle?
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
-        viewBinding.latitudeTextInput.addTextChangedListener(latitudeTextWatcher)
-        viewBinding.longitudeEditText.addTextChangedListener(longitudeTextWatcher)
+        viewBinding.latitudeTextInput.doAfterTextChanged {
+            it?.let {
+                if (MapsUtil.isLatitude(it.toString())) {
+                    viewBinding.latitudeTextInputLayout.error = null
+                } else {
+                    viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
+                }
+            }
+        }
+        viewBinding.longitudeEditText.doAfterTextChanged {
+            it?.let {
+                if (MapsUtil.isLongitude(it.toString())) {
+                    viewBinding.longitudeTextInputLayout.error = null
+                } else {
+                    viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
+                }
+            }
+        }
         viewBinding.metricsSpinner.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
@@ -128,7 +108,7 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
 
                 }
             }
-        viewBinding.radiusSlider.addOnChangeListener { slider, value, fromUser ->
+        viewBinding.radiusSlider.addOnChangeListener { _, value, _ ->
             if (currentMetrics == Metrics.METERS) {
                 sharedViewModel.setRadius(value)
             } else {
@@ -137,14 +117,14 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
         }
         viewBinding.setLocationButton.setOnClickListener { view ->
 
-            var valid = true
+            var valid: Boolean = true
 
-            if (!GeoUtil.isLatitude(viewBinding.latitudeTextInput.text.toString())) {
+            if (!MapsUtil.isLatitude(viewBinding.latitudeTextInput.text.toString())) {
                 valid = false
                 Animations.shake(viewBinding.latitudeTextInputLayout)
                 viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
             }
-            if (!GeoUtil.isLongitude(viewBinding.longitudeEditText.text.toString())) {
+            if (!MapsUtil.isLongitude(viewBinding.longitudeEditText.text.toString())) {
                 valid = false
                 Animations.shake(viewBinding.longitudeTextInputLayout)
                 viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
@@ -167,9 +147,7 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.title.collect { title ->
-                        title?.also {
-                            viewBinding.titleEditText.setText(it)
-                        }
+                        title?.also { viewBinding.titleEditText.setText(it) }
                     }
                 }
                 launch {

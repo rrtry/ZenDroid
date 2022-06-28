@@ -1,29 +1,31 @@
-package com.example.volumeprofiler.views
+package com.example.volumeprofiler.ui.views
 
-import android.animation.LayoutTransition
 import android.app.Activity
+import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_MUTABLE
+import android.app.PendingIntent.FLAG_ONE_SHOT
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.ACTION_SEARCH
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.MATCH_ALL
 import android.speech.RecognizerIntent
 import android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH
 import android.speech.RecognizerIntent.ACTION_WEB_SEARCH
 import android.transition.ChangeBounds
-import android.transition.TransitionManager
+import android.transition.TransitionManager.beginDelayedTransition
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
-import androidx.core.view.setMargins
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -31,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.LocationSuggestionItemViewBinding
 import com.example.volumeprofiler.databinding.SearchViewBinding
+import com.example.volumeprofiler.ui.activities.MapsActivity
 import com.example.volumeprofiler.util.AddressWrapper
 
 class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null):
@@ -97,18 +100,18 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
         fun onQueryTextSubmit(query: String?)
     }
 
+    private var notifyListener: Boolean = true
     var queryListener: OnQueryTextChangeListener? = null
     var selectionListener: OnSuggestionListener? = null
-    var notifyListener: Boolean = true
 
     var adapter: ListAdapter<AddressWrapper, AddressAdapter.AddressViewHolder>? = null
-    set(value) {
-        binding.suggestionsList.adapter = value
-        field = value
-    }
+    set(value) { binding.suggestionsList.adapter = value; field = value }
 
+    var query: String? = null
+    private set
+
+    val suggestionsVisible: Boolean get() = binding.suggestionsList.isVisible
     private val isQueryEmpty: Boolean get() = binding.searchEditText.text.isNullOrEmpty()
-
     private var binding: SearchViewBinding = SearchViewBinding.inflate(
         LayoutInflater.from(context), this, true
     )
@@ -119,11 +122,23 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
         binding.searchEditText.setOnEditorActionListener(this)
         binding.searchEditText.onFocusChangeListener = this
         binding.searchEditText.addDebounceTextWatcher(
-            { query -> if (notifyListener) queryListener?.onQueryTextChange(query); notifyListener = true },
+            { text ->
+                if (notifyListener) queryListener?.onQueryTextChange(text)
+                notifyListener = true
+                query = text
+            },
             { onUpdate() }
         )
         binding.suggestionsList.layoutManager = LinearLayoutManager(context)
         onUpdate()
+    }
+
+    private fun submitQuery(results: List<AddressWrapper>?) {
+        if (binding.searchEditText.isFocused) {
+            beginDelayedTransition(this, ChangeBounds())
+            binding.suggestionsList.isVisible = !results.isNullOrEmpty()
+            adapter?.submitList(results?.ifEmpty { null })
+        }
     }
 
     fun setQuery(query: String, notifyChange: Boolean = true) {
@@ -132,18 +147,30 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
     }
 
     fun updateAdapter(results: List<AddressWrapper>) {
-        TransitionManager.beginDelayedTransition(this, ChangeBounds())
-        adapter?.submitList(results.ifEmpty { null })
+        submitQuery(results)
     }
 
     fun closeSuggestions() {
-        onBackPressed()
+        onActionUp()
+    }
+
+    private fun onActionUp() {
+        submitQuery(null)
+        toggleSoftInput(false)
+        binding.searchEditText.clearFocus()
+    }
+
+    private fun clearQuery() {
+        beginDelayedTransition(this, ChangeBounds())
+        toggleSoftInput(true)
+        binding.searchEditText.requestFocus()
+        binding.searchEditText.text?.clear()
     }
 
     override fun onClick(v: View?) {
         when (v) {
             binding.rightImageView -> if (isQueryEmpty) onVoiceSearchRequested() else clearQuery()
-            binding.leftImageView -> onBackPressed()
+            binding.leftImageView -> onActionUp()
         }
     }
 
@@ -172,18 +199,15 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
         selectionListener = null
     }
 
-    private fun clearQuery() {
-        binding.searchEditText.requestFocus()
-        toggleSoftInput(true)
-        binding.searchEditText.text?.clear()
-    }
-
     private fun onVoiceSearchRequested() {
-        getVoiceSearchIntent()?.let { intent -> startActivityForResult(context as Activity, intent, 100, null) }
+        getVoiceSearchIntent()?.let { intent ->
+            startActivityForResult(context as Activity, intent, 100, null)
+        }
     }
 
     private fun getVoiceSearchIntent(): Intent? {
-        val intent: Intent? = when {
+        val componentName: ComponentName = ComponentName(context, MapsActivity::class.java)
+        val recognizerIntent: Intent? = when {
             isAppVoiceSearchAvailable() -> {
                 Intent(ACTION_RECOGNIZE_SPEECH).apply {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -195,7 +219,16 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
                 }
             } else -> null
         }
-        return intent?.apply {
+        val searchPendingIntent: PendingIntent = PendingIntent.getActivity(
+            context,
+            100,
+            Intent(ACTION_SEARCH).apply { component = componentName },
+            FLAG_ONE_SHOT or FLAG_MUTABLE
+        )
+        return recognizerIntent?.apply {
+            addFlags(FLAG_ACTIVITY_NEW_TASK)
+            putExtra(RecognizerIntent.EXTRA_RESULTS_PENDINGINTENT, searchPendingIntent)
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, componentName.flattenToShortString())
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
         }
     }
@@ -221,13 +254,6 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
         }
     }
 
-    private fun onBackPressed() {
-        TransitionManager.beginDelayedTransition(this, ChangeBounds())
-        adapter?.submitList(null)
-        binding.searchEditText.clearFocus()
-        toggleSoftInput(false)
-    }
-
     private fun onUpdate() {
 
         val empty: Boolean =
@@ -242,18 +268,6 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
                 context.theme
             )
         )
-    }
-
-    private fun changeLayoutParams(queryEmpty: Boolean) {
-        layoutParams?.let { params ->
-
-            layoutTransition.enableTransitionType(LayoutTransition.CHANGING)
-
-            params.height = if (queryEmpty) WRAP_CONTENT else MATCH_PARENT
-            (params as MarginLayoutParams).setMargins(if (queryEmpty) 16 else 0)
-
-            layoutParams = params
-        }
     }
 
     companion object {

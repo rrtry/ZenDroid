@@ -53,7 +53,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel.ViewEvent.*
-import com.example.volumeprofiler.views.AddressSearchView
+import com.example.volumeprofiler.ui.views.AddressSearchView
 import com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
@@ -504,6 +504,11 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    private fun onMapInteraction() {
+        bottomSheetBehavior.state = STATE_HIDDEN
+        binding.searchView.closeSuggestions()
+    }
+
     override fun onInfoWindowLongClick(p0: Marker) {
         val clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         clipboardManager.setPrimaryClip(ClipData.newPlainText("Address", marker?.title))
@@ -512,18 +517,19 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onMapClick(latLng: LatLng) {
         updatePosition(latLng)
+        onMapInteraction()
     }
 
     override fun onCameraMoveStarted(reason: Int) {
-        if (reason == REASON_GESTURE) bottomSheetBehavior.state = STATE_HIDDEN
+        if (reason == REASON_GESTURE) onMapInteraction()
     }
 
     override fun onMarkerDragStart(marker: Marker) {
-        bottomSheetBehavior.state = STATE_HIDDEN
+        onMapInteraction()
     }
 
     override fun onMarkerDrag(p0: Marker) {
-
+        onMapInteraction()
     }
 
     override fun onMarkerDragEnd(marker: Marker) {
@@ -531,10 +537,10 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onBackPressed() {
-        if (bottomSheetBehavior.state != STATE_HIDDEN) {
-            bottomSheetBehavior.state = STATE_HIDDEN
-        } else {
-            super.onBackPressed()
+        when {
+            binding.searchView.suggestionsVisible -> binding.searchView.closeSuggestions()
+            bottomSheetBehavior.state != STATE_HIDDEN -> bottomSheetBehavior.state = STATE_HIDDEN
+            else -> super.onBackPressed()
         }
     }
 

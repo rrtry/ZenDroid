@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.core.util.Pair
 
-interface ListItemActionListener<T> {
+interface ListViewContract<T> {
 
     fun onEditWithTransition(entity: T, view: View, vararg sharedViews: Pair<View, String>)
 

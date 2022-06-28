@@ -13,7 +13,7 @@ import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
-import com.example.volumeprofiler.interfaces.ListItemActionListener
+import com.example.volumeprofiler.interfaces.ListViewContract
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolder
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
@@ -25,10 +25,10 @@ import java.lang.ref.WeakReference
 class LocationAdapter(
     var currentList: List<LocationRelation>,
     private val context: Context,
-    listener: WeakReference<ListItemActionListener<LocationRelation>>
+    listener: WeakReference<ListViewContract<LocationRelation>>
 ): RecyclerView.Adapter<LocationAdapter.LocationViewHolder>(), ListAdapterItemProvider<LocationRelation> {
 
-    private val itemActionListener: ListItemActionListener<LocationRelation> = listener.get()!!
+    private val viewContract: ListViewContract<LocationRelation> = listener.get()!!
 
     inner class LocationViewHolder(override val binding: LocationItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
@@ -58,10 +58,10 @@ class LocationAdapter(
             binding.geofenceProfiles.text = "${locationRelation.onEnterProfile.title} - ${locationRelation.onExitProfile}"
 
             binding.editGeofenceButton.setOnClickListener {
-                itemActionListener.onEdit(locationRelation, null)
+                viewContract.onEdit(locationRelation, null)
             }
             binding.removeGeofenceButton.setOnClickListener {
-                itemActionListener.onRemove(locationRelation)
+                viewContract.onRemove(locationRelation)
             }
             binding.mapSnapshot.post {
                 BitmapFactory.decodeFile(
@@ -77,9 +77,9 @@ class LocationAdapter(
         override fun onClick(v: View?) {
             currentList[bindingAdapterPosition].also {
                 if (it.location.enabled) {
-                    itemActionListener.onDisable(it)
+                    viewContract.onDisable(it)
                 } else {
-                    itemActionListener.onEnable(it)
+                    viewContract.onEnable(it)
                 }
             }
         }

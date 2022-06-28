@@ -3,7 +3,7 @@ package com.example.volumeprofiler.ui
 import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.databinding.BindingAdapter
-import com.example.volumeprofiler.views.SwitchableConstraintLayout
+import com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
 import android.media.AudioManager.*
 import android.app.NotificationManager.Policy.*
 import android.app.NotificationManager.*

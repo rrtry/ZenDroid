@@ -5,13 +5,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.selection.ItemDetailsLookup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.interfaces.ListItemActionListener
+import com.example.volumeprofiler.interfaces.ListViewContract
 import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
 import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
@@ -31,10 +29,10 @@ import java.time.LocalTime
 class AlarmAdapter(
     var currentList: List<AlarmRelation>,
     private val recyclerView: RecyclerView,
-    listener: WeakReference<ListItemActionListener<AlarmRelation>>
+    listener: WeakReference<ListViewContract<AlarmRelation>>
 ) : RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder>(), ListAdapterItemProvider<AlarmRelation> {
 
-    private val itemActionListener: ListItemActionListener<AlarmRelation> = listener.get()!!
+    private val viewContract: ListViewContract<AlarmRelation> = listener.get()!!
 
     inner class AlarmViewHolder(override val binding: AlarmItemViewBinding):
         RecyclerView.ViewHolder(binding.root),
@@ -63,17 +61,17 @@ class AlarmAdapter(
             binding.scheduleSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (buttonView.isPressed) {
                     if (isChecked) {
-                        itemActionListener.onEnable(alarmRelation)
+                        viewContract.onEnable(alarmRelation)
                     } else {
-                        itemActionListener.onDisable(alarmRelation)
+                        viewContract.onDisable(alarmRelation)
                     }
                 }
             }
             binding.deleteAlarmButton.setOnClickListener {
-                itemActionListener.onRemove(alarmRelation)
+                viewContract.onRemove(alarmRelation)
             }
             binding.editAlarmButton.setOnClickListener {
-                itemActionListener.onEditWithTransition(
+                viewContract.onEditWithTransition(
                     alarmRelation,
                     binding.root,
                     Pair.create(binding.startTime, SHARED_TRANSITION_START_TIME),
@@ -83,7 +81,7 @@ class AlarmAdapter(
                 )
             }
             binding.root.post {
-                itemActionListener.onSharedViewReady()
+                viewContract.onSharedViewReady()
             }
         }
     }
@@ -123,7 +121,7 @@ class AlarmAdapter(
                         }
                     }
                     SELECTION_CHANGED_MARKER -> {
-                        selected(holder.itemView, itemActionListener.isSelected(currentList[position]))
+                        selected(holder.itemView, viewContract.isSelected(currentList[position]))
                     }
                 }
             }
