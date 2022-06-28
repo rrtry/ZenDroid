@@ -134,9 +134,9 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
     }
 
     private fun submitQuery(results: List<AddressWrapper>?) {
+        beginDelayedTransition(this, ChangeBounds())
+        binding.suggestionsList.isVisible = !results.isNullOrEmpty()
         if (binding.searchEditText.isFocused) {
-            beginDelayedTransition(this, ChangeBounds())
-            binding.suggestionsList.isVisible = !results.isNullOrEmpty()
             adapter?.submitList(results?.ifEmpty { null })
         }
     }

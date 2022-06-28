@@ -134,21 +134,20 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onNetworkAvailable() {
         runOnUiThread {
-            showSnackbar(
-                findViewById(android.R.id.content),
+            Toast.makeText(
+                this,
                 "Network is available",
-                LENGTH_LONG
-            )
+                Toast.LENGTH_LONG).show()
         }
     }
 
     override fun onNetworkLost() {
         runOnUiThread {
-            showSnackbar(
-                findViewById(android.R.id.content),
+            Toast.makeText(
+                this,
                 "Network is unavailable",
-                LENGTH_LONG
-            )
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -537,10 +536,12 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onBackPressed() {
-        when {
-            binding.searchView.suggestionsVisible -> binding.searchView.closeSuggestions()
-            bottomSheetBehavior.state != STATE_HIDDEN -> bottomSheetBehavior.state = STATE_HIDDEN
-            else -> super.onBackPressed()
+        if (binding.searchView.suggestionsVisible) {
+            binding.searchView.closeSuggestions()
+        } else if (bottomSheetBehavior.state != STATE_HIDDEN) {
+            bottomSheetBehavior.state = STATE_HIDDEN
+        } else {
+            super.onBackPressed()
         }
     }
 
