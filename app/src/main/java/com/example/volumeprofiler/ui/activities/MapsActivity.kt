@@ -154,21 +154,20 @@ class MapsActivity : AppCompatActivity(),
     override fun onUpdate(location: Location) {
         lifecycleScope.launch {
             viewModel.updateLocation(location)
-            captureSnapshot(location)
-        }
+        }.invokeOnCompletion { finish() }
     }
 
     override fun onInsert(location: Location) {
         lifecycleScope.launch {
             viewModel.addLocation(location)
-            captureSnapshot(location)
-        }
+        }.invokeOnCompletion { finish() }
     }
 
     override fun onFinish(result: Boolean) {
         finish()
     }
 
+    /*
     private fun onSnapshotReady(bitmap: Bitmap?, uuid: UUID) {
         lifecycleScope.launch {
             fileManager.writeThumbnail(uuid, bitmap)
@@ -185,7 +184,7 @@ class MapsActivity : AppCompatActivity(),
                 onSnapshotReady(it, location.previewImageId)
             }
         }, 100)
-    }
+    } */
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)

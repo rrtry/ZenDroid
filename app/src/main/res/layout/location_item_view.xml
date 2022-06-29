@@ -98,11 +98,12 @@
             tools:ignore="NotSibling" />
 
 
-        <ImageView
-            android:id="@+id/mapSnapshot"
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/mapView"
             android:layout_width="match_parent"
             android:layout_height="150dp"
-            android:adjustViewBounds="true"
+            app:liteMode="true"
+            app:mapType="none"
             android:elevation="50dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

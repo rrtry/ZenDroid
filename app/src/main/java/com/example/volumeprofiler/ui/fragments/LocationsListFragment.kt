@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.util.Log
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
@@ -49,6 +50,10 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     private val viewModel: LocationsListViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
+    private val recycleListener = RecyclerView.RecyclerListener { viewHolder ->
+        (viewHolder as LocationAdapter.LocationViewHolder).clearMapView()
+    }
+
     override fun onPermissionResult(permission: String, granted: Boolean) {
 
     }
@@ -58,18 +63,17 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     }
 
     private fun updateAdapterData(list: List<LocationRelation>) {
-        if (list.isEmpty()) {
-            viewBinding.hintLocations.visibility = View.VISIBLE
-        } else {
-            viewBinding.hintLocations.visibility = View.GONE
-        }
+        viewBinding.hintLocations.isVisible = list.isEmpty()
         locationAdapter.currentList = list
         locationAdapter.notifyDataSetChanged()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
+        viewBinding.recyclerView.addRecyclerListener(recycleListener)
         locationAdapter = LocationAdapter(listOf(), requireContext(), WeakReference(this))
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -147,10 +151,6 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         viewModel.removeGeofence(entity)
     }
 
-    override fun isSelected(entity: LocationRelation): Boolean {
-        return false
-    }
-
     private fun updateFloatingActionButton(fragment: Int) {
         if (fragment == LOCATIONS_FRAGMENT) {
             onAnimateFab(callback!!.getFloatingActionButton())
@@ -204,6 +204,11 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
 
     override fun getAdapter(): RecyclerView.Adapter<LocationAdapter.LocationViewHolder> {
         return locationAdapter
+    }
+
+    override fun onDestroyView() {
+        getRecyclerView().removeRecyclerListener(recycleListener)
+        super.onDestroyView()
     }
 
     companion object {
