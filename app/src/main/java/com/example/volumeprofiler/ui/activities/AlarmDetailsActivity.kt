@@ -164,10 +164,8 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                     }
                 }
                 launch {
-                    viewModel.profilesStateFlow.collectLatest {
-                        if (it.isNotEmpty()) {
-                            viewModel.setProfiles(it)
-                        }
+                    viewModel.profilesStateFlow.collect { profiles ->
+                        if (profiles.isNotEmpty()) viewModel.setProfiles(profiles)
                     }
                 }
             }

@@ -105,9 +105,8 @@ class MapsActivity : AppCompatActivity(),
     private lateinit var networkObserver: NetworkStateObserver
 
     override fun onSuggestionSelected(address: AddressWrapper) {
-
-        viewModel.latLng.value = Pair(LatLng(address.latitude, address.longitude), false)
         viewModel.address.value = address.address
+        viewModel.latLng.value = Pair(LatLng(address.latitude, address.longitude), false)
         if (!address.recentQuery) {
             viewModel.addSuggestion(LocationSuggestion(
                 address.address,
@@ -115,7 +114,6 @@ class MapsActivity : AppCompatActivity(),
                 address.longitude
             ))
         }
-
         binding.searchView.setQuery(address.address, false)
         binding.searchView.closeSuggestions()
     }
@@ -167,25 +165,6 @@ class MapsActivity : AppCompatActivity(),
         finish()
     }
 
-    /*
-    private fun onSnapshotReady(bitmap: Bitmap?, uuid: UUID) {
-        lifecycleScope.launch {
-            fileManager.writeThumbnail(uuid, bitmap)
-        }.invokeOnCompletion {
-            finish()
-        }
-    }
-
-    private fun captureSnapshot(location: Location) {
-        updateCameraBounds(LatLng(location.latitude, location.longitude), location.radius, false)
-        Handler(Looper.getMainLooper()).postDelayed({
-            mMap?.clear()
-            mMap?.snapshot {
-                onSnapshotReady(it, location.previewImageId)
-            }
-        }, 100)
-    } */
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, floatingMenuVisible)
@@ -202,6 +181,7 @@ class MapsActivity : AppCompatActivity(),
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
         setContentView(binding.root)
+        setEntity()
 
         networkObserver = NetworkStateObserver(WeakReference(this))
         floatingActionMenuController = FloatingActionMenuController(WeakReference(this), floatingMenuVisible)
@@ -371,14 +351,13 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun updatePosition(latLng: LatLng, queryAddress: Boolean) {
-        addMarker(latLng)
+        addMarker(latLng, queryAddress)
         addCircle(latLng)
         mMap?.also {
             updateCameraBounds(MapsUtil.isTargetWithinVisibleRegion(
                 it, latLng
             ))
         }
-        if (queryAddress) setAddress(latLng) else marker?.title = viewModel.address.value
         startMarkerAnimation()
     }
 
@@ -391,7 +370,7 @@ class MapsActivity : AppCompatActivity(),
     private fun setAddress(latLng: LatLng) {
         lifecycleScope.launch {
             geocoderUtil.getAddressFromLocation(latLng)?.let {
-                viewModel.setAddress(it)
+                viewModel.address.value = it
                 marker?.title = it
             }
         }
@@ -406,9 +385,14 @@ class MapsActivity : AppCompatActivity(),
                 .fillColor(R.color.teal_700))
     }
 
-    private fun addMarker(latLng: LatLng) {
+    private fun addMarker(latLng: LatLng, queryAddress: Boolean) {
         marker?.remove()
         marker = mMap?.addMarker(MarkerOptions().position(latLng))
+        if (queryAddress) {
+            setAddress(latLng)
+        } else {
+            marker?.title = viewModel.address.value
+        }
     }
 
     @Suppress("deprecation")
@@ -491,10 +475,10 @@ class MapsActivity : AppCompatActivity(),
                     }
                 }
                 launch {
-                    viewModel.profilesStateFlow.collect {
+                    viewModel.profilesStateFlow.collect { it ->
                         if (it.isNotEmpty()) {
                             profiles = it
-                            setEntity()
+                            viewModel.setProfiles(it)
                         }
                     }
                 }

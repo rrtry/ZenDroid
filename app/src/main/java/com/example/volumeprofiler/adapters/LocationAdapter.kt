@@ -1,6 +1,7 @@
 package com.example.volumeprofiler.adapters
 
 import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +9,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.selection.ItemDetailsLookup
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.RecyclerView
+import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
@@ -74,6 +76,7 @@ class LocationAdapter(
 
             val location: Location = locationRelation.location
             latLng = LatLng(location.latitude, location.longitude)
+            radius = location.radius.toDouble()
 
             binding.geofenceTitle.text = location.title
             binding.enableGeofenceSwitch.isChecked = location.enabled
@@ -99,17 +102,22 @@ class LocationAdapter(
             if (!::map.isInitialized) return
             with(map) {
                 mapType = GoogleMap.MAP_TYPE_NORMAL
-                circle = addCircle(CircleOptions().center(latLng).radius(radius))
+                circle = addCircle(
+                    CircleOptions()
+                        .fillColor(Color.TRANSPARENT)
+                        .strokeColor(Color.TRANSPARENT)
+                        .center(latLng)
+                        .radius(radius))
                 moveCamera(CameraUpdateFactory.newLatLngBounds(
-                    MapsUtil.getLatLngBoundsFromCircle(circle), 100
+                    MapsUtil.getLatLngBoundsFromCircle(circle), 0
                 ))
             }
         }
 
         fun clearMapView() {
             with(map) {
-                clear()
                 mapType = GoogleMap.MAP_TYPE_NONE
+                clear()
             }
         }
     }
@@ -133,15 +141,15 @@ class LocationAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (payloads.isNotEmpty()) {
-            payloads.forEach {
-                when (it) {
-                    is Bundle -> {
-                        holder.updateEnabledState(it.getBoolean(LocationsListFragment.PAYLOAD_GEOFENCE_CHANGED))
-                    }
+        if (payloads.isEmpty()) return super.onBindViewHolder(holder, position, payloads)
+         payloads.forEach {
+            when (it) {
+                is Bundle -> {
+                    holder.updateEnabledState(it.getBoolean(LocationsListFragment.PAYLOAD_GEOFENCE_CHANGED))
                 }
+                SelectionTracker.SELECTION_CHANGED_MARKER -> selected(holder.itemView, viewContract.isSelected(currentList[position]))
             }
-        } else super.onBindViewHolder(holder, position, payloads)
+        }
     }
 
     override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {

@@ -10,15 +10,15 @@ import kotlin.math.sqrt
 
 object MapsUtil {
 
-    fun isLatitude(string: String): Boolean {
-        string.toDoubleOrNull()?.let {
+    fun isLatitude(string: String?): Boolean {
+        string?.toDoubleOrNull()?.let {
             return it.isFinite() && abs(it) <= 90
         }
         return false
     }
 
-    fun isLongitude(string: String): Boolean {
-        string.toDoubleOrNull()?.let {
+    fun isLongitude(string: String?): Boolean {
+        string?.toDoubleOrNull()?.let {
             return it.isFinite() && abs(it) <= 180
         }
         return false

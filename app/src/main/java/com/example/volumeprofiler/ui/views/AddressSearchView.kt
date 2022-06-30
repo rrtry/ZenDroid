@@ -6,6 +6,7 @@ import android.app.PendingIntent.FLAG_MUTABLE
 import android.app.PendingIntent.FLAG_ONE_SHOT
 import android.content.ComponentName
 import android.content.Context
+import android.util.Log
 import android.content.Intent
 import android.content.Intent.ACTION_SEARCH
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
@@ -134,9 +135,9 @@ class AddressSearchView @JvmOverloads constructor(context: Context, attributeSet
     }
 
     private fun submitQuery(results: List<AddressWrapper>?) {
-        beginDelayedTransition(this, ChangeBounds())
-        binding.suggestionsList.isVisible = !results.isNullOrEmpty()
         if (binding.searchEditText.isFocused) {
+            beginDelayedTransition(this, ChangeBounds())
+            binding.suggestionsList.isVisible = !results.isNullOrEmpty()
             adapter?.submitList(results?.ifEmpty { null })
         }
     }

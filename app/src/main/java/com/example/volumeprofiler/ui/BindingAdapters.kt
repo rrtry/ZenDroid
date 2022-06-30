@@ -9,19 +9,20 @@ import android.app.NotificationManager.Policy.*
 import android.app.NotificationManager.*
 import android.content.Context
 import android.graphics.drawable.Drawable
-import android.transition.AutoTransition
-import android.transition.TransitionManager
 import android.view.View
 import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.isVisible
 import androidx.databinding.InverseBindingAdapter
 import androidx.databinding.InverseBindingListener
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.ProfileSpinnerAdapter
 import com.example.volumeprofiler.core.*
 import com.example.volumeprofiler.entities.Profile
+import com.example.volumeprofiler.util.MapsUtil
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 
 @SuppressLint("UseSwitchCompatOrMaterialCode")
 object BindingAdapters {
@@ -178,22 +179,6 @@ object BindingAdapters {
     @BindingAdapter("suppressedEffectScreenOff")
     fun bindSuppressedEffectScreenOffSwitch(view: Switch, suppressedEffectScreenOff: Int): Unit {
         view.isChecked = (suppressedEffectScreenOff and SUPPRESSED_EFFECT_SCREEN_OFF) != 0
-    }
-
-    @JvmStatic
-    @BindingAdapter("rootViewGroup", "prioritySenders", "priorityCategories", "categoryType")
-    fun bindStarredContactsLayout(
-        view: View, rootViewGroup:
-        ViewGroup, prioritySenders: Int,
-        priorityCategories: Int,
-        categoryType: Int): Unit {
-        val transition: AutoTransition = AutoTransition().apply {
-            excludeChildren(R.id.exceptionsCallsLayout, true)
-            excludeChildren(R.id.exceptionsMessagesLayout, true)
-            excludeChildren(R.id.otherInterruptionsLayout, true)
-        }
-        TransitionManager.beginDelayedTransition(rootViewGroup, transition)
-        view.isVisible = prioritySenders == PRIORITY_SENDERS_STARRED && (priorityCategories and categoryType) != 0
     }
 
     @JvmStatic
@@ -402,6 +387,12 @@ object BindingAdapters {
         imageView.setImageDrawable(
             ContextCompat.getDrawable(imageView.context, iconRes)
         )
+    }
+
+    @JvmStatic
+    @BindingAdapter("errorText")
+    fun setErrorText(textInputLayout: TextInputLayout, errorText: String?) {
+        textInputLayout.error = errorText
     }
 
     @JvmStatic

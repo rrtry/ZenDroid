@@ -22,7 +22,6 @@ data class Location(
         var previewImageId: UUID = UUID.randomUUID(),
         var latitude: Double,
         var longitude: Double,
-        var locality: String,
         var address: String,
         var radius: Float = 100f,
         var enabled: Boolean = false,

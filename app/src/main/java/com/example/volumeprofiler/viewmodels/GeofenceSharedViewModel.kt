@@ -8,6 +8,7 @@ import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.LocationSuggestion
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.util.AddressWrapper
+import com.example.volumeprofiler.util.MapsUtil
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -37,20 +38,38 @@ class GeofenceSharedViewModel @Inject constructor(
         object ShowMapStylesDialog: ViewEvent()
     }
 
-    private var entitySet: Boolean = false
+    private var locationSet: Boolean = false
     private var locationId: Int? = null
-    private var isEnabled: Boolean = false
+    private var isRegistered: Boolean = false
 
     val title: MutableStateFlow<String> = MutableStateFlow("My geofence")
     val latLng: MutableStateFlow<Pair<LatLng, Boolean>> = MutableStateFlow(Pair(LatLng(-33.865143, 151.209900), false))
     val radius: MutableStateFlow<Float> = MutableStateFlow(100f)
     val enterProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
     val exitProfile: MutableStateFlow<Profile?> = MutableStateFlow(null)
-    val address: MutableStateFlow<String> = MutableStateFlow("")
-    val locality: MutableStateFlow<String> = MutableStateFlow("")
+    val address: MutableStateFlow<String> = MutableStateFlow("6/10 O'Connell St, The Rocks NSW 2000")
+
+    val latitudeTextInputError: MutableStateFlow<String?> = MutableStateFlow(null)
+    val longitudeTextInputError: MutableStateFlow<String?> = MutableStateFlow(null)
 
     val profilesStateFlow: StateFlow<List<Profile>> = profileRepository.observeProfiles()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(1000), listOf())
+
+    fun onLatitudeTextInputChanged(latitudeSeq: CharSequence?) {
+        if (MapsUtil.isLatitude(latitudeSeq?.toString())) {
+            latitudeTextInputError.value = null
+        } else {
+            latitudeTextInputError.value = "Enter value between -90 and 90"
+        }
+    }
+
+    fun onLongitudeTextInputChanged(longitudeSeq: CharSequence?) {
+        if (MapsUtil.isLongitude(longitudeSeq?.toString())) {
+            longitudeTextInputError.value = null
+        } else {
+            longitudeTextInputError.value = "Enter value between -180 and 180"
+        }
+    }
 
     fun onMapStylesFabClick() {
         viewModelScope.launch {
@@ -78,12 +97,10 @@ class GeofenceSharedViewModel @Inject constructor(
 
     fun onApplyChangesButtonClick() {
         viewModelScope.launch {
-            getLocation()?.let {
-                if (locationId != null) {
-                    eventChannel.send(ViewEvent.OnUpdateGeofenceEvent(it))
-                } else {
-                    eventChannel.send(ViewEvent.OnInsertGeofenceEvent(it))
-                }
+            if (locationId != null) {
+                eventChannel.send(ViewEvent.OnUpdateGeofenceEvent(getLocation()))
+            } else {
+                eventChannel.send(ViewEvent.OnInsertGeofenceEvent(getLocation()))
             }
         }
     }
@@ -128,27 +145,34 @@ class GeofenceSharedViewModel @Inject constructor(
         }
     }
 
-    fun setEntity(locationRelation: LocationRelation) {
-        if (!entitySet) {
-
-            enterProfile.value = locationRelation.onEnterProfile
-            exitProfile.value = locationRelation.onExitProfile
-
-            latLng.value = Pair(
-                LatLng(
-                    locationRelation.location.latitude,
-                    locationRelation.location.longitude
-                ), false
-            )
-
-            title.value = locationRelation.location.title
-            address.value = locationRelation.location.address
-            radius.value = locationRelation.location.radius
-
-            locationId = locationRelation.location.id
-            isEnabled = locationRelation.location.enabled
-            entitySet = true
+    fun setProfiles(profiles: List<Profile>) {
+        if (locationId == null && !locationSet) {
+            enterProfile.value = profiles.random()
+            exitProfile.value = profiles.random()
+            locationSet = true
         }
+    }
+
+    fun setEntity(locationRelation: LocationRelation) {
+        if (locationSet) return
+
+        enterProfile.value = locationRelation.onEnterProfile
+        exitProfile.value = locationRelation.onExitProfile
+
+        latLng.value = Pair(
+            LatLng(
+                locationRelation.location.latitude,
+                locationRelation.location.longitude
+            ), false
+        )
+
+        title.value = locationRelation.location.title
+        address.value = locationRelation.location.address
+        radius.value = locationRelation.location.radius
+
+        locationId = locationRelation.location.id
+        isRegistered = locationRelation.location.enabled
+        locationSet = true
     }
 
     private fun getLocation(): Location {
@@ -158,11 +182,10 @@ class GeofenceSharedViewModel @Inject constructor(
             latitude = latLng.value.first.latitude,
             longitude = latLng.value.first.longitude,
             address = address.value,
-            locality = locality.value,
             radius = radius.value,
             onEnterProfileId = enterProfile.value!!.id,
             onExitProfileId = exitProfile.value!!.id,
-            enabled = isEnabled
+            enabled = isRegistered
         )
     }
 

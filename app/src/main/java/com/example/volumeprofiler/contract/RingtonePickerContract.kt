@@ -16,16 +16,15 @@ class RingtonePickerContract: ActivityResultContract<Int, Uri?>() {
     override fun createIntent(context: Context, input: Int?): Intent {
         ringtoneType = input!!
         return Intent(ACTION_RINGTONE_PICKER).apply {
-            this.putExtra(EXTRA_RINGTONE_TYPE, input)
-            this.putExtra(EXTRA_RINGTONE_SHOW_DEFAULT, true)
-            this.putExtra(EXTRA_RINGTONE_EXISTING_URI, if (existingUri == Uri.EMPTY)
+            putExtra(EXTRA_RINGTONE_TYPE, input)
+            putExtra(EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(EXTRA_RINGTONE_EXISTING_URI, if (existingUri == Uri.EMPTY)
                 getActualDefaultRingtoneUri(context, input) else existingUri)
         }
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-        return if (resultCode == Activity.RESULT_OK) {
-            intent?.getParcelableExtra(EXTRA_RINGTONE_PICKED_URI)
-        } else null
+        if (resultCode != Activity.RESULT_OK) return null
+        return intent?.getParcelableExtra(EXTRA_RINGTONE_PICKED_URI)
     }
 }

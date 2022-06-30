@@ -158,15 +158,11 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     }
 
     private fun onFragmentSwiped(fragment: Int) {
-        if (fragment == LOCATIONS_FRAGMENT) {
-            onFragmentSwiped()
-        }
+        if (fragment == LOCATIONS_FRAGMENT) onFragmentSwiped()
     }
 
     private fun onFloatingActionButtonClick(fragment: Int) {
-        if (fragment == LOCATIONS_FRAGMENT) {
-            onFabClick(callback!!.getFloatingActionButton())
-        }
+        if (fragment == LOCATIONS_FRAGMENT) onFabClick(callback!!.getFloatingActionButton())
     }
 
     override fun onFabClick(fab: FloatingActionButton) {

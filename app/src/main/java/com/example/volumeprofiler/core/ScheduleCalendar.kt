@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.core
 
-import android.util.Log
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.OngoingAlarm
@@ -20,16 +19,9 @@ class ScheduleCalendar(var now: ZonedDateTime) {
     }
 
     fun getNextOccurrence(): ZonedDateTime? {
-        return if (isValid()) {
-
-            meetsSchedule = meetsSchedule()
-
-            if (meetsSchedule) {
-                getNextEndTime()
-            } else {
-                getNextStartTime()
-            }
-        } else null
+        if (!isValid()) return null
+        meetsSchedule = meetsSchedule()
+        return if (meetsSchedule) getNextEndTime() else getNextStartTime()
     }
 
     private fun isRecurring(): Boolean {
@@ -40,19 +32,11 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         return (mask and WeekDay.fromDay(day.value)) != WeekDay.NONE
     }
 
-    fun isValid(): Boolean {
-        return isValid(now, alarm)
-    }
+    fun isValid(): Boolean = isValid(now, alarm)
 
     fun getPreviousOccurrence(): ZonedDateTime? {
-
         meetsSchedule = meetsSchedule()
-
-        return if (meetsSchedule) {
-            getPreviousStartTime()
-        } else {
-            getPreviousEndTime()
-        }
+        return if (meetsSchedule) getPreviousStartTime() else getPreviousEndTime()
     }
 
     private fun getNextAlarmTime(alarms: List<AlarmRelation>): LocalDateTime? {
@@ -64,11 +48,7 @@ class ScheduleCalendar(var now: ZonedDateTime) {
     }
 
     fun getOngoingAlarm(alarms: List<AlarmRelation>?): OngoingAlarm? {
-
-        if (alarms.isNullOrEmpty()) {
-            return null
-        }
-
+        if (alarms.isNullOrEmpty()) return null
         val nextAlarmTime: LocalDateTime? = getNextAlarmTime(alarms)
         return try {
             alarms.map { relation ->

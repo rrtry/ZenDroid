@@ -1,6 +1,7 @@
 package com.example.volumeprofiler.util
 
 import android.content.Context
+import android.location.Address
 import android.location.Geocoder
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,10 +39,8 @@ class GeocoderUtil @Inject constructor(@ApplicationContext private val context: 
         if (latLng == null) return null
         return withContext(Dispatchers.IO) {
             try {
-                geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)?.let { results ->
-                    if (results.isNotEmpty()) results.first().getAddressLine(0)
-                }
-                null
+                val results: List<Address>? = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+                if (results.isNullOrEmpty()) null else results.first().getAddressLine(0)
             }
             catch (e: IOException) {
                 null

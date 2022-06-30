@@ -105,27 +105,26 @@ class AlarmAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (payloads.isNotEmpty()) {
-            payloads.forEach { i ->
-                when (i) {
-                    is Bundle -> {
-                        i.keySet().forEach { key ->
-                            i.getSerializable(key)?.toString().let { timeFormatted ->
-                                if (key == PAYLOAD_START_TIME_CHANGED) {
-                                    holder.binding.startTime.text = timeFormatted
-                                }
-                                if (key == PAYLOAD_END_TIME_CHANGED) {
-                                    holder.binding.endTime.text = timeFormatted
-                                }
+        if (payloads.isEmpty()) return super.onBindViewHolder(holder, position, payloads)
+        payloads.forEach { i ->
+            when (i) {
+                is Bundle -> {
+                    i.keySet().forEach { key ->
+                        i.getSerializable(key)?.toString().let { timeFormatted ->
+                            if (key == PAYLOAD_START_TIME_CHANGED) {
+                                holder.binding.startTime.text = timeFormatted
+                            }
+                            if (key == PAYLOAD_END_TIME_CHANGED) {
+                                holder.binding.endTime.text = timeFormatted
                             }
                         }
                     }
-                    SELECTION_CHANGED_MARKER -> {
-                        selected(holder.itemView, viewContract.isSelected(currentList[position]))
-                    }
+                }
+                SELECTION_CHANGED_MARKER -> {
+                    selected(holder.itemView, viewContract.isSelected(currentList[position]))
                 }
             }
-        } else super.onBindViewHolder(holder, position, payloads)
+        }
     }
 
     override fun getItemKey(position: Int): AlarmRelation {

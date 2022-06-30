@@ -226,17 +226,10 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     fun setEntity(profile: Profile, hasExtras: Boolean) {
-        if (!isEntitySet) {
-
-            setProfile(profile)
-
-            if (hasExtras) {
-                setProfileUUID(profile.id)
-            } else {
-                isNew.value = true
-            }
-            isEntitySet = true
-        }
+        if (isEntitySet) return
+        setProfile(profile)
+        if (hasExtras) setProfileUUID(profile.id) else isNew.value = true
+        isEntitySet = true
     }
 
     fun getProfile(): Profile {

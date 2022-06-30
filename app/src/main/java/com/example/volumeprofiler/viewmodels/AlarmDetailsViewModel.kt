@@ -137,23 +137,21 @@ class AlarmDetailsViewModel @Inject constructor(
     }
 
     fun setAlarm(alarmRelation: AlarmRelation) {
-        if (!alarmSet) {
+        if (alarmSet) return
+        val alarm: Alarm = alarmRelation.alarm
 
-            val alarm: Alarm = alarmRelation.alarm
+        startProfile.value = alarmRelation.startProfile
+        endProfile.value = alarmRelation.endProfile
 
-            startProfile.value = alarmRelation.startProfile
-            endProfile.value = alarmRelation.endProfile
+        title.value = alarm.title
+        scheduledDays.value = alarm.scheduledDays
+        startTime.value = alarm.startTime
+        endTime.value = alarm.endTime
+        scheduled.value = alarm.isScheduled
+        alarmId = alarm.id
+        isScheduled = alarm.isScheduled
 
-            title.value = alarm.title
-            scheduledDays.value = alarm.scheduledDays
-            startTime.value = alarm.startTime
-            endTime.value = alarm.endTime
-            scheduled.value = alarm.isScheduled
-            alarmId = alarm.id
-            isScheduled = alarm.isScheduled
-
-            alarmSet = true
-        }
+        alarmSet = true
     }
 
     private fun getAlarm(): Alarm {

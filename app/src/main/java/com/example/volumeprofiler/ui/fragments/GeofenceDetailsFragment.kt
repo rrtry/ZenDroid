@@ -4,11 +4,7 @@ import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.widget.*
-import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.transition.*
 import com.example.volumeprofiler.databinding.MapsSelectLocationFragmentBinding
 import com.example.volumeprofiler.util.Metrics
@@ -17,7 +13,6 @@ import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel
 import com.google.android.gms.maps.model.LatLng
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.util.MapsUtil
-import kotlinx.coroutines.launch
 
 class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBinding>() {
 
@@ -47,16 +42,6 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (viewBinding.latitudeTextInput.text.isNullOrEmpty()) {
-            viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
-        }
-        if (viewBinding.longitudeEditText.text.isNullOrEmpty()) {
-            viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
-        }
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putSerializable(EXTRA_CURRENT_METRICS, currentMetrics)
@@ -68,24 +53,10 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
         savedInstanceState: Bundle?
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
-        viewBinding.latitudeTextInput.doAfterTextChanged {
-            it?.let {
-                if (MapsUtil.isLatitude(it.toString())) {
-                    viewBinding.latitudeTextInputLayout.error = null
-                } else {
-                    viewBinding.latitudeTextInputLayout.error = getString(R.string.latitude_text_input_error)
-                }
-            }
-        }
-        viewBinding.longitudeEditText.doAfterTextChanged {
-            it?.let {
-                if (MapsUtil.isLongitude(it.toString())) {
-                    viewBinding.longitudeTextInputLayout.error = null
-                } else {
-                    viewBinding.longitudeTextInputLayout.error = getString(R.string.longitude_text_input_error)
-                }
-            }
-        }
+
+        viewBinding.viewModel = sharedViewModel
+        viewBinding.lifecycleOwner = viewLifecycleOwner
+
         viewBinding.metricsSpinner.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
@@ -115,7 +86,7 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
                 sharedViewModel.setRadius(value * 1000)
             }
         }
-        viewBinding.setLocationButton.setOnClickListener { view ->
+        viewBinding.setLocationButton.setOnClickListener {
 
             var valid: Boolean = true
 
@@ -139,27 +110,6 @@ class GeofenceDetailsFragment: ViewBindingFragment<MapsSelectLocationFragmentBin
             }
         }
         return viewBinding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    sharedViewModel.title.collect { title ->
-                        title?.also { viewBinding.titleEditText.setText(it) }
-                    }
-                }
-                launch {
-                    sharedViewModel.latLng.collect { latLng ->
-                        latLng?.also {
-                            viewBinding.latitudeTextInput.setText(it.first.latitude.toString())
-                            viewBinding.longitudeEditText.setText(it.first.longitude.toString())
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private fun updateMetrics(metrics: Metrics) {
