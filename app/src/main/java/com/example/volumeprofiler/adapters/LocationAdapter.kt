@@ -25,9 +25,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.model.Circle
-import com.google.android.gms.maps.model.CircleOptions
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.*
 import java.lang.ref.WeakReference
 
 class LocationAdapter(
@@ -47,6 +45,7 @@ class LocationAdapter(
 
         private lateinit var map: GoogleMap
         private lateinit var circle: Circle
+        private lateinit var marker: Marker
         private lateinit var latLng: LatLng
         private var radius: Double = 100.0
 
@@ -89,11 +88,11 @@ class LocationAdapter(
         }
 
         override fun onClick(v: View?) {
-            currentList[bindingAdapterPosition].also {
-                if (it.location.enabled) {
-                    viewContract.onDisable(it)
+            currentList[bindingAdapterPosition].also { geofence ->
+                if (geofence.location.enabled) {
+                    viewContract.onDisable(geofence)
                 } else {
-                    viewContract.onEnable(it)
+                    viewContract.onEnable(geofence)
                 }
             }
         }
@@ -101,10 +100,13 @@ class LocationAdapter(
         private fun setMapLocation() {
             if (!::map.isInitialized) return
             with(map) {
+                if (::circle.isInitialized) circle.remove()
+                if (::marker.isInitialized) marker.remove()
                 mapType = GoogleMap.MAP_TYPE_NORMAL
+                marker = addMarker(MarkerOptions().position(latLng))!!
                 circle = addCircle(
                     CircleOptions()
-                        .fillColor(Color.TRANSPARENT)
+                        .fillColor(R.color.teal_700)
                         .strokeColor(Color.TRANSPARENT)
                         .center(latLng)
                         .radius(radius))

@@ -1,12 +1,12 @@
 package com.example.volumeprofiler.ui.activities
 
+import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.SearchManager
 import android.content.*
 import android.content.Intent.ACTION_SEARCH
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.*
 import android.util.Log
@@ -14,6 +14,8 @@ import android.view.animation.BounceInterpolator
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +27,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
+import com.example.volumeprofiler.core.GeofenceManager.Companion.ACCESS_LOCATION
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.databinding.GoogleMapsActivityBinding
 import com.example.volumeprofiler.entities.Location
@@ -50,7 +53,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.*
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.*
 import javax.inject.Inject
 import com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel.ViewEvent.*
 import com.example.volumeprofiler.ui.views.AddressSearchView
@@ -99,7 +101,8 @@ class MapsActivity : AppCompatActivity(),
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var profiles: List<Profile>
     private lateinit var taskCancellationSource: CancellationTokenSource
-    private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var coarseLocationPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var backgroundLocationPermissionLauncher: ActivityResultLauncher<Array<String>>
 
     private lateinit var floatingActionMenuController: FloatingActionMenuController
     private lateinit var networkObserver: NetworkStateObserver
@@ -152,17 +155,25 @@ class MapsActivity : AppCompatActivity(),
     override fun onUpdate(location: Location) {
         lifecycleScope.launch {
             viewModel.updateLocation(location)
-        }.invokeOnCompletion { finish() }
+        }.invokeOnCompletion {
+            onFinish(true)
+        }
     }
 
     override fun onInsert(location: Location) {
         lifecycleScope.launch {
             viewModel.addLocation(location)
-        }.invokeOnCompletion { finish() }
+        }.invokeOnCompletion {
+            onFinish(true)
+        }
     }
 
     override fun onFinish(result: Boolean) {
-        finish()
+        if (viewModel.isRegistered) {
+            geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
+        } else {
+            finish()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -202,16 +213,53 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun registerForPermissionRequestResult() {
-        locationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            if (it) geofenceManager.checkLocationServicesAvailability(this)
+        coarseLocationPermissionLauncher = registerForActivityResult(RequestPermission()) { granted ->
+            if (granted) {
+                geofenceManager.checkLocationServicesAvailability(this)
+            } else if (shouldShowRequestPermissionRationale(ACCESS_COARSE_LOCATION)) {
+                showSnackbar(
+                    findViewById(android.R.id.content),
+                    "Location access required",
+                    Snackbar.LENGTH_INDEFINITE,
+                    "Grant")
+                {
+                    coarseLocationPermissionLauncher.launch(ACCESS_COARSE_LOCATION)
+                }
+            } else {
+                geofenceManager.openPackagePermissionSettings()
+            }
+        }
+        backgroundLocationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { map ->
+            if (!map.containsValue(false)) {
+                geofenceManager.addGeofence(viewModel.getLocation(), viewModel.enterProfile.value!!, viewModel.exitProfile.value!!)
+                finish()
+            } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
+                showSnackbar(
+                    findViewById(android.R.id.content),
+                    "Geofencing feature requires all-time location access",
+                    Snackbar.LENGTH_INDEFINITE,
+                    "Grant")
+                {
+                    geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
+                }
+            } else {
+                showSnackbar(
+                    findViewById(android.R.id.content),
+                    "Geofencing feature requires all-time location access",
+                    Snackbar.LENGTH_INDEFINITE,
+                    "Open settings")
+                {
+                    geofenceManager.openPackagePermissionSettings()
+                }
+            }
         }
     }
 
     private fun onLocationRequest() {
-        if (checkPermission(ACCESS_FINE_LOCATION)) {
+        if (checkPermission(ACCESS_COARSE_LOCATION)) {
             geofenceManager.checkLocationServicesAvailability(this@MapsActivity)
         } else {
-            locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+            coarseLocationPermissionLauncher.launch(ACCESS_COARSE_LOCATION)
         }
         toggleFloatingActionMenuVisibility()
     }
@@ -420,14 +468,14 @@ class MapsActivity : AppCompatActivity(),
     }
 
     private fun requestCurrentLocation() {
-        if (checkPermission(ACCESS_FINE_LOCATION)) {
+        if (checkPermission(ACCESS_COARSE_LOCATION)) {
             getCurrentLocation()
         } else {
-            locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+            coarseLocationPermissionLauncher.launch(ACCESS_COARSE_LOCATION)
         }
     }
 
-    @RequiresPermission(ACCESS_FINE_LOCATION)
+    @RequiresPermission(ACCESS_COARSE_LOCATION)
     private fun getCurrentLocation() {
         val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         fusedLocationProvider.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, taskCancellationSource.token)

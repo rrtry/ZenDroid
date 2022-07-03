@@ -1,38 +1,53 @@
 package com.example.volumeprofiler.ui.fragments
 
+import android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import com.example.volumeprofiler.ui.activities.MapsActivity
-import com.example.volumeprofiler.databinding.LocationsListFragmentBinding
-import com.example.volumeprofiler.entities.LocationRelation
-import com.example.volumeprofiler.viewmodels.LocationsListViewModel
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-import android.util.Log
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.adapters.LocationAdapter
 import com.example.volumeprofiler.core.FileManager
 import com.example.volumeprofiler.core.GeofenceManager
+import com.example.volumeprofiler.core.GeofenceManager.Companion.ACCESS_LOCATION
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
+import com.example.volumeprofiler.databinding.LocationsListFragmentBinding
+import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.ListViewContract
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.example.volumeprofiler.ui.activities.MapsActivity
+import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
+import com.example.volumeprofiler.util.checkPermission
+import com.example.volumeprofiler.viewmodels.LocationsListViewModel
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel.ViewEvent.*
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel
-import java.lang.ref.WeakReference
 import com.example.volumeprofiler.viewmodels.MainActivityViewModel.ViewEvent.*
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
+import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder, LocationItemViewBinding>(),
@@ -40,6 +55,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     ListViewContract<LocationRelation> {
 
     private lateinit var locationAdapter: LocationAdapter
+    private lateinit var locationPermissionLauncher: ActivityResultLauncher<Array<String>>
 
     override val selectionId: String = SELECTION_ID
     override val listItem: Class<LocationRelation> = LocationRelation::class.java
@@ -68,6 +84,23 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         locationAdapter.notifyDataSetChanged()
     }
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        locationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { map ->
+            if (!map.containsValue(false)) {
+                geofenceManager.checkLocationServicesAvailability(requireActivity())
+            } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
+                callback?.showSnackBar("Geofencing feature requires all-time location access", Snackbar.LENGTH_INDEFINITE) {
+                    requestLocationPermission()
+                }
+            } else {
+                callback?.showSnackBar("Geofencing feature requires all-time location access", Snackbar.LENGTH_INDEFINITE) {
+                    geofenceManager.openPackagePermissionSettings()
+                }
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         viewBinding.recyclerView.addRecyclerListener(recycleListener)
@@ -93,6 +126,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
                             is OnGeofenceRemoved -> removeGeofence(it.relation)
                             is OnGeofenceDisabled -> disableGeofence(it.relation)
                             is OnGeofenceEnabled -> enableGeofence(it.relation)
+                            is RequestLocationPermission -> requestLocationPermission()
                         }
                     }
                 }
@@ -103,6 +137,10 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
                 }
             }
         }
+    }
+
+    private fun requestLocationPermission() {
+        geofenceManager.requestLocationPermission(locationPermissionLauncher)
     }
 
     @Suppress("MissingPermission")
@@ -123,6 +161,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
             locationRelation.onExitProfile
         )
         locationAdapter.updateGeofenceState(locationRelation, true)
+        geofenceManager.checkLocationServicesAvailability(requireActivity())
     }
 
     @Suppress("MissingPermission")
@@ -140,7 +179,11 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     }
 
     override fun onEnable(entity: LocationRelation) {
-        viewModel.enableGeofence(entity)
+        if (checkPermission(ACCESS_LOCATION)) {
+            viewModel.enableGeofence(entity)
+        } else {
+            viewModel.requestLocationPermission()
+        }
     }
 
     override fun onDisable(entity: LocationRelation) {

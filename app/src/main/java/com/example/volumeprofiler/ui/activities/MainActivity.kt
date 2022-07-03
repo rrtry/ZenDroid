@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.databinding.ActivityMainBinding
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
 import com.example.volumeprofiler.ui.fragments.ProfilesListFragment
@@ -23,9 +24,12 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), MainActivityCallback {
+class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.LocationRequestListener {
+
+    @Inject lateinit var geofenceManager: GeofenceManager
 
     interface MenuItemSelectedListener {
 
@@ -148,6 +152,12 @@ class MainActivity : AppCompatActivity(), MainActivityCallback {
         } else {
             binding.pager.currentItem =- 1
         }
+    }
+
+    override fun onLocationRequestSuccess() = Unit
+
+    override fun onLocationRequestFailure() {
+        showSnackBar("Failed to enable location services", Snackbar.LENGTH_LONG, null)
     }
 
     companion object {

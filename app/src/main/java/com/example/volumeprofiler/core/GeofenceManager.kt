@@ -20,6 +20,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import android.Manifest.permission.*
 import android.annotation.SuppressLint
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.result.ActivityResultLauncher
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.receivers.GeofenceReceiver.Companion.EXTRA_ENTER_PROFILE
 import com.example.volumeprofiler.receivers.GeofenceReceiver.Companion.EXTRA_EXIT_PROFILE
@@ -148,6 +151,24 @@ class GeofenceManager @Inject constructor(
         }
     }
 
+    fun openPackagePermissionSettings() {
+        context.startActivity(
+            Intent().apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+        )
+    }
+
+    fun requestLocationPermission(launcher: ActivityResultLauncher<Array<String>>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            launcher.launch(arrayOf(ACCESS_FINE_LOCATION, ACCESS_BACKGROUND_LOCATION))
+        } else {
+            launcher.launch(arrayOf(ACCESS_FINE_LOCATION))
+        }
+    }
+
     fun checkLocationServicesAvailability(activity: Activity) {
 
         val listener = activity as LocationRequestListener
@@ -182,7 +203,12 @@ class GeofenceManager @Inject constructor(
 
     companion object {
 
-        const val REQUEST_ENABLE_LOCATION_SERVICES: Int = 182
+        val ACCESS_LOCATION: String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ACCESS_BACKGROUND_LOCATION
+        } else {
+            ACCESS_FINE_LOCATION
+        }
 
+        const val REQUEST_ENABLE_LOCATION_SERVICES: Int = 182
     }
 }

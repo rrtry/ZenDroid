@@ -40,7 +40,7 @@ class GeofenceSharedViewModel @Inject constructor(
 
     private var locationSet: Boolean = false
     private var locationId: Int? = null
-    private var isRegistered: Boolean = false
+    var isRegistered: Boolean = false
 
     val title: MutableStateFlow<String> = MutableStateFlow("My geofence")
     val latLng: MutableStateFlow<Pair<LatLng, Boolean>> = MutableStateFlow(Pair(LatLng(-33.865143, 151.209900), false))
@@ -175,7 +175,7 @@ class GeofenceSharedViewModel @Inject constructor(
         locationSet = true
     }
 
-    private fun getLocation(): Location {
+    fun getLocation(): Location {
         return Location(
             id = if (locationId != null) locationId!! else 0,
             title = title.value.ifEmpty { "No title" },

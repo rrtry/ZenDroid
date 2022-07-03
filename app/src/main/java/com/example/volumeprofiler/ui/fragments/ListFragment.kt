@@ -42,9 +42,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     protected var callback: MainActivityCallback? = null
     private var actionMode: ActionMode?
         get() = callback?.actionMode
-        set(value) {
-            callback?.actionMode = value
-        }
+        set(value) { callback?.actionMode = value }
 
     protected lateinit var selectionTracker: SelectionTracker<T>
     private var childPosition: Int = 0

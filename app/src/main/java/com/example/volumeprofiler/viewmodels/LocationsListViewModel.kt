@@ -27,6 +27,8 @@ class LocationsListViewModel @Inject constructor(
         data class OnGeofenceEnabled(val relation: LocationRelation): ViewEvent()
         data class OnGeofenceDisabled(val relation: LocationRelation): ViewEvent()
         data class OnGeofenceRemoved(val relation: LocationRelation): ViewEvent()
+
+        object RequestLocationPermission: ViewEvent()
     }
 
     fun removeGeofence(location: LocationRelation) {
@@ -47,6 +49,12 @@ class LocationsListViewModel @Inject constructor(
         viewModelScope.launch {
             enableGeofence(relation.location)
             channel.send(ViewEvent.OnGeofenceEnabled(relation))
+        }
+    }
+
+    fun requestLocationPermission() {
+        viewModelScope.launch {
+            channel.send(ViewEvent.RequestLocationPermission)
         }
     }
 
