@@ -97,6 +97,7 @@ class MapsActivity : AppCompatActivity(),
     private val binding: GoogleMapsActivityBinding get() = bindingImpl!!
 
     private var floatingMenuVisible: Boolean = false
+    private var elapsedTime: Long = 0
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     private lateinit var profiles: List<Profile>
@@ -179,6 +180,12 @@ class MapsActivity : AppCompatActivity(),
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, floatingMenuVisible)
+        outState.putLong(EXTRA_ELAPSED_TIME, elapsedTime)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        elapsedTime = savedInstanceState.getLong(EXTRA_ELAPSED_TIME, 0)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -572,7 +579,12 @@ class MapsActivity : AppCompatActivity(),
         } else if (bottomSheetBehavior.state != STATE_HIDDEN) {
             bottomSheetBehavior.state = STATE_HIDDEN
         } else {
-            super.onBackPressed()
+            if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
+                onFinish(false)
+            } else {
+                showSnackbar(findViewById(android.R.id.content), "Press back button again to exit", LENGTH_LONG)
+            }
+            elapsedTime = System.currentTimeMillis()
         }
     }
 
@@ -584,6 +596,7 @@ class MapsActivity : AppCompatActivity(),
 
         private const val EXTRA_FLOATING_ACTION_MENU_VISIBLE: String = "menu"
         private const val BOTTOM_SHEET_OFFSET: Float = 100f
+        private const val EXTRA_ELAPSED_TIME: String = "elapsed"
         private const val EXTRA_LOCATION_RELATION: String = "location"
 
         fun newIntent(context: Context, locationRelation: LocationRelation?): Intent {

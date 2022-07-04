@@ -17,7 +17,7 @@ class DebounceEditText @JvmOverloads constructor(
 ): AppCompatEditText(context, attributeSet) {
 
     private var job: Job = Job()
-    private val scope: CoroutineScope get() = CoroutineScope(Dispatchers.IO + job)
+    private val scope: CoroutineScope get() = CoroutineScope(Dispatchers.Main + job)
 
     fun addDebounceTextWatcher(
         onTextChangedAction: (String?) -> Unit,

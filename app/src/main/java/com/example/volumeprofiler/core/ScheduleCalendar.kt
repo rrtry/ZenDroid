@@ -1,5 +1,6 @@
 package com.example.volumeprofiler.core
 
+import android.util.Log
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.OngoingAlarm
@@ -81,7 +82,7 @@ class ScheduleCalendar(var now: ZonedDateTime) {
             val startTime: LocalTime = alarm.startTime
             val inclusive: Boolean = now.toLocalTime() < startTime
 
-            val nextDay: DayOfWeek = getNextWeekDay(inclusive)
+            val nextDay: DayOfWeek = getNextWeekDay()
 
             now.with(getDayOfWeekAdjuster(nextDay, inclusive))
                 .withHour(startTime.hour)
@@ -183,24 +184,12 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         return previousDay
     }
 
-    private fun getNextWeekDay(inclusive: Boolean): DayOfWeek {
-
-        val today: DayOfWeek = now.dayOfWeek
-
-        return when {
-            alarm.scheduledDays != WeekDay.NONE -> getNextWeekDay()
-            inclusive -> today
-            else -> today.plus(1)
-        }
-    }
-
     private fun getNextWeekDay(): DayOfWeek {
 
         var nextDay: DayOfWeek = now.dayOfWeek
-        val inclusive: Boolean = now.toLocalTime() < alarm.startTime
 
-        if (inclusive && isDayInSchedule(alarm.scheduledDays, nextDay)) {
-            return nextDay
+        if (isDayInSchedule(alarm.scheduledDays, nextDay)) {
+            if (now.toLocalTime() < alarm.startTime) return nextDay else nextDay += 1
         }
         while (!isDayInSchedule(alarm.scheduledDays, nextDay)) {
             nextDay += 1

@@ -2,6 +2,8 @@
   <dictionary name="user">
     <words>
       <w>geofences</w>
+      <w>snackbar</w>
+      <w>successfuly</w>
     </words>
   </dictionary>
 </component>

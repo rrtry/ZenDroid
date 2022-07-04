@@ -46,11 +46,10 @@ class ProfilesListViewModel @Inject constructor(
 
     fun removeProfile(profile: Profile) {
         viewModelScope.launch {
-            val enabledAlarms: List<AlarmRelation> = alarmRepository.getEnabledAlarms() ?: listOf()
-            viewEventChannel.send(ViewEvent.ProfileRemoveViewEvent(profile, enabledAlarms))
             viewEventChannel.send(ViewEvent.CancelAlarmsViewEvent(alarmRepository.getScheduledAlarmsByProfileId(profile.id)))
             viewEventChannel.send(ViewEvent.RemoveGeofencesViewEvent(locationRepository.getLocationsByProfileId(profile.id)))
             profileRepository.removeProfile(profile)
+            viewEventChannel.send(ViewEvent.ProfileRemoveViewEvent(profile, alarmRepository.getEnabledAlarms() ?: listOf()))
         }
     }
 

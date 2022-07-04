@@ -29,8 +29,6 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.LocationRequestListener {
 
-    @Inject lateinit var geofenceManager: GeofenceManager
-
     interface MenuItemSelectedListener {
 
         fun onMenuOptionSelected(itemId: Int)
@@ -138,10 +136,6 @@ class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.
         }
     }
 
-    override fun requestPermissions(permissions: Array<String>) {
-
-    }
-
     override fun getFloatingActionButton(): FloatingActionButton {
         return binding.fab
     }
@@ -154,7 +148,9 @@ class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.
         }
     }
 
-    override fun onLocationRequestSuccess() = Unit
+    override fun onLocationRequestSuccess() {
+        showSnackBar("Geofence successfully registered", Snackbar.LENGTH_LONG, null)
+    }
 
     override fun onLocationRequestFailure() {
         showSnackBar("Failed to enable location services", Snackbar.LENGTH_LONG, null)

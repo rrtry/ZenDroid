@@ -218,11 +218,13 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         if (profile.id == viewModel.lastSelected) {
             viewModel.lastSelected = null
         }
-        if (profile.id == preferencesManager.getProfile()?.id) {
+        if (preferencesManager.isProfileEnabled(profile)) {
             preferencesManager.clearPreferences()
+            notificationDelegate.cancelProfileNotification()
         }
         notificationDelegate.updateNotification(
-            profile, scheduleManager.getOngoingAlarm(alarms)
+            preferencesManager.getProfile(),
+            scheduleManager.getOngoingAlarm(alarms)
         )
     }
 

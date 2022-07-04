@@ -48,7 +48,6 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 
-
 @AndroidEntryPoint
 class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder, LocationItemViewBinding>(),
     FabContainer,
@@ -70,9 +69,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         (viewHolder as LocationAdapter.LocationViewHolder).clearMapView()
     }
 
-    override fun onPermissionResult(permission: String, granted: Boolean) {
-
-    }
+    override fun onPermissionResult(permission: String, granted: Boolean) = Unit
 
     private fun startMapActivity(locationRelation: LocationRelation? = null) {
         startActivity(MapsActivity.newIntent(requireContext(), locationRelation))
@@ -151,6 +148,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
             locationRelation.onExitProfile
         )
         fileManager.deleteThumbnail(locationRelation.location.previewImageId)
+        callback?.showSnackBar("Geofence successfully removed", Snackbar.LENGTH_LONG, null)
     }
 
     @Suppress("MissingPermission")
@@ -172,6 +170,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
             locationRelation.onExitProfile
         )
         locationAdapter.updateGeofenceState(locationRelation, false)
+        callback?.showSnackBar("Geofence successfully unregistered", Snackbar.LENGTH_LONG, null)
     }
 
     override fun onEdit(entity: LocationRelation, options: Bundle?) {

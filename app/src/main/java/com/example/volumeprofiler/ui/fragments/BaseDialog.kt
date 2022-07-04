@@ -83,7 +83,7 @@ abstract class BaseDialog: DialogFragment() {
         } ?: throw IllegalStateException("Activity cannot be null")
     }
 
-    protected fun getListView(): ListView {
+    private fun getListView(): ListView {
         return (dialog as AlertDialog).listView
     }
 

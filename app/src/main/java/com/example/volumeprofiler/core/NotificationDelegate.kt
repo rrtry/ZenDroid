@@ -79,6 +79,10 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         return PendingIntent.getActivity(context, REQUEST_LAUNCH_APPLICATION_DETAILS_SETTINGS, intent, PendingIntent.FLAG_IMMUTABLE)
     }
 
+    fun cancelProfileNotification() {
+        notificationManager.cancel(ID_PROFILE)
+    }
+
     fun updateNotification(profile: Profile?, ongoingAlarm: OngoingAlarm?) {
         if (profile != null) {
             when (preferencesManager.getTriggerType()) {
