@@ -89,6 +89,8 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         val ongoingAlarm: OngoingAlarm? = scheduleManager.getOngoingAlarm(alarms)
         val alarm: Alarm? = ongoingAlarm?.relation?.alarm
 
+        Log.i("ProfileManager", "from: ${ongoingAlarm?.from}, until: ${ongoingAlarm?.until}")
+
         if (alarm != null) {
             if (scheduleManager.hasPreviouslyFired(alarm)) {
                 if (scheduleManager.isAlarmValid(alarm)) {

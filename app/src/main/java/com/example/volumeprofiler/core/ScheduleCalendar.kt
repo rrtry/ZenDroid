@@ -1,6 +1,5 @@
 package com.example.volumeprofiler.core
 
-import android.util.Log
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.OngoingAlarm
@@ -33,7 +32,9 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         return (mask and WeekDay.fromDay(day.value)) != WeekDay.NONE
     }
 
-    fun isValid(): Boolean = isValid(now, alarm)
+    fun isValid(): Boolean {
+        return isValid(now, alarm)
+    }
 
     fun getPreviousOccurrence(): ZonedDateTime? {
         meetsSchedule = meetsSchedule()
@@ -46,6 +47,148 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 alarm = it.alarm
                 getNextOccurrence()
             }.minOrNull()?.toLocalDateTime()
+    }
+
+    private fun getNextStartTime(): ZonedDateTime {
+        return if (isRecurring()) {
+            now.with(getDayOfWeekAdjuster(getNextWeekDay(alarm.startTime), now.toLocalTime() < alarm.startTime))
+                .withHour(alarm.startTime.hour)
+                .withMinute(alarm.startTime.minute)
+                .withSecond(0)
+                .withNano(0)
+        } else {
+            alarm.startDateTime!!.atZone(alarm.zoneId)
+        }
+    }
+
+    private fun getPreviousStartTime(): ZonedDateTime? {
+        return if (isRecurring()) {
+
+            var startTime: ZonedDateTime = now
+                .withHour(alarm.startTime.hour)
+                .withMinute(alarm.startTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+            if (alarm.startTime >= alarm.endTime && now.toLocalTime() < alarm.startTime) {
+                startTime = startTime.minusDays(1)
+            }
+            startTime
+        } else {
+            alarm.startDateTime!!.atZone(alarm.zoneId)
+        }
+    }
+
+    private fun getNextEndTime(): ZonedDateTime {
+        return if (isRecurring()) {
+
+            val endTime: ZonedDateTime = now.with(TemporalAdjusters.nextOrSame(getNextWeekDay(alarm.endTime)))
+                .withHour(alarm.endTime.hour)
+                .withMinute(alarm.endTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+            if (endTime < now) endTime.plusDays(1) else endTime
+        } else {
+            alarm.endDateTime!!.atZone(alarm.zoneId)
+        }
+    }
+
+    private fun meetsDayOfWeek(): Boolean {
+        return isDayInSchedule(alarm.scheduledDays, now.dayOfWeek) ||
+                (isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1) &&
+                        alarm.startTime >= alarm.endTime)
+    }
+
+    private fun meetsScheduledHours(): Boolean {
+
+        var inRange: Boolean = isDayInSchedule(alarm.scheduledDays, now.dayOfWeek)
+
+        if (alarm.startTime >= alarm.endTime && now.toLocalTime() < alarm.startTime) {
+            inRange = isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1) &&
+                    now.toLocalTime() < alarm.endTime
+        }
+        return meetsScheduledHours(now.toLocalTime(), alarm.startTime, alarm.endTime) && inRange
+    }
+
+    private fun meetsSchedule(): Boolean {
+        if (isRecurring()) {
+            return meetsDayOfWeek() && meetsScheduledHours()
+        } else {
+            now.toLocalDateTime().also {
+                return !it.isBefore(alarm.startDateTime) &&
+                        it.isBefore(alarm.endDateTime)
+            }
+        }
+    }
+
+    private fun getPreviousEndTime(): ZonedDateTime? {
+        return if (isRecurring()) {
+
+            val previousDay: DayOfWeek = getPreviousWeekDay(alarm.endTime)
+            val dayOfWeekAdjuster: TemporalAdjuster = if (isToday(alarm.endTime)) {
+                TemporalAdjusters.previousOrSame(previousDay)
+            } else {
+                TemporalAdjusters.previous(previousDay)
+            }
+
+            now.with(dayOfWeekAdjuster)
+                .withHour(alarm.endTime.hour)
+                .withMinute(alarm.endTime.minute)
+                .withSecond(0)
+                .withNano(0)
+
+        } else if (!isValid()) {
+            alarm.endDateTime?.atZone(alarm.zoneId)
+        } else {
+            null
+        }
+    }
+
+    private fun isToday(alarmTime: LocalTime): Boolean {
+
+        var today: Boolean = now.toLocalTime() >= alarm.endTime
+
+        if (alarm.startTime >= alarm.endTime) {
+            today = today && isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1)
+        }
+        return today
+    }
+
+    private fun getPreviousWeekDay(alarmTime: LocalTime): DayOfWeek {
+
+        var previousDay: DayOfWeek = now.dayOfWeek
+
+        if (isDayInSchedule(alarm.scheduledDays, previousDay)) {
+            if (isToday(alarmTime)) return previousDay else previousDay -= 1
+        }
+        while (!isDayInSchedule(alarm.scheduledDays, previousDay)) {
+            previousDay -= 1
+        }
+        if (alarm.startTime >= alarm.endTime) previousDay += 1
+        return previousDay
+    }
+
+    private fun getNextWeekDay(alarmTime: LocalTime): DayOfWeek {
+
+        var nextDay: DayOfWeek = now.dayOfWeek
+        val meetsDayOfWeek: Boolean = if (meetsSchedule) meetsDayOfWeek() else isDayInSchedule(alarm.scheduledDays, nextDay)
+
+        if (meetsDayOfWeek) {
+            if (now.toLocalTime() < alarmTime) return nextDay else nextDay += 1
+        }
+        while (!isDayInSchedule(alarm.scheduledDays, nextDay)) {
+            nextDay += 1
+        }
+        return nextDay
+    }
+
+    private fun getDayOfWeekAdjuster(day: DayOfWeek, inclusive: Boolean): TemporalAdjuster {
+        return if (inclusive) {
+            TemporalAdjusters.nextOrSame(day)
+        } else {
+            TemporalAdjusters.next(day)
+        }
     }
 
     fun getOngoingAlarm(alarms: List<AlarmRelation>?): OngoingAlarm? {
@@ -73,135 +216,6 @@ class ScheduleCalendar(var now: ZonedDateTime) {
             }.first()
         } catch (e: NoSuchElementException) {
             null
-        }
-    }
-
-    private fun getNextStartTime(): ZonedDateTime {
-        return if (isRecurring()) {
-
-            val startTime: LocalTime = alarm.startTime
-            val inclusive: Boolean = now.toLocalTime() < startTime
-
-            val nextDay: DayOfWeek = getNextWeekDay()
-
-            now.with(getDayOfWeekAdjuster(nextDay, inclusive))
-                .withHour(startTime.hour)
-                .withMinute(startTime.minute)
-                .withSecond(0)
-                .withNano(0)
-        } else {
-            alarm.startDateTime!!.atZone(alarm.zoneId)
-        }
-    }
-
-    private fun getPreviousStartTime(): ZonedDateTime? {
-        return if (isRecurring()) {
-
-            val instanceStartTime: ZonedDateTime = now
-                .withHour(alarm.startTime.hour)
-                .withMinute(alarm.startTime.minute)
-                .withSecond(0)
-                .withNano(0)
-
-            val isOvernight: Boolean =
-                !isDayInSchedule(alarm.scheduledDays, instanceStartTime.dayOfWeek) &&
-                        alarm.startTime >= alarm.endTime
-
-            if (isOvernight) instanceStartTime.minusDays(1) else instanceStartTime
-
-        } else {
-            alarm.startDateTime!!.atZone(alarm.zoneId) // removed useless isValid() check
-        }
-    }
-
-    private fun getNextEndTime(): ZonedDateTime {
-        return if (isRecurring()) {
-
-            val endTime: ZonedDateTime = now
-                .withHour(alarm.endTime.hour)
-                .withMinute(alarm.endTime.minute)
-                .withSecond(0)
-                .withNano(0)
-
-            if (endTime <= now) endTime.plusDays(1) else endTime
-        } else {
-            alarm.endDateTime!!.atZone(alarm.zoneId)
-        }
-    }
-
-    private fun meetsDayOfWeek(): Boolean {
-        return isDayInSchedule(alarm.scheduledDays, now.dayOfWeek) ||
-                (isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1) &&
-                        alarm.startTime >= alarm.endTime)
-    }
-
-    private fun meetsSchedule(): Boolean {
-        if (isRecurring()) {
-            return meetsDayOfWeek() && meetsScheduledHours(
-                now.toLocalTime(), alarm.startTime, alarm.endTime
-            )
-        } else {
-            now.toLocalDateTime().also {
-                return !it.isBefore(alarm.startDateTime) && it.isBefore(alarm.endDateTime)
-            }
-        }
-    }
-
-    private fun getPreviousEndTime(): ZonedDateTime? {
-        return if (isRecurring()) {
-
-            val dayOfWeekAdjuster: TemporalAdjuster = TemporalAdjusters.previousOrSame(getPreviousWeekDay())
-
-            now.with(dayOfWeekAdjuster)
-                .withHour(alarm.endTime.hour)
-                .withMinute(alarm.endTime.minute)
-                .withSecond(0)
-                .withNano(0)
-
-        } else if (!isValid()) {
-            alarm.endDateTime?.atZone(alarm.zoneId)
-        } else {
-            null
-        }
-    }
-
-    private fun getPreviousWeekDay(): DayOfWeek {
-
-        var previousDay: DayOfWeek = now.dayOfWeek
-        val isOvernight: Boolean = alarm.startTime >= alarm.endTime
-
-        if (isDayInSchedule(alarm.scheduledDays, previousDay) &&
-            alarm.startTime > now.toLocalTime())
-        {
-            previousDay -= 1
-        }
-        while (!isDayInSchedule(alarm.scheduledDays, previousDay)) {
-            previousDay -= 1
-        }
-        if (isOvernight) {
-            previousDay += 1
-        }
-        return previousDay
-    }
-
-    private fun getNextWeekDay(): DayOfWeek {
-
-        var nextDay: DayOfWeek = now.dayOfWeek
-
-        if (isDayInSchedule(alarm.scheduledDays, nextDay)) {
-            if (now.toLocalTime() < alarm.startTime) return nextDay else nextDay += 1
-        }
-        while (!isDayInSchedule(alarm.scheduledDays, nextDay)) {
-            nextDay += 1
-        }
-        return nextDay
-    }
-
-    private fun getDayOfWeekAdjuster(day: DayOfWeek, inclusive: Boolean): TemporalAdjuster {
-        return if (inclusive) {
-            TemporalAdjusters.nextOrSame(day)
-        } else {
-            TemporalAdjusters.next(day)
         }
     }
 
