@@ -70,7 +70,9 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 .withSecond(0)
                 .withNano(0)
 
-            if (alarm.startTime >= alarm.endTime && now.toLocalTime() < alarm.startTime) {
+            if (alarm.startTime >= alarm.endTime &&
+                now.toLocalTime() < alarm.startTime)
+            {
                 startTime = startTime.minusDays(1)
             }
             startTime
@@ -82,13 +84,13 @@ class ScheduleCalendar(var now: ZonedDateTime) {
     private fun getNextEndTime(): ZonedDateTime {
         return if (isRecurring()) {
 
-            val endTime: ZonedDateTime = now.with(TemporalAdjusters.nextOrSame(getNextWeekDay(alarm.endTime)))
+            val endTime: ZonedDateTime = now
                 .withHour(alarm.endTime.hour)
                 .withMinute(alarm.endTime.minute)
                 .withSecond(0)
                 .withNano(0)
 
-            if (endTime < now) endTime.plusDays(1) else endTime
+            if (endTime <= now) endTime.plusDays(1) else endTime
         } else {
             alarm.endDateTime!!.atZone(alarm.zoneId)
         }
@@ -149,7 +151,7 @@ class ScheduleCalendar(var now: ZonedDateTime) {
 
         var today: Boolean = now.toLocalTime() >= alarm.endTime
 
-        if (alarm.startTime >= alarm.endTime) {
+        if (alarm.startTime >= alarmTime) {
             today = today && isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1)
         }
         return today
@@ -172,9 +174,8 @@ class ScheduleCalendar(var now: ZonedDateTime) {
     private fun getNextWeekDay(alarmTime: LocalTime): DayOfWeek {
 
         var nextDay: DayOfWeek = now.dayOfWeek
-        val meetsDayOfWeek: Boolean = if (meetsSchedule) meetsDayOfWeek() else isDayInSchedule(alarm.scheduledDays, nextDay)
 
-        if (meetsDayOfWeek) {
+        if (isDayInSchedule(alarm.scheduledDays, nextDay)) {
             if (now.toLocalTime() < alarmTime) return nextDay else nextDay += 1
         }
         while (!isDayInSchedule(alarm.scheduledDays, nextDay)) {
