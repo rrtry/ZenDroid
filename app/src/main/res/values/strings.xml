@@ -95,4 +95,19 @@
     <string name="permission_denial_warning">
         Permission denial warning
     </string>
+    <string name="no_profiles_dialog_title">
+        No profile were found
+    </string>
+    <string name="no_profiles_dialog_text">
+        Create at least one profile in order to schedule events
+    </string>
+    <string name="power_save_mode_dialog_title">
+        Battery saver warning
+    </string>
+    <string name="geofencing_power_save_mode_hint">
+        Geofencing won\'t work in the background while power save mode is on
+    </string>
+    <string name="scheduler_power_save_mode_hint">
+        Scheduled triggers will be deferred while power save mode is on
+    </string>
 </resources>

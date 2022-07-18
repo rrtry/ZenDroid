@@ -44,9 +44,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
-class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder, AlarmItemViewBinding>(),
+class SchedulerFragment:
+    ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder, AlarmItemViewBinding, AlarmAdapter>(),
     FabContainer,
-    MainActivity.MenuItemSelectedListener {
+    MainActivity.MenuItemSelectedListener
+{
 
     override val listItem: Class<AlarmRelation> = AlarmRelation::class.java
     override val selectionId: String = SELECTION_ID
@@ -90,7 +92,7 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         return viewBinding.recyclerView
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
+    override fun getAdapter(): AlarmAdapter {
         return alarmAdapter
     }
 
@@ -138,10 +140,11 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
-        alarmAdapter = AlarmAdapter(listOf(),
+        alarmAdapter = AlarmAdapter(
+            listOf(),
             viewBinding.recyclerView,
             WeakReference(this))
+
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -149,7 +152,10 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
                 launch {
                     sharedViewModel.currentFragment.collect {
                         withContext(Dispatchers.Main) {
-                            if (it == SCHEDULER_FRAGMENT) setSharedElementCallback()
+                            if (it == SCHEDULER_FRAGMENT) {
+                                setSharedElementCallback()
+                                showPowerSaveModeHint(requireContext().getString(R.string.scheduler_power_save_mode_hint))
+                            }
                         }
                     }
                 }
@@ -209,6 +215,9 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         viewBinding.hintScheduler.isVisible = alarms.isEmpty()
         alarmAdapter.currentList = alarms
         alarmAdapter.notifyDataSetChanged()
+        showPowerSaveModeHint(
+            requireContext().getString(R.string.scheduler_power_save_mode_hint)
+        )
     }
 
     override fun onEdit(entity: AlarmRelation, options: Bundle?) {
@@ -278,10 +287,16 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
 
     override fun onFabClick(fab: FloatingActionButton) {
         if (sharedViewModel.showDialog.value) {
-            WarningDialog().show(
-                requireActivity().supportFragmentManager,
-                null
-            )
+            requireContext().resources.let { res ->
+                PopupDialog.create(
+                    res.getString(R.string.no_profiles_dialog_title),
+                    res.getString(R.string.no_profiles_dialog_text),
+                    R.drawable.baseline_notifications_off_black_24dp
+                ).show(
+                    requireActivity().supportFragmentManager,
+                    null
+                )
+            }
             return
         }
         startActivity(Intent(context, AlarmDetailsActivity::class.java))
@@ -298,9 +313,9 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
     override fun onActionItemRemove() {
         selectionTracker.selection.forEach { selection ->
             viewModel.removeAlarm(
-                alarmAdapter.currentList.first {
-                    it.alarm.id == selection.alarm.id
-                }
+                (alarmAdapter.currentList.first { item ->
+                    item == selection
+                } as AlarmRelation)
             )
         }
     }
@@ -309,7 +324,6 @@ class SchedulerFragment: ListFragment<AlarmRelation, AlarmsFragmentBinding, Alar
         names: MutableList<String>?,
         sharedElements: MutableMap<String, View>?
     ): AlarmItemViewBinding? {
-        Log.i("Transition", "SchedulerFragment")
         val binding: AlarmItemViewBinding? = super.mapSharedElements(names, sharedElements)
         binding?.let {
             sharedElements?.put(SHARED_TRANSITION_START_TIME, binding.startTime)

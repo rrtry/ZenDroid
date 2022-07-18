@@ -1,17 +1,10 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.Manifest.permission.READ_PHONE_STATE
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import com.example.volumeprofiler.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
-import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
-import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.util.Log
 import android.view.*
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
@@ -37,11 +30,7 @@ import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.PROFILE_FRAGMENT
-import com.example.volumeprofiler.util.ParcelableUtil
-import com.example.volumeprofiler.util.canWriteSettings
-import com.example.volumeprofiler.util.checkPermission
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
@@ -49,7 +38,8 @@ import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
 @AndroidEntryPoint
-class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, ProfileAdapter.ProfileHolder, ProfileItemViewBinding>(),
+class ProfilesListFragment:
+    ListFragment<Profile, ProfilesListFragmentBinding, ProfileAdapter.ProfileHolder, ProfileItemViewBinding, ProfileAdapter>(),
     FabContainer,
     ProfileActionListener {
 
@@ -64,7 +54,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var fileManager: FileManager
-    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var notificationHelper: NotificationHelper
 
     override val listItem: Class<Profile> = Profile::class.java
     override val selectionId: String = SELECTION_ID
@@ -84,7 +74,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         return viewBinding.recyclerView
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<ProfileAdapter.ProfileHolder> {
+    override fun getAdapter(): ProfileAdapter {
         return profileAdapter
     }
 
@@ -220,9 +210,9 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
         }
         if (preferencesManager.isProfileEnabled(profile)) {
             preferencesManager.clearPreferences()
-            notificationDelegate.cancelProfileNotification()
+            notificationHelper.cancelProfileNotification()
         }
-        notificationDelegate.updateNotification(
+        notificationHelper.updateNotification(
             preferencesManager.getProfile(),
             scheduleManager.getOngoingAlarm(alarms)
         )
@@ -239,7 +229,7 @@ class ProfilesListFragment: ListFragment<Profile, ProfilesListFragmentBinding, P
 
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
             profileAdapter.setSelection(profile, viewModel.lastSelected)
-            notificationDelegate.updateNotification(profile, scheduleManager.getOngoingAlarm(alarms))
+            notificationHelper.updateNotification(profile, scheduleManager.getOngoingAlarm(alarms))
 
             showDeniedPermissionHint(profile)
         }

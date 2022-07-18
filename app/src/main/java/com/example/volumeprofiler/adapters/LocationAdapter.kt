@@ -11,12 +11,12 @@ import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.R
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
+import com.example.volumeprofiler.databinding.PowerSaveModeHintBinding
+import com.example.volumeprofiler.entities.Hint
+import com.example.volumeprofiler.entities.ListItem
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
-import com.example.volumeprofiler.interfaces.ListViewContract
-import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
-import com.example.volumeprofiler.interfaces.ViewHolder
-import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
+import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.Animations.selected
 import com.example.volumeprofiler.ui.fragments.LocationsListFragment
@@ -29,11 +29,13 @@ import com.google.android.gms.maps.model.*
 import java.lang.ref.WeakReference
 
 class LocationAdapter(
-    var currentList: List<LocationRelation>,
+    override var currentList: List<ListItem<Int>>,
     private val context: Context,
     listener: WeakReference<ListViewContract<LocationRelation>>
-): RecyclerView.Adapter<LocationAdapter.LocationViewHolder>(), ListAdapterItemProvider<LocationRelation> {
-
+):  RecyclerView.Adapter<RecyclerView.ViewHolder>(),
+    ListAdapterItemProvider<LocationRelation>,
+    AdapterDatasetProvider<ListItem<Int>>
+{
     private val viewContract: ListViewContract<LocationRelation> = listener.get()!!
 
     inner class LocationViewHolder(override val binding: LocationItemViewBinding):
@@ -64,7 +66,7 @@ class LocationAdapter(
         }
 
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<LocationRelation> {
-            return ItemDetails(bindingAdapterPosition, currentList[bindingAdapterPosition])
+            return ItemDetails(bindingAdapterPosition, getItem(bindingAdapterPosition))
         }
 
         fun updateEnabledState(enabled: Boolean) {
@@ -88,7 +90,7 @@ class LocationAdapter(
         }
 
         override fun onClick(v: View?) {
-            currentList[bindingAdapterPosition].also { geofence ->
+            getItem<LocationRelation>(bindingAdapterPosition).also { geofence ->
                 if (geofence.location.enabled) {
                     viewContract.onDisable(geofence)
                 } else {
@@ -124,51 +126,73 @@ class LocationAdapter(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LocationViewHolder {
-        return LocationViewHolder(
-            LocationItemViewBinding.inflate(
-                LayoutInflater.from(context),
-                parent,
-                false)
-        )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        when (viewType) {
+            R.layout.location_item_view -> {
+                return LocationViewHolder(
+                    LocationItemViewBinding.inflate(
+                        LayoutInflater.from(context),
+                        parent,
+                        false)
+                )
+            }
+            R.layout.power_save_mode_hint -> {
+                return HintViewHolder(
+                    PowerSaveModeHintBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false),
+                    this)
+            }
+            else -> throw IllegalArgumentException("Unknown viewType: $viewType")
+        }
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return currentList[position].viewType
     }
 
     override fun getItemId(position: Int): Long {
-        return currentList[position].location.id.toLong()
+        return currentList[position].id.toLong()
     }
 
     @Suppress("unchecked_cast")
     override fun onBindViewHolder(
-        holder: LocationViewHolder,
+        holder: RecyclerView.ViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
         if (payloads.isEmpty()) return super.onBindViewHolder(holder, position, payloads)
-         payloads.forEach {
+        payloads.forEach {
             when (it) {
                 is Bundle -> {
-                    holder.updateEnabledState(it.getBoolean(LocationsListFragment.PAYLOAD_GEOFENCE_CHANGED))
+                    (holder as LocationViewHolder).updateEnabledState(it.getBoolean(LocationsListFragment.PAYLOAD_GEOFENCE_CHANGED))
                 }
-                SelectionTracker.SELECTION_CHANGED_MARKER -> selected(holder.itemView, viewContract.isSelected(currentList[position]))
+                SelectionTracker.SELECTION_CHANGED_MARKER -> {
+                    selected(holder.itemView, viewContract.isSelected(getItem(position)))
+                }
             }
         }
     }
 
-    override fun onBindViewHolder(holder: LocationViewHolder, position: Int) {
-        holder.bind(currentList[position], false)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (getItemViewType(position)) {
+            R.layout.location_item_view -> (holder as LocationViewHolder).bind(getItem(position), false)
+            R.layout.power_save_mode_hint -> (holder as HintViewHolder).bind(getItem(position))
+        }
     }
 
     override fun getItemKey(position: Int): LocationRelation {
-        return currentList[position]
+        return getItem(position)
     }
 
     override fun getPosition(key: LocationRelation): Int {
-        return currentList.indexOfFirst { key.location.id == it.location.id }
+        return currentList.indexOfFirst { key.location.id == it.id }
     }
 
     fun updateGeofenceState(relation: LocationRelation, enabled: Boolean) {
         notifyItemChanged(
-            currentList.indexOfFirst { relation.location.id == it.location.id },
+            currentList.indexOfFirst { relation.location.id == it.id },
             LocationsListFragment.getEnabledStatePayload(enabled)
         )
     }

@@ -10,13 +10,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.app.SharedElementCallback
-import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.selection.StorageStrategy
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +26,8 @@ import com.example.volumeprofiler.selection.DetailsLookup
 import com.example.volumeprofiler.selection.KeyProvider
 import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.*
 import com.example.volumeprofiler.R
+import com.example.volumeprofiler.entities.Hint
+import com.example.volumeprofiler.entities.ListItem
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.util.ViewUtil.Companion.isViewPartiallyVisible
@@ -33,7 +35,8 @@ import com.example.volumeprofiler.util.canWriteSettings
 import com.example.volumeprofiler.util.checkPermission
 import com.google.android.material.snackbar.Snackbar
 
-abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder, IB: ViewBinding>:
+@Suppress("unchecked_cast")
+abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder, IB: ViewBinding, AD>:
     ViewBindingFragment<VB>(),
     FragmentStateListener,
     ActionModeProvider,
@@ -51,13 +54,14 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     abstract val listItem: Class<T>
 
     abstract fun getRecyclerView(): RecyclerView
-    abstract fun getAdapter(): RecyclerView.Adapter<VH>
+    abstract fun getAdapter(): AD
     abstract fun onPermissionResult(permission: String, granted: Boolean)
 
     private lateinit var notificationPolicySettingsLauncher: ActivityResultLauncher<Intent>
     private lateinit var systemSettingsLauncher: ActivityResultLauncher<Intent>
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var notificationManager: NotificationManager
+    private lateinit var powerManager: PowerManager
 
     private val actionModeCallback = object : ActionMode.Callback {
 
@@ -110,7 +114,10 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as MainActivityCallback
+
         notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        powerManager = requireContext().getSystemService(Context.POWER_SERVICE) as PowerManager
+
         phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             onPermissionResult(READ_PHONE_STATE, checkPermission(READ_PHONE_STATE))
         }
@@ -152,7 +159,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         super.onViewCreated(view, savedInstanceState)
         getRecyclerView().let { recyclerView ->
 
-            recyclerView.adapter = getAdapter().apply {
+            recyclerView.adapter = (getAdapter() as RecyclerView.Adapter<VH>).apply {
                 stateRestorationPolicy = PREVENT_WHEN_EMPTY
                 setHasStableIds(true)
             }
@@ -164,7 +171,21 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                 KeyProvider(recyclerView.adapter as ListAdapterItemProvider<T>),
                 DetailsLookup<T>(recyclerView),
                 StorageStrategy.createParcelableStorage(listItem)
-            ).withSelectionPredicate(SelectionPredicates.createSelectAnything()).build()
+            ).withSelectionPredicate(object : SelectionTracker.SelectionPredicate<T>() {
+
+                override fun canSetStateForKey(key: T, nextState: Boolean): Boolean {
+                    return key !is Hint
+                }
+
+                override fun canSetStateAtPosition(position: Int, nextState: Boolean): Boolean {
+                    return true
+                }
+
+                override fun canSelectMultiple(): Boolean {
+                    return true
+                }
+
+            }).build()
             selectionTracker.addObserver(object : SelectionTracker.SelectionObserver<T>() {
 
                 override fun onSelectionRestored() {
@@ -218,7 +239,9 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                 }
             })
             recyclerView.smoothScrollToPosition(childPosition)
-        } else onEdit(0)
+        } else {
+            onEdit(0)
+        }
     }
 
     protected fun setSharedElementCallback() {
@@ -267,6 +290,27 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
             return true
         }
         return false
+    }
+
+    protected fun showPowerSaveModeHint(text: String) {
+
+        val adapter: RecyclerView.Adapter<VH> = getAdapter() as RecyclerView.Adapter<VH>
+        val provider: AdapterDatasetProvider<ListItem<Int>> = adapter as AdapterDatasetProvider<ListItem<Int>>
+
+        val items: MutableList<ListItem<Int>> = provider.currentList.toMutableList()
+        val hint: Hint = Hint(text)
+
+        if (powerManager.isPowerSaveMode) {
+            if (!items.contains(hint)) {
+                items.add(0, hint)
+                provider.currentList = items
+                adapter.notifyItemInserted(0)
+            }
+        } else if (items.contains(hint)) {
+            items.remove(hint)
+            provider.currentList = items
+            adapter.notifyItemRemoved(0)
+        }
     }
 
     override fun onFragmentSwiped() {

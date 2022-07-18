@@ -2,7 +2,7 @@ package com.example.volumeprofiler.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.volumeprofiler.database.repositories.LocationRepository
+import com.example.volumeprofiler.db.repositories.LocationRepository
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.LocationRelation
 import dagger.hilt.android.lifecycle.HiltViewModel

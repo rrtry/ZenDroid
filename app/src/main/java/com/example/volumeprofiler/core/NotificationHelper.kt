@@ -14,7 +14,6 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-import android.service.notification.ZenPolicy
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -36,7 +35,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NotificationDelegate @Inject constructor(@ApplicationContext private val context: Context) {
+class NotificationHelper @Inject constructor(@ApplicationContext private val context: Context) {
 
     @Inject lateinit var preferencesManager: PreferencesManager
 
@@ -262,6 +261,7 @@ class NotificationDelegate @Inject constructor(@ApplicationContext private val c
         ).also { channel ->
             channel.setBypassDnd(true)
             channel.setShowBadge(false)
+            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             notificationManager.createNotificationChannel(channel)
         }
     }

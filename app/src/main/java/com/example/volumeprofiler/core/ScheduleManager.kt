@@ -82,7 +82,7 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
             putExtra(EXTRA_END_PROFILE, endProfile)
         }
         return getBroadcast(
-            context, alarm.id.toInt(), intent,
+            context, alarm.id, intent,
             (if (create) FLAG_UPDATE_CURRENT else FLAG_NO_CREATE) or FLAG_IMMUTABLE
         )
     }

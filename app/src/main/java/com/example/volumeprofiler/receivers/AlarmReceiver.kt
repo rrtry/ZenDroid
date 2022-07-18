@@ -7,13 +7,13 @@ import android.content.Intent.*
 import android.os.Build
 import android.os.Parcelable
 import com.example.volumeprofiler.Application.Companion.ACTION_ALARM
-import com.example.volumeprofiler.core.NotificationDelegate
+import com.example.volumeprofiler.core.NotificationHelper
 import com.example.volumeprofiler.core.PreferencesManager
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import com.example.volumeprofiler.core.ProfileManager
 import com.example.volumeprofiler.core.ScheduleManager
-import com.example.volumeprofiler.database.repositories.AlarmRepository
+import com.example.volumeprofiler.db.repositories.AlarmRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.OngoingAlarm
 import com.example.volumeprofiler.entities.Profile
@@ -30,7 +30,7 @@ class AlarmReceiver: BroadcastReceiver() {
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var alarmRepository: AlarmRepository
     @Inject lateinit var preferencesManager: PreferencesManager
-    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var eventBus: EventBus
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -76,7 +76,7 @@ class AlarmReceiver: BroadcastReceiver() {
             if (ongoingAlarm != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL,
             if (ongoingAlarm != null) alarm else null
         )
-        notificationDelegate.updateNotification(profile, ongoingAlarm)
+        notificationHelper.updateNotification(profile, ongoingAlarm)
     }
 
     private fun getProfile(alarm: Alarm, startProfile: Profile, endProfile: Profile): Profile {

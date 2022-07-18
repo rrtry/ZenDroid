@@ -3,14 +3,13 @@ package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.volumeprofiler.core.ScheduleCalendar
-import com.example.volumeprofiler.database.repositories.AlarmRepository
-import com.example.volumeprofiler.database.repositories.ProfileRepository
+import com.example.volumeprofiler.db.repositories.AlarmRepository
+import com.example.volumeprofiler.db.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.core.WeekDay
 import com.example.volumeprofiler.core.WeekDay.Companion.ALL_DAYS
-import com.example.volumeprofiler.core.WeekDay.Companion.WEEKDAYS
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -53,7 +52,7 @@ class AlarmDetailsViewModel @Inject constructor(
         } else null
     }
 
-    private var alarmId: Long? = null
+    private var alarmId: Int? = null
     private var isScheduled: Boolean = false
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
@@ -78,7 +77,7 @@ class AlarmDetailsViewModel @Inject constructor(
         return alarmRepository.getEnabledAlarms() ?: listOf()
     }
 
-    suspend fun addAlarm(alarm: Alarm): Long {
+    suspend fun addAlarm(alarm: Alarm): Int {
         return withContext(viewModelScope.coroutineContext) {
             alarmRepository.addAlarm(alarm)
         }

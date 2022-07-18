@@ -3,7 +3,7 @@ package com.example.volumeprofiler.di
 import android.app.Application
 import android.os.Build
 import androidx.room.Room
-import com.example.volumeprofiler.database.ApplicationDatabase
+import com.example.volumeprofiler.db.ApplicationDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

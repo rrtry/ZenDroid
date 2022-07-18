@@ -66,7 +66,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var notificationHelper: NotificationHelper
 
     private var showExplanationDialog: Boolean = false
     private var elapsedTime: Long = 0L
@@ -80,7 +80,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
     override fun onUpdate(profile: Profile) {
         if (preferencesManager.isProfileEnabled(profile)) {
             profileManager.setProfile(profile, true)
-            notificationDelegate.updateNotification(
+            notificationHelper.updateNotification(
                 profile,
                 scheduleManager.getOngoingAlarm(scheduledAlarms))
         }

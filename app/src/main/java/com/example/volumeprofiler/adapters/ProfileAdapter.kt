@@ -15,10 +15,7 @@ import androidx.transition.AutoTransition
 import androidx.transition.TransitionManager
 import com.example.volumeprofiler.databinding.ProfileItemViewBinding
 import com.example.volumeprofiler.entities.Profile
-import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
-import com.example.volumeprofiler.interfaces.ProfileActionListener
-import com.example.volumeprofiler.interfaces.ViewHolder
-import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
+import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.Animations.selected
 import com.example.volumeprofiler.ui.BindingConverters.interruptionFilterToString
@@ -31,7 +28,8 @@ class ProfileAdapter(
     var currentList: List<Profile>,
     private val container: ViewGroup,
     listener: WeakReference<ProfilesListFragment>
-): RecyclerView.Adapter<ProfileAdapter.ProfileHolder>(), ListAdapterItemProvider<Profile> {
+):  RecyclerView.Adapter<ProfileAdapter.ProfileHolder>(),
+    ListAdapterItemProvider<Profile> {
 
     private val profileActionListener = listener.get()!! as ProfileActionListener
 

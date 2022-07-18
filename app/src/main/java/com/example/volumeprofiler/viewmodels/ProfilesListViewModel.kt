@@ -3,9 +3,9 @@ package com.example.volumeprofiler.viewmodels
 import androidx.lifecycle.*
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.database.repositories.AlarmRepository
-import com.example.volumeprofiler.database.repositories.LocationRepository
-import com.example.volumeprofiler.database.repositories.ProfileRepository
+import com.example.volumeprofiler.db.repositories.AlarmRepository
+import com.example.volumeprofiler.db.repositories.LocationRepository
+import com.example.volumeprofiler.db.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.LocationRelation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel

@@ -1,4 +1,4 @@
-package com.example.volumeprofiler.database.dao
+package com.example.volumeprofiler.db.dao
 
 import androidx.room.*
 import com.example.volumeprofiler.entities.LocationSuggestion

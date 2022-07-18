@@ -2,6 +2,7 @@ package com.example.volumeprofiler.adapters
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.selection.ItemDetailsLookup
@@ -9,9 +10,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.volumeprofiler.databinding.AlarmItemViewBinding
 import com.example.volumeprofiler.entities.Alarm
 import com.example.volumeprofiler.entities.AlarmRelation
-import com.example.volumeprofiler.interfaces.ListViewContract
-import com.example.volumeprofiler.interfaces.ListAdapterItemProvider
-import com.example.volumeprofiler.interfaces.ViewHolderItemDetailsProvider
 import com.example.volumeprofiler.selection.ItemDetails
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_END_TIME
 import com.example.volumeprofiler.ui.fragments.SchedulerFragment.Companion.SHARED_TRANSITION_SEPARATOR
@@ -22,16 +20,22 @@ import com.example.volumeprofiler.util.TextUtil.Companion.formatWeekDays
 import java.lang.ref.WeakReference
 import androidx.core.util.Pair
 import androidx.recyclerview.selection.SelectionTracker.SELECTION_CHANGED_MARKER
-import com.example.volumeprofiler.interfaces.ViewHolder
+import com.example.volumeprofiler.R
+import com.example.volumeprofiler.databinding.PowerSaveModeHintBinding
+import com.example.volumeprofiler.entities.Hint
+import com.example.volumeprofiler.entities.ListItem
+import com.example.volumeprofiler.interfaces.*
 import com.example.volumeprofiler.ui.Animations.selected
 import java.time.LocalTime
 
 class AlarmAdapter(
-    var currentList: List<AlarmRelation>,
+    override var currentList: List<ListItem<Int>>,
     private val recyclerView: RecyclerView,
     listener: WeakReference<ListViewContract<AlarmRelation>>
-) : RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder>(), ListAdapterItemProvider<AlarmRelation> {
-
+):  RecyclerView.Adapter<RecyclerView.ViewHolder>(),
+    ListAdapterItemProvider<AlarmRelation>,
+    AdapterDatasetProvider<ListItem<Int>>
+{
     private val viewContract: ListViewContract<AlarmRelation> = listener.get()!!
 
     inner class AlarmViewHolder(override val binding: AlarmItemViewBinding):
@@ -42,7 +46,7 @@ class AlarmAdapter(
         override fun getItemDetails(): ItemDetailsLookup.ItemDetails<AlarmRelation> {
             return ItemDetails(
                 bindingAdapterPosition,
-                currentList[bindingAdapterPosition]
+                getItem<AlarmRelation>(bindingAdapterPosition)
             )
         }
 
@@ -86,22 +90,38 @@ class AlarmAdapter(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlarmViewHolder {
-        return AlarmViewHolder(
-            AlarmItemViewBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false)
-        )
+    override fun getItemViewType(position: Int): Int {
+        return currentList[position].viewType
     }
 
     override fun getItemId(position: Int): Long {
-        return currentList[position].alarm.id
+        return currentList[position].id.toLong()
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        when (viewType) {
+            R.layout.alarm_item_view -> {
+                return AlarmViewHolder(
+                    AlarmItemViewBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false))
+            }
+            R.layout.power_save_mode_hint -> {
+                return HintViewHolder(
+                    PowerSaveModeHintBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    ), this)
+            }
+            else -> throw IllegalArgumentException("Unknown viewType $viewType")
+        }
     }
 
     @Suppress("unchecked_cast")
     override fun onBindViewHolder(
-        holder: AlarmViewHolder,
+        holder: RecyclerView.ViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
@@ -112,36 +132,39 @@ class AlarmAdapter(
                     i.keySet().forEach { key ->
                         i.getSerializable(key)?.toString().let { timeFormatted ->
                             if (key == PAYLOAD_START_TIME_CHANGED) {
-                                holder.binding.startTime.text = timeFormatted
+                                (holder as ViewHolder<AlarmItemViewBinding>).binding.startTime.text = timeFormatted
                             }
                             if (key == PAYLOAD_END_TIME_CHANGED) {
-                                holder.binding.endTime.text = timeFormatted
+                                (holder as ViewHolder<AlarmItemViewBinding>).binding.endTime.text = timeFormatted
                             }
                         }
                     }
                 }
                 SELECTION_CHANGED_MARKER -> {
-                    selected(holder.itemView, viewContract.isSelected(currentList[position]))
+                    selected(holder.itemView, viewContract.isSelected(getItem(position)))
                 }
             }
         }
     }
 
     override fun getItemKey(position: Int): AlarmRelation {
-        return currentList[position]
+        return getItem(position)
     }
 
     override fun getPosition(key: AlarmRelation): Int {
-        return currentList.indexOfFirst { key.alarm.id == it.alarm.id }
+        return currentList.indexOfFirst { item -> key.alarm.id == item.id }
     }
 
-    override fun onBindViewHolder(holder: AlarmViewHolder, position: Int) {
-        holder.bind(currentList[position])
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (getItemViewType(position)) {
+            R.layout.alarm_item_view -> (holder as AlarmViewHolder).bind(getItem(position))
+            R.layout.power_save_mode_hint -> (holder as HintViewHolder).bind(getItem(position))
+        }
     }
 
-    private fun getItemPosition(id: Long): Int {
-        return currentList.indexOfFirst {
-            it.alarm.id == id
+    private fun getItemPosition(id: Int): Int {
+        return currentList.indexOfFirst { item ->
+            item.id == id
         }
     }
 
@@ -157,6 +180,10 @@ class AlarmAdapter(
     }
 
     companion object {
+
+        private const val PAYLOAD_SCHEDULED_STATE_CHANGED: String = "scheduled_state"
+        private const val PAYLOAD_START_TIME_CHANGED: String = "start_time"
+        private const val PAYLOAD_END_TIME_CHANGED: String = "end_time"
 
         private fun addStartTimeChangedPayload(payloadsBundle: Bundle, startTime: LocalTime): Bundle {
             return payloadsBundle.apply {
@@ -175,10 +202,5 @@ class AlarmAdapter(
                 putBoolean(PAYLOAD_SCHEDULED_STATE_CHANGED, scheduled)
             }
         }
-
-        private const val PAYLOAD_SCHEDULED_STATE_CHANGED: String = "scheduled_state"
-        private const val PAYLOAD_START_TIME_CHANGED: String = "start_time"
-        private const val PAYLOAD_END_TIME_CHANGED: String = "end_time"
-
     }
 }

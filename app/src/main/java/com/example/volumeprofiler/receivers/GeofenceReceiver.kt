@@ -9,12 +9,12 @@ import android.os.Build
 import android.util.Log
 import com.example.volumeprofiler.Application.Companion.ACTION_GEOFENCE_TRANSITION
 import com.example.volumeprofiler.core.GeofenceManager
-import com.example.volumeprofiler.core.NotificationDelegate
+import com.example.volumeprofiler.core.NotificationHelper
 import com.example.volumeprofiler.core.PreferencesManager
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFENCE_ENTER
 import com.example.volumeprofiler.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFENCE_EXIT
 import com.example.volumeprofiler.core.ProfileManager
-import com.example.volumeprofiler.database.repositories.LocationRepository
+import com.example.volumeprofiler.db.repositories.LocationRepository
 import com.example.volumeprofiler.entities.Location
 import com.example.volumeprofiler.entities.Profile
 import com.example.volumeprofiler.receivers.AlarmReceiver.Companion.goAsync
@@ -33,7 +33,7 @@ class GeofenceReceiver: BroadcastReceiver() {
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var repository: LocationRepository
     @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var preferencesManager: PreferencesManager
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -55,7 +55,7 @@ class GeofenceReceiver: BroadcastReceiver() {
                     GEOFENCE_TRANSITION_ENTER, GEOFENCE_TRANSITION_DWELL -> {
                         getExtra<Profile>(intent, EXTRA_ENTER_PROFILE).also {
                             profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
-                            notificationDelegate.postGeofenceEnterNotification(
+                            notificationHelper.postGeofenceEnterNotification(
                                 it.title, title
                             )
                         }
@@ -63,7 +63,7 @@ class GeofenceReceiver: BroadcastReceiver() {
                     GEOFENCE_TRANSITION_EXIT -> {
                         getExtra<Profile>(intent, EXTRA_EXIT_PROFILE).also {
                             profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
-                            notificationDelegate.postGeofenceExitNotification(
+                            notificationHelper.postGeofenceExitNotification(
                                 it.title, title
                             )
                         }

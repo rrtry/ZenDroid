@@ -1,20 +1,13 @@
 package com.example.volumeprofiler.ui.fragments
 
-import android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
-import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
-import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -30,12 +23,12 @@ import com.example.volumeprofiler.core.GeofenceManager
 import com.example.volumeprofiler.core.GeofenceManager.Companion.ACCESS_LOCATION
 import com.example.volumeprofiler.databinding.LocationItemViewBinding
 import com.example.volumeprofiler.databinding.LocationsListFragmentBinding
+import com.example.volumeprofiler.entities.Hint
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.interfaces.FabContainer
 import com.example.volumeprofiler.interfaces.ListViewContract
 import com.example.volumeprofiler.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
 import com.example.volumeprofiler.ui.activities.MapsActivity
-import com.example.volumeprofiler.util.ViewUtil.Companion.showSnackbar
 import com.example.volumeprofiler.util.checkPermission
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel
 import com.example.volumeprofiler.viewmodels.LocationsListViewModel.ViewEvent.*
@@ -49,7 +42,8 @@ import java.lang.ref.WeakReference
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder, LocationItemViewBinding>(),
+class LocationsListFragment:
+    ListFragment<LocationRelation, LocationsListFragmentBinding, LocationAdapter.LocationViewHolder, LocationItemViewBinding, LocationAdapter>(),
     FabContainer,
     ListViewContract<LocationRelation> {
 
@@ -66,7 +60,9 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
 
     private val recycleListener = RecyclerView.RecyclerListener { viewHolder ->
-        (viewHolder as LocationAdapter.LocationViewHolder).clearMapView()
+        if (viewHolder is LocationAdapter.LocationViewHolder) {
+            viewHolder.clearMapView()
+        }
     }
 
     override fun onPermissionResult(permission: String, granted: Boolean) = Unit
@@ -79,6 +75,9 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         viewBinding.hintLocations.isVisible = list.isEmpty()
         locationAdapter.currentList = list
         locationAdapter.notifyDataSetChanged()
+        showPowerSaveModeHint(
+            requireContext().getString(R.string.geofencing_power_save_mode_hint)
+        )
     }
 
     override fun onAttach(context: Context) {
@@ -101,11 +100,20 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         viewBinding.recyclerView.addRecyclerListener(recycleListener)
-        locationAdapter = LocationAdapter(listOf(), requireContext(), WeakReference(this))
+        locationAdapter = LocationAdapter(
+            listOf(),
+            requireContext(),
+            WeakReference(this))
+
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.currentFragment.collect {
+                        if (it == LOCATIONS_FRAGMENT) showPowerSaveModeHint(requireContext().getString(R.string.geofencing_power_save_mode_hint))
+                    }
+                }
                 launch {
                     sharedViewModel.viewEvents
                         .collect {
@@ -222,9 +230,9 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
     override fun onActionItemRemove() {
         selectionTracker.selection.forEach { selection ->
             viewModel.removeLocation(
-                locationAdapter.currentList.first {
-                    it == selection
-                }.location
+                (locationAdapter.currentList.first { item ->
+                    item == selection
+                } as LocationRelation).location
             )
         }
     }
@@ -240,7 +248,7 @@ class LocationsListFragment: ListFragment<LocationRelation, LocationsListFragmen
         return viewBinding.recyclerView
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<LocationAdapter.LocationViewHolder> {
+    override fun getAdapter(): LocationAdapter {
         return locationAdapter
     }
 

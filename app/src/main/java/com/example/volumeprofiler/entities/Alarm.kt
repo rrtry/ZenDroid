@@ -16,7 +16,7 @@ import java.time.ZoneId
 ])
 data class Alarm(@PrimaryKey(autoGenerate = true)
                  @ColumnInfo(name = "eventId")
-                 var id: Long,
+                 var id: Int,
                  @Expose var title: String = "No title",
 
                  @ColumnInfo(index = true)

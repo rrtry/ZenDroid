@@ -9,7 +9,7 @@ import java.util.*
 import kotlinx.coroutines.channels.*
 import android.app.NotificationManager.Policy.*
 import android.media.AudioManager.*
-import com.example.volumeprofiler.database.repositories.AlarmRepository
+import com.example.volumeprofiler.db.repositories.AlarmRepository
 import com.example.volumeprofiler.util.ContentUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -18,8 +18,8 @@ import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
 import com.example.volumeprofiler.core.*
-import com.example.volumeprofiler.database.repositories.LocationRepository
-import com.example.volumeprofiler.database.repositories.ProfileRepository
+import com.example.volumeprofiler.db.repositories.LocationRepository
+import com.example.volumeprofiler.db.repositories.ProfileRepository
 import com.example.volumeprofiler.entities.LocationRelation
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import com.example.volumeprofiler.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME

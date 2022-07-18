@@ -36,7 +36,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var scheduleManager: ScheduleManager
-    @Inject lateinit var notificationDelegate: NotificationDelegate
+    @Inject lateinit var notificationHelper: NotificationHelper
 
     private val audioManager: AudioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
     private val notificationManager: NotificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -98,14 +98,14 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
                 } else {
                     setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_MANUAL, null)
                 }
-                notificationDelegate.updateNotification(ongoingAlarm.profile, ongoingAlarm)
+                notificationHelper.updateNotification(ongoingAlarm.profile, ongoingAlarm)
             } else {
-                notificationDelegate.updateNotification(preferencesManager.getProfile(), ongoingAlarm)
+                notificationHelper.updateNotification(preferencesManager.getProfile(), ongoingAlarm)
             }
         } else {
             preferencesManager.getProfile()?.let { currentProfile ->
                 setProfile(currentProfile, TRIGGER_TYPE_MANUAL, null)
-                notificationDelegate.updateNotification(currentProfile, null)
+                notificationHelper.updateNotification(currentProfile, null)
             }
         }
     }

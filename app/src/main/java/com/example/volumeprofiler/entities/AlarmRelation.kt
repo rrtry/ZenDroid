@@ -2,7 +2,10 @@ package com.example.volumeprofiler.entities
 
 import android.os.Parcelable
 import androidx.room.Embedded
+import androidx.room.Ignore
 import androidx.room.Relation
+import com.example.volumeprofiler.R
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -14,6 +17,19 @@ data class AlarmRelation(
         var startProfile: Profile,
 
         @Relation(parentColumn = "endProfileUUID", entityColumn = "id")
-        var endProfile: Profile
+        var endProfile: Profile,
 
-): Parcelable
+        @Ignore
+        @IgnoredOnParcel
+        override val id: Int,
+
+        @Ignore
+        @IgnoredOnParcel
+        override val viewType: Int = R.layout.alarm_item_view
+
+): Parcelable, ListItem<Int> {
+
+        constructor(alarm: Alarm, startProfile: Profile, endProfile: Profile): this(
+                alarm, startProfile, endProfile, alarm.id, R.layout.alarm_item_view
+        )
+}

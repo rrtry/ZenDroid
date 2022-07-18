@@ -28,8 +28,8 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         return alarm.scheduledDays != WeekDay.NONE
     }
 
-    private fun isDayInSchedule(mask: Int, day: DayOfWeek): Boolean {
-        return (mask and WeekDay.fromDay(day.value)) != WeekDay.NONE
+    private fun isDayInSchedule(days: Int, day: DayOfWeek): Boolean {
+        return (days and WeekDay.fromDay(day.value)) != WeekDay.NONE
     }
 
     fun isValid(): Boolean {
