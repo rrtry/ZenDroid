@@ -28,7 +28,7 @@
                 android:layout_marginStart="16dp"
                 android:src="@drawable/ic_baseline_search_24"/>
 
-            <com.example.volumeprofiler.ui.views.DebounceEditText
+            <ru.rrtry.silentdroid.ui.views.DebounceEditText
                 android:id="@+id/searchEditText"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"

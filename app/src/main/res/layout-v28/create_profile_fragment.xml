@@ -4,14 +4,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
-        <import type="com.example.volumeprofiler.ui.BindingConverters"/>
-        <import type="com.example.volumeprofiler.ui.BindingAdapters"/>
-        <import type="com.example.volumeprofiler.core.ProfileManager"/>
+        <import type="ru.rrtry.silentdroid.ui.BindingConverters"/>
+        <import type="ru.rrtry.silentdroid.ui.BindingAdapters"/>
+        <import type="ru.rrtry.silentdroid.core.ProfileManager"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
+            type="ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel"/>
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -21,7 +21,7 @@
         android:orientation="vertical"
         android:layout_height="wrap_content">
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/mediaSliderLayout"
             android:layout_width="match_parent"
             mediaInterruptionFilter="@{viewModel.interruptionFilter}"
@@ -87,7 +87,7 @@
                 app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
         <ImageView
             android:id="@+id/imageView10"
@@ -124,7 +124,7 @@
             app:layout_constraintStart_toEndOf="@+id/imageView10"
             app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout" />
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/notificationSliderLayout"
             android:layout_width="match_parent"
             interruptionFilter="@{viewModel.interruptionFilter}"
@@ -195,9 +195,9 @@
                 app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/ringerSliderLayout"
             android:layout_width="match_parent"
             ringerInterruptionFilter="@{viewModel.interruptionFilter}"
@@ -269,9 +269,9 @@
                 app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/unlinkStreamsLayout"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -310,9 +310,9 @@
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="UseSwitchCompatOrMaterialXml" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/alarmSliderLayout"
             android:layout_width="match_parent"
             alarmInterruptionFilter="@{viewModel.interruptionFilter}"
@@ -379,7 +379,7 @@
                 app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
         <View
             android:id="@+id/separator1"
@@ -403,7 +403,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/separator1" />
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/interruptionFilterLayout"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             android:layout_width="match_parent"
@@ -438,9 +438,9 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="@+id/doNotDisturbTitle"
                 app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle" />
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/phoneRingtoneLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -476,9 +476,9 @@
                 app:layout_constraintStart_toStartOf="@+id/phoneRingtoneTitle"
                 app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/notificationSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -514,9 +514,9 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="@+id/notificationSoundTitle"
                 app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle" />
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/alarmSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -551,9 +551,9 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="@+id/alarmSoundTitle"
                 app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle" />
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/interruptionFilterPreferencesLayout"
             notificationPolicyAccess="@{viewModel.notificationPolicyAccessGranted}"
             android:layout_width="match_parent"
@@ -589,9 +589,9 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="@+id/doNotDisturbPreferencesTitle"
                 app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/vibrateForCallsLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -628,7 +628,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="@id/vibrateForCallsTitle"
                 app:layout_constraintTop_toTopOf="@id/vibrateForCallsTitle" />
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
         <ImageButton
             android:id="@+id/playCallRingtone"
@@ -666,7 +666,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/separator2" />
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/blockWhenScreenIsOnLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -701,9 +701,9 @@
                 app:layout_constraintStart_toStartOf="@+id/blockWhenScreenIsOnTitle"
                 app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOnTitle" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
-        <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/blockWhenScreenIsOffLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -740,6 +740,6 @@
                 app:layout_constraintStart_toStartOf="@+id/blockWhenScreenIsOffTitle"
                 app:layout_constraintTop_toBottomOf="@+id/blockWhenScreenIsOffTitle" />
 
-        </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

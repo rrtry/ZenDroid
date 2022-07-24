@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">VolumeProfiler</string>
+    <string name="app_name">SilentDroid</string>
     <string name="tab_scheduler">Scheduler</string>
     <string name="tab_profiles">Profiles</string>
     <string name="tab_locations">Locations</string>
@@ -96,7 +96,7 @@
         Permission denial warning
     </string>
     <string name="no_profiles_dialog_title">
-        No profile were found
+        Feature unavailable
     </string>
     <string name="no_profiles_dialog_text">
         Create at least one profile in order to schedule events

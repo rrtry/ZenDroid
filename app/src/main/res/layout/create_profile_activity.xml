@@ -5,10 +5,10 @@
 
     <data>
         <import type="android.R.drawable"/>
-        <import type="com.example.volumeprofiler.ui.BindingConverters"/>
+        <import type="ru.rrtry.silentdroid.ui.BindingConverters"/>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
+            type="ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel"/>
     </data>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout

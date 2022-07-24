@@ -6,7 +6,7 @@
     <data>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.GeofenceSharedViewModel"/>
+            type="ru.rrtry.silentdroid.viewmodels.GeofenceSharedViewModel"/>
     </data>
 
     <androidx.core.widget.NestedScrollView

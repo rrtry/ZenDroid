@@ -4,11 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-        <import type="com.example.volumeprofiler.ui.BindingConverters"/>
-        <import type="com.example.volumeprofiler.ui.BindingAdapters"/>
+        <import type="ru.rrtry.silentdroid.ui.BindingConverters"/>
+        <import type="ru.rrtry.silentdroid.ui.BindingAdapters"/>
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.ProfileDetailsViewModel"/>
+            type="ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel"/>
     </data>
 
     <ScrollView
@@ -65,7 +65,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <com.example.volumeprofiler.ui.views.SwitchableConstraintLayout
+            <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
                 android:id="@+id/repeatCallersLayout"
                 callSenders="@{viewModel.priorityCallSenders}"
                 priorityCategories="@{viewModel.priorityCategories}"
@@ -113,7 +113,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/repeatCallersDescription" />
-            </com.example.volumeprofiler.ui.views.SwitchableConstraintLayout>
+            </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
             <View
                 android:id="@+id/separator2"

@@ -28,7 +28,7 @@ android {
 
     defaultConfig {
         multiDexEnabled true
-        applicationId "com.example.volumeprofiler"
+        applicationId "ru.rrtry.silentdroid"
         minSdkVersion 23
         targetSdkVersion 31
         versionCode 1

@@ -5,16 +5,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
-        <import type="com.example.volumeprofiler.util.TextUtil"/>
-        <import type="com.example.volumeprofiler.ui.BindingConverters"/>
+        <import type="ru.rrtry.silentdroid.util.TextUtil"/>
+        <import type="ru.rrtry.silentdroid.ui.BindingConverters"/>
 
         <variable
             name="viewModel"
-            type="com.example.volumeprofiler.viewmodels.SchedulerViewModel" />
+            type="ru.rrtry.silentdroid.viewmodels.SchedulerViewModel" />
 
         <variable
             name="alarmRelation"
-            type="com.example.volumeprofiler.entities.AlarmRelation" />
+            type="ru.rrtry.silentdroid.entities.AlarmRelation" />
     </data>
 
     <androidx.cardview.widget.CardView
