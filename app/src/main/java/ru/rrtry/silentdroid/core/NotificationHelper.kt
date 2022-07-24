@@ -41,6 +41,11 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
 
     private val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+    private fun notify(id: Int, notification: Notification) {
+        notification.visibility = NotificationCompat.VISIBILITY_PUBLIC
+        notificationManager.notify(id, notification)
+    }
+
     private fun getApplicationSettingsIntent(): PendingIntent {
         val intent: Intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")).apply {
             flags = FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK
@@ -153,7 +158,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         }
         val notification: Notification = builder.build()
         notification.flags = Notification.FLAG_AUTO_CANCEL
-        notificationManager.notify(ID_SYSTEM_SETTINGS, notification)
+        notify(ID_SYSTEM_SETTINGS, notification)
     }
 
     fun postInterruptionPolicyNotification() {
@@ -172,7 +177,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         }
         val notification: Notification = builder.build()
         notification.flags = Notification.FLAG_AUTO_CANCEL
-        notificationManager.notify(ID_INTERRUPTION_POLICY, notification)
+        notify(ID_INTERRUPTION_POLICY, notification)
     }
 
     fun postGeofenceExitNotification(profileTitle: String, locationTitle: String) {
@@ -188,7 +193,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 builder.setChannelId(it.id)
             }
         }
-        notificationManager.notify(ID_PROFILE, builder.build())
+        notify(ID_PROFILE, builder.build())
     }
 
     fun postGeofenceEnterNotification(profileTitle: String, locationTitle: String) {
@@ -204,7 +209,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 builder.setChannelId(it.id)
             }
         }
-        notificationManager.notify(ID_PROFILE, builder.build())
+        notify(ID_PROFILE, builder.build())
     }
 
     private fun postNextProfileNotification(
@@ -224,7 +229,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 builder.setChannelId(it.id)
             }
         }
-        notificationManager.notify(ID_PROFILE, builder.build())
+        notify(ID_PROFILE, builder.build())
     }
 
     private fun postProfileNotification(
@@ -251,7 +256,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 builder.setChannelId(it.id)
             }
         }
-        notificationManager.notify(ID_PROFILE, builder.build())
+        notify(ID_PROFILE, builder.build())
     }
 
     @TargetApi(Build.VERSION_CODES.O)
