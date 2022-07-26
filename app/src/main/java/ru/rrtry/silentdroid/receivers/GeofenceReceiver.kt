@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.os.Build
+import android.os.Parcelable
 import android.util.Log
 import ru.rrtry.silentdroid.Application.Companion.ACTION_GEOFENCE_TRANSITION
 import ru.rrtry.silentdroid.core.GeofenceManager
@@ -25,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import ru.rrtry.silentdroid.util.ParcelableUtil
+import ru.rrtry.silentdroid.util.ParcelableUtil.Companion.getExtra
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -48,7 +50,6 @@ class GeofenceReceiver: BroadcastReceiver() {
                     return
                 }
 
-                val title: String = intent.getStringExtra(EXTRA_TITLE)!!
                 val geofence: Location = getExtra(intent, EXTRA_GEOFENCE)
 
                 when (geofencingEvent.geofenceTransition) {
@@ -56,7 +57,7 @@ class GeofenceReceiver: BroadcastReceiver() {
                         getExtra<Profile>(intent, EXTRA_ENTER_PROFILE).also {
                             profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
                             notificationHelper.postGeofenceEnterNotification(
-                                it.title, title
+                                it.title, geofence.title
                             )
                         }
                     }
@@ -64,7 +65,7 @@ class GeofenceReceiver: BroadcastReceiver() {
                         getExtra<Profile>(intent, EXTRA_EXIT_PROFILE).also {
                             profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
                             notificationHelper.postGeofenceExitNotification(
-                                it.title, title
+                                it.title, geofence.title
                             )
                         }
                     }
@@ -107,13 +108,6 @@ class GeofenceReceiver: BroadcastReceiver() {
 
     companion object {
 
-        fun <T> getExtra(intent: Intent, name: String): T {
-            return ParcelableUtil.toParcelable(
-                intent.getByteArrayExtra(name)!!,
-                ParcelableUtil.getParcelableCreator())
-        }
-
-        const val EXTRA_TITLE: String = "extra_title"
         const val EXTRA_GEOFENCE: String = "extra_geofence"
         const val EXTRA_ENTER_PROFILE: String = "extra_enter_profile"
         const val EXTRA_EXIT_PROFILE: String = "extra_exit_profile"

@@ -51,6 +51,7 @@ class SchedulerFragment:
 
     override val listItem: Class<AlarmRelation> = AlarmRelation::class.java
     override val selectionId: String = SELECTION_ID
+    override val hintRes: Int = R.string.scheduler_power_save_mode_hint
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var profileManager: ProfileManager
@@ -153,7 +154,7 @@ class SchedulerFragment:
                         withContext(Dispatchers.Main) {
                             if (it == SCHEDULER_FRAGMENT) {
                                 setSharedElementCallback()
-                                showPowerSaveModeHint(requireContext().getString(R.string.scheduler_power_save_mode_hint))
+                                showPowerSaveModeHint(requireContext().getString(hintRes))
                             }
                         }
                     }

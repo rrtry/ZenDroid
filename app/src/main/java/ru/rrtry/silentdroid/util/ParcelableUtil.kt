@@ -1,5 +1,6 @@
 package ru.rrtry.silentdroid.util
 
+import android.content.Intent
 import android.os.Parcel
 import android.os.Parcelable
 
@@ -33,6 +34,12 @@ class ParcelableUtil {
             val creator = T::class.java.getField("CREATOR").get(null)
             @Suppress("UNCHECKED_CAST")
             return creator as Parcelable.Creator<T>
+        }
+
+        inline fun <reified T : Parcelable> getExtra(intent: Intent, name: String): T {
+            return toParcelable(
+                intent.getByteArrayExtra(name)!!,
+                getParcelableCreator())
         }
     }
 }

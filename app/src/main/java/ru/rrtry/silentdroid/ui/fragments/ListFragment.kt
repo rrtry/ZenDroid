@@ -2,8 +2,10 @@ package ru.rrtry.silentdroid.ui.fragments
 
 import android.Manifest.permission.*
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import androidx.core.util.Pair
 import android.os.Bundle
@@ -43,6 +45,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     ListViewContract<T> {
 
     protected var callback: MainActivityCallback? = null
+    protected open val hintRes: Int = -1
     private var actionMode: ActionMode?
         get() = callback?.actionMode
         set(value) { callback?.actionMode = value }
@@ -63,6 +66,14 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     private lateinit var notificationManager: NotificationManager
     private lateinit var powerManager: PowerManager
 
+    private val powerSaveModeStateReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (hintRes != -1) {
+                showPowerSaveModeHint(requireContext().resources.getString(hintRes))
+            }
+        }
+    }
     private val actionModeCallback = object : ActionMode.Callback {
 
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
@@ -152,6 +163,19 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
         selectionTracker.onRestoreInstanceState(savedInstanceState)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        requireActivity().registerReceiver(
+            powerSaveModeStateReceiver,
+            IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        requireActivity().unregisterReceiver(powerSaveModeStateReceiver)
     }
 
     @Suppress("unchecked_cast")

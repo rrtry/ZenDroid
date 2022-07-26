@@ -17,6 +17,7 @@ import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.entities.OngoingAlarm
 import ru.rrtry.silentdroid.entities.Profile
+import ru.rrtry.silentdroid.util.ParcelableUtil
 import java.time.*
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
@@ -79,9 +80,9 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
 
             action = ACTION_ALARM
 
-            putExtra(EXTRA_ALARM, alarm)
-            putExtra(EXTRA_START_PROFILE, startProfile)
-            putExtra(EXTRA_END_PROFILE, endProfile)
+            putExtra(EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
+            putExtra(EXTRA_START_PROFILE, ParcelableUtil.toByteArray(startProfile))
+            putExtra(EXTRA_END_PROFILE, ParcelableUtil.toByteArray(endProfile))
         }
         return getBroadcast(
             context, alarm.id, intent,

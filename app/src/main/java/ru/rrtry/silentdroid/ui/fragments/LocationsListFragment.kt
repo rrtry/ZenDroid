@@ -51,6 +51,7 @@ class LocationsListFragment:
 
     override val selectionId: String = SELECTION_ID
     override val listItem: Class<LocationRelation> = LocationRelation::class.java
+    override val hintRes: Int = R.string.geofencing_power_save_mode_hint
 
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var fileManager: FileManager
@@ -110,7 +111,9 @@ class LocationsListFragment:
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.currentFragment.collect {
-                        if (it == LOCATIONS_FRAGMENT) showPowerSaveModeHint(requireContext().getString(R.string.geofencing_power_save_mode_hint))
+                        if (it == LOCATIONS_FRAGMENT) {
+                            showPowerSaveModeHint(requireContext().getString(hintRes))
+                        }
                     }
                 }
                 launch {
@@ -219,7 +222,7 @@ class LocationsListFragment:
             requireContext().resources.let { res ->
                 PopupDialog.create(
                     "Feature unavailable",
-                    "At least one existing profile required in order to create location trigger",
+                    "At least one existing profile required in order to create location triggers",
                     R.drawable.ic_baseline_not_listed_location_24
                 ).show(
                     requireActivity().supportFragmentManager,

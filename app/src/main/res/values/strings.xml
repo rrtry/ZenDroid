@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SilentDroid</string>
+    <string name="app_name">ZenDroid</string>
     <string name="tab_scheduler">Scheduler</string>
     <string name="tab_profiles">Profiles</string>
     <string name="tab_locations">Locations</string>

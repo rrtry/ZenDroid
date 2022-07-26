@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.Intent.*
 import android.os.Build
 import android.os.Parcelable
+import android.util.Log
 import ru.rrtry.silentdroid.Application.Companion.ACTION_ALARM
 import ru.rrtry.silentdroid.core.NotificationHelper
 import ru.rrtry.silentdroid.core.PreferencesManager
@@ -20,6 +21,8 @@ import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.eventBus.EventBus
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import ru.rrtry.silentdroid.util.ParcelableUtil
+import ru.rrtry.silentdroid.util.ParcelableUtil.Companion.getExtra
 import ru.rrtry.silentdroid.util.WakeLock
 import javax.inject.Inject
 
@@ -115,11 +118,6 @@ class AlarmReceiver: BroadcastReceiver() {
     }
 
     companion object {
-
-        private fun <T: Parcelable> getExtra(intent: Intent, name: String): T {
-            return intent.getParcelableExtra(name)
-                ?: throw IllegalStateException("$name cannot be null")
-        }
 
         fun BroadcastReceiver.goAsync(
             context: Context,

@@ -27,7 +27,6 @@ import ru.rrtry.silentdroid.entities.LocationRelation
 import ru.rrtry.silentdroid.receivers.GeofenceReceiver.Companion.EXTRA_ENTER_PROFILE
 import ru.rrtry.silentdroid.receivers.GeofenceReceiver.Companion.EXTRA_EXIT_PROFILE
 import ru.rrtry.silentdroid.receivers.GeofenceReceiver.Companion.EXTRA_GEOFENCE
-import ru.rrtry.silentdroid.receivers.GeofenceReceiver.Companion.EXTRA_TITLE
 import ru.rrtry.silentdroid.util.ParcelableUtil
 import ru.rrtry.silentdroid.util.checkPermission
 
@@ -128,7 +127,6 @@ class GeofenceManager @Inject constructor(
         Intent(context, GeofenceReceiver::class.java).apply {
 
             action = ACTION_GEOFENCE_TRANSITION
-            putExtra(EXTRA_TITLE, location.title)
             putExtra(EXTRA_GEOFENCE, ParcelableUtil.toByteArray(location))
             putExtra(EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
@@ -142,7 +140,7 @@ class GeofenceManager @Inject constructor(
         Intent(context, GeofenceReceiver::class.java).apply {
 
             action = ACTION_GEOFENCE_TRANSITION
-            putExtra(EXTRA_TITLE, location.title)
+            putExtra(EXTRA_GEOFENCE, ParcelableUtil.toByteArray(location))
             putExtra(EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
 

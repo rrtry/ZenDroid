@@ -9,6 +9,12 @@ apply plugin: 'kotlin-kapt'
 
 android {
     signingConfigs {
+        release {
+            storeFile file('C:\\Users\\user\\releaseKeyStore.jks')
+            storePassword "$System.env.KSTOREPWD"
+            keyAlias 'releaseKey'
+            keyPassword "$System.env.KEYPWD"
+        }
         debug {
             storeFile file('C:\\Users\\user\\.android\\debug.keystore')
             storePassword 'android'
@@ -35,13 +41,14 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        signingConfig signingConfigs.debug
+        signingConfig signingConfigs.release
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
