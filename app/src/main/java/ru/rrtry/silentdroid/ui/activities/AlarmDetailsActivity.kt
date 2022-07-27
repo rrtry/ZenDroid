@@ -80,6 +80,8 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                     viewModel.startProfile.value!!,
                     viewModel.endProfile.value!!
                 )
+            } else {
+                scheduleManager.cancelAlarm(alarm)
             }
             profileManager.updateScheduledProfile(viewModel.getEnabledAlarms())
         }.invokeOnCompletion {
@@ -101,7 +103,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     private fun setEntity() {
         intent.getParcelableExtra<AlarmRelation>(EXTRA_ALARM_PROFILE_RELATION)?.let {
-            viewModel.setAlarm(it)
+            viewModel.setEntity(it)
         }
     }
 

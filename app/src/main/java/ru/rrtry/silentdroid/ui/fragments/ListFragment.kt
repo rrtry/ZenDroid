@@ -285,7 +285,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         if (!notificationManager.isNotificationPolicyAccessGranted) {
             callback?.showSnackBar(
                 "Grant Do Not Disturb access",
-                Snackbar.LENGTH_INDEFINITE)
+                length = Snackbar.LENGTH_INDEFINITE)
             {
                 notificationPolicySettingsLauncher.launch(
                     Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
@@ -295,7 +295,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         } else if (!canWriteSettings(requireContext())) {
             callback?.showSnackBar(
                 "Grant System Settings access",
-                Snackbar.LENGTH_INDEFINITE)
+                length = Snackbar.LENGTH_INDEFINITE)
             {
                 systemSettingsLauncher.launch(
                     Intent(
@@ -307,7 +307,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         } else if (!checkPermission(READ_PHONE_STATE) && profile.streamsUnlinked) {
             callback?.showSnackBar(
                 "Grant 'Phone' permission",
-                Snackbar.LENGTH_INDEFINITE)
+                length = Snackbar.LENGTH_INDEFINITE)
             {
                 phonePermissionLauncher.launch(READ_PHONE_STATE)
             }

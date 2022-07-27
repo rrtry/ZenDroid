@@ -14,18 +14,18 @@ data class AlarmRelation(
     @Embedded var alarm: Alarm,
 
     @Relation(parentColumn = "startProfileUUID", entityColumn = "id")
-        var startProfile: Profile,
+    var startProfile: Profile,
 
     @Relation(parentColumn = "endProfileUUID", entityColumn = "id")
-        var endProfile: Profile,
+    var endProfile: Profile,
 
     @Ignore
-        @IgnoredOnParcel
-        override val id: Int,
+    @IgnoredOnParcel
+    override val id: Int,
 
     @Ignore
-        @IgnoredOnParcel
-        override val viewType: Int = R.layout.alarm_item_view
+    @IgnoredOnParcel
+    override val viewType: Int = R.layout.alarm_item_view
 
 ): Parcelable, ListItem<Int> {
 

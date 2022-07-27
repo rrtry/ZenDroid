@@ -38,7 +38,7 @@ class GeofenceSharedViewModel @Inject constructor(
         object ShowMapStylesDialog: ViewEvent()
     }
 
-    private var locationSet: Boolean = false
+    private var isEntitySet: Boolean = false
     private var locationId: Int? = null
     var isRegistered: Boolean = false
 
@@ -146,15 +146,15 @@ class GeofenceSharedViewModel @Inject constructor(
     }
 
     fun setProfiles(profiles: List<Profile>) {
-        if (locationId == null && !locationSet) {
+        if (locationId == null && !isEntitySet) {
             enterProfile.value = profiles.random()
             exitProfile.value = profiles.random()
-            locationSet = true
+            isEntitySet = true
         }
     }
 
     fun setEntity(locationRelation: LocationRelation) {
-        if (locationSet) return
+        if (isEntitySet) return
 
         enterProfile.value = locationRelation.onEnterProfile
         exitProfile.value = locationRelation.onExitProfile
@@ -172,13 +172,13 @@ class GeofenceSharedViewModel @Inject constructor(
 
         locationId = locationRelation.location.id
         isRegistered = locationRelation.location.enabled
-        locationSet = true
+        isEntitySet = true
     }
 
     fun getLocation(): Location {
         return Location(
             id = if (locationId != null) locationId!! else 0,
-            title = title.value.ifEmpty { "No title" },
+            title = title.value.trim().ifBlank { "No title" },
             latitude = latLng.value.first.latitude,
             longitude = latLng.value.first.longitude,
             address = address.value,
@@ -193,14 +193,6 @@ class GeofenceSharedViewModel @Inject constructor(
 
     fun setLatLng(latLng: LatLng, queryAddress: Boolean = true) {
         this.latLng.value = Pair(latLng, queryAddress)
-    }
-
-    fun setTitle(title: String) {
-        this.title.value = title
-    }
-
-    fun setAddress(address: String) {
-        this.address.value = address
     }
 
     fun setRadius(radius: Float) {

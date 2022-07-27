@@ -44,28 +44,28 @@ class GeofenceReceiver: BroadcastReceiver() {
             ACTION_GEOFENCE_TRANSITION -> {
 
                 val geofencingEvent: GeofencingEvent = GeofencingEvent.fromIntent(intent)
+                val geofence: Location = getExtra(intent, EXTRA_GEOFENCE)
+
                 if (geofencingEvent.hasError()) {
                     val errorMessage: String = GeofenceStatusCodes.getStatusCodeString(geofencingEvent.errorCode)
                     Log.e("GeofenceReceiver", errorMessage)
                     return
                 }
 
-                val geofence: Location = getExtra(intent, EXTRA_GEOFENCE)
-
                 when (geofencingEvent.geofenceTransition) {
                     GEOFENCE_TRANSITION_ENTER, GEOFENCE_TRANSITION_DWELL -> {
-                        getExtra<Profile>(intent, EXTRA_ENTER_PROFILE).also {
-                            profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
+                        getExtra<Profile>(intent, EXTRA_ENTER_PROFILE).also { enterProfile ->
+                            profileManager.setProfile(enterProfile, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
                             notificationHelper.postGeofenceEnterNotification(
-                                it.title, geofence.title
+                                enterProfile.title, geofence.title
                             )
                         }
                     }
                     GEOFENCE_TRANSITION_EXIT -> {
-                        getExtra<Profile>(intent, EXTRA_EXIT_PROFILE).also {
-                            profileManager.setProfile(it, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
+                        getExtra<Profile>(intent, EXTRA_EXIT_PROFILE).also { exitProfile ->
+                            profileManager.setProfile(exitProfile, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
                             notificationHelper.postGeofenceExitNotification(
-                                it.title, geofence.title
+                                exitProfile.title, geofence.title
                             )
                         }
                     }
@@ -73,35 +73,15 @@ class GeofenceReceiver: BroadcastReceiver() {
             }
             ACTION_LOCKED_BOOT_COMPLETED -> {
                 goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                    registerGeofences()
+                    geofenceManager.registerGeofences()
                 }
             }
             ACTION_BOOT_COMPLETED -> {
                 if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
                     goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                        registerGeofences()
+                        geofenceManager.registerGeofences()
                     }
                 }
-            }
-            ACTION_PACKAGE_DATA_CLEARED -> {
-                if (intent.dataString == "package:com.google.android.gms") {
-                    goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                        registerGeofences()
-                    }
-                }
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private suspend fun registerGeofences() {
-        repository.getLocations().forEach {
-            if (it.location.enabled) {
-                geofenceManager.addGeofence(
-                    it.location,
-                    it.onEnterProfile,
-                    it.onExitProfile
-                )
             }
         }
     }

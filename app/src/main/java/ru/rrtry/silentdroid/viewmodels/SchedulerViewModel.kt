@@ -41,40 +41,26 @@ class SchedulerViewModel @Inject constructor(
                     alarmRepository.updateAlarm(relation.alarm)
                 }
             }
-            scheduleAlarm(relation.alarm)
+            alarmRepository.scheduleAlarm(relation.alarm)
             channel.send(ViewEvent.OnAlarmSet(relation, getScheduledAlarms()))
         }
     }
 
     fun cancelAlarm(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
-            cancelAlarm(alarmRelation.alarm)
+            alarmRepository.cancelAlarm(alarmRelation.alarm)
             channel.send(ViewEvent.OnAlarmCancelled(alarmRelation, getScheduledAlarms()))
         }
     }
 
     fun removeAlarm(alarmRelation: AlarmRelation) {
         viewModelScope.launch {
-            removeAlarm(alarmRelation.alarm)
+            alarmRepository.removeAlarm(alarmRelation.alarm)
             channel.send(ViewEvent.OnAlarmRemoved(alarmRelation, getScheduledAlarms()))
         }
     }
 
     private suspend fun getScheduledAlarms(): List<AlarmRelation> {
         return alarmRepository.getEnabledAlarms() ?: listOf()
-    }
-
-    private suspend fun scheduleAlarm(alarm: Alarm) {
-        alarm.isScheduled = true
-        alarmRepository.updateAlarm(alarm)
-    }
-
-    private suspend fun cancelAlarm(alarm: Alarm) {
-        alarm.isScheduled = false
-        alarmRepository.updateAlarm(alarm)
-    }
-
-    private suspend fun removeAlarm(alarm: Alarm) {
-        alarmRepository.removeAlarm(alarm)
     }
 }

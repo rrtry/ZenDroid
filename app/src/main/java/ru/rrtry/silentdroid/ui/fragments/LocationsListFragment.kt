@@ -86,11 +86,11 @@ class LocationsListFragment:
             if (!map.containsValue(false)) {
                 geofenceManager.checkLocationServicesAvailability(requireActivity())
             } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
-                callback?.showSnackBar("Geofencing feature requires all-time location access", Snackbar.LENGTH_INDEFINITE) {
+                callback?.showSnackBar("Geofencing feature requires all-time location access", length = Snackbar.LENGTH_INDEFINITE) {
                     requestLocationPermission()
                 }
             } else {
-                callback?.showSnackBar("Geofencing feature requires all-time location access", Snackbar.LENGTH_INDEFINITE) {
+                callback?.showSnackBar("Geofencing feature requires all-time location access", length = Snackbar.LENGTH_INDEFINITE) {
                     geofenceManager.openPackagePermissionSettings()
                 }
             }
@@ -150,7 +150,6 @@ class LocationsListFragment:
         geofenceManager.requestLocationPermission(locationPermissionLauncher)
     }
 
-    @Suppress("MissingPermission")
     private suspend fun removeGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
@@ -158,10 +157,8 @@ class LocationsListFragment:
             locationRelation.onExitProfile
         )
         fileManager.deleteThumbnail(locationRelation.location.previewImageId)
-        callback?.showSnackBar("Geofence successfully removed", Snackbar.LENGTH_LONG, null)
     }
 
-    @Suppress("MissingPermission")
     private fun enableGeofence(locationRelation: LocationRelation) {
         geofenceManager.addGeofence(
             locationRelation.location,
@@ -172,7 +169,6 @@ class LocationsListFragment:
         geofenceManager.checkLocationServicesAvailability(requireActivity())
     }
 
-    @Suppress("MissingPermission")
     private fun disableGeofence(locationRelation: LocationRelation) {
         geofenceManager.removeGeofence(
             locationRelation.location,
@@ -180,7 +176,6 @@ class LocationsListFragment:
             locationRelation.onExitProfile
         )
         locationAdapter.updateGeofenceState(locationRelation, false)
-        callback?.showSnackBar("Geofence successfully unregistered", Snackbar.LENGTH_LONG, null)
     }
 
     override fun onEdit(entity: LocationRelation, options: Bundle?) {

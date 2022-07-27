@@ -9,11 +9,14 @@ class ParcelableUtil {
     companion object {
 
         fun toByteArray(parcelable: Parcelable?): ByteArray? {
-            val parcel = Parcel.obtain()
-            parcelable?.writeToParcel(parcel, 0)
-            val bytes = parcel.marshall()
+
+            if (parcelable == null) return null
+
+            val parcel: Parcel = Parcel.obtain()
+            parcelable.writeToParcel(parcel, 0)
+            val byteArray: ByteArray = parcel.marshall()
             parcel.recycle()
-            return bytes
+            return byteArray
         }
 
         private fun toParcel(bytes: ByteArray): Parcel {

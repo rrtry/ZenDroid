@@ -20,9 +20,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import android.Manifest.permission.*
 import android.annotation.SuppressLint
+import android.app.PendingIntent.*
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.result.ActivityResultLauncher
+import com.google.android.gms.tasks.RuntimeExecutionException
+import ru.rrtry.silentdroid.db.repositories.LocationRepository
 import ru.rrtry.silentdroid.entities.LocationRelation
 import ru.rrtry.silentdroid.receivers.GeofenceReceiver.Companion.EXTRA_ENTER_PROFILE
 import ru.rrtry.silentdroid.receivers.GeofenceReceiver.Companion.EXTRA_EXIT_PROFILE
@@ -32,7 +35,8 @@ import ru.rrtry.silentdroid.util.checkPermission
 
 @Singleton
 class GeofenceManager @Inject constructor(
-        @ApplicationContext private val context: Context
+        @ApplicationContext private val context: Context,
+        private val repository: LocationRepository
 ) {
 
     private val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(context)
@@ -43,6 +47,18 @@ class GeofenceManager @Inject constructor(
 
         fun onLocationRequestFailure()
 
+    }
+
+    suspend fun registerGeofences() {
+        repository.getLocations().filter {
+            it.location.enabled
+        }.forEach {
+            addGeofence(
+                it.location,
+                it.onEnterProfile,
+                it.onExitProfile
+            )
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -87,6 +103,7 @@ class GeofenceManager @Inject constructor(
 
     fun removeGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
         val pendingIntent: PendingIntent? = getGeofencePendingIntent(location, enterProfile, exitProfile)
+        Log.i("GeofenceManager", "removeGeofence: $pendingIntent")
         if (pendingIntent != null) {
             geofencingClient.removeGeofences(pendingIntent)
                 .addOnSuccessListener {
@@ -118,7 +135,6 @@ class GeofenceManager @Inject constructor(
         }.build()
     }
 
-    @SuppressLint("UnspecifiedImmutableFlag")
     private fun createGeofencingPendingIntent(
         location: Location,
         enterProfile: Profile,
@@ -131,11 +147,10 @@ class GeofenceManager @Inject constructor(
             putExtra(EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
 
-            return PendingIntent.getBroadcast(context, location.id, this, PendingIntent.FLAG_UPDATE_CURRENT)
+            return getBroadcast(context, location.id, this, FLAG_UPDATE_CURRENT or FLAG_MUTABLE)
         }
     }
 
-    @SuppressLint("UnspecifiedImmutableFlag")
     private fun getGeofencePendingIntent(location: Location, enterProfile: Profile, exitProfile: Profile): PendingIntent? {
         Intent(context, GeofenceReceiver::class.java).apply {
 
@@ -144,7 +159,7 @@ class GeofenceManager @Inject constructor(
             putExtra(EXTRA_ENTER_PROFILE, ParcelableUtil.toByteArray(enterProfile))
             putExtra(EXTRA_EXIT_PROFILE, ParcelableUtil.toByteArray(exitProfile))
 
-            return PendingIntent.getBroadcast(context, location.id, this, PendingIntent.FLAG_NO_CREATE)
+            return getBroadcast(context, location.id, this, FLAG_NO_CREATE or FLAG_MUTABLE)
         }
     }
 
@@ -185,16 +200,12 @@ class GeofenceManager @Inject constructor(
                         REQUEST_ENABLE_LOCATION_SERVICES
                     )
                 } catch (sendEx: IntentSender.SendIntentException) {
-                    Log.e("GeofenceManager", "Error geting location settings resolution: " + sendEx.message)
+                    Log.e("GeofenceManager", "Error getting location settings resolution: " + sendEx.message)
                 }
             }
         }
-        locationSettingsResponseTask.addOnCompleteListener {
-            if (it.isSuccessful) {
-                listener.onLocationRequestSuccess()
-            } else if (it.exception == null) {
-                listener.onLocationRequestFailure()
-            }
+        locationSettingsResponseTask.addOnSuccessListener {
+            listener.onLocationRequestSuccess()
         }
     }
 

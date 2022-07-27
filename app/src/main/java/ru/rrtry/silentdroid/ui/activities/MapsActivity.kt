@@ -169,7 +169,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onFinish(result: Boolean) {
-        if (viewModel.isRegistered) {
+        if (viewModel.isRegistered && result) {
             geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
         } else {
             finish()

@@ -15,7 +15,7 @@ import ru.rrtry.silentdroid.receivers.AlarmReceiver.Companion.EXTRA_START_PROFIL
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
-import ru.rrtry.silentdroid.entities.OngoingAlarm
+import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.util.ParcelableUtil
 import java.time.*
@@ -53,8 +53,8 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         scheduleCalendar.alarm = alarm
 
         scheduleCalendar.getNextOccurrence()?.also { nextOccurrence ->
-            getPendingIntent(alarm, startProfile, endProfile, true)?.also {
-                setAlarm(nextOccurrence.toInstant().toEpochMilli(), it)
+            getPendingIntent(alarm, startProfile, endProfile, true)?.also { pendingIntent ->
+                setAlarm(nextOccurrence.toInstant().toEpochMilli(), pendingIntent)
                 return true
             }
         }
@@ -76,18 +76,19 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         endProfile: Profile? = null,
         create: Boolean
     ): PendingIntent? {
-        val intent: Intent = Intent(context, AlarmReceiver::class.java).apply {
+        Intent(context, AlarmReceiver::class.java).apply {
 
             action = ACTION_ALARM
 
             putExtra(EXTRA_ALARM, ParcelableUtil.toByteArray(alarm))
             putExtra(EXTRA_START_PROFILE, ParcelableUtil.toByteArray(startProfile))
             putExtra(EXTRA_END_PROFILE, ParcelableUtil.toByteArray(endProfile))
+
+            return getBroadcast(
+                context, alarm.id, this,
+                (if (create) FLAG_UPDATE_CURRENT else FLAG_NO_CREATE) or FLAG_IMMUTABLE
+            )
         }
-        return getBroadcast(
-            context, alarm.id, intent,
-            (if (create) FLAG_UPDATE_CURRENT else FLAG_NO_CREATE) or FLAG_IMMUTABLE
-        )
     }
 
     fun cancelAlarm(alarm: Alarm): Boolean {
@@ -99,9 +100,7 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
     }
 
     fun cancelAlarms(alarms: List<AlarmRelation>?) {
-        alarms?.forEach { alarm ->
-            cancelAlarm(alarm.alarm)
-        }
+        alarms?.forEach { alarm -> cancelAlarm(alarm.alarm) }
     }
 
     fun meetsSchedule(): Boolean {
@@ -120,9 +119,9 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         return scheduleCalendar.isValid()
     }
 
-    fun getOngoingAlarm(events: List<AlarmRelation>?): OngoingAlarm? {
+    fun getCurrentAlarmInstance(events: List<AlarmRelation>?): CurrentAlarmInstance? {
         scheduleCalendar.now = ZonedDateTime.now()
-        return scheduleCalendar.getOngoingAlarm(events)
+        return scheduleCalendar.getCurrentAlarmInstance(events)
     }
 
     fun getNextOccurrenceFormatted(relation: AlarmRelation): String {
@@ -175,17 +174,5 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
     companion object {
 
         private const val MILLIS_PER_MINUTE: Long = 60000L
-
-        fun sortInstances(list: List<AlarmRelation>): List<AlarmRelation> {
-            return list.sortedWith { previous, next ->
-                val prevAlarm: Alarm = previous.alarm
-                val nextAlarm: Alarm = next.alarm
-                when {
-                    prevAlarm.startTime < nextAlarm.startTime -> -1
-                    prevAlarm.startTime == nextAlarm.startTime -> 0
-                    else -> 1
-                }
-            }
-        }
     }
 }

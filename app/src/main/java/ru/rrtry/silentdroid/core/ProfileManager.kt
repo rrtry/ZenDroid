@@ -25,7 +25,7 @@ import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
-import ru.rrtry.silentdroid.entities.OngoingAlarm
+import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
 import ru.rrtry.silentdroid.eventBus.EventBus
 import java.util.*
 
@@ -86,19 +86,19 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
 
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
 
-        val ongoingAlarm: OngoingAlarm? = scheduleManager.getOngoingAlarm(alarms)
-        val alarm: Alarm? = ongoingAlarm?.relation?.alarm
+        val currentAlarmInstance: CurrentAlarmInstance? = scheduleManager.getCurrentAlarmInstance(alarms)
+        val alarm: Alarm? = currentAlarmInstance?.relation?.alarm
 
         if (alarm != null) {
             if (scheduleManager.hasPreviouslyFired(alarm)) {
                 if (scheduleManager.isAlarmValid(alarm)) {
-                    setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_ALARM, alarm)
+                    setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_ALARM, alarm)
                 } else {
-                    setProfile(ongoingAlarm.profile!!, TRIGGER_TYPE_MANUAL, null)
+                    setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_MANUAL, null)
                 }
-                notificationHelper.updateNotification(ongoingAlarm.profile, ongoingAlarm)
+                notificationHelper.updateNotification(currentAlarmInstance.profile, currentAlarmInstance)
             } else {
-                notificationHelper.updateNotification(preferencesManager.getProfile(), ongoingAlarm)
+                notificationHelper.updateNotification(preferencesManager.getProfile(), currentAlarmInstance)
             }
         } else {
             preferencesManager.getProfile()?.let { currentProfile ->
@@ -255,7 +255,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         try {
             Settings.System.putInt(context.contentResolver, VIBRATE_WHEN_RINGING, state)
         } catch (e: SecurityException) {
-            // Log.e("ProfileManager", "Failed to change system settings", e)
+            Log.e("ProfileManager", "Failed to change system settings", e)
         }
     }
 

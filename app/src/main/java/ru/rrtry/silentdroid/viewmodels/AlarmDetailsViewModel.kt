@@ -26,7 +26,7 @@ class AlarmDetailsViewModel @Inject constructor(
     private val alarmRepository: AlarmRepository
 ): ViewModel() {
 
-    private var alarmSet: Boolean = false
+    private var isEntitySet: Boolean = false
 
     val title: MutableStateFlow<String> = MutableStateFlow("My event")
     val alarms: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
@@ -124,19 +124,19 @@ class AlarmDetailsViewModel @Inject constructor(
     }
 
     fun setProfiles(profiles: List<Profile>) {
-        if (alarmId == null && !alarmSet) {
+        if (alarmId == null && !isEntitySet) {
             profiles.random().let { profile ->
                 startProfile.value = profile
             }
             profiles.random().let { profile ->
                 endProfile.value = profile
             }
-            alarmSet = true
+            isEntitySet = true
         }
     }
 
-    fun setAlarm(alarmRelation: AlarmRelation) {
-        if (alarmSet) return
+    fun setEntity(alarmRelation: AlarmRelation) {
+        if (isEntitySet) return
         val alarm: Alarm = alarmRelation.alarm
 
         startProfile.value = alarmRelation.startProfile
@@ -150,13 +150,13 @@ class AlarmDetailsViewModel @Inject constructor(
         alarmId = alarm.id
         isScheduled = alarm.isScheduled
 
-        alarmSet = true
+        isEntitySet = true
     }
 
     private fun getAlarm(): Alarm {
         return Alarm(
             id = if (alarmId != null) alarmId!! else 0,
-            title = title.value.ifEmpty { "No title" },
+            title = title.value.trim().ifBlank { "No title" },
             startProfileUUID = startProfile.value!!.id,
             endProfileUUID = endProfile.value!!.id,
             startTime = startTime.value,

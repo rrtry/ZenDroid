@@ -1,5 +1,7 @@
 package ru.rrtry.silentdroid.ui.activities
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
 import android.view.*
@@ -24,10 +26,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.databinding.ActivityMainBinding
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.LocationRequestListener {
 
+    @Inject
+    lateinit var geofenceManager: GeofenceManager
     interface MenuItemSelectedListener {
 
         fun onMenuOptionSelected(itemId: Int)
@@ -104,6 +109,18 @@ class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.
         }
     }
 
+    @Suppress("deprecation")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == GeofenceManager.REQUEST_ENABLE_LOCATION_SERVICES) {
+            if (resultCode == Activity.RESULT_OK) {
+                onLocationRequestSuccess()
+            } else {
+                onLocationRequestFailure()
+            }
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun onStop() {
         super.onStop()
@@ -119,18 +136,14 @@ class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.
         snackbar?.dismiss()
     }
 
-    override fun showSnackBar(text: String, length: Int, action: (() -> Unit)?) {
+    override fun showSnackBar(text: String, actionText: String, length: Int, action: (() -> Unit)?) {
         snackbar = Snackbar.make(
             binding.coordinatorLayout,
             text,
             length
         ).apply {
             animationMode = ANIMATION_MODE_SLIDE
-            if (action != null) {
-                setAction("Grant") {
-                    action()
-                }
-            }
+            action?.let { setAction(actionText) { action() } }
             show()
         }
     }
@@ -147,12 +160,12 @@ class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.
         }
     }
 
-    override fun onLocationRequestSuccess() {
-        showSnackBar("Geofence successfully registered", Snackbar.LENGTH_LONG, null)
-    }
+    override fun onLocationRequestSuccess() = Unit
 
     override fun onLocationRequestFailure() {
-        showSnackBar("Failed to enable location services", Snackbar.LENGTH_LONG, null)
+        showSnackBar("For location triggers to work, turn on device location", "Enable", Snackbar.LENGTH_INDEFINITE) {
+            geofenceManager.checkLocationServicesAvailability(this)
+        }
     }
 
     companion object {

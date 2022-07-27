@@ -24,7 +24,7 @@ import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFE
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.Location
-import ru.rrtry.silentdroid.entities.OngoingAlarm
+import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.util.TextUtil
 import ru.rrtry.silentdroid.util.ViewUtil.Companion.convertDipToPx
@@ -87,7 +87,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         notificationManager.cancel(ID_PROFILE)
     }
 
-    fun updateNotification(profile: Profile?, ongoingAlarm: OngoingAlarm?) {
+    fun updateNotification(profile: Profile?, currentAlarmInstance: CurrentAlarmInstance?) {
         if (profile != null) {
             when (preferencesManager.getTriggerType()) {
                 TRIGGER_TYPE_GEOFENCE_ENTER -> {
@@ -100,19 +100,19 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                     postProfileNotification(
                         profileTitle = profile.title,
                         iconRes = profile.iconRes,
-                        ongoingAlarm = ongoingAlarm)
+                        currentAlarmInstance = currentAlarmInstance)
                 }
                 TRIGGER_TYPE_ALARM -> {
                     postProfileNotification(
                         profileTitle = profile.title,
                         alarmTitle = preferencesManager.getTrigger<Alarm>().title,
                         iconRes = profile.iconRes,
-                        ongoingAlarm = ongoingAlarm
+                        currentAlarmInstance = currentAlarmInstance
                     )
                 }
             }
         } else {
-            ongoingAlarm?.let { ongoingAlarm ->
+            currentAlarmInstance?.let { ongoingAlarm ->
                 ongoingAlarm.relation.startProfile.also { profile ->
                     postNextProfileNotification(profile, ongoingAlarm)
                 }
@@ -214,11 +214,11 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
 
     private fun postNextProfileNotification(
         profile: Profile,
-        ongoingAlarm: OngoingAlarm
+        currentAlarmInstance: CurrentAlarmInstance
     ) {
-        val contentText = "next profile is '${profile.title}' set for ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until!!)}"
+        val contentText = "'${profile.title}' at ${TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until!!)}"
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(profile.title)
+            .setContentTitle("Next profile")
             .setContentText(contentText)
             .setSmallIcon(profile.iconRes)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -236,13 +236,13 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         profileTitle: String,
         alarmTitle: String? = null,
         iconRes: Int,
-        ongoingAlarm: OngoingAlarm?
+        currentAlarmInstance: CurrentAlarmInstance?
     ) {
-        val until: LocalTime? = ongoingAlarm?.until?.toLocalTime()
+        val until: LocalTime? = currentAlarmInstance?.until?.toLocalTime()
         val contentText: String = if (until == null) {
             "'$profileTitle' will stay until you turn it off"
         } else {
-            "'$profileTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, ongoingAlarm.until)}"
+            "'$profileTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until)}"
         }
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(alarmTitle ?: profileTitle)

@@ -254,7 +254,8 @@ class SchedulerFragment:
         callback?.showSnackBar(
             scheduleManager.getNextOccurrenceFormatted(
                 relation
-            ), Snackbar.LENGTH_LONG, null)
+            ), length = Snackbar.LENGTH_LONG, action = null
+        )
     }
 
     private fun onAlarmCancelled(alarmRelation: AlarmRelation, alarms: List<AlarmRelation>) {

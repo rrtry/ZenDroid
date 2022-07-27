@@ -29,6 +29,22 @@ class AlarmRepository @Inject constructor(
         }
     }
 
+    suspend fun cancelAlarm(alarm: Alarm) {
+        withContext(Dispatchers.IO) {
+            alarmDao.updateAlarm(alarm.apply {
+                isScheduled = false
+            })
+        }
+    }
+
+    suspend fun scheduleAlarm(alarm: Alarm) {
+        withContext(Dispatchers.IO) {
+            alarmDao.updateAlarm(alarm.apply {
+                isScheduled = true
+            })
+        }
+    }
+
     suspend fun removeAlarm(alarm: Alarm) {
         withContext(Dispatchers.IO) {
             alarmDao.removeAlarm(alarm)

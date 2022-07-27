@@ -10,6 +10,7 @@ interface MainActivityCallback {
 
     fun showSnackBar(
         text: String,
+        actionText: String = "Grant",
         length: Int,
         action: (() -> Unit)?
     )

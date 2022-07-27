@@ -82,7 +82,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
             profileManager.setProfile(profile, true)
             notificationHelper.updateNotification(
                 profile,
-                scheduleManager.getOngoingAlarm(scheduledAlarms))
+                scheduleManager.getCurrentAlarmInstance(scheduledAlarms))
         }
         geofenceManager.updateGeofenceProfile(registeredGeofences, profile)
         scheduleManager.updateAlarmProfile(scheduledAlarms, profile)

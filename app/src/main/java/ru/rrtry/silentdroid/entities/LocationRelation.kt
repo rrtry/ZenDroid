@@ -12,24 +12,23 @@ import kotlinx.parcelize.Parcelize
 data class LocationRelation(
 
     @Embedded
-        var location: Location,
+    var location: Location,
 
     @Relation(parentColumn = "onEnterProfileId", entityColumn = "id")
-        var onEnterProfile: Profile,
+    var onEnterProfile: Profile,
 
     @Relation(parentColumn = "onExitProfileId", entityColumn = "id")
-        var onExitProfile: Profile,
+    var onExitProfile: Profile,
 
     @Ignore
-        @IgnoredOnParcel
-        override val id: Int,
+    @IgnoredOnParcel
+    override val id: Int,
 
     @Ignore
-        @IgnoredOnParcel
-        override val viewType: Int
+    @IgnoredOnParcel
+    override val viewType: Int
 
 ): Parcelable, ListItem<Int> {
-
         constructor(location: Location, onEnterProfile: Profile, onExitProfile: Profile): this(
                 location, onEnterProfile, onExitProfile, location.id, R.layout.location_item_view
         )

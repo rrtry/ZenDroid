@@ -189,7 +189,6 @@ class ProfilesListFragment:
         profileAdapter.notifyDataSetChanged()
     }
 
-    @Suppress("MissingPermission")
     private suspend fun removeGeofences(geofences: List<LocationRelation>) {
         geofences.forEach { i ->
             fileManager.deleteThumbnail(i.location.previewImageId)
@@ -215,7 +214,7 @@ class ProfilesListFragment:
         }
         notificationHelper.updateNotification(
             preferencesManager.getProfile(),
-            scheduleManager.getOngoingAlarm(alarms)
+            scheduleManager.getCurrentAlarmInstance(alarms)
         )
     }
 
@@ -230,7 +229,7 @@ class ProfilesListFragment:
 
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
             profileAdapter.setSelection(profile, viewModel.lastSelected)
-            notificationHelper.updateNotification(profile, scheduleManager.getOngoingAlarm(alarms))
+            notificationHelper.updateNotification(profile, scheduleManager.getCurrentAlarmInstance(alarms))
 
             showDeniedPermissionHint(profile)
         }

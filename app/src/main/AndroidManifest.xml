@@ -78,10 +78,19 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
                 <action android:name="com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="ru.rrtry.silentdroid.receivers.PackageDataClearedReceiver"
+            android:directBootAware="true"
+            tools:targetApi="n"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_DATA_CLEARED" />
                 <data android:scheme="package" android:sspPrefix="com.google.android.gms"/>
             </intent-filter>
         </receiver>
+
 
         <service android:name="ru.rrtry.silentdroid.services.PlaybackService"
             android:exported="false"/>

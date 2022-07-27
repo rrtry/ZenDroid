@@ -25,4 +25,10 @@ abstract class ApplicationDatabase: RoomDatabase() {
     abstract fun getEventDao(): EventDao
 
     abstract fun getEventRelationDao(): EventRelationDao
+
+    companion object {
+
+        const val DATABASE_NAME: String = "ZenDroid.db"
+        const val DATABASE_ASSET_PATH: String = "database/ZenDroid.db"
+    }
 }
