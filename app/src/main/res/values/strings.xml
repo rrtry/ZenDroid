@@ -1,0 +1,113 @@
+<resources>
+    <string name="app_name">ZenDroid</string>
+    <string name="tab_scheduler">Scheduler</string>
+    <string name="tab_profiles">Profiles</string>
+    <string name="tab_locations">Locations</string>
+    <string name="tab_location_edit">Location</string>
+    <string name="tab_profile_edit">Profile</string>
+    <string name="workingDaysTitle">Select the days on which the profile activates</string>
+    <string name="customRestrictions">Custom restrictions</string>
+    <string name="cancel">Cancel</string>
+    <string name="apply">Apply</string>
+    <string-array name="profile_icons">
+        <item>@drawable/ic_baseline_do_not_disturb_on_24</item>
+        <item>@drawable/baseline_volume_down_deep_purple_300_24dp</item>
+        <item>@drawable/baseline_notifications_active_black_24dp</item>
+        <item>@drawable/baseline_notifications_off_black_24dp</item>
+        <item>@drawable/baseline_circle_notifications_deep_purple_300_24dp</item>
+        <item>@drawable/baseline_music_note_deep_purple_300_24dp</item>
+        <item>@drawable/baseline_music_off_black_24dp</item>
+        <item>@drawable/baseline_headset_black_24dp</item>
+        <item>@drawable/baseline_vibration_black_24dp</item>
+        <item>@drawable/baseline_call_deep_purple_300_24dp</item>
+        <item>@drawable/ic_baseline_do_not_disturb_on_total_silence_24</item>
+        <item>@drawable/baseline_location_city_black_24dp</item>
+        <item>@drawable/ic_baseline_home_24</item>
+        <item>@drawable/ic_baseline_bedtime_24</item>
+        <item>@drawable/ic_baseline_bedtime_off_24</item>
+        <item>@drawable/ic_baseline_work_24</item>
+        <item>@drawable/ic_baseline_school_24</item>
+        <item>@drawable/baseline_calendar_today_black_24dp</item>
+        <item>@drawable/ic_baseline_fitness_center_24</item>
+        <item>@drawable/ic_baseline_movie_24</item>
+        <item>@drawable/ic_baseline_speaker_notes_off_24</item>
+        <item>@drawable/ic_baseline_priority_high_24</item>
+        <item>@drawable/ic_baseline_phonelink_ring_24</item>
+        <item>@drawable/ic_baseline_menu_book_24</item>
+    </string-array>
+    <string-array name="metrics">
+        <item>M</item>
+        <item>KM</item>
+    </string-array>
+    <string-array name="daysOfWeek">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+    <string-array name="priorityCategoriesApi23">
+        <item>Reminders</item>
+        <item>Events</item>
+    </string-array>
+    <string-array name="priorityCategoriesApi28">
+        <item>Allow alarms</item>
+        <item>Allow media playback</item>
+        <item>Allow touch sounds</item>
+        <item>Allow reminders</item>
+        <item>Allow events</item>
+    </string-array>
+    <string-array name="screenIsOn">
+        <item>Hide notification dots on app icons</item>
+        <item>Hide status bar icons</item>
+        <item>Don\'t pop notifications on screen</item>
+        <item>Hide from notifications list</item>
+    </string-array>
+    <string-array name="screenIsOff">
+        <item>Don\'t blink notification light</item>
+        <item>Don\'t turn on screen</item>
+        <item>Don\'t wake for notifications</item>
+    </string-array>
+    <string name="title_activity_maps">Map</string>
+    <string name="latitude_text_input_error">
+        Enter a valid value between -90 and 90
+    </string>
+    <string name="longitude_text_input_error">
+        Enter a valid value between -180 and 180
+    </string>
+    <string name="phone_permission_explanation">
+        Phone state permission explanation
+    </string>
+    <string name="location_permission_explanation">
+        Location permission explanation
+    </string>
+    <string name="background_location_access_explanation">
+        Background location permission explanation
+    </string>
+    <string name="interruption_policy_access_explanation">
+        Do not disturb access permission explanation
+    </string>
+    <string name="system_settings_permission_explanation">
+        System settings permission explanation
+    </string>
+    <string name="permission_denial_warning">
+        Permission denial warning
+    </string>
+    <string name="no_profiles_dialog_title">
+        Feature unavailable
+    </string>
+    <string name="no_profiles_dialog_text">
+        Create at least one profile in order to schedule events
+    </string>
+    <string name="power_save_mode_dialog_title">
+        Battery saver warning
+    </string>
+    <string name="geofencing_power_save_mode_hint">
+        Geofencing won\'t work in the background while power save mode is on
+    </string>
+    <string name="scheduler_power_save_mode_hint">
+        Scheduled triggers will be deferred while power save mode is on
+    </string>
+</resources>

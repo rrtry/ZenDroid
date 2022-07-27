@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+        <import type="ru.rrtry.silentdroid.ui.BindingConverters"/>
+        <import type="ru.rrtry.silentdroid.util.TextUtil"/>
+        <variable
+            name="viewModel"
+            type="ru.rrtry.silentdroid.viewmodels.AlarmDetailsViewModel"/>
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/startTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="32dp"
+            android:onClick="@{() -> viewModel.onStartTimeTextViewClick()}"
+            android:text="@{TextUtil.formatLocalTime(context, viewModel.startTime)}"
+            android:textSize="30sp"
+            android:transitionName="shared_transition_start_time"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/clockViewSeparator"
+            android:layout_width="5dp"
+            android:layout_height="1dp"
+            android:transitionName="shared_transition_separator"
+            android:background="@color/white"
+            app:layout_constraintTop_toTopOf="@+id/startTime"
+            app:layout_constraintBottom_toBottomOf="@+id/startTime"
+            app:layout_constraintStart_toEndOf="@+id/startTime"
+            android:layout_marginStart="8dp"/>
+
+        <TextView
+            android:id="@+id/endTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:transitionName="shared_transition_end_time"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="32dp"
+            android:textSize="30sp"
+            android:onClick="@{() -> viewModel.onEndTimeTextViewClick()}"
+            android:layout_marginStart="8dp"
+            app:layout_constraintStart_toEndOf="@+id/clockViewSeparator"
+            android:text="@{TextUtil.formatLocalTime(context, viewModel.endTime)}"/>
+
+
+        <Switch
+            android:id="@+id/enableAlarmSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:transitionName="shared_transition_switch"
+            android:layout_marginEnd="16dp"
+            android:checked="@={viewModel.scheduled}"
+            app:layout_constraintBottom_toBottomOf="@+id/startTime"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/startTime" />
+
+        <View
+            android:id="@+id/separator1"
+            android:layout_width="0dp"
+            android:layout_height="0.5dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@color/gray"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/startTime" />
+
+        <View
+            android:id="@+id/separator2"
+            android:layout_width="0dp"
+            android:layout_height="0.5dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:background="@color/gray"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/weekdaysButton" />
+
+        <TextView
+            android:id="@+id/profileTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Profile"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="@+id/separator2"
+            app:layout_constraintTop_toBottomOf="@+id/separator2" />
+
+        <Spinner
+            android:id="@+id/startProfileSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            profiles="@{viewModel.profilesStateFlow}"
+            selectedProfile="@={viewModel.startProfile}"
+            app:layout_constraintStart_toStartOf="@+id/profileTitle"
+            app:layout_constraintEnd_toStartOf="@+id/spinnerSeparator"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
+
+        <View
+            android:id="@+id/spinnerSeparator"
+            android:layout_width="0.5dp"
+            android:layout_height="0dp"
+            android:background="@color/gray"
+            android:rotation="180"
+            app:layout_constraintBottom_toBottomOf="@+id/startProfileSpinner"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/startProfileSpinner"/>
+
+        <Spinner
+            android:id="@+id/endProfileSpinner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            profiles="@{viewModel.profilesStateFlow}"
+            selectedProfile="@={viewModel.endProfile}"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/separator3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/spinnerSeparator"
+            app:layout_constraintTop_toBottomOf="@+id/profileTitle" />
+
+        <View
+            android:id="@+id/separator3"
+            android:layout_width="0dp"
+            android:layout_height="0.5dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@color/gray"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/startProfileSpinner" />
+
+        <TextView
+            android:id="@+id/textView9"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Repeat"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="@+id/separator1"
+            app:layout_constraintTop_toBottomOf="@+id/separator1" />
+
+        <Button
+            android:id="@+id/weekdaysButton"
+            android:layout_width="0dp"
+            android:onClick="@{() -> viewModel.onDaysSelectButtonClick()}"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="16dp"
+            android:text="@{TextUtil.formatWeekDays(viewModel.scheduledDays)}"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/textView9"
+            app:layout_constraintTop_toBottomOf="@+id/textView9" />
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="Cancel"
+            android:onClick="@{() -> viewModel.onCancelButtonClick()}"
+            android:background="@android:color/transparent"
+            android:textColor="?attr/colorPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/buttonSeparator"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Button
+            android:id="@+id/applyButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="OK"
+            android:onClick="@{() -> viewModel.onSaveChangesButtonClick()}"
+            android:background="@android:color/transparent"
+            android:textColor="?attr/colorPrimary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/buttonSeparator" />
+
+        <View
+            android:id="@+id/buttonSeparator"
+            android:layout_width="0.5dp"
+            android:layout_height="0dp"
+            android:background="@color/gray"
+            android:rotation="180"
+            app:layout_constraintBottom_toBottomOf="@+id/cancelButton"
+            app:layout_constraintTop_toTopOf="@+id/cancelButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/eventTitleTextInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            android:hint="Event Title"
+            android:transitionGroup="true"
+            app:hintEnabled="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/separator3"
+            app:layout_constraintTop_toBottomOf="@+id/separator3">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/eventTitleEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@={viewModel.title}"
+                android:background="@null"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

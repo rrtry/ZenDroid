@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/exceptions">
+        <item
+            android:id="@+id/all_conversations"
+            android:title="All conversations"/>
+        <item
+            android:id="@+id/priority_conversations"
+            android:title="Important conversations"/>
+        <item
+            android:id="@+id/none"
+            android:title="None">
+        </item>
+    </group>
+</menu>

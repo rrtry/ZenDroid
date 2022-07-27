@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.cardview.widget.CardView xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardView"
+    android:animateLayoutChanges="true"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="7dp"
+    android:layout_marginStart="7dp"
+    android:layout_marginEnd="7dp"
+    android:layout_marginTop="7dp"
+    app:cardCornerRadius="5dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/locationImageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/baseline_location_on_black_24dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/geofenceTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_toRightOf="@+id/locationImageView"
+            android:text="Home"
+            android:textColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/locationImageView"
+            app:layout_constraintStart_toEndOf="@+id/locationImageView"
+            app:layout_constraintTop_toTopOf="@+id/locationImageView" />
+
+        <ImageView
+            android:id="@+id/profileImageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/locationImageView"
+            android:layout_marginStart="16dp"
+            android:src="@drawable/baseline_notifications_active_black_24dp"
+            app:layout_constraintBottom_toBottomOf="@+id/geofenceProfiles"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/geofenceProfiles" />
+
+        <TextView
+            android:id="@+id/geofenceProfiles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/geofenceTitle"
+            android:layout_marginStart="8dp"
+            android:layout_toRightOf="@+id/profileImageView"
+            android:textColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/editGeofenceButton"
+            app:layout_constraintStart_toEndOf="@+id/profileImageView"
+            app:layout_constraintTop_toTopOf="@+id/editGeofenceButton" />
+
+        <Switch
+            android:id="@+id/enableGeofenceSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:clickable="false"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/geofenceTitle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/geofenceTitle" />
+
+        <ImageButton
+            android:id="@+id/editGeofenceButton"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginEnd="8dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/baseline_drive_file_rename_outline_black_24dp"
+            app:layout_constraintBottom_toBottomOf="@+id/removeGeofenceButton"
+            app:layout_constraintEnd_toStartOf="@+id/removeGeofenceButton"
+            app:layout_constraintTop_toTopOf="@+id/removeGeofenceButton"
+            tools:ignore="NotSibling" />
+
+        <ImageButton
+            android:id="@+id/removeGeofenceButton"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginTop="8dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/baseline_delete_forever_deep_purple_400_24dp"
+            app:layout_constraintEnd_toEndOf="@+id/enableGeofenceSwitch"
+            app:layout_constraintTop_toBottomOf="@+id/enableGeofenceSwitch"
+            tools:ignore="NotSibling" />
+
+
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            app:liteMode="true"
+            app:mapType="none"
+            android:elevation="50dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/editGeofenceButton" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>
