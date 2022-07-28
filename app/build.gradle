@@ -42,6 +42,11 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         signingConfig signingConfigs.release
+
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file("local.properties").newDataInputStream())
+
+        manifestPlaceholders = [API_KEY: "${properties.getProperty('API_KEY')}"]
     }
 
     buildTypes {
