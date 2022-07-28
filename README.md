@@ -1,4 +1,4 @@
-# ZenDroid
+# <img src="ic_launcher.png" width="80" height="80"> ZenDroid
 Limit interruptions on your device at the right time or location
 # Features
 - Create profiles to controll audio and notification preferences on your device
