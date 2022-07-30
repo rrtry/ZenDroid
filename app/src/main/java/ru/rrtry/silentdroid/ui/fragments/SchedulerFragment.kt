@@ -1,11 +1,15 @@
 package ru.rrtry.silentdroid.ui.fragments
 
+import android.app.AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
 import android.content.*
 import android.content.Intent.ACTION_LOCALE_CHANGED
 import android.os.*
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
+import android.util.Log
 import android.view.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.core.content.res.ResourcesCompat
 import ru.rrtry.silentdroid.viewmodels.MainActivityViewModel.ViewEvent.*
 import androidx.core.view.isVisible
@@ -57,7 +61,9 @@ class SchedulerFragment:
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var eventBus: EventBus
+
     private lateinit var alarmAdapter: AlarmAdapter
+    private lateinit var exactAlarmPermissionLauncher: ActivityResultLauncher<Intent>
 
     private val viewModel: SchedulerViewModel by viewModels()
     private val sharedViewModel: MainActivityViewModel by activityViewModels()
@@ -70,6 +76,15 @@ class SchedulerFragment:
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_LOCALE_CHANGED) {
                 alarmAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    private val exactAlarmPermissionStateReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
+                viewModel.canScheduleExactAlarms = scheduleManager.canScheduleExactAlarms()
             }
         }
     }
@@ -96,16 +111,25 @@ class SchedulerFragment:
         return alarmAdapter
     }
 
+    override fun onStart() {
+        super.onStart()
+        viewModel.canScheduleExactAlarms = scheduleManager.canScheduleExactAlarms()
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         registerTimeFormatObserver()
         registerLocaleChangeReceiver()
+        registerAlarmPermissionLauncher()
+        registerExactAlarmPermissionStateReceiver()
     }
 
     override fun onDetach() {
         super.onDetach()
         unregisterTimeFormatObserver()
         unregisterLocaleChangeReceiver()
+        unregisterExactAlarmPermissionLauncher()
+        unregisterExactAlarmPermissionStateReceiver()
     }
 
     private fun registerLocaleChangeReceiver() {
@@ -114,6 +138,27 @@ class SchedulerFragment:
             IntentFilter().apply {
                 addAction(ACTION_LOCALE_CHANGED)
             }
+        )
+    }
+
+    private fun registerAlarmPermissionLauncher() {
+        exactAlarmPermissionLauncher = registerForActivityResult(StartActivityForResult()) {
+            if (!scheduleManager.canScheduleExactAlarms()) {
+                callback?.showSnackBar(
+                    "Alarm permission is required for scheduler to work properly",
+                    "Open Settings",
+                    Snackbar.LENGTH_INDEFINITE
+                ) {
+                    scheduleManager.requestExactAlarmPermission(exactAlarmPermissionLauncher)
+                }
+            }
+        }
+    }
+
+    private fun registerExactAlarmPermissionStateReceiver() {
+        requireActivity().registerReceiver(
+            exactAlarmPermissionStateReceiver,
+            IntentFilter(ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)
         )
     }
 
@@ -137,6 +182,14 @@ class SchedulerFragment:
 
     private fun unregisterLocaleChangeReceiver() {
         requireActivity().unregisterReceiver(localeReceiver)
+    }
+
+    private fun unregisterExactAlarmPermissionLauncher() {
+        exactAlarmPermissionLauncher.unregister()
+    }
+
+    private fun unregisterExactAlarmPermissionStateReceiver() {
+        requireActivity().unregisterReceiver(exactAlarmPermissionStateReceiver)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -166,21 +219,34 @@ class SchedulerFragment:
                             is AnimateFloatingActionButton -> updateFloatingActionButton(it.fragment)
                             is OnSwiped -> onFragmentSwiped(it.fragment)
                             is OnFloatingActionButtonClick -> onFloatingActionButtonClick(it.fragment)
+                            else -> Log.i("SchedulerFragment", "Unknown viewEvent")
                         }
                     }
                 }
                 launch {
-                    viewModel.viewEvents.collect {
-                        when (it) {
-                            is OnAlarmSet -> onAlarmSet(it.relation, it.scheduledAlarms)
-                            is OnAlarmRemoved -> onAlarmRemoved(it.relation, it.scheduledAlarms)
-                            is OnAlarmCancelled -> onAlarmCancelled(it.relation, it.scheduledAlarms)
+                    viewModel.viewEvents.collect { event ->
+                        when (event) {
+                            is OnAlarmSet -> onAlarmSet(event.relation, event.scheduledAlarms)
+                            is OnAlarmRemoved -> onAlarmRemoved(event.relation, event.scheduledAlarms)
+                            is OnAlarmCancelled -> onAlarmCancelled(event.relation, event.scheduledAlarms)
+                            is OnRequestExactAlarmPermission -> scheduleManager.requestExactAlarmPermission(exactAlarmPermissionLauncher)
                         }
                     }
                 }
                 launch {
-                    viewModel.alarmsFlow.collect {
-                        updateAlarmAdapter(it)
+                    viewModel.alarmsFlow.collect { alarms ->
+                        updateAlarmAdapter(alarms)
+                        if (alarms.any { it.alarm.isScheduled } &&
+                            !scheduleManager.canScheduleExactAlarms())
+                        {
+                            callback?.showSnackBar(
+                                resources.getString(R.string.snackbar_alarm_permission_explanation),
+                                resources.getString(R.string.open_settings),
+                                Snackbar.LENGTH_INDEFINITE
+                            ) {
+                                scheduleManager.requestExactAlarmPermission(exactAlarmPermissionLauncher)
+                            }
+                        }
                     }
                 }
                 launch {
@@ -189,9 +255,9 @@ class SchedulerFragment:
                     }
                 }
                 launch {
-                    eventBus.sharedFlow.collectLatest {
-                        if (it is EventBus.Event.UpdateAlarmState) {
-                            alarmAdapter.updateAlarmState(it.alarm)
+                    eventBus.sharedFlow.collectLatest { event ->
+                        if (event is EventBus.Event.UpdateAlarmState) {
+                            alarmAdapter.updateAlarmState(event.alarm)
                         }
                     }
                 }
@@ -288,16 +354,14 @@ class SchedulerFragment:
 
     override fun onFabClick(fab: FloatingActionButton) {
         if (sharedViewModel.showDialog.value) {
-            requireContext().resources.let { res ->
-                PopupDialog.create(
-                    res.getString(R.string.no_profiles_dialog_title),
-                    res.getString(R.string.no_profiles_dialog_text),
-                    R.drawable.ic_baseline_alarm_off_24
-                ).show(
-                    requireActivity().supportFragmentManager,
-                    null
-                )
-            }
+            PopupDialog.create(
+                resources.getString(R.string.cannot_create_time_trigger),
+                resources.getString(R.string.cannot_create_time_trigger_description),
+                R.drawable.ic_baseline_alarm_off_24
+            ).show(
+                requireActivity().supportFragmentManager,
+                null
+            )
             return
         }
         startActivity(Intent(context, AlarmDetailsActivity::class.java))

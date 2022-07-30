@@ -36,11 +36,13 @@ class GeofenceSharedViewModel @Inject constructor(
         object ToggleFloatingActionMenu: ViewEvent()
         object ObtainCurrentLocation: ViewEvent()
         object ShowMapStylesDialog: ViewEvent()
+        object OnRequestBackgroundLocationPermission: ViewEvent()
     }
 
     private var isEntitySet: Boolean = false
-    private var locationId: Int? = null
+    var locationId: Int? = null
     var isRegistered: Boolean = false
+    var backgroundLocationAccessGranted: Boolean = false
 
     val title: MutableStateFlow<String> = MutableStateFlow("My geofence")
     val latLng: MutableStateFlow<Pair<LatLng, Boolean>> = MutableStateFlow(Pair(LatLng(-33.865143, 151.209900), false))
@@ -97,10 +99,14 @@ class GeofenceSharedViewModel @Inject constructor(
 
     fun onApplyChangesButtonClick() {
         viewModelScope.launch {
-            if (locationId != null) {
-                eventChannel.send(ViewEvent.OnUpdateGeofenceEvent(getLocation()))
+            if (!backgroundLocationAccessGranted && isRegistered) {
+                eventChannel.send(ViewEvent.OnRequestBackgroundLocationPermission)
             } else {
-                eventChannel.send(ViewEvent.OnInsertGeofenceEvent(getLocation()))
+                eventChannel.send(if (locationId != null) {
+                    ViewEvent.OnUpdateGeofenceEvent(getLocation())
+                } else {
+                    ViewEvent.OnInsertGeofenceEvent(getLocation())
+                })
             }
         }
     }

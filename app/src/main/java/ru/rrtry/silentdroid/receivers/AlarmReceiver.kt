@@ -1,10 +1,12 @@
 package ru.rrtry.silentdroid.receivers
 
+import android.app.AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.os.Build
+import android.util.Log
 import ru.rrtry.silentdroid.Application.Companion.ACTION_ALARM
 import ru.rrtry.silentdroid.core.NotificationHelper
 import ru.rrtry.silentdroid.core.PreferencesManager
@@ -44,8 +46,9 @@ class AlarmReceiver: BroadcastReceiver() {
                     )
                 }
             }
-            ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED, ACTION_TIME_CHANGED -> {
+            ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED, ACTION_TIME_CHANGED, ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
                 goAsync(context!!, GlobalScope, Dispatchers.IO) {
+                    Log.i("AlarmReceiver", intent.action.toString())
                     scheduleAlarmInstances()
                 }
             }

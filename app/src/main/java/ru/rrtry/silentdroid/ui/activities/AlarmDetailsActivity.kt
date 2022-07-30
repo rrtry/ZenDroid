@@ -1,6 +1,12 @@
 package ru.rrtry.silentdroid.ui.activities
 
+import android.Manifest.permission.SCHEDULE_EXACT_ALARM
+import android.app.AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
 import android.app.Instrumentation
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -33,10 +39,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import ru.rrtry.silentdroid.viewmodels.AlarmDetailsViewModel.ViewEvent.*
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
+import com.google.android.material.snackbar.Snackbar
 import java.time.LocalDateTime
 import java.time.LocalTime
 import ru.rrtry.silentdroid.viewmodels.AlarmDetailsViewModel.DialogType.*
 import kotlinx.coroutines.flow.map
+import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.databinding.CreateAlarmActivityBinding
 import ru.rrtry.silentdroid.ui.fragments.TimePickerFragment
 import ru.rrtry.silentdroid.ui.fragments.WeekDaysPickerDialog
@@ -50,7 +58,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     private var elapsedTime: Long = 0L
 
     private lateinit var binding: CreateAlarmActivityBinding
-    private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var exactAlarmPermissionLauncher: ActivityResultLauncher<Intent>
 
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var contentUtil: ContentUtil
@@ -62,6 +70,14 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     private var end: LocalDateTime? = null
     private var scheduledAlarms: List<AlarmRelation>? = null
     private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
+
+    private val exactAlarmPermissionStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            if (intent.action == ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
+                viewModel.canScheduleExactAlarms = scheduleManager.canScheduleExactAlarms()
+            }
+        }
+    }
 
     private fun onApply(alarm: Alarm, update: Boolean) {
         lifecycleScope.launch {
@@ -115,43 +131,47 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             sharedElementEnterTransition = ChangeBounds()
             sharedElementExitTransition = ChangeBounds()
 
-            TransitionSet().also {
+            TransitionSet().also { transitionSet ->
 
-                it.ordering = TransitionSet.ORDERING_TOGETHER
-                it.duration = 350
-                it.addTransition(Fade())
-                it.addTransition(Slide(Gravity.BOTTOM))
+                transitionSet.ordering = TransitionSet.ORDERING_TOGETHER
+                transitionSet.duration = 350
+                transitionSet.addTransition(Fade())
+                transitionSet.addTransition(Slide(Gravity.BOTTOM))
 
-                it.excludeTarget(android.R.id.statusBarBackground, true)
-                it.excludeTarget(android.R.id.navigationBarBackground, true)
+                transitionSet.excludeTarget(android.R.id.statusBarBackground, true)
+                transitionSet.excludeTarget(android.R.id.navigationBarBackground, true)
 
-                enterTransition = it
-                exitTransition = it
+                enterTransition = transitionSet
+                exitTransition = transitionSet
             }
             allowEnterTransitionOverlap = true
         }
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
+
         setContentView(binding.root)
         setEntity()
         registerTimeFormatChangeObserver()
+        registerExactAlarmPermissionReceiver()
+        registerExactAlarmPermissionLauncher()
 
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.startAndEndDate.collect {
-                        start = it?.first
-                        end = it?.second
+                    viewModel.startAndEndDate.collect { dates ->
+                        start = dates?.first
+                        end = dates?.second
                     }
                 }
                 launch {
-                    viewModel.eventsFlow.collect {
-                        when (it) {
-                            is ShowDialogEvent -> showDialog(it.dialogType)
-                            is OnCreateAlarmEvent -> onInsert(it.alarm)
-                            is OnUpdateAlarmEvent -> onUpdate(it.alarm)
+                    viewModel.eventsFlow.collect { event ->
+                        when (event) {
+                            is ShowDialogEvent -> showDialog(event.dialogType)
+                            is OnCreateAlarmEvent -> onInsert(event.alarm)
+                            is OnUpdateAlarmEvent -> onUpdate(event.alarm)
                             is OnCancelChangesEvent -> onFinish(false)
+                            is OnRequestAlarmPermissionEvent -> scheduleManager.requestExactAlarmPermission(exactAlarmPermissionLauncher)
                         }
                     }
                 }
@@ -166,14 +186,18 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
                 }
                 launch {
                     viewModel.profilesStateFlow.collect { profiles ->
-                        if (profiles.isNotEmpty()) viewModel.setProfiles(profiles)
+                        if (profiles.isNotEmpty()) {
+                            viewModel.setProfiles(profiles)
+                        }
                     }
                 }
             }
         }
-        phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+    }
 
-        }
+    override fun onStart() {
+        super.onStart()
+        viewModel.canScheduleExactAlarms = scheduleManager.canScheduleExactAlarms()
     }
 
     override fun onStop() {
@@ -185,8 +209,31 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     override fun onDestroy() {
         super.onDestroy()
-        phonePermissionLauncher.unregister()
         unregisterTimeFormatChangeObserver()
+        unregisterReceiver(exactAlarmPermissionStateReceiver)
+        unregisterExactAlarmPermissionLauncher()
+    }
+
+    private fun registerExactAlarmPermissionLauncher() {
+        exactAlarmPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (!scheduleManager.canScheduleExactAlarms()) {
+                showSnackbar(
+                    binding.root,
+                    resources.getString(R.string.snackbar_alarm_permission_explanation),
+                    Snackbar.LENGTH_INDEFINITE,
+                    resources.getString(R.string.open_settings)
+                ) {
+                    scheduleManager.requestExactAlarmPermission(exactAlarmPermissionLauncher)
+                }
+            }
+        }
+    }
+
+    private fun registerExactAlarmPermissionReceiver() {
+        registerReceiver(
+            exactAlarmPermissionStateReceiver,
+            IntentFilter(SCHEDULE_EXACT_ALARM)
+        )
     }
 
     private fun registerTimeFormatChangeObserver() {
@@ -196,6 +243,10 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             binding.invalidateAll()
         }
         contentResolver.registerContentObserver(getUriFor(TIME_12_24), true, timeFormatChangeObserver!!)
+    }
+
+    private fun unregisterExactAlarmPermissionLauncher() {
+        exactAlarmPermissionLauncher.unregister()
     }
 
     private fun unregisterTimeFormatChangeObserver() {
@@ -227,7 +278,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
         if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
             onFinish(false)
         } else {
-            showSnackbar(binding.root, "Press back button again to dismiss changes", LENGTH_LONG)
+            showSnackbar(binding.root, resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
         }
         elapsedTime = System.currentTimeMillis()
     }

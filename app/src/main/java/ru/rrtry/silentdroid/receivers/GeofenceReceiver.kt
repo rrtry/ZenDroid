@@ -43,7 +43,7 @@ class GeofenceReceiver: BroadcastReceiver() {
 
             ACTION_GEOFENCE_TRANSITION -> {
 
-                val geofencingEvent: GeofencingEvent = GeofencingEvent.fromIntent(intent)
+                val geofencingEvent: GeofencingEvent = GeofencingEvent.fromIntent(intent) ?: return
                 val geofence: Location = getExtra(intent, EXTRA_GEOFENCE)
 
                 if (geofencingEvent.hasError()) {

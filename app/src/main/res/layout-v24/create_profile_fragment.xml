@@ -69,7 +69,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="Media volume"
+                android:text="@string/media_volume"
                 android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/imageView9"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -120,7 +120,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="32dp"
-            android:text="Call volume"
+            android:text="@string/call_volume"
             android:textColor="?android:attr/textColorPrimary"
             app:layout_constraintStart_toEndOf="@+id/imageView10"
             app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout" />
@@ -177,7 +177,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
-                android:text="Notification volume"
+                android:text="@string/notification_volume"
                 android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/notificationIcon"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -251,7 +251,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="32dp"
-                android:text="Ring volume"
+                android:text="@string/ring_volume"
                 android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/ringerIcon"
                 app:layout_constraintTop_toBottomOf="@+id/notificationSliderLayout" />
@@ -275,8 +275,7 @@
         <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
             android:id="@+id/unlinkStreamsLayout"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="8dp"
+            android:layout_height="60dp"
             android:background="?attr/selectableItemBackground"
             android:onClick="@{() -> viewModel.onUnlinkStreamsLayoutClick()}"
             android:orientation="horizontal"
@@ -290,14 +289,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
-                android:layout_marginTop="4dp"
                 android:layout_marginBottom="4dp"
-                android:text="Unlink ringer and notifications"
+                android:text="@string/unlink_ringer_and_notifications"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="14sp"
-                app:layout_constraintBottom_toBottomOf="@+id/playSoundSwitch"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/unlinkStreamsSwitch" />
+                app:layout_constraintTop_toTopOf="parent" />
 
             <Switch
                 android:id="@+id/unlinkStreamsSwitch"
@@ -345,7 +343,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="32dp"
-                android:text="Alarm volume"
+                android:text="@string/alarm_volume"
                 android:textColor="?android:attr/textColorPrimary"
                 app:layout_constraintStart_toEndOf="@+id/alarmIcon"
                 app:layout_constraintTop_toBottomOf="@+id/ringerSliderLayout" />
@@ -398,7 +396,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="35dp"
             android:layout_marginTop="16dp"
-            android:text="Ringtones and notifications"
+            android:layout_marginEnd="16dp"
+            android:text="@string/ringtones_and_notifications"
             android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -411,7 +410,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackground"
-            android:paddingTop="8dp"
             android:onClick="@{() -> viewModel.onInterruptionFilterLayoutClick()}"
             app:layout_constraintEnd_toStartOf="parent"
             app:layout_constraintStart_toEndOf="parent"
@@ -419,27 +417,33 @@
 
             <TextView
                 android:id="@+id/doNotDisturbTitle"
-                android:layout_width="wrap_content"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Do Not disturb"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/dnd"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/interruptionFilterPolicy"
-                app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle"
-                app:layout_constraintStart_toStartOf="parent"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/doNotDisturbTitle"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
-                android:textSize="14sp" />
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                android:text="@{BindingConverters.interruptionFilterToString(context, viewModel.interruptionFilter, viewModel.notificationPolicyAccessGranted)}"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle" />
         </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
         <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
@@ -448,7 +452,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="16dp"
             android:background="?attr/selectableItemBackground"
             android:onClick="@{() -> viewModel.onRingtoneLayoutClick()}"
             app:layout_constraintEnd_toStartOf="parent"
@@ -457,25 +460,31 @@
 
             <TextView
                 android:id="@+id/phoneRingtoneTitle"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Phone ringtone"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/default_phone_ringtone"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/phoneRingtone"
-                android:layout_width="wrap_content"
-                app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
                 android:text="@{viewModel.phoneRingtoneTitle}"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/phoneRingtoneTitle"
+                app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle" />
 
         </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
@@ -485,7 +494,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="8dp"
             android:background="?attr/selectableItemBackground"
             android:onClick="@{() -> viewModel.onNotificationSoundLayoutClick()}"
             app:layout_constraintEnd_toStartOf="parent"
@@ -494,27 +502,33 @@
 
             <TextView
                 android:id="@+id/notificationSoundTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                android:paddingStart="35dp"
-                android:text="Default notification sound"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/default_notification_sound"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/notificationSound"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
                 android:clickable="false"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle"
                 android:text="@{viewModel.notificationRingtoneTitle}"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle" />
         </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
         <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
@@ -524,7 +538,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="?attr/selectableItemBackground"
-            android:paddingTop="16dp"
             android:onClick="@{() -> viewModel.onAlarmSoundLayoutClick()}"
             app:layout_constraintEnd_toStartOf="parent"
             app:layout_constraintStart_toEndOf="parent"
@@ -532,26 +545,32 @@
 
             <TextView
                 android:id="@+id/alarmSoundTitle"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Default alarm sound"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/default_alarm_sound"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/alarmSound"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle"
-                app:layout_constraintStart_toStartOf="parent"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
                 android:text="@{viewModel.alarmRingtoneTitle}"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle" />
         </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
 
         <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
@@ -560,7 +579,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
-            android:paddingTop="16dp"
             preferencesInterruptionFilter="@{viewModel.interruptionFilter}"
             android:onClick="@{() -> viewModel.onPreferencesLayoutClick()}"
             app:layout_constraintEnd_toStartOf="parent"
@@ -569,24 +587,31 @@
 
             <TextView
                 android:id="@+id/doNotDisturbPreferencesTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Priority only allows"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/dnd_exceptions"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/doNotDisturbRules"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/doNotDisturbPreferencesTitle"
-                android:paddingStart="35dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="8dp"
-                android:text="@{BindingConverters.interruptionRulesToString(viewModel.notificationPolicyAccessGranted)}"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                android:text="@{BindingConverters.interruptionRulesToString(context, viewModel.notificationPolicyAccessGranted)}"
                 android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
         </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
@@ -597,10 +622,8 @@
             android:layout_height="0dp"
             android:background="?attr/selectableItemBackground"
             android:orientation="horizontal"
-            android:paddingTop="16dp"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:onClick="@{() -> viewModel.onVibrateForCallsLayoutClick()}"
-            android:paddingBottom="16dp"
             app:layout_constraintStart_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/interruptionFilterPreferencesLayout">
@@ -609,10 +632,16 @@
                 android:id="@+id/vibrateForCallsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="35dp"
-                android:text="Also vibrate for calls"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp"
+                android:text="@string/vibrate_for_calls"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <Switch
                 android:id="@+id/vibrateForCallsSwitch"
@@ -659,7 +688,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="35dp"
             android:layout_marginTop="16dp"
-            android:text="When Do Not Disturb is on"
+            android:layout_marginEnd="16dp"
+            android:text="@string/restrict_notifications"
             android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -670,20 +700,23 @@
             android:background="?attr/selectableItemBackground"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             app:layout_constraintTop_toBottomOf="@+id/Title2"
-            android:onClick="@{(view) -> viewModel.onSuppressedEffectsOnLayoutClick()}"
+            android:onClick="@{(view) -> viewModel.onSuppressedEffectsLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_ON)}"
             android:layout_width="match_parent"
+            android:layout_marginTop="8dp"
             android:layout_height="wrap_content">
 
             <TextView
                 android:id="@+id/blockWhenScreenIsOnTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="35dp"
-                android:layout_marginTop="16dp"
-                android:text="Block when screen is on"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/notification_restrictions_when_screen_is_on_title"
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                android:textSize="16sp" />
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/blockWhenScreenIsOnDescription"
@@ -691,8 +724,8 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@id/blockWhenScreenIsOnTitle"
                 android:layout_marginTop="8dp"
-                android:layout_marginBottom="16dp"
-                android:text="Prevent notifications \nfrom peeking or popping on screen"
+                android:layout_marginBottom="12dp"
+                android:text="@string/notification_restrictions_when_screen_is_on_description"
                 android:textSize="14sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/blockWhenScreenIsOnSwitch"
@@ -720,18 +753,20 @@
             android:layout_marginBottom="32dp"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             android:background="?attr/selectableItemBackground"
-            android:onClick="@{(view) -> viewModel.onSuppressedEffectsOffLayoutClick()}"
+            android:onClick="@{(view) -> viewModel.onSuppressedEffectsLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_OFF)}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/blockWhenScreenIsOnLayout">
 
             <TextView
                 android:id="@+id/blockWhenScreenIsOffTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="32dp"
-                android:layout_marginTop="16dp"
-                android:text="Block when screen is off"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
+                android:text="@string/notification_restrictions_when_screen_is_off_title"
                 android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
@@ -741,8 +776,8 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@id/blockWhenScreenIsOffTitle"
                 android:layout_marginTop="8dp"
-                android:layout_marginBottom="16dp"
-                android:text="Prevent notifications \nfrom turning on the screen"
+                android:layout_marginBottom="12dp"
+                android:text="@string/notification_restrictions_when_screen_is_off_description"
                 android:textSize="14sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/blockWhenScreenIsOffSwitch"

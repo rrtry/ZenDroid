@@ -52,8 +52,9 @@ class AlarmDetailsViewModel @Inject constructor(
         } else null
     }
 
-    private var alarmId: Int? = null
-    private var isScheduled: Boolean = false
+    var alarmId: Int? = null
+    var isScheduled: Boolean = false
+    var canScheduleExactAlarms: Boolean = false
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val eventsFlow: Flow<ViewEvent> = channel.receiveAsFlow()
@@ -65,6 +66,7 @@ class AlarmDetailsViewModel @Inject constructor(
         data class OnUpdateAlarmEvent(val alarm: Alarm): ViewEvent()
 
         object OnCancelChangesEvent: ViewEvent()
+        object OnRequestAlarmPermissionEvent: ViewEvent()
     }
 
     enum class DialogType {
@@ -91,11 +93,15 @@ class AlarmDetailsViewModel @Inject constructor(
 
     fun onSaveChangesButtonClick() {
         viewModelScope.launch {
-            channel.send(if (alarmId != null) {
-                ViewEvent.OnUpdateAlarmEvent(getAlarm())
+            if (!canScheduleExactAlarms && scheduled.value) {
+                channel.send(ViewEvent.OnRequestAlarmPermissionEvent)
             } else {
-                ViewEvent.OnCreateAlarmEvent(getAlarm())
-            })
+                channel.send(if (alarmId != null) {
+                    ViewEvent.OnUpdateAlarmEvent(getAlarm())
+                } else {
+                    ViewEvent.OnCreateAlarmEvent(getAlarm())
+                })
+            }
         }
     }
 

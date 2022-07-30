@@ -2,91 +2,94 @@ package ru.rrtry.silentdroid.ui
 
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
-import androidx.databinding.BindingConversion
+import android.content.Context
+import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.core.containsCategory
 import ru.rrtry.silentdroid.core.getPriorityCategoriesList
 
 object BindingConverters {
 
-    private fun priorityCategoryToString(category: Int): String {
+    private fun priorityCategoryToString(context: Context, category: Int): String {
         return when (category) {
-            PRIORITY_CATEGORY_CALLS -> "calls"
-            PRIORITY_CATEGORY_MESSAGES -> "messages"
-            PRIORITY_CATEGORY_CONVERSATIONS -> "conversations"
+            PRIORITY_CATEGORY_CALLS -> context.resources.getString(R.string.priority_category_calls)
+            PRIORITY_CATEGORY_MESSAGES -> context.resources.getString(R.string.priority_category_messages)
+            PRIORITY_CATEGORY_CONVERSATIONS -> context.resources.getString(R.string.priority_category_conversations)
             else -> throw IllegalArgumentException("Invalid priority category")
         }
     }
 
     @JvmStatic
-    fun interruptionFilterToString(interruptionFilter: Int): String {
+    fun interruptionFilterToString(context: Context, interruptionFilter: Int): String {
         return when (interruptionFilter) {
-            INTERRUPTION_FILTER_ALL -> "Allow all: no notifications are suppressed"
-            INTERRUPTION_FILTER_PRIORITY -> "Priority only: allow only prioritized notifications"
-            INTERRUPTION_FILTER_ALARMS -> "Alarms only: allow only media and alarms"
-            INTERRUPTION_FILTER_NONE -> "Total silence: all notifications are suppressed"
-            else -> "Unknown: interruption filter is unavailable"
+            INTERRUPTION_FILTER_ALL -> context.resources.getString(R.string.dnd_allow_all_description)
+            INTERRUPTION_FILTER_PRIORITY -> context.resources.getString(R.string.dnd_priority_only_description)
+            INTERRUPTION_FILTER_ALARMS -> context.resources.getString(R.string.dnd_alarms_only_description)
+            INTERRUPTION_FILTER_NONE -> context.resources.getString(R.string.dnd_total_silence_description)
+            else -> throw IllegalArgumentException("Unknown interruption filter")
         }
     }
 
     @JvmStatic
-    fun conversationSendersToString(senders: Int): String {
+    fun conversationSendersToString(context: Context, senders: Int): String {
         return when (senders) {
-            CONVERSATION_SENDERS_ANYONE -> "All conversations"
-            CONVERSATION_SENDERS_IMPORTANT -> "Priority conversations"
-            CONVERSATION_SENDERS_NONE -> "None"
-            else -> throw IllegalArgumentException("Invalid interruption rule")
-        }
-    }
-
-    @JvmStatic
-    fun prioritySendersToString(prioritySenders: Int, priorityCategories: Int, categoryType: Int): String {
-        return when (prioritySenders) {
-            PRIORITY_SENDERS_ANY -> if (containsCategory(priorityCategories, categoryType)) "From anyone" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            PRIORITY_SENDERS_STARRED -> if (containsCategory(priorityCategories, categoryType)) "From starred contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
-            PRIORITY_SENDERS_CONTACTS -> if (containsCategory(priorityCategories, categoryType)) "From contacts only" else "Don't allow any ${priorityCategoryToString(categoryType)}"
+            CONVERSATION_SENDERS_ANYONE -> context.resources.getString(R.string.conversation_senders_anyone)
+            CONVERSATION_SENDERS_IMPORTANT -> context.resources.getString(R.string.conversation_senders_important)
+            CONVERSATION_SENDERS_NONE -> context.resources.getString(R.string.conversation_senders_none)
             else -> throw IllegalArgumentException("Invalid sender type")
         }
     }
 
-    @BindingConversion
     @JvmStatic
-    fun priorityCategoriesToString(categories: Int): String {
-        val categoriesList: List<Int> = getPriorityCategoriesList(categories).sorted()
-        if (categoriesList.isEmpty()) {
-            return "No exceptions"
+    fun prioritySendersToString(context: Context, prioritySenders: Int, priorityCategories: Int, categoryType: Int): String {
+        return if (!containsCategory(priorityCategories, categoryType)) {
+            context.resources.getString(R.string.disallow) + " " + priorityCategoryToString(context, categoryType)
+        } else {
+            when (prioritySenders) {
+                PRIORITY_SENDERS_ANY -> context.resources.getString(R.string.message_senders_anyone)
+                PRIORITY_SENDERS_STARRED -> context.resources.getString(R.string.message_senders_starred)
+                PRIORITY_SENDERS_CONTACTS -> context.resources.getString(R.string.message_senders_contacts)
+                else -> throw IllegalArgumentException("Invalid sender type")
+            }
         }
-        return "Allow " + categoriesList.joinToString(separator = ", ", transform = {
+    }
+
+    @JvmStatic
+    fun priorityCategoriesToString(context: Context, categories: Int): String {
+        val categoriesList: List<Int> = getPriorityCategoriesList(categories).sorted()
+        if (categoriesList.isEmpty()) return context.resources.getString(R.string.no_exceptions)
+        return context.resources.getString(R.string.allow) + " " + categoriesList.joinToString(separator = ", ", transform = {
             when (it) {
-                PRIORITY_CATEGORY_REMINDERS -> "reminders"
-                PRIORITY_CATEGORY_EVENTS -> "events"
-                PRIORITY_CATEGORY_SYSTEM -> "touch sounds"
-                PRIORITY_CATEGORY_ALARMS -> "alarms"
-                PRIORITY_CATEGORY_MEDIA -> "media"
+                PRIORITY_CATEGORY_REMINDERS -> context.resources.getString(R.string.priority_category_reminders)
+                PRIORITY_CATEGORY_EVENTS -> context.resources.getString(R.string.priority_category_events)
+                PRIORITY_CATEGORY_SYSTEM -> context.resources.getString(R.string.priority_category_system)
+                PRIORITY_CATEGORY_ALARMS -> context.resources.getString(R.string.priority_category_alarms)
+                PRIORITY_CATEGORY_MEDIA -> context.resources.getString(R.string.priority_category_media)
                 else -> throw IllegalArgumentException("Invalid priority category")
             }
         })
     }
 
-    @BindingConversion
     @JvmStatic
-    fun interruptionRulesToString(notificationAccessGranted: Boolean): String {
+    fun interruptionRulesToString(context: Context, notificationAccessGranted: Boolean): String {
         return if (!notificationAccessGranted) {
-            "Notification policy access required"
+            context.resources.getString(R.string.notification_policy_access_revoked)
         } else {
-            "Define your own do not disturb rules"
+            context.resources.getString(R.string.notification_policy_access_granted)
         }
     }
 
     @JvmStatic
-    fun interruptionFilterToString(interruptionFilterMode: Int, policyAccess: Boolean): String {
+    fun interruptionFilterToString(context: Context, interruptionFilterMode: Int, policyAccess: Boolean): String {
         return if (policyAccess) {
             when (interruptionFilterMode) {
-                INTERRUPTION_FILTER_PRIORITY -> "Priority only"
-                INTERRUPTION_FILTER_ALARMS -> "Alarms only"
-                INTERRUPTION_FILTER_NONE -> "Total silence"
-                INTERRUPTION_FILTER_ALL -> "Allow everything"
+                INTERRUPTION_FILTER_PRIORITY -> context.resources.getString(R.string.dnd_priority_ony)
+                INTERRUPTION_FILTER_ALARMS -> context.resources.getString(R.string.dnd_alarms_only)
+                INTERRUPTION_FILTER_NONE -> context.resources.getString(R.string.dnd_total_silence)
+                INTERRUPTION_FILTER_ALL -> context.resources.getString(R.string.dnd_allow_all)
                 else -> throw IllegalArgumentException("Invalid interruption filter")
             }
-        } else "Notification policy access required"
+        } else {
+            context.resources.getString(R.string.notification_policy_access_revoked)
+        }
     }
 }

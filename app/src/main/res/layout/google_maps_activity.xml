@@ -109,7 +109,7 @@
                 android:translationX="-70dp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
-                android:text="Current location"
+                android:text="@string/current_location"
                 android:textAppearance="?android:attr/textAppearanceMedium"/>
 
             <TextView
@@ -123,7 +123,7 @@
                 android:textSize="16sp"
                 android:textColor="@color/white"
                 android:textStyle="bold"
-                android:text="Map appearance"
+                android:text="@string/map_appearance"
                 android:textAppearance="?android:attr/textAppearanceMedium"/>
 
             <TextView
@@ -137,7 +137,7 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
-                android:text="Apply changes"
+                android:text="@string/apply_changes"
                 android:textAppearance="?android:attr/textAppearanceMedium"/>
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>

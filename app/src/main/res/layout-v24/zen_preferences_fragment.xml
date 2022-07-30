@@ -28,8 +28,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
                 android:layout_marginTop="16dp"
-                android:text="Exceptions: Calls"
+                android:text="@string/dnd_exceptions_calls_title"
                 android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -40,7 +41,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/textView2"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
-                android:paddingTop="16dp"
+                android:layout_marginTop="8dp"
                 android:onClick="@{() -> viewModel.onCallsLayoutClick()}"
                 android:background="?attr/selectableItemBackground"
                 android:id="@+id/exceptionsCallsLayout"
@@ -49,22 +50,24 @@
 
                 <TextView
                     android:id="@+id/exceptionCallsTitle"
-                    android:textColor="#000000"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="35dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="12dp"
                     android:textSize="16sp"
                     android:layout_height="wrap_content"
-                    android:text="Calls"/>
+                    android:text="@string/dnd_exceptions_calls"/>
 
                 <TextView
                     android:id="@+id/exceptionsCallsDescription"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="4dp"
                     android:textSize="14sp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="12dp"
                     android:layout_height="wrap_content"
-                    android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityCallSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_CALLS)}"/>
+                    android:text="@{BindingConverters.prioritySendersToString(context, viewModel.priorityCallSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_CALLS)}"/>
             </LinearLayout>
 
             <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
@@ -75,17 +78,20 @@
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onRepetitiveCallersLayoutClick()}"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/exceptionsCallsLayout">
 
                 <TextView
                     android:id="@+id/repeatCallersTitle"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="35dp"
-                    android:layout_marginTop="16dp"
-                    android:text="Allow repeat callers"
-                    android:textColor="#000000"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginStart="35dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/dnd_exceptions_allow_repeat_callers_title"
                     android:textSize="16sp"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
@@ -96,8 +102,10 @@
                     android:layout_marginStart="35dp"
                     android:layout_marginTop="4dp"
                     android:layout_marginEnd="16dp"
-                    android:text="If the same person calls second time within 15 minutes period"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/dnd_exceptions_allow_repeat_callers_description"
                     android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/repeatCallersSwitch"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/repeatCallersTitle" />
@@ -122,7 +130,6 @@
                 android:id="@+id/separator2"
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
-                android:layout_marginTop="8dp"
                 android:background="#cfcfcf"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -133,8 +140,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
                 android:layout_marginTop="16dp"
-                android:text="Exceptions: Messages"
+                android:text="@string/dnd_exceptions_messages_title"
                 android:textColor="?attr/colorPrimary"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -145,7 +153,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/textView3"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
-                android:paddingTop="16dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:onClick="@{() -> viewModel.onMessagesLayoutClick()}"
                 android:id="@+id/exceptionsMessagesLayout"
@@ -153,22 +161,24 @@
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:textColor="#000000"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="35dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="12dp"
                     android:textSize="16sp"
                     android:layout_height="wrap_content"
-                    android:text="Messages"/>
+                    android:text="@string/dnd_exceptions_messages"/>
 
                 <TextView
                     android:id="@+id/exceptionsMessagesDescription"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="12dp"
                     android:textSize="14sp"
                     android:layout_height="wrap_content"
-                    android:text="@{BindingConverters.prioritySendersToString(viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"/>
+                    android:text="@{BindingConverters.prioritySendersToString(context, viewModel.priorityMessageSenders, viewModel.priorityCategories, Policy.PRIORITY_CATEGORY_MESSAGES)}"/>
             </LinearLayout>
 
             <View
@@ -185,8 +195,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="35dp"
+                android:layout_marginEnd="16dp"
                 android:layout_marginTop="16dp"
-                android:text="Exceptions: Other interruptions"
+                android:text="@string/dnd_exceptions_priority_categories_title"
                 android:textSize="14sp"
                 android:textColor="?attr/colorPrimary"
                 app:layout_constraintStart_toStartOf="parent"
@@ -197,7 +208,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/textView4"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toEndOf="parent"
-                android:paddingTop="16dp"
+                android:layout_marginTop="8dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 android:layout_marginBottom="32dp"
                 android:onClick="@{() -> viewModel.onPriorityInterruptionsLayoutClick()}"
@@ -207,22 +218,24 @@
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:textColor="#000000"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="35dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="12dp"
                     android:textSize="16sp"
                     android:layout_height="wrap_content"
-                    android:text="Other interruptions"/>
+                    android:text="@string/dnd_exceptions_priority_categories"/>
 
                 <TextView
                     android:id="@+id/otherInterruptionsDescription"
                     android:layout_width="wrap_content"
                     android:layout_marginStart="35dp"
-                    android:paddingTop="4dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="4dp"
                     android:textSize="14sp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="12dp"
                     android:layout_height="wrap_content"
-                    android:text="@{BindingConverters.priorityCategoriesToString(viewModel.priorityCategories)}"/>
+                    android:text="@{BindingConverters.priorityCategoriesToString(context, viewModel.priorityCategories)}"/>
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

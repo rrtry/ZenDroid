@@ -16,8 +16,8 @@ class SuppressedEffectsOnDialog : BaseDialog() {
 
     private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
-    override val title: String = "When screen is on"
-    override val arrayRes: Int = R.array.screenIsOn
+    override val titleRes: Int = R.string.notification_restrictions_when_screen_is_on_title
+    override val arrayRes: Int = R.array.notification_restrictions_when_screen_is_on
     override val values: List<Int> = listOf(
         SUPPRESSED_EFFECT_BADGE,
         SUPPRESSED_EFFECT_STATUS_BAR,

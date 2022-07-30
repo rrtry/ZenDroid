@@ -13,8 +13,8 @@ class RingtonePickerContract: ActivityResultContract<Int, Uri?>() {
     var ringtoneType by Delegates.notNull<Int>()
     var existingUri: Uri = Uri.EMPTY
 
-    override fun createIntent(context: Context, input: Int?): Intent {
-        ringtoneType = input!!
+    override fun createIntent(context: Context, input: Int): Intent {
+        ringtoneType = input
         return Intent(ACTION_RINGTONE_PICKER).apply {
             putExtra(EXTRA_RINGTONE_TYPE, input)
             putExtra(EXTRA_RINGTONE_SHOW_DEFAULT, true)

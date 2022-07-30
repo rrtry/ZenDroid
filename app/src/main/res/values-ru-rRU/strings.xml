@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2" tools:ignore="MissingQuantity">
+    <string name="app_name">ZenDroid</string>
+
+    <string name="tab_scheduler">Расписание</string>
+    <string name="tab_profiles">Профили</string>
+    <string name="tab_locations">Локации</string>
+    <string name="tab_location_edit">Location</string>
+    <string name="tab_profile_edit">Profile</string>
+    <string name="cancel">Отменить</string>
+    <string name="apply">Применить</string>
+
+    <string name="profile_list_placeholder">Здесь будут появляться ваши профили</string>
+    <string name="scheduler_list_placeholder">Здесь будут появляться ваши события</string>
+    <string name="geofence_list_placeholder">Здесь будут появляться ваши геозоны</string>
+
+    <string name="media_volume">Медиа</string>
+    <string name="call_volume">Разговор</string>
+    <string name="notification_volume">Уведомления</string>
+    <string name="ring_volume">Рингтон</string>
+    <string name="alarm_volume">Будильник</string>
+    <string name="unlink_ringer_and_notifications">Разъединить уведомления и рингтон</string>
+    <string name="dnd">Не беспокоить</string>
+    <string name="custom_restrictions">Специальные правила</string>
+    <string name="ringtones_and_notifications">Рингтоны и уведомления</string>
+    <string name="vibrate_for_calls">Вибарция при звонке</string>
+    <string name="default_notification_sound">Звук уведомления по умолчанию</string>
+    <string name="default_alarm_sound">Звук будильника по умолчанию</string>
+    <string name="default_phone_ringtone">Рингтон</string>
+    <string name="dnd_exceptions">Исключения</string>
+    <string name="restrict_notifications">Ограничение уведомлений</string>
+    <string name="notification_restrictions_when_screen_is_on_title">При включенном экране</string>
+    <string name="notification_restrictions_when_screen_is_off_title">При выключенном экране</string>
+    <string name="notification_restrictions_when_screen_is_on_description">Не показывать уведомления, отключенные режимом \'Не беспокоить\'</string>
+    <string name="notification_restrictions_when_screen_is_off_description">Не включать экран для уведомлений, отключенных режимом \'Не беспокоить\'</string>
+    <string name="dnd_exceptions_calls_title">Исключения: Входящие вызовы</string>
+    <string name="dnd_exceptions_priority_categories_title">Исключения: Другие категории</string>
+    <string name="dnd_exceptions_messages_title">Исключения: Сообщения</string>
+    <string name="dnd_exceptions_calls">Входящие вызовы</string>
+    <string name="dnd_exceptions_messages">Сообщения</string>
+    <string name="dnd_exceptions_conversations">Разговоры</string>
+    <string name="dnd_exceptions_priority_categories">Другие категории</string>
+    <string name="dnd_exceptions_allow_repeat_callers_title">Разрешить повторные вызовы</string>
+    <string name="dnd_exceptions_allow_repeat_callers_description">Если абонент звонит повторно в течение 15 минут</string>
+    <string name="time_rule_repeat">Повторять</string>
+    <string name="time_rule_profiles">Профили</string>
+    <string name="time_rule_title">Название события</string>
+    <string name="apply_changes">Применить изменения</string>
+    <string name="current_location">Текущая геолокация</string>
+    <string name="map_appearance">Параметры карты</string>
+    <string name="geofence_radius">Радиус</string>
+    <string name="geofence_title">Название</string>
+    <string name="geofence_coordinates">Координаты</string>
+    <string name="set_coordinates">Установить координаты</string>
+    <string name="geofence_enter_profile_title">Применить при в ходе в геозону</string>
+    <string name="geofence_exit_profile_title">Применить при выходе из геозоны</string>
+    <string name="latitude">Широта</string>
+    <string name="longitude">Долгота</string>
+    <string name="choose_an_icon">Выберите иконку</string>
+    <string name="snackbar_alarm_permission_explanation">Разрешение на установку точных таймером необходимо для работы планировщика</string>
+    <string name="snackbar_location_permission_explanation">Для работы геозон требуется разрешения на доступ к местоположению в фоне</string>
+    <string name="open_settings">Открыть настройки</string>
+    <string name="confirm_change_dismissal">Повторно нажмите кнопку назад для отмены изменений</string>
+    <string name="cannot_create_time_trigger">Не удалось создать событие</string>
+    <string name="cannot_create_geofence_trigger">Не удалось создать геозону</string>
+    <string name="cannot_create_time_trigger_description">Создайте как миниум один профиль, чтобы ассоциировать его с событием</string>
+    <string name="cannot_create_geofence_trigger_description">Создайте как минимум один профиль, чтобы ассоциировать его с гезоной</string>
+    <string name="grant_dnd_access">Разрешите доступ к режиму \'Не беспокоить\'</string>
+    <string name="grant_system_settings_access">Разрешите доступ к изменению системных настроек</string>
+    <string name="grant_phone_permission">Разрешите доступ к \'Телефон\'</string>
+    <string name="network_available">Сеть доступна</string>
+    <string name="network_unavailable">Сеть недоступна</string>
+    <string name="location_access_required">Требуется разрешение на остлеживание местоположения</string>
+    <string name="grant">Разрешить</string>
+    <string name="clipboard">Адрес скопирован в буфер обмена</string>
+    <string name="enable_location_service">Включите сервисы отслеживания местоположения</string>
+    <string name="location_services_explanation">Для работы геозон требуется включить сервисы отслеживания местоположения</string>
+    <string name="enable">Включить</string>
+    <string name="dnd_allow_all">Разрешить всё</string>
+    <string name="dnd_priority_ony">Приоритет</string>
+    <string name="dnd_alarms_only">Только будильник</string>
+    <string name="dnd_total_silence">Тишина</string>
+    <string name="dnd_allow_all_description">Разрешить всё: отображать все уведомления</string>
+    <string name="dnd_priority_only_description">Приоритет: отображать только важные уведомления</string>
+    <string name="dnd_alarms_only_description">Только будильник: разрешить только воспроизведение медиа и будильники</string>
+    <string name="dnd_total_silence_description">Тишина: не отображать уведомления</string>
+    <string name="priority_category_calls">вызовы</string>
+    <string name="priority_category_messages">сообщения</string>
+    <string name="priority_category_conversations">разговоры</string>
+    <string name="conversation_senders_anyone">Все разговоры</string>
+    <string name="conversation_senders_important">Важные разговоры</string>
+    <string name="message_senders_anyone">От кого угодно</string>
+    <string name="message_senders_starred">От помеченных контактов</string>
+    <string name="message_senders_contacts">От контактов</string>
+    <string name="message_senders_none">Ни от кого</string>
+    <string name="disallow">Запретить</string>
+    <string name="priority_category_reminders">напоминания</string>
+    <string name="priority_category_events">события</string>
+    <string name="priority_category_system">звуки интерфейса</string>
+    <string name="priority_category_alarms">будильники</string>
+    <string name="priority_category_media">медиа</string>
+    <string name="no_exceptions">Без исключений</string>
+    <string name="allow">Разрешить</string>
+    <string name="notification_policy_access_revoked">Требуется доступ к режиму \'Не беспокоить\'</string>
+    <string name="notification_policy_access_granted">Устанавливайте собственные правила режима \'Не беспокоить\'</string>
+    <string name="geofence">Геозона</string>
+    <string name="profiles">Профили</string>
+    <string name="location_label">Название</string>
+    <string name="every_day">Каждый день</string>
+    <string name="not_repeating">Только сегодня</string>
+    <string name="next_profile">Следующий профиль</string>
+    <string name="active_profile">\'%1$s\' будет включен, пока вы его не выключите</string>
+    <string name="active_until">\'%1$s\' включен до %2$s</string>
+    <string name="next_scheduled_profile">\'%1$s\' в %2$s</string>
+    <string name="geofence_enter">Вы вошли в \'%1$s\'</string>
+    <string name="geofence_exit">Вы покинули \'%1$s\'</string>
+    <string name="scheduled_for_less_than_a_minute">До активации \'%1$s\' меньше минуты</string>
+    <string name="time_remaining">\'%1$s\' активируется через %2$s</string>
+    <string name="weekdays">Дни недели</string>
+    <string name="no_title">Без названия</string>
+    <string name="profile_title">Название профиля</string>
+    <string name="new_profile_title">Новый профиль</string>
+    <string name="not_set">Без звука</string>
+
+    <plurals name="days">
+        <item quantity="one" tools:ignore="ImpliedQuantity">1 день</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> дней</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one" tools:ignore="ImpliedQuantity">1 час</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> часов</item>
+    </plurals>
+
+    <plurals name="minutes">
+        <item quantity="one" tools:ignore="ImpliedQuantity">1 минута</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> минут</item>
+    </plurals>
+
+    <plurals name="seconds">
+        <item quantity="one" tools:ignore="ImpliedQuantity">1 секунда</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> секунд</item>
+    </plurals>
+
+    <string-array name="metrics">
+        <item>М</item>
+        <item>КМ</item>
+    </string-array>
+    <string-array name="days_of_week">
+        <item>Понедельник</item>
+        <item>Вторник</item>
+        <item>Среда</item>
+        <item>Четверг</item>
+        <item>Пятница</item>
+        <item>Суббота</item>
+        <item>Воскресенье</item>
+    </string-array>
+
+    <string-array name="priority_categories_api_23">
+        <item>Напоминания</item>
+        <item>События</item>
+    </string-array>
+
+    <string-array name="priority_categories_api_28">
+        <item>Сигналы будильника</item>
+        <item>Воспроизвдение медиа</item>
+        <item>Звуки интерфейса</item>
+        <item>Напоминания</item>
+        <item>События</item>
+    </string-array>
+
+    <string-array name="notification_restrictions_when_screen_is_on">
+        <item>Не показывать значки уведомлений на иконках приложений</item>
+        <item>Не показывать иконки уведомлений в строке состояния</item>
+        <item>Не показывать уведомления поверх других приложений</item>
+        <item>Не показывать в списке уведомлений</item>
+    </string-array>
+    <string-array name="notification_restrictions_when_screen_is_off">
+        <item>Не включать светодиод</item>
+        <item>Не включать экран</item>
+        <item>Не показывать уведомления</item>
+    </string-array>
+
+    <string name="title_activity_maps">Карта</string>
+    <string name="latitude_text_input_error">
+        Введите значение от -90 до 90
+    </string>
+    <string name="longitude_text_input_error">
+        Введите значение от -180 до 180
+    </string>
+    <string name="phone_permission_explanation">
+        Phone state permission explanation
+    </string>
+    <string name="location_permission_explanation">
+        Location permission explanation
+    </string>
+    <string name="background_location_access_explanation">
+        Background location permission explanation
+    </string>
+    <string name="interruption_policy_access_explanation">
+        Do not disturb access permission explanation
+    </string>
+    <string name="system_settings_permission_explanation">
+        System settings permission explanation
+    </string>
+    <string name="permission_denial_warning">
+        Требуется разрешение
+    </string>
+    <string name="power_save_mode_dialog_title">
+        Режим энергосбережения
+    </string>
+    <string name="geofencing_power_save_mode_hint">
+        Отслеживание местоположения не будет работать при включенном режиме энергосбережения
+    </string>
+    <string name="scheduler_power_save_mode_hint">
+        Запланированные события будут отложены при включенном режиме энергосбережения
+    </string>
+    <string name="conversation_senders_none">Ни от кого</string>
+</resources>

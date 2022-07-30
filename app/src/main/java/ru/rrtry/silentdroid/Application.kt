@@ -9,27 +9,16 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class Application: Application(), LifecycleObserver {
+class Application: Application() {
 
-    override fun onCreate(): Unit {
+    override fun onCreate() {
         super.onCreate()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    private fun onStop() {
-
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    private fun onResume() {
-
     }
 
     companion object {
 
-        internal const val ACTION_GEOFENCE_TRANSITION: String = "com.example.volumeprofiler.ACTION_GEOFENCE_TRANSITION"
-        internal const val ACTION_ALARM: String = "com.example.volumeprofiler.ACTION_ALARM"
+        const val ACTION_GEOFENCE_TRANSITION: String = "ru.rrtry.silentdroid.ACTION_GEOFENCE_TRANSITION"
+        const val ACTION_ALARM: String = "ru.rrtry.silentdroid.ACTION_ALARM"
     }
 }

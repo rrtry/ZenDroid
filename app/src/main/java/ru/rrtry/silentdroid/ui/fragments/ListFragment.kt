@@ -284,7 +284,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     protected fun showDeniedPermissionHint(profile: Profile): Boolean {
         if (!notificationManager.isNotificationPolicyAccessGranted) {
             callback?.showSnackBar(
-                "Grant Do Not Disturb access",
+                resources.getString(R.string.grant_dnd_access),
                 length = Snackbar.LENGTH_INDEFINITE)
             {
                 notificationPolicySettingsLauncher.launch(
@@ -294,7 +294,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
             return true
         } else if (!canWriteSettings(requireContext())) {
             callback?.showSnackBar(
-                "Grant System Settings access",
+                resources.getString(R.string.grant_system_settings_access),
                 length = Snackbar.LENGTH_INDEFINITE)
             {
                 systemSettingsLauncher.launch(
@@ -306,7 +306,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
             return true
         } else if (!checkPermission(READ_PHONE_STATE) && profile.streamsUnlinked) {
             callback?.showSnackBar(
-                "Grant 'Phone' permission",
+                resources.getString(R.string.grant_phone_permission),
                 length = Snackbar.LENGTH_INDEFINITE)
             {
                 phonePermissionLauncher.launch(READ_PHONE_STATE)

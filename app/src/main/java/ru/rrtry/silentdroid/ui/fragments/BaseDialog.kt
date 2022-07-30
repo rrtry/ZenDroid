@@ -6,9 +6,10 @@ import android.os.Bundle
 import android.widget.*
 import androidx.fragment.app.DialogFragment
 import ru.rrtry.silentdroid.R
+
 abstract class BaseDialog: DialogFragment() {
 
-    protected abstract val title: String
+    protected abstract val titleRes: Int
     protected abstract val arrayRes: Int
     protected abstract val values: List<Int>
 
@@ -59,7 +60,7 @@ abstract class BaseDialog: DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
-            builder.setTitle(title)
+            builder.setTitle(resources.getString(titleRes))
                 .setMultiChoiceItems(arrayRes, null) { _, which, isChecked ->
                     values[which].also { category ->
                         if (isChecked) {

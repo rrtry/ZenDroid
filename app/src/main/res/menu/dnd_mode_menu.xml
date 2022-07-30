@@ -4,15 +4,15 @@
     <group android:id="@+id/dnd_mode" >
         <item
             android:id="@+id/priority_only"
-            android:title="Priority only"/>
+            android:title="@string/dnd_priority_ony"/>
         <item
             android:id="@+id/alarms_only"
-            android:title="Alarms only"/>
+            android:title="@string/dnd_alarms_only"/>
         <item
             android:id="@+id/total_silence"
-            android:title="Total silence"/>
+            android:title="@string/dnd_total_silence"/>
         <item
             android:id="@+id/allow_all"
-            android:title="Allow all"/>
+            android:title="@string/dnd_allow_all"/>
     </group>
 </menu>

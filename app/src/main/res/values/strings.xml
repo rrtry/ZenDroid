@@ -1,14 +1,157 @@
-<resources>
-    <string name="app_name">ZenDroid</string>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="app_name" translatable="false">ZenDroid</string>
     <string name="tab_scheduler">Scheduler</string>
     <string name="tab_profiles">Profiles</string>
     <string name="tab_locations">Locations</string>
     <string name="tab_location_edit">Location</string>
     <string name="tab_profile_edit">Profile</string>
-    <string name="workingDaysTitle">Select the days on which the profile activates</string>
-    <string name="customRestrictions">Custom restrictions</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
+
+    <string name="profile_list_placeholder">Your profiles will appear here</string>
+    <string name="scheduler_list_placeholder">Your events will appear here</string>
+    <string name="geofence_list_placeholder">Your geofences will appear here</string>
+
+    <string name="media_volume">Media volume</string>
+    <string name="call_volume">Call volume</string>
+    <string name="notification_volume">Notification volume</string>
+    <string name="ring_volume">Ring volume</string>
+    <string name="alarm_volume">Alarm volume</string>
+    <string name="unlink_ringer_and_notifications">Unlink ringer and notifications</string>
+    <string name="dnd">Do not disturb</string>
+    <string name="custom_restrictions">Custom restrictions</string>
+    <string name="ringtones_and_notifications">Ringtones and notifications</string>
+    <string name="vibrate_for_calls">Also vibrate for calls</string>
+    <string name="default_notification_sound">Default notification sound</string>
+    <string name="default_alarm_sound">Default alarm sound</string>
+    <string name="default_phone_ringtone">Phone ringtone</string>
+    <string name="dnd_exceptions">Priority only allows</string>
+    <string name="restrict_notifications">Restrict notifications</string>
+    <string name="notification_restrictions_when_screen_is_on_title">When screen is on</string>
+    <string name="notification_restrictions_when_screen_is_off_title">When screen is off</string>
+    <string name="notification_restrictions_when_screen_is_on_description">Prevent notifications from peeking or popping on the screen</string>
+    <string name="notification_restrictions_when_screen_is_off_description">Prevent notifications from turning on the screen</string>
+    <string name="dnd_exceptions_calls_title">Exceptions: Calls</string>
+    <string name="dnd_exceptions_priority_categories_title">Exceptions: Other interruptions</string>
+    <string name="dnd_exceptions_messages_title">Exceptions: Messages</string>
+    <string name="dnd_exceptions_calls">Calls</string>
+    <string name="dnd_exceptions_messages">Messages</string>
+    <string name="dnd_exceptions_conversations">Conversations</string>
+    <string name="dnd_exceptions_priority_categories">Other interruptions</string>
+    <string name="dnd_exceptions_allow_repeat_callers_title">Allow repeat callers</string>
+    <string name="dnd_exceptions_allow_repeat_callers_description">If the same person calls second time within 15 minutes period</string>
+    <string name="time_rule_repeat">Repeat</string>
+    <string name="time_rule_profiles">Select profiles</string>
+    <string name="time_rule_title">Event title</string>
+    <string name="apply_changes">Apply changes</string>
+    <string name="current_location">Current location</string>
+    <string name="map_appearance">Map appearance</string>
+    <string name="geofence_radius">Geofence radius</string>
+    <string name="geofence_title">Title</string>
+    <string name="geofence_coordinates">Coordinates</string>
+    <string name="set_coordinates">Set coordinates</string>
+    <string name="geofence_enter_profile_title">Apply upon entering geofence</string>
+    <string name="geofence_exit_profile_title">Apply upon exiting geofence</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="choose_an_icon">Choose an icon</string>
+    <string name="snackbar_alarm_permission_explanation">Alarm permission is required for scheduler to work properly</string>
+    <string name="snackbar_location_permission_explanation">Geofencing feature requires all-time location access</string>
+    <string name="open_settings">Open settings</string>
+    <string name="confirm_change_dismissal">Press back button again to dismiss changes</string>
+    <string name="cannot_create_time_trigger">Cannot create time trigger</string>
+    <string name="cannot_create_geofence_trigger">Cannot create geofence trigger</string>
+    <string name="cannot_create_time_trigger_description">Create at least one profile in order to schedule time triggers</string>
+    <string name="cannot_create_geofence_trigger_description">Create at least one profile in order to use geofence triggers</string>
+    <string name="grant_dnd_access">Grant Do not disturb access</string>
+    <string name="grant_system_settings_access">Grant System Settings access</string>
+    <string name="grant_phone_permission">Grant Phone permission</string>
+    <string name="network_available">Network is available</string>
+    <string name="network_unavailable">Network is unavailable</string>
+    <string name="location_access_required">Location access required</string>
+    <string name="grant">Grant</string>
+    <string name="clipboard">Copied to clipboard</string>
+    <string name="enable_location_service">Enable location services</string>
+    <string name="location_services_explanation">For location triggers to work, turn on device location</string>
+    <string name="enable">Enable</string>
+    <string name="dnd_allow_all">Allow all</string>
+    <string name="dnd_priority_ony">Priority only</string>
+    <string name="dnd_alarms_only">Alarms only</string>
+    <string name="dnd_total_silence">Total silence</string>
+    <string name="dnd_allow_all_description">Allow all: no notifications are suppressed</string>
+    <string name="dnd_priority_only_description">Priority only: allow only prioritized notifications</string>
+    <string name="dnd_alarms_only_description">Alarms only: allow only media and alarms</string>
+    <string name="dnd_total_silence_description">Total silence: all notifications are suppressed</string>
+    <string name="priority_category_calls">calls</string>
+    <string name="priority_category_messages">messages</string>
+    <string name="priority_category_conversations">conversations</string>
+    <string name="conversation_senders_anyone">All conversations</string>
+    <string name="conversation_senders_important">Priority conversations</string>
+    <string name="message_senders_anyone">From anyone</string>
+    <string name="message_senders_starred">From starred contacts only</string>
+    <string name="message_senders_contacts">From contacts only</string>
+    <string name="message_senders_none">None</string>
+    <string name="disallow">Don\'t allow any</string>
+    <string name="priority_category_reminders">reminders</string>
+    <string name="priority_category_events">events</string>
+    <string name="priority_category_system">touch sounds</string>
+    <string name="priority_category_alarms">alarms</string>
+    <string name="priority_category_media">media</string>
+    <string name="no_exceptions">No exceptions</string>
+    <string name="allow">Allow</string>
+    <string name="notification_policy_access_revoked">Notification policy access required</string>
+    <string name="notification_policy_access_granted">Define your own do not disturb rules</string>
+    <string name="geofence">Geofence</string>
+    <string name="profiles">Profiles</string>
+    <string name="location_label">Location label</string>
+    <string name="every_day">Every day</string>
+    <string name="not_repeating">Only today</string>
+    <string name="next_profile">Next profile</string>
+    <string name="active_profile">\'%1$s\' will stay on until you turn it off</string>
+    <string name="active_until">\'%1$s\' is on until %2$s</string>
+    <string name="next_scheduled_profile">\'%1$s\' at %2$s</string>
+    <string name="geofence_enter">You\'ve entered %1$s</string>
+    <string name="geofence_exit">You\'ve left %1$s</string>
+    <string name="scheduled_for_less_than_a_minute">\'%1$s\' will activate in less than a minute</string>
+    <string name="time_remaining">\'%1$s\' is scheduled for %2$s from now</string>
+    <string name="weekdays">Weekdays</string>
+    <string name="no_title">No title</string>
+    <string name="profile_title">Profile title</string>
+    <string name="new_profile_title">New profile</string>
+    <string name="not_set">Not set</string>
+
+    <plurals name="days">
+        <item quantity="one">1 day</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> days</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">1 hour</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> hours</item>
+    </plurals>
+
+    <plurals name="minutes">
+        <item quantity="one">1 minute</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> minutes</item>
+    </plurals>
+
+    <plurals name="seconds">
+        <item quantity="one">1 second</item>
+        <item quantity="other"><xliff:g id="number" example="7">%s</xliff:g> seconds</item>
+    </plurals>
+
+    <string-array name="time_remaining_template">
+        <item>Alarm set for less than 1 minute from now.</item>
+        <item><xliff:g id="DAYS" example="2 days">%1$s</xliff:g></item>
+        <item><xliff:g id="HOURS" example="2 hours">%2$s</xliff:g> from now.</item>
+        <item><xliff:g id="DAYS" example="2 days">%1$s</xliff:g> and <xliff:g id="HOURS" example="2 hours">%2$s</xliff:g></item>
+        <item><xliff:g id="MINUTES" example="2 minutes">%3$s</xliff:g></item>
+        <item><xliff:g id="DAYS" example="2 days">%1$s</xliff:g> and <xliff:g id="MINUTES" example="2 minutes">%3$s</xliff:g></item>
+        <item><xliff:g id="HOURS" example="2 hours">%2$s</xliff:g> and <xliff:g id="MINUTES" example="2 minutes">%3$s</xliff:g></item>
+        <item><xliff:g id="DAYS" example="2 days">%1$s</xliff:g>, <xliff:g id="HOURS" example="2 hours">%2$s</xliff:g>, and <xliff:g id="MINUTES" example="2 minutes">%3$s</xliff:g></item>
+    </string-array>
+
     <string-array name="profile_icons">
         <item>@drawable/ic_baseline_do_not_disturb_on_24</item>
         <item>@drawable/baseline_volume_down_deep_purple_300_24dp</item>
@@ -35,11 +178,12 @@
         <item>@drawable/ic_baseline_phonelink_ring_24</item>
         <item>@drawable/ic_baseline_menu_book_24</item>
     </string-array>
+
     <string-array name="metrics">
         <item>M</item>
         <item>KM</item>
     </string-array>
-    <string-array name="daysOfWeek">
+    <string-array name="days_of_week">
         <item>Monday</item>
         <item>Tuesday</item>
         <item>Wednesday</item>
@@ -48,34 +192,38 @@
         <item>Saturday</item>
         <item>Sunday</item>
     </string-array>
-    <string-array name="priorityCategoriesApi23">
+
+    <string-array name="priority_categories_api_23">
         <item>Reminders</item>
         <item>Events</item>
     </string-array>
-    <string-array name="priorityCategoriesApi28">
+
+    <string-array name="priority_categories_api_28">
         <item>Allow alarms</item>
         <item>Allow media playback</item>
         <item>Allow touch sounds</item>
         <item>Allow reminders</item>
         <item>Allow events</item>
     </string-array>
-    <string-array name="screenIsOn">
+
+    <string-array name="notification_restrictions_when_screen_is_on">
         <item>Hide notification dots on app icons</item>
         <item>Hide status bar icons</item>
         <item>Don\'t pop notifications on screen</item>
         <item>Hide from notifications list</item>
     </string-array>
-    <string-array name="screenIsOff">
+    <string-array name="notification_restrictions_when_screen_is_off">
         <item>Don\'t blink notification light</item>
         <item>Don\'t turn on screen</item>
         <item>Don\'t wake for notifications</item>
     </string-array>
+
     <string name="title_activity_maps">Map</string>
     <string name="latitude_text_input_error">
-        Enter a valid value between -90 and 90
+        Enter a value between -90 and 90
     </string>
     <string name="longitude_text_input_error">
-        Enter a valid value between -180 and 180
+        Enter a value between -180 and 180
     </string>
     <string name="phone_permission_explanation">
         Phone state permission explanation
@@ -95,12 +243,6 @@
     <string name="permission_denial_warning">
         Permission denial warning
     </string>
-    <string name="no_profiles_dialog_title">
-        Feature unavailable
-    </string>
-    <string name="no_profiles_dialog_text">
-        Create at least one profile in order to schedule events
-    </string>
     <string name="power_save_mode_dialog_title">
         Battery saver warning
     </string>
@@ -110,4 +252,5 @@
     <string name="scheduler_power_save_mode_hint">
         Scheduled triggers will be deferred while power save mode is on
     </string>
+    <string name="conversation_senders_none">None</string>
 </resources>

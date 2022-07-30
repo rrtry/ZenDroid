@@ -612,32 +612,28 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onChangeTitleButtonClick() {
-        viewModelScope.launch {
-            activityChannel.send(ViewEvent.ShowDialogFragment(DialogType.PROFILE_TITLE))
-        }
-    }
-
     fun onSuppressedEffectsOffLayoutClick() {
         viewModelScope.launch {
             fragmentChannel.send(ViewEvent.ShowDialogFragment(DialogType.SUPPRESSED_EFFECTS_OFF))
         }
     }
 
+    fun onSuppressedEffectsLayoutClick(effect: Int) {
+        if (suppressedVisualEffects.value and effect == 0) {
+            suppressedVisualEffects.value = suppressedVisualEffects.value or effect
+        } else {
+            suppressedVisualEffects.value = suppressedVisualEffects.value and effect.inv()
+        }
+    }
+
+    fun onChangeTitleButtonClick() {
+        viewModelScope.launch {
+            activityChannel.send(ViewEvent.ShowDialogFragment(DialogType.PROFILE_TITLE))
+        }
+    }
+
     private fun containsPriorityCategory(category: Int): Boolean {
         return (priorityCategories.value and category) != 0
-    }
-
-    private fun containsSuppressedEffect(effect: Int): Boolean {
-        return suppressedVisualEffects.value and effect != 0
-    }
-
-    private fun addSuppressedEffect(effect: Int) {
-        suppressedVisualEffects.value = suppressedVisualEffects.value or effect
-    }
-
-    private fun removeSuppressedEffect(effect: Int) {
-        suppressedVisualEffects.value = suppressedVisualEffects.value and effect.inv()
     }
 
     fun addPriorityCategory(category: Int) {

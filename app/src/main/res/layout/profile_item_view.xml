@@ -42,7 +42,6 @@
             android:id="@+id/interruptionFilter"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:maxLines="1"
             android:paddingBottom="12dp"
             android:text="Priority only"
             android:textColor="@color/gray"

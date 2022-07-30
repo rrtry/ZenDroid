@@ -25,6 +25,7 @@ import ru.rrtry.silentdroid.entities.ListItem
 import ru.rrtry.silentdroid.interfaces.*
 import ru.rrtry.silentdroid.ui.Animations.selected
 import java.time.LocalTime
+
 class AlarmAdapter(
     override var currentList: List<ListItem<Int>>,
     private val recyclerView: RecyclerView,
@@ -55,17 +56,15 @@ class AlarmAdapter(
             binding.scheduleSwitch.isChecked = alarm.isScheduled
             binding.startTime.text = formatLocalTime(recyclerView.context, alarm.startTime)
             binding.endTime.text = formatLocalTime(recyclerView.context, alarm.endTime)
-            binding.occurrencesTextView.text = formatWeekDays(alarm.scheduledDays)
+            binding.occurrencesTextView.text = formatWeekDays(binding.root.context, alarm.scheduledDays)
             binding.profileName.text = "${alarmRelation.startProfile} - ${alarmRelation.endProfile}"
             binding.eventTitle.text = alarm.title
 
-            binding.scheduleSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (buttonView.isPressed) {
-                    if (isChecked) {
-                        viewContract.onEnable(alarmRelation)
-                    } else {
-                        viewContract.onDisable(alarmRelation)
-                    }
+            binding.root.setOnClickListener {
+                if (alarm.isScheduled) {
+                    viewContract.onDisable(alarmRelation)
+                } else {
+                    viewContract.onEnable(alarmRelation)
                 }
             }
             binding.deleteAlarmButton.setOnClickListener {

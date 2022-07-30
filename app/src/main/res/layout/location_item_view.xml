@@ -53,13 +53,15 @@
 
         <TextView
             android:id="@+id/geofenceProfiles"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_below="@+id/geofenceTitle"
             android:layout_marginStart="8dp"
+            android:layout_marginEnd="16dp"
             android:layout_toRightOf="@+id/profileImageView"
             android:textColor="@color/white"
             app:layout_constraintBottom_toBottomOf="@+id/editGeofenceButton"
+            app:layout_constraintEnd_toStartOf="@+id/editGeofenceButton"
             app:layout_constraintStart_toEndOf="@+id/profileImageView"
             app:layout_constraintTop_toTopOf="@+id/editGeofenceButton" />
 

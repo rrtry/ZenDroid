@@ -43,23 +43,23 @@ class FloatingActionMenuController(listenerRef: WeakReference<MenuStateListener>
                 })
                 addListener(object : Animator.AnimatorListener {
 
-                    override fun onAnimationStart(animation: Animator?) {
+                    override fun onAnimationStart(animation: Animator) {
                         isAnimationRunning = true
                     }
 
-                    override fun onAnimationEnd(animation: Animator?) {
+                    override fun onAnimationEnd(animation: Animator) {
                         isVisible = !isVisible
                         isAnimationRunning = false
                         listener.onTransformationFinished()
                     }
 
-                    override fun onAnimationCancel(animation: Animator?) {
+                    override fun onAnimationCancel(animation: Animator) {
                         isVisible = !isVisible
                         isAnimationRunning = false
                         listener.onTransformationFinished()
                     }
 
-                    override fun onAnimationRepeat(animation: Animator?) {
+                    override fun onAnimationRepeat(animation: Animator) {
                         isAnimationRunning = true
                     }
                 })

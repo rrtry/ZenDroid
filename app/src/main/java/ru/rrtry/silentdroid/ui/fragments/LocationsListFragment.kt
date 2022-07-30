@@ -37,6 +37,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import ru.rrtry.silentdroid.databinding.LocationItemViewBinding
 import ru.rrtry.silentdroid.databinding.LocationsListFragmentBinding
+import ru.rrtry.silentdroid.util.openPackageInfoActivity
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 
@@ -86,12 +87,12 @@ class LocationsListFragment:
             if (!map.containsValue(false)) {
                 geofenceManager.checkLocationServicesAvailability(requireActivity())
             } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
-                callback?.showSnackBar("Geofencing feature requires all-time location access", length = Snackbar.LENGTH_INDEFINITE) {
+                callback?.showSnackBar(resources.getString(R.string.snackbar_alarm_permission_explanation), length = Snackbar.LENGTH_INDEFINITE) {
                     requestLocationPermission()
                 }
             } else {
-                callback?.showSnackBar("Geofencing feature requires all-time location access", length = Snackbar.LENGTH_INDEFINITE) {
-                    geofenceManager.openPackagePermissionSettings()
+                callback?.showSnackBar(resources.getString(R.string.snackbar_alarm_permission_explanation), length = Snackbar.LENGTH_INDEFINITE) {
+                    context.openPackageInfoActivity()
                 }
             }
         }
@@ -214,16 +215,14 @@ class LocationsListFragment:
 
     override fun onFabClick(fab: FloatingActionButton) {
         if (sharedViewModel.showDialog.value) {
-            requireContext().resources.let { res ->
-                PopupDialog.create(
-                    "Feature unavailable",
-                    "At least one existing profile required in order to create location triggers",
-                    R.drawable.ic_baseline_not_listed_location_24
-                ).show(
-                    requireActivity().supportFragmentManager,
-                    null
-                )
-            }
+            PopupDialog.create(
+                resources.getString(R.string.cannot_create_geofence_trigger),
+                resources.getString(R.string.cannot_create_geofence_trigger_description),
+                R.drawable.ic_baseline_not_listed_location_24
+            ).show(
+                requireActivity().supportFragmentManager,
+                null
+            )
             return
         }
         startMapActivity()

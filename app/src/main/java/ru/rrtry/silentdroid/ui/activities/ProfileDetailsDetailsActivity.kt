@@ -193,11 +193,10 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
     }
 
     private fun setEntity() {
-        intent.extras?.getParcelable<Profile>(EXTRA_PROFILE)?.let {
-            viewModel.setEntity(it, true)
-            return
-        }
-        viewModel.setEntity(profileManager.getDefaultProfile(), false)
+        viewModel.setEntity(
+            intent.getParcelableExtra<Profile>(EXTRA_PROFILE) ?: profileManager.getDefaultProfile(),
+            intent.extras != null
+        )
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -294,7 +293,7 @@ class ProfileDetailsDetailsActivity: AppCompatActivity(),
             if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
                 onFinish(false)
             } else {
-                showSnackbar(binding.root, "Press back button again to exit", LENGTH_LONG)
+                showSnackbar(binding.root, resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
             }
             elapsedTime = System.currentTimeMillis()
         } else {

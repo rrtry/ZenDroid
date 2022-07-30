@@ -2,8 +2,7 @@ package ru.rrtry.silentdroid.core
 
 import android.app.NotificationManager
 import android.app.NotificationManager.*
-import android.app.NotificationManager.Policy.PRIORITY_CATEGORY_CALLS
-import android.app.NotificationManager.Policy.PRIORITY_CATEGORY_REPEAT_CALLERS
+import android.app.NotificationManager.Policy.*
 import android.content.Context
 import android.media.AudioManager
 import android.content.Context.*
@@ -145,33 +144,27 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     fun getDefaultProfile(): Profile {
         return Profile(
                 UUID.randomUUID(),
-            "New profile",
+                context.resources.getString(R.string.new_profile_title),
                 R.drawable.ic_baseline_do_not_disturb_on_24,
-                audioManager.getStreamVolume(STREAM_MUSIC),
-                audioManager.getStreamVolume(STREAM_VOICE_CALL),
-                audioManager.getStreamVolume(STREAM_NOTIFICATION),
-                audioManager.getStreamVolume(STREAM_RING),
-                audioManager.getStreamVolume(STREAM_ALARM),
+                Profile.STREAM_MUSIC_DEFAULT_VOLUME,
+                Profile.STREAM_VOICE_CALL_DEFAULT_VOLUME,
+                Profile.STREAM_NOTIFICATION_DEFAULT_VOLUME,
+                Profile.STREAM_RING_DEFAULT_VOLUME,
+                Profile.STREAM_ALARM_DEFAULT_VOLUME,
                 getDefaultRingtoneUri(TYPE_RINGTONE),
                 getDefaultRingtoneUri(TYPE_NOTIFICATION),
                 getDefaultRingtoneUri(TYPE_ALARM),
                 false,
-                notificationManager.currentInterruptionFilter,
-                audioManager.ringerMode,
-                audioManager.ringerMode,
+                INTERRUPTION_FILTER_ALL,
+                RINGER_MODE_NORMAL,
+                RINGER_MODE_NORMAL,
                 Settings.System.getInt(context.contentResolver, VIBRATE_WHEN_RINGING),
-                notificationManager.notificationPolicy.priorityCategories,
-                notificationManager.notificationPolicy.priorityCallSenders,
-                notificationManager.notificationPolicy.priorityMessageSenders,
-                0, 0
-        ).apply {
-            if (Build.VERSION_CODES.N <= Build.VERSION.SDK_INT) {
-                suppressedVisualEffects = notificationManager.notificationPolicy.suppressedVisualEffects
-            }
-            if (Build.VERSION_CODES.R <= Build.VERSION.SDK_INT) {
-                primaryConversationSenders = notificationManager.notificationPolicy.priorityConversationSenders
-            }
-        }
+                PRIORITY_CATEGORY_CALLS,
+                PRIORITY_SENDERS_ANY,
+                PRIORITY_SENDERS_ANY,
+            0,
+                CONVERSATION_SENDERS_NONE
+        )
     }
 
     private fun adjustUnmuteStream(streamType: Int) {
@@ -248,13 +241,15 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     }
 
     private fun getDefaultRingtoneUri(type: Int): Uri {
-        return getActualDefaultRingtoneUri(context, type)
+        return getActualDefaultRingtoneUri(context, type) ?: Uri.EMPTY
     }
 
     private fun setVibrateWhenRingingBehavior(state: Int) {
         try {
             Settings.System.putInt(context.contentResolver, VIBRATE_WHEN_RINGING, state)
         } catch (e: SecurityException) {
+            Log.e("ProfileManager", "Failed to change system settings", e)
+        } catch (e: IllegalArgumentException) {
             Log.e("ProfileManager", "Failed to change system settings", e)
         }
     }

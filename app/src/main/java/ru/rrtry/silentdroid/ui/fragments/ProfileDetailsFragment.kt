@@ -248,7 +248,6 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         callbacksDetails?.setNestedScrollingEnabled(true)
 
         viewLifecycleOwner.lifecycleScope.launch {

@@ -36,12 +36,14 @@
 
             <TextView
                 android:id="@+id/textView7"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Apply upon entering"
+                android:layout_marginEnd="16dp"
+                android:text="@string/geofence_enter_profile_title"
                 android:textColor="?attr/colorPrimary"
                 app:layout_constraintBottom_toBottomOf="@+id/imageView6"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView6"
                 app:layout_constraintTop_toTopOf="@+id/imageView6" />
 
@@ -67,12 +69,14 @@
 
             <TextView
                 android:id="@+id/textView8"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Restore upon exiting"
+                android:layout_marginEnd="16dp"
+                android:text="@string/geofence_exit_profile_title"
                 android:textColor="?attr/colorPrimary"
                 app:layout_constraintBottom_toBottomOf="@+id/imageView14"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/imageView14"
                 app:layout_constraintTop_toTopOf="@+id/imageView14" />
 

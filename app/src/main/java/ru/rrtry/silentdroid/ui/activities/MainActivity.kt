@@ -163,7 +163,11 @@ class MainActivity : AppCompatActivity(), MainActivityCallback, GeofenceManager.
     override fun onLocationRequestSuccess() = Unit
 
     override fun onLocationRequestFailure() {
-        showSnackBar("For location triggers to work, turn on device location", "Enable", Snackbar.LENGTH_INDEFINITE) {
+        showSnackBar(
+            resources.getString(R.string.location_services_explanation),
+            resources.getString(R.string.enable),
+            Snackbar.LENGTH_INDEFINITE)
+        {
             geofenceManager.checkLocationServicesAvailability(this)
         }
     }

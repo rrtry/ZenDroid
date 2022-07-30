@@ -14,11 +14,11 @@ class PriorityCategoriesDialog: BaseDialog() {
 
     private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
-    override val title: String = "Priority categories"
+    override val titleRes: Int = R.string.dnd_exceptions_priority_categories
     override val arrayRes: Int = if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
-        R.array.priorityCategoriesApi28
+        R.array.priority_categories_api_28
     } else {
-        R.array.priorityCategoriesApi23
+        R.array.priority_categories_api_23
     }
 
     override val values: List<Int> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

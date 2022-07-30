@@ -67,12 +67,13 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:singleLine="true"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
+                        android:layout_marginEnd="32dp"
                         app:layout_constraintVertical_bias=".7"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@id/profile_image"
-                        android:text="@{BindingConverters.interruptionFilterToString(viewModel.interruptionFilter)}" />
+                        android:text="@{BindingConverters.interruptionFilterToString(context, viewModel.interruptionFilter)}" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -78,7 +78,7 @@ class ProfileAdapter(
             if (animate) selected(binding.root, isSelected) else setViewScale(isSelected)
 
             binding.profileTitle.text = profile.title
-            binding.interruptionFilter.text = interruptionFilterToString(profile.interruptionFilter)
+            binding.interruptionFilter.text = interruptionFilterToString(binding.root.context, profile.interruptionFilter)
             binding.profileIcon.setImageDrawable(ContextCompat.getDrawable(binding.root.context, profile.iconRes))
 
             binding.expandButton.setOnClickListener {

@@ -102,17 +102,14 @@ class GeofenceManager @Inject constructor(
     }
 
     fun removeGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
-        val pendingIntent: PendingIntent? = getGeofencePendingIntent(location, enterProfile, exitProfile)
-        Log.i("GeofenceManager", "removeGeofence: $pendingIntent")
-        if (pendingIntent != null) {
-            geofencingClient.removeGeofences(pendingIntent)
-                .addOnSuccessListener {
-                    Log.i("GeofenceManager", "removeGeofence: success")
-                }
-                .addOnFailureListener {
-                    Log.i("GeofenceManager", "removeGeofence: failure")
-                }
-        }
+        val pendingIntent: PendingIntent = getGeofencePendingIntent(location, enterProfile, exitProfile) ?: return
+        geofencingClient.removeGeofences(pendingIntent)
+            .addOnSuccessListener {
+                Log.i("GeofenceManager", "removeGeofence: success")
+            }
+            .addOnFailureListener {
+                Log.i("GeofenceManager", "removeGeofence: failure")
+            }
     }
 
     private fun buildGeofence(location: Location): Geofence {
@@ -161,16 +158,6 @@ class GeofenceManager @Inject constructor(
 
             return getBroadcast(context, location.id, this, FLAG_NO_CREATE or FLAG_MUTABLE)
         }
-    }
-
-    fun openPackagePermissionSettings() {
-        context.startActivity(
-            Intent().apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                data = Uri.fromParts("package", context.packageName, null)
-            }
-        )
     }
 
     fun requestLocationPermission(launcher: ActivityResultLauncher<Array<String>>) {

@@ -23,26 +23,31 @@ class SchedulerViewModel @Inject constructor(
         data class OnAlarmRemoved(val relation: AlarmRelation, val scheduledAlarms: List<AlarmRelation>): ViewEvent()
         data class OnAlarmCancelled(val relation: AlarmRelation, val scheduledAlarms: List<AlarmRelation>): ViewEvent()
         data class OnAlarmSet(val relation: AlarmRelation, val scheduledAlarms: List<AlarmRelation>): ViewEvent()
-
+        object OnRequestExactAlarmPermission: ViewEvent()
     }
 
     private val channel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
     val viewEvents: Flow<ViewEvent> = channel.receiveAsFlow()
     val alarmsFlow: Flow<List<AlarmRelation>> = alarmRepository.observeAlarms()
+    var canScheduleExactAlarms: Boolean = false
 
     fun scheduleAlarm(relation: AlarmRelation) {
         viewModelScope.launch {
-            if (!ScheduleCalendar.isValid(ZonedDateTime.now(), relation.alarm)) {
-                ScheduleCalendar.getStartAndEndDate(relation.alarm.startTime, relation.alarm.endTime).let { date ->
-                    relation.alarm = relation.alarm.apply {
-                        startDateTime = date.first
-                        endDateTime = date.second
+            if (canScheduleExactAlarms) {
+                if (!ScheduleCalendar.isValid(ZonedDateTime.now(), relation.alarm)) {
+                    ScheduleCalendar.getStartAndEndDate(relation.alarm.startTime, relation.alarm.endTime).let { date ->
+                        relation.alarm = relation.alarm.apply {
+                            startDateTime = date.first
+                            endDateTime = date.second
+                        }
+                        alarmRepository.updateAlarm(relation.alarm)
                     }
-                    alarmRepository.updateAlarm(relation.alarm)
                 }
+                alarmRepository.scheduleAlarm(relation.alarm)
+                channel.send(ViewEvent.OnAlarmSet(relation, getScheduledAlarms()))
+            } else {
+                channel.send(ViewEvent.OnRequestExactAlarmPermission)
             }
-            alarmRepository.scheduleAlarm(relation.alarm)
-            channel.send(ViewEvent.OnAlarmSet(relation, getScheduledAlarms()))
         }
     }
 

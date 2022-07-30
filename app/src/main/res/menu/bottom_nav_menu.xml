@@ -4,10 +4,10 @@
         android:id="@+id/geofence_tab"
         android:enabled="true"
         android:icon="@drawable/ic_baseline_location_on_24"
-        android:title="Geofence"/>
+        android:title="@string/geofence"/>
     <item
         android:id="@+id/profile_tab"
         android:enabled="true"
         android:icon="@drawable/baseline_notifications_active_black_24dp"
-        android:title="Profile"/>
+        android:title="@string/profiles"/>
 </menu>

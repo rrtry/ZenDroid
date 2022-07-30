@@ -38,7 +38,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
-                android:textSize="30sp"
+                android:textSize="25sp"
                 android:transitionName="shared_transition_start_time"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/labelImageButton" />
@@ -58,10 +58,12 @@
                 android:id="@+id/endTime"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:transitionName="shared_transition_end_time"
                 android:layout_marginStart="8dp"
-                android:textSize="30sp"
+                android:layout_marginEnd="8dp"
+                android:textSize="25sp"
+                android:transitionName="shared_transition_end_time"
                 app:layout_constraintBottom_toBottomOf="@+id/startTime"
+                app:layout_constraintEnd_toStartOf="@+id/scheduleSwitch"
                 app:layout_constraintStart_toEndOf="@+id/clockViewSeparator"
                 app:layout_constraintTop_toTopOf="@+id/startTime" />
 
@@ -70,6 +72,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="16dp"
+                android:clickable="false"
+                android:focusable="false"
                 android:transitionName="shared_transition_switch"
                 app:layout_constraintBottom_toBottomOf="@+id/endTime"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -97,12 +101,14 @@
 
             <TextView
                 android:id="@+id/profileName"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
+                android:layout_marginEnd="16dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
                 app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/editAlarmButton"
                 app:layout_constraintStart_toEndOf="@+id/imageView3"
                 app:layout_constraintTop_toBottomOf="@+id/imageView4" />
 

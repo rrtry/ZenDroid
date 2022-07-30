@@ -12,8 +12,8 @@ class WeekDaysPickerDialog: BaseDialog() {
 
     private val viewModel: AlarmDetailsViewModel by activityViewModels()
 
-    override val title: String = "Weekdays"
-    override val arrayRes: Int = R.array.daysOfWeek
+    override val titleRes: Int = R.string.weekdays
+    override val arrayRes: Int = R.array.days_of_week
     override val values: List<Int> = listOf(
         MONDAY.value,
         TUESDAY.value,

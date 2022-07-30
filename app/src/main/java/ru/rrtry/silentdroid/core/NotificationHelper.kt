@@ -183,7 +183,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     fun postGeofenceExitNotification(profileTitle: String, locationTitle: String) {
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(profileTitle)
-            .setContentText("You've left $locationTitle'")
+            .setContentText(context.resources.getString(R.string.geofence_exit, locationTitle))
             .setSmallIcon(R.drawable.baseline_location_on_black_24dp)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
@@ -199,7 +199,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     fun postGeofenceEnterNotification(profileTitle: String, locationTitle: String) {
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(profileTitle)
-            .setContentText("You've entered $locationTitle'")
+            .setContentText(context.resources.getString(R.string.geofence_enter, locationTitle))
             .setSmallIcon(R.drawable.baseline_location_on_black_24dp)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
@@ -216,9 +216,14 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         profile: Profile,
         currentAlarmInstance: CurrentAlarmInstance
     ) {
-        val contentText = "'${profile.title}' at ${TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until!!)}"
+
+        val contentText = context.resources.getString(
+            R.string.next_scheduled_profile,
+            profile.title,
+            TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until!!))
+
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Next profile")
+            .setContentTitle(context.resources.getString(R.string.next_profile))
             .setContentText(contentText)
             .setSmallIcon(profile.iconRes)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -240,9 +245,12 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     ) {
         val until: LocalTime? = currentAlarmInstance?.until?.toLocalTime()
         val contentText: String = if (until == null) {
-            "'$profileTitle' will stay until you turn it off"
+            context.resources.getString(R.string.active_profile, profileTitle)
         } else {
-            "'$profileTitle' is on until ${TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until)}"
+            context.resources.getString(
+                R.string.active_until,
+                profileTitle,
+                TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until))
         }
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(alarmTitle ?: profileTitle)

@@ -60,13 +60,14 @@ import ru.rrtry.silentdroid.util.*
 import java.lang.Runnable
 import java.lang.ref.WeakReference
 import kotlin.collections.HashSet
+
 @AndroidEntryPoint
 class MapsActivity : AppCompatActivity(),
         OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener,
         GoogleMap.OnMapClickListener,
         GoogleMap.OnCameraMoveStartedListener,
-    DetailsViewContract<Location>,
+        DetailsViewContract<Location>,
         GeofenceManager.LocationRequestListener,
         NetworkStateObserver.NetworkCallback,
         GoogleMap.OnInfoWindowLongClickListener,
@@ -137,7 +138,7 @@ class MapsActivity : AppCompatActivity(),
         runOnUiThread {
             Toast.makeText(
                 this,
-                "Network is available",
+                resources.getString(R.string.network_available),
                 Toast.LENGTH_LONG).show()
         }
     }
@@ -146,7 +147,7 @@ class MapsActivity : AppCompatActivity(),
         runOnUiThread {
             Toast.makeText(
                 this,
-                "Network is unavailable",
+                resources.getString(R.string.network_unavailable),
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -156,6 +157,13 @@ class MapsActivity : AppCompatActivity(),
         lifecycleScope.launch {
             viewModel.updateLocation(location)
         }.invokeOnCompletion {
+            if (viewModel.isRegistered) {
+                geofenceManager.addGeofence(
+                    location,
+                    viewModel.enterProfile.value!!,
+                    viewModel.exitProfile.value!!
+                )
+            }
             onFinish(true)
         }
     }
@@ -169,11 +177,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onFinish(result: Boolean) {
-        if (viewModel.isRegistered && result) {
-            geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
-        } else {
-            finish()
-        }
+        finish()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -225,37 +229,39 @@ class MapsActivity : AppCompatActivity(),
             } else if (shouldShowRequestPermissionRationale(ACCESS_COARSE_LOCATION)) {
                 showSnackbar(
                     findViewById(android.R.id.content),
-                    "Location access required",
+                    resources.getString(R.string.location_access_required),
                     Snackbar.LENGTH_INDEFINITE,
-                    "Grant")
+                    resources.getString(R.string.grant))
                 {
                     coarseLocationPermissionLauncher.launch(ACCESS_COARSE_LOCATION)
                 }
             } else {
-                geofenceManager.openPackagePermissionSettings()
+                openPackageInfoActivity()
             }
         }
         backgroundLocationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { map ->
+
+            viewModel.backgroundLocationAccessGranted = geofenceManager.locationAccessGranted()
+
             if (!map.containsValue(false)) {
-                geofenceManager.addGeofence(viewModel.getLocation(), viewModel.enterProfile.value!!, viewModel.exitProfile.value!!)
-                finish()
+                viewModel.onApplyChangesButtonClick()
             } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
                 showSnackbar(
                     findViewById(android.R.id.content),
-                    "Geofencing feature requires all-time location access",
+                    resources.getString(R.string.snackbar_location_permission_explanation),
                     Snackbar.LENGTH_INDEFINITE,
-                    "Grant")
+                    resources.getString(R.string.grant))
                 {
                     geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
                 }
             } else {
                 showSnackbar(
                     findViewById(android.R.id.content),
-                    "Geofencing feature requires all-time location access",
+                    resources.getString(R.string.snackbar_location_permission_explanation),
                     Snackbar.LENGTH_INDEFINITE,
-                    "Open settings")
+                    resources.getString(R.string.open_settings))
                 {
-                    geofenceManager.openPackagePermissionSettings()
+                    openPackageInfoActivity()
                 }
             }
         }
@@ -330,6 +336,7 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onStart() {
         super.onStart()
+        viewModel.backgroundLocationAccessGranted = geofenceManager.locationAccessGranted()
         taskCancellationSource = CancellationTokenSource()
     }
 
@@ -472,7 +479,7 @@ class MapsActivity : AppCompatActivity(),
     override fun onLocationRequestFailure() {
         showSnackbar(
             findViewById(android.R.id.content),
-            "Enable location services",
+            resources.getString(R.string.enable_location_service),
             LENGTH_LONG)
     }
 
@@ -508,14 +515,15 @@ class MapsActivity : AppCompatActivity(),
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.events.collect {
-                        when (it) {
+                    viewModel.events.collect { event ->
+                        when (event) {
                             is ShowMapStylesDialog -> showMapStylesDialog()
                             is ObtainCurrentLocation -> onLocationRequest()
                             is ToggleFloatingActionMenu -> toggleFloatingActionMenuVisibility()
-                            is OnUpdateGeofenceEvent -> onUpdate(it.location)
-                            is OnInsertGeofenceEvent -> onInsert(it.location)
-                            is OnMapStyleChanged -> setMapStyle(it.style)
+                            is OnUpdateGeofenceEvent -> onUpdate(event.location)
+                            is OnInsertGeofenceEvent -> onInsert(event.location)
+                            is OnMapStyleChanged -> setMapStyle(event.style)
+                            is OnRequestBackgroundLocationPermission -> geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
                             else -> Log.i("MapsActivity", "unknown event")
                         }
                     }
@@ -550,8 +558,8 @@ class MapsActivity : AppCompatActivity(),
 
     override fun onInfoWindowLongClick(p0: Marker) {
         val clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-        clipboardManager.setPrimaryClip(ClipData.newPlainText("Address", marker?.title))
-        showSnackbar(findViewById(android.R.id.content), "Copied to clipboard", Snackbar.LENGTH_LONG)
+        clipboardManager.setPrimaryClip(ClipData.newPlainText(CLIPBOARD_LABEL, marker?.title))
+        showSnackbar(findViewById(android.R.id.content), resources.getString(R.string.clipboard), Snackbar.LENGTH_LONG)
     }
 
     override fun onMapClick(latLng: LatLng) {
@@ -584,7 +592,7 @@ class MapsActivity : AppCompatActivity(),
             if (elapsedTime + ViewUtil.DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
                 onFinish(false)
             } else {
-                showSnackbar(findViewById(android.R.id.content), "Press back button again to exit", LENGTH_LONG)
+                showSnackbar(findViewById(android.R.id.content), resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
             }
             elapsedTime = System.currentTimeMillis()
         }
@@ -600,6 +608,7 @@ class MapsActivity : AppCompatActivity(),
         private const val BOTTOM_SHEET_OFFSET: Float = 100f
         private const val EXTRA_ELAPSED_TIME: String = "elapsed"
         private const val EXTRA_LOCATION_RELATION: String = "location"
+        private const val CLIPBOARD_LABEL: String = "Address"
 
         fun newIntent(context: Context, locationRelation: LocationRelation?): Intent {
             return Intent(context, MapsActivity::class.java).apply {

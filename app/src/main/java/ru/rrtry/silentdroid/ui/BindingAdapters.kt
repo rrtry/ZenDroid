@@ -182,8 +182,8 @@ object BindingAdapters {
     @BindingAdapter("repeatingCallersPriorityCategories", "callSenders")
     fun bindRepeatingCallersSwitch(view: Switch, repeatingCallersPriorityCategories: Int, callSenders: Int): Unit {
         if (callSenders == PRIORITY_SENDERS_ANY
-            && containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS)
-        ) {
+            && containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_CALLS))
+        {
             view.isChecked = true
         } else {
             view.isChecked = containsCategory(repeatingCallersPriorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS)

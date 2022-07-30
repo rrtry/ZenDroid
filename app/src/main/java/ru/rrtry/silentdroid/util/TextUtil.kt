@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getInt
 import android.util.Log
+import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.core.WeekDay
 import java.time.*
 import java.time.format.FormatStyle
@@ -105,10 +106,10 @@ class TextUtil {
         }
 
         @JvmStatic
-        fun formatWeekDays(scheduledDays: Int): String {
+        fun formatWeekDays(context: Context, scheduledDays: Int): String {
             return when (scheduledDays) {
-                WeekDay.ALL_DAYS -> "Every day"
-                WeekDay.NONE -> "Not repeating"
+                WeekDay.ALL_DAYS -> context.resources.getString(R.string.every_day)
+                WeekDay.NONE -> context.resources.getString(R.string.not_repeating)
                 else -> {
 
                     val days: List<WeekDay> = WeekDay.values.filter { (scheduledDays and it.value) != 0 }

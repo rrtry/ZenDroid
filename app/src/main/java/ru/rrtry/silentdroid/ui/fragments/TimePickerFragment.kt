@@ -13,6 +13,7 @@ import java.time.LocalTime
 import ru.rrtry.silentdroid.viewmodels.AlarmDetailsViewModel.DialogType.START_TIME
 import ru.rrtry.silentdroid.viewmodels.AlarmDetailsViewModel.DialogType.END_TIME
 import ru.rrtry.silentdroid.viewmodels.AlarmDetailsViewModel.DialogType
+import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel
 
 @AndroidEntryPoint
 class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
@@ -21,14 +22,17 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
     private lateinit var dialogType: DialogType
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        dialogType = arguments?.getSerializable(ARG_DIALOG_TYPE) as DialogType
-        (arguments?.getSerializable(ARG_LOCAL_TIME) as? LocalTime)?.let {
-            return TimePickerDialog(
-                context,
-                this, it.hour, it.minute,
-                DateFormat.is24HourFormat(context))
-        }
-        throw IllegalArgumentException("Arguments cannot be null")
+
+        val localTime: LocalTime = requireArguments().getSerializable(ARG_LOCAL_TIME) as? LocalTime
+            ?: throw IllegalArgumentException("localtime not specified")
+
+        dialogType = requireArguments().getSerializable(ARG_DIALOG_TYPE) as? DialogType
+            ?: throw IllegalArgumentException("dialogType not specified")
+
+        return TimePickerDialog(
+            context,
+            this, localTime.hour, localTime.minute,
+            DateFormat.is24HourFormat(context))
     }
 
     override fun onTimeSet(view: TimePicker, hourOfDay: Int, minute: Int) {
@@ -51,7 +55,7 @@ class TimePickerFragment: DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
         fun newInstance(localTime: LocalTime, dialogType: DialogType): TimePickerFragment {
             return TimePickerFragment().apply {
-                this.arguments = Bundle().apply {
+                arguments = Bundle().apply {
                     putSerializable(ARG_LOCAL_TIME, localTime)
                     putSerializable(ARG_DIALOG_TYPE, dialogType)
                 }
