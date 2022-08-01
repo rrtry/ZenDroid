@@ -90,6 +90,14 @@ class GeofenceManager @Inject constructor(
         return foregroundLocationApproved && backgroundLocationApproved
     }
 
+    fun shouldShowPermissionRequestRationale(activity: Activity): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return activity.shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) &&
+                    activity.shouldShowRequestPermissionRationale(ACCESS_BACKGROUND_LOCATION)
+        }
+        return activity.shouldShowRequestPermissionRationale(ACCESS_LOCATION)
+    }
+
     @RequiresPermission(ACCESS_FINE_LOCATION)
     fun addGeofence(location: Location, enterProfile: Profile, exitProfile: Profile) {
         geofencingClient.addGeofences(getGeofencingRequest(listOf(location)), createGeofencingPendingIntent(location, enterProfile, exitProfile))
@@ -161,11 +169,21 @@ class GeofenceManager @Inject constructor(
     }
 
     fun requestLocationPermission(launcher: ActivityResultLauncher<Array<String>>) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            launcher.launch(arrayOf(ACCESS_FINE_LOCATION, ACCESS_BACKGROUND_LOCATION))
-        } else {
-            launcher.launch(arrayOf(ACCESS_FINE_LOCATION))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            launcher.launch(arrayOf(
+                if (context.checkPermission(ACCESS_FINE_LOCATION)) {
+                    ACCESS_BACKGROUND_LOCATION
+                } else {
+                    ACCESS_FINE_LOCATION
+                }
+            ))
+            return
         }
+        val permissions: MutableList<String> = mutableListOf(ACCESS_FINE_LOCATION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            permissions.add(ACCESS_BACKGROUND_LOCATION)
+        }
+        launcher.launch(permissions.toTypedArray())
     }
 
     fun checkLocationServicesAvailability(activity: Activity) {

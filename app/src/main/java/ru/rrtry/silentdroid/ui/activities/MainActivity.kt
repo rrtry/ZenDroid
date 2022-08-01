@@ -2,8 +2,12 @@ package ru.rrtry.silentdroid.ui.activities
 
 import android.app.Activity
 import android.content.Intent
+import android.media.AudioManager
+import android.media.AudioManager.*
 import android.os.Bundle
+import android.provider.Settings
 import android.transition.Fade
+import android.util.Log
 import android.view.*
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +29,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import ru.rrtry.silentdroid.R
+import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.databinding.ActivityMainBinding
 import javax.inject.Inject
 

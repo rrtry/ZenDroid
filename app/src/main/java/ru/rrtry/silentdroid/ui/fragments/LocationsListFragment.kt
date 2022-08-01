@@ -1,6 +1,9 @@
 package ru.rrtry.silentdroid.ui.fragments
 
+import android.Manifest
+import android.Manifest.permission.*
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -83,16 +86,27 @@ class LocationsListFragment:
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        locationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { map ->
-            if (!map.containsValue(false)) {
-                geofenceManager.checkLocationServicesAvailability(requireActivity())
-            } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
-                callback?.showSnackBar(resources.getString(R.string.snackbar_alarm_permission_explanation), length = Snackbar.LENGTH_INDEFINITE) {
+        locationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { permissions ->
+
+            val permission: String = permissions.keys.toList()[permissions.size - 1]
+
+            if (!permissions.containsValue(false)) {
+                if (geofenceManager.locationAccessGranted()) {
+                    geofenceManager.checkLocationServicesAvailability(requireActivity())
+                } else {
                     requestLocationPermission()
                 }
             } else {
-                callback?.showSnackBar(resources.getString(R.string.snackbar_alarm_permission_explanation), length = Snackbar.LENGTH_INDEFINITE) {
-                    context.openPackageInfoActivity()
+                callback?.showSnackBar(
+                    resources.getString(R.string.snackbar_location_permission_explanation),
+                    resources.getString(R.string.grant),
+                    length = Snackbar.LENGTH_INDEFINITE)
+                {
+                    if (shouldShowRequestPermissionRationale(permission)) {
+                        requestLocationPermission()
+                    } else {
+                        context.openPackageInfoActivity()
+                    }
                 }
             }
         }
@@ -184,7 +198,7 @@ class LocationsListFragment:
     }
 
     override fun onEnable(entity: LocationRelation) {
-        if (checkPermission(ACCESS_LOCATION)) {
+        if (geofenceManager.locationAccessGranted()) {
             viewModel.enableGeofence(entity)
         } else {
             viewModel.requestLocationPermission()
@@ -223,6 +237,12 @@ class LocationsListFragment:
                 requireActivity().supportFragmentManager,
                 null
             )
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            !checkPermission(ACCESS_COARSE_LOCATION))
+        {
+            requireActivity().requestPermissions(arrayOf(ACCESS_COARSE_LOCATION), 162)
             return
         }
         startMapActivity()

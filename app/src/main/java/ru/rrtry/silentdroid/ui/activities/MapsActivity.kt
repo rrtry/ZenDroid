@@ -236,22 +236,25 @@ class MapsActivity : AppCompatActivity(),
                     coarseLocationPermissionLauncher.launch(ACCESS_COARSE_LOCATION)
                 }
             } else {
-                openPackageInfoActivity()
-            }
-        }
-        backgroundLocationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { map ->
-
-            viewModel.backgroundLocationAccessGranted = geofenceManager.locationAccessGranted()
-
-            if (!map.containsValue(false)) {
-                viewModel.onApplyChangesButtonClick()
-            } else if (shouldShowRequestPermissionRationale(ACCESS_LOCATION)) {
                 showSnackbar(
                     findViewById(android.R.id.content),
-                    resources.getString(R.string.snackbar_location_permission_explanation),
+                    resources.getString(R.string.location_access_required),
                     Snackbar.LENGTH_INDEFINITE,
-                    resources.getString(R.string.grant))
+                    resources.getString(R.string.open_settings))
                 {
+                    openPackageInfoActivity()
+                }
+            }
+        }
+        backgroundLocationPermissionLauncher = registerForActivityResult(RequestMultiplePermissions()) { permissions ->
+
+            val permission: String = permissions.keys.toList()[permissions.size - 1]
+            viewModel.backgroundLocationAccessGranted = geofenceManager.locationAccessGranted()
+
+            if (!permissions.containsValue(false)) {
+                if (viewModel.backgroundLocationAccessGranted) {
+                    geofenceManager.checkLocationServicesAvailability(this)
+                } else {
                     geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
                 }
             } else {
@@ -259,9 +262,13 @@ class MapsActivity : AppCompatActivity(),
                     findViewById(android.R.id.content),
                     resources.getString(R.string.snackbar_location_permission_explanation),
                     Snackbar.LENGTH_INDEFINITE,
-                    resources.getString(R.string.open_settings))
+                    resources.getString(R.string.grant))
                 {
-                    openPackageInfoActivity()
+                    if (shouldShowRequestPermissionRationale(permission)) {
+                        geofenceManager.requestLocationPermission(backgroundLocationPermissionLauncher)
+                    } else {
+                        openPackageInfoActivity()
+                    }
                 }
             }
         }

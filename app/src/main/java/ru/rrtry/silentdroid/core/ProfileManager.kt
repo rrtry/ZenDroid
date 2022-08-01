@@ -17,6 +17,7 @@ import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.media.RingtoneManager.*
+import android.provider.Settings.System.MUTE_STREAMS_AFFECTED
 import android.provider.Settings.System.VIBRATE_WHEN_RINGING
 import android.telephony.TelephonyManager.CALL_STATE_RINGING
 import ru.rrtry.silentdroid.R
@@ -262,10 +263,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 return audioManager.getStreamMinVolume(streamType)
             }
-            if (streamType == STREAM_VOICE_CALL || streamType == STREAM_ALARM) {
-                return 1
-            }
-            return 0
+            return if (streamType == STREAM_ALARM || streamType == STREAM_VOICE_CALL) 1 else 0
         }
 
         @JvmStatic

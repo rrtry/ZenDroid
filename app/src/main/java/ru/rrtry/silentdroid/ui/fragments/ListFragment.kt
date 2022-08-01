@@ -14,6 +14,7 @@ import android.os.Looper
 import android.os.Parcelable
 import android.os.PowerManager
 import android.provider.Settings
+import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -285,16 +286,18 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         if (!notificationManager.isNotificationPolicyAccessGranted) {
             callback?.showSnackBar(
                 resources.getString(R.string.grant_dnd_access),
+                resources.getString(R.string.grant),
                 length = Snackbar.LENGTH_INDEFINITE)
             {
                 notificationPolicySettingsLauncher.launch(
-                    Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                    Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
                 )
             }
             return true
         } else if (!canWriteSettings(requireContext())) {
             callback?.showSnackBar(
                 resources.getString(R.string.grant_system_settings_access),
+                resources.getString(R.string.grant),
                 length = Snackbar.LENGTH_INDEFINITE)
             {
                 systemSettingsLauncher.launch(
@@ -307,6 +310,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
         } else if (!checkPermission(READ_PHONE_STATE) && profile.streamsUnlinked) {
             callback?.showSnackBar(
                 resources.getString(R.string.grant_phone_permission),
+                resources.getString(R.string.grant),
                 length = Snackbar.LENGTH_INDEFINITE)
             {
                 phonePermissionLauncher.launch(READ_PHONE_STATE)
