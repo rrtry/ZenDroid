@@ -1,6 +1,5 @@
 package ru.rrtry.silentdroid.core
 
-import androidx.annotation.VisibleForTesting
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
@@ -29,8 +28,8 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         return alarm.scheduledDays != WeekDay.NONE
     }
 
-    private fun isDayInSchedule(days: Int, day: DayOfWeek): Boolean {
-        return (days and WeekDay.fromDay(day.value)) != WeekDay.NONE
+    private fun isDayInSchedule(day: DayOfWeek): Boolean {
+        return (alarm.scheduledDays and WeekDay.fromDay(day.value)) != WeekDay.NONE
     }
 
     fun isValid(): Boolean {
@@ -97,31 +96,22 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         }
     }
 
-    private fun meetsDayOfWeek(): Boolean {
-        return isDayInSchedule(alarm.scheduledDays, now.dayOfWeek) ||
-                (isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1) &&
-                        alarm.startTime >= alarm.endTime)
-    }
-
-    private fun meetsScheduledHours(): Boolean {
-
-        var inRange: Boolean = isDayInSchedule(alarm.scheduledDays, now.dayOfWeek)
-
-        if (alarm.startTime >= alarm.endTime && now.toLocalTime() < alarm.startTime) {
-            inRange = isDayInSchedule(alarm.scheduledDays, now.dayOfWeek - 1) &&
-                    now.toLocalTime() < alarm.endTime
-        }
-        return meetsScheduledHours(now.toLocalTime(), alarm.startTime, alarm.endTime) && inRange
-    }
-
     private fun meetsSchedule(): Boolean {
-        if (isRecurring()) {
-            return meetsDayOfWeek() && meetsScheduledHours()
-        } else {
-            now.toLocalDateTime().also {
-                return !it.isBefore(alarm.startDateTime) &&
-                        it.isBefore(alarm.endDateTime)
+        return if (isRecurring()) {
+            if (alarm.startTime >= alarm.endTime) {
+                (isDayInSchedule(now.dayOfWeek) && now.toLocalTime() >= alarm.startTime) ||
+                        (isDayInSchedule(now.dayOfWeek - 1) && now.toLocalTime() < alarm.endTime)
+            } else {
+                isDayInSchedule(now.dayOfWeek) && meetsScheduledHours(
+                    now.toLocalTime(),
+                    alarm.startTime,
+                    alarm.endTime
+                )
             }
+        } else {
+            val now: LocalDateTime = now.toLocalDateTime()
+            return !now.isBefore(alarm.startDateTime) &&
+                    now.isBefore(alarm.endDateTime)
         }
     }
 
@@ -150,17 +140,17 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         } else {
             now.dayOfWeek
         }
-        return now.toLocalTime() >= alarm.endTime && isDayInSchedule(alarm.scheduledDays, dayOfWeek)
+        return now.toLocalTime() >= alarm.endTime && isDayInSchedule(dayOfWeek)
     }
 
     private fun getPreviousWeekDay(): DayOfWeek {
 
         var previousDay: DayOfWeek = now.dayOfWeek
 
-        if (isDayInSchedule(alarm.scheduledDays, previousDay)) {
+        if (isDayInSchedule(previousDay)) {
             previousDay -= 1
         }
-        while (!isDayInSchedule(alarm.scheduledDays, previousDay)) {
+        while (!isDayInSchedule(previousDay)) {
             previousDay -= 1
         }
         if (alarm.startTime >= alarm.endTime) previousDay += 1
@@ -171,10 +161,10 @@ class ScheduleCalendar(var now: ZonedDateTime) {
 
         var nextDay: DayOfWeek = now.dayOfWeek
 
-        if (isDayInSchedule(alarm.scheduledDays, nextDay)) {
+        if (isDayInSchedule(nextDay)) {
             if (now.toLocalTime() < alarm.startTime) return nextDay else nextDay += 1
         }
-        while (!isDayInSchedule(alarm.scheduledDays, nextDay)) {
+        while (!isDayInSchedule(nextDay)) {
             nextDay += 1
         }
         return nextDay

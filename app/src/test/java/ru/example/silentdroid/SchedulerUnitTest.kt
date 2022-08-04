@@ -2,7 +2,6 @@ package ru.example.silentdroid
 
 import org.junit.Test
 import org.junit.Assert.assertEquals
-
 import ru.rrtry.silentdroid.core.ScheduleCalendar
 import ru.rrtry.silentdroid.core.WeekDay
 import ru.rrtry.silentdroid.entities.Alarm
@@ -18,7 +17,6 @@ class SchedulerUnitTest {
         LocalDateTime.of(2022, Month.AUGUST, 1, 0, 0, 0, 0),
         ZoneId.systemDefault()
     )
-
     private val scheduleCalendar: ScheduleCalendar = ScheduleCalendar(zdt)
 
     private var alarm: Alarm = Alarm(
@@ -264,5 +262,29 @@ class SchedulerUnitTest {
         scheduleCalendar.now = zdt
         scheduleCalendar.alarm = alarm
         assertEquals(zdt.withHour(18), scheduleCalendar.getNextOccurrence())
+    }
+
+    @Test
+    fun testGetEventNextStartTimeMultipleDays() {
+        scheduleCalendar.now = zdt
+        scheduleCalendar.alarm = alarm.apply {
+            scheduledDays = WeekDay.MONDAY.value or WeekDay.THURSDAY.value
+        }
+        assertEquals(
+            zdt.withHour(16),
+            scheduleCalendar.getNextOccurrence()
+        )
+    }
+
+    @Test
+    fun testGetEventPreviousEndTimeMultipleDays() {
+        scheduleCalendar.now = zdt
+        scheduleCalendar.alarm = alarm.apply {
+            scheduledDays = WeekDay.MONDAY.value or WeekDay.THURSDAY.value
+        }
+        assertEquals(
+            zdt.withMonth(Month.JULY.value).withDayOfMonth(28).withHour(18),
+            scheduleCalendar.getPreviousOccurrence()
+        )
     }
 }
