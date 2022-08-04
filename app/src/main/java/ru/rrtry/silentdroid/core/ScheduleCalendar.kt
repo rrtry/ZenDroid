@@ -1,5 +1,6 @@
 package ru.rrtry.silentdroid.core
 
+import androidx.annotation.VisibleForTesting
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.entities.CurrentAlarmInstance

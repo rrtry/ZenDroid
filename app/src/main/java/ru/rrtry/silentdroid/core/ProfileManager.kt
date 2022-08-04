@@ -163,7 +163,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
                 PRIORITY_CATEGORY_CALLS,
                 PRIORITY_SENDERS_ANY,
                 PRIORITY_SENDERS_ANY,
-            0,
+                0,
                 CONVERSATION_SENDERS_NONE
         )
     }
