@@ -6,7 +6,7 @@ enum class WeekDay(val num: Int, val value: Int) {
 
     TUESDAY(2, 0x4),
 
-    WEDNESDAY(3,0x8),
+    WEDNESDAY(3, 0x8),
 
     THURSDAY(4, 0x10),
 
@@ -24,7 +24,7 @@ enum class WeekDay(val num: Int, val value: Int) {
         const val NONE: Int = 0x0
 
         val values: Array<WeekDay>
-            get() = values()
+        get() = values()
 
         fun fromDay(day: Int): Int {
             return values[day - 1].value

@@ -94,18 +94,18 @@
         </receiver>
 
 
-        <service android:name="ru.rrtry.silentdroid.services.PlaybackService"
+        <service android:name="ru.rrtry.silentdroid.services.RingtonePlaybackService"
             android:exported="false"/>
 
         <activity
-            android:name="ru.rrtry.silentdroid.ui.activities.ProfileDetailsDetailsActivity"
+            android:name="ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
         <activity
             android:name="ru.rrtry.silentdroid.ui.activities.AlarmDetailsActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar" />
 
-        <activity android:name="ru.rrtry.silentdroid.ui.activities.MainActivity"
+        <activity android:name="ru.rrtry.silentdroid.ui.activities.ViewPagerActivity"
             android:theme="@style/Theme.VolumeProfiler.NoActionBar"
             android:exported="true">
             <intent-filter>

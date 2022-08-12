@@ -9,7 +9,8 @@ import javax.inject.Inject
 import android.media.AudioManager.*
 import dagger.hilt.android.AndroidEntryPoint
 import android.telephony.TelephonyManager.*
-import android.util.Log
+import ru.rrtry.silentdroid.core.PreferencesManager.Companion.PREFS_STREAM_TYPE_INDEPENDENT
+import ru.rrtry.silentdroid.entities.Profile
 
 @AndroidEntryPoint
 class PhoneStateReceiver: BroadcastReceiver() {
@@ -20,30 +21,26 @@ class PhoneStateReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.action == ACTION_PHONE_STATE_CHANGED) {
 
-            preferencesManager.getProfile()?.let { profile ->
+            val profile: Profile = preferencesManager.getProfile() ?: return
+            val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
 
-                if (profileManager.isRingerAudible(profile)) {
+            if (!profileManager.isRingerAudible(profile)) return
+            if (preferencesManager.getNotificationStreamType() == PREFS_STREAM_TYPE_INDEPENDENT) return
 
-                    val phoneState: String? = intent.extras?.getString(EXTRA_STATE)
-
-                    if (phoneState == EXTRA_STATE_RINGING) {
-                        Log.i("PhoneStateReceiver", "STATE_RINGING")
-                        profileManager.setRingerMode(
-                            STREAM_RING,
-                            profile.ringVolume,
-                            profile.ringerMode,
-                            FLAG_ALLOW_RINGER_MODES
-                        )
-                    } else if (phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) {
-                        Log.i("PhoneStateReceiver", "STATE_OFFHOOK")
-                        profileManager.setRingerMode(
-                            STREAM_NOTIFICATION,
-                            profile.notificationVolume,
-                            profile.notificationMode,
-                            FLAG_ALLOW_RINGER_MODES
-                        )
-                    }
-                }
+            if (phoneState == EXTRA_STATE_RINGING) {
+                profileManager.setRingerMode(
+                    STREAM_RING,
+                    profile.ringVolume,
+                    profile.ringerMode,
+                    FLAG_ALLOW_RINGER_MODES
+                )
+            } else if (phoneState == EXTRA_STATE_OFFHOOK || phoneState == EXTRA_STATE_IDLE) {
+                profileManager.setRingerMode(
+                    STREAM_NOTIFICATION,
+                    profile.notificationVolume,
+                    profile.notificationMode,
+                    FLAG_ALLOW_RINGER_MODES
+                )
             }
         }
     }

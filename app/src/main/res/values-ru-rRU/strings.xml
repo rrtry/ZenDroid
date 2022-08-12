@@ -121,6 +121,13 @@
     <string name="profile_title">Название профиля</string>
     <string name="new_profile_title">Новый профиль</string>
     <string name="not_set">Без звука</string>
+    <string name="close">Закрыть</string>
+    <string name="permission_location">Местоположение</string>
+    <string name="permission_background_location">Местоположение в фоне</string>
+    <string name="permission_system_settings_access">Доступ к системным настройкам</string>
+    <string name="permission_dnd_access">Режим \'Не беспокоить\'</string>
+    <string name="permission_phone">Телефон</string>
+    <string name="notification_channel_name">Текущий профиль</string>
 
     <plurals name="days">
         <item quantity="one" tools:ignore="ImpliedQuantity">1 день</item>
@@ -189,19 +196,21 @@
         Введите значение от -180 до 180
     </string>
     <string name="phone_permission_explanation">
-        Phone state permission explanation
+        Поскольку отдельное управление громкостью звонка и уведомлений на вашем устройстве невозможно, приложению необходим
+        доступ к состоянию телефона для предоставления этой функции. Регулировка громкости произойдёт автоматически при входящем вызове
     </string>
     <string name="location_permission_explanation">
-        Location permission explanation
+        Требуется доступ к отслеживанию местоположения
     </string>
     <string name="background_location_access_explanation">
-        Background location permission explanation
+        Для работы геозон требуется доступ к отслеживанию местоположения в фоне
     </string>
     <string name="interruption_policy_access_explanation">
-        Do not disturb access permission explanation
+        Доступ к режиму «Не беспокоить» необходим для управления уведомлениями, т.е для изменения их звука или видимости.
+        Это единственное необходимое разрешение, остальные опциональны
     </string>
     <string name="system_settings_permission_explanation">
-        System settings permission explanation
+        Доступ к настройкам требуется для изменения общесистемных настроек, таких как мелодии звонка или вибрации.
     </string>
     <string name="permission_denial_warning">
         Требуется разрешение

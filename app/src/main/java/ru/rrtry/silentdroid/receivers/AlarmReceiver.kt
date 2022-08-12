@@ -48,7 +48,6 @@ class AlarmReceiver: BroadcastReceiver() {
             }
             ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED, ACTION_TIME_CHANGED, ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
                 goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                    Log.i("AlarmReceiver", intent.action.toString())
                     scheduleAlarmInstances()
                 }
             }

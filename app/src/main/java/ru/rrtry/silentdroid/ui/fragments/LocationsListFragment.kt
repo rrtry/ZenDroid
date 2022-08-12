@@ -1,6 +1,5 @@
 package ru.rrtry.silentdroid.ui.fragments
 
-import android.Manifest
 import android.Manifest.permission.*
 import android.content.Context
 import android.os.Build
@@ -23,11 +22,10 @@ import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.adapters.LocationAdapter
 import ru.rrtry.silentdroid.core.FileManager
 import ru.rrtry.silentdroid.core.GeofenceManager
-import ru.rrtry.silentdroid.core.GeofenceManager.Companion.ACCESS_LOCATION
 import ru.rrtry.silentdroid.entities.LocationRelation
 import ru.rrtry.silentdroid.interfaces.FabContainer
 import ru.rrtry.silentdroid.interfaces.ListViewContract
-import ru.rrtry.silentdroid.ui.activities.MainActivity.Companion.LOCATIONS_FRAGMENT
+import ru.rrtry.silentdroid.ui.activities.ViewPagerActivity.Companion.LOCATIONS_FRAGMENT
 import ru.rrtry.silentdroid.ui.activities.MapsActivity
 import ru.rrtry.silentdroid.util.checkPermission
 import ru.rrtry.silentdroid.viewmodels.LocationsListViewModel

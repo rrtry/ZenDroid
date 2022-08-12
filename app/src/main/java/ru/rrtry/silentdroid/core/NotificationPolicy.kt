@@ -3,60 +3,37 @@ package ru.rrtry.silentdroid.core
 import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
+import android.media.AudioManager.RINGER_MODE_SILENT
+import android.media.AudioManager.RINGER_MODE_VIBRATE
 
-fun containsCategory(mask: Int, bit: Int): Boolean {
-    return (mask and bit) != 0
+fun containsCategory(categories: Int, category: Int): Boolean {
+    return (categories and category) != 0
 }
 
-fun getPriorityCategoriesList(mask: Int): List<Int> {
+fun getOtherInterruptionsList(mask: Int): List<Int> {
     val categories: MutableList<Int> = mutableListOf(
         PRIORITY_CATEGORY_EVENTS,
         PRIORITY_CATEGORY_REMINDERS,
     )
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        categories += PRIORITY_CATEGORY_CONVERSATIONS
-    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        categories += arrayOf(
-            PRIORITY_CATEGORY_SYSTEM,
-            PRIORITY_CATEGORY_MEDIA,
-            PRIORITY_CATEGORY_ALARMS
+        categories.addAll(
+            arrayOf(
+                PRIORITY_CATEGORY_SYSTEM,
+                PRIORITY_CATEGORY_MEDIA,
+                PRIORITY_CATEGORY_ALARMS
+            )
         )
     }
     return categories.filter { category -> containsCategory(mask, category) }
 }
 
-fun interruptionFilterAllowsNotifications(notificationInterruptionFilter: Int, notificationPriorityCategories: Int): Boolean {
-    return when (notificationInterruptionFilter) {
-        INTERRUPTION_FILTER_PRIORITY -> {
-            if (Build.VERSION_CODES.R >= Build.VERSION.SDK_INT) {
-                containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_MESSAGES) ||
-                        containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_REMINDERS) ||
-                        containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_EVENTS)
-            } else {
-                containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_MESSAGES) ||
-                        containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_REMINDERS) ||
-                        containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_EVENTS) ||
-                        containsCategory(notificationPriorityCategories, PRIORITY_CATEGORY_CONVERSATIONS)
-            }
-        }
-        INTERRUPTION_FILTER_ALL -> true
-        INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
-        else -> false
-    }
-}
-
-fun interruptionPolicyAllowsNotificationStream(
-    notificationInterruptionFilter: Int,
-    notificationPriorityCategories: Int,
-    notificationAccessGranted: Boolean): Boolean {
-    return if (!notificationAccessGranted) {
-        true
-    } else {
-        return interruptionFilterAllowsNotifications(
-            notificationInterruptionFilter,
-            notificationPriorityCategories)
-    }
+fun ringerModeMutesNotifications(
+    ringerMode: Int,
+    hasSeparateNotificationStream: Boolean,
+): Boolean {
+    return hasSeparateNotificationStream &&
+            (ringerMode == RINGER_MODE_SILENT ||
+            ringerMode == RINGER_MODE_VIBRATE)
 }
 
 fun interruptionPolicyAllowsNotificationStream(
@@ -65,75 +42,78 @@ fun interruptionPolicyAllowsNotificationStream(
     notificationAccessGranted: Boolean,
     streamsUnlinked: Boolean): Boolean
 {
-    val state: Boolean = interruptionFilterAllowsNotifications(
-        notificationInterruptionFilter,
-        notificationPriorityCategories)
-
-    return if (!streamsUnlinked) {
-        false
-    } else if (notificationAccessGranted) {
-        state
-    } else {
-        true
+    if (!streamsUnlinked) return false
+    if (notificationAccessGranted) {
+        return interruptionPolicyAllowsRingerStream(
+            notificationInterruptionFilter,
+            notificationPriorityCategories,
+            notificationAccessGranted,
+            streamsUnlinked
+        )
     }
+    return true
 }
 
 fun interruptionPolicyAllowsRingerStream(
     interruptionFilter: Int,
     priorityCategories: Int,
     notificationAccessGranted: Boolean,
-    streamsUnlinked: Boolean): Boolean {
-    return if (!notificationAccessGranted) {
-        true
-    } else {
-        val state: Boolean = when (interruptionFilter) {
-            INTERRUPTION_FILTER_PRIORITY -> containsCategory(priorityCategories, PRIORITY_CATEGORY_CALLS) || containsCategory(
-                priorityCategories, PRIORITY_CATEGORY_REPEAT_CALLERS
+    streamsUnlinked: Boolean): Boolean
+{
+    if (!notificationAccessGranted) return true
+    return when (interruptionFilter) {
+        INTERRUPTION_FILTER_PRIORITY -> {
+            val allowedCategories: MutableList<Int> = mutableListOf(
+                PRIORITY_CATEGORY_CALLS,
+                PRIORITY_CATEGORY_REPEAT_CALLERS,
+                PRIORITY_CATEGORY_REMINDERS,
+                PRIORITY_CATEGORY_EVENTS,
+                PRIORITY_CATEGORY_MESSAGES
             )
-            INTERRUPTION_FILTER_ALL -> true
-            INTERRUPTION_FILTER_NONE, INTERRUPTION_FILTER_ALARMS -> false
-            else -> false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                allowedCategories.add(PRIORITY_CATEGORY_SYSTEM)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                allowedCategories.add(PRIORITY_CATEGORY_CONVERSATIONS)
+            }
+            allowedCategories.any { category -> containsCategory(priorityCategories, category) }
         }
-        if (streamsUnlinked) {
-            state
-        } else {
-            state || interruptionPolicyAllowsNotificationStream(
-                interruptionFilter,
-                priorityCategories,
-                notificationAccessGranted)
-        }
+        INTERRUPTION_FILTER_ALL -> true
+        else -> false
     }
 }
 
 fun interruptionPolicyAllowsAlarmsStream(interruptionFilter: Int,
                                          priorityCategories: Int,
                                          notificationAccessGranted: Boolean): Boolean {
-    return if (!notificationAccessGranted) {
-        true
-    } else {
-        if (interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
+    if (!notificationAccessGranted) return true
+    return when (interruptionFilter) {
+        INTERRUPTION_FILTER_PRIORITY -> {
             if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
                 containsCategory(priorityCategories, PRIORITY_CATEGORY_ALARMS)
             } else {
                 true
             }
-        } else interruptionFilter == INTERRUPTION_FILTER_ALL || interruptionFilter == INTERRUPTION_FILTER_ALARMS
+        }
+        INTERRUPTION_FILTER_ALL, INTERRUPTION_FILTER_ALARMS -> true
+        else -> false
     }
 }
 
 fun interruptionPolicyAllowsMediaStream(interruptionFilter: Int,
                                         priorityCategories: Int,
                                         notificationAccessGranted: Boolean): Boolean {
-    return if (!notificationAccessGranted) {
-        true
-    } else {
-        if (interruptionFilter == INTERRUPTION_FILTER_PRIORITY) {
+    if (!notificationAccessGranted) return true
+    return when (interruptionFilter) {
+        INTERRUPTION_FILTER_PRIORITY -> {
             if (Build.VERSION_CODES.P <= Build.VERSION.SDK_INT) {
                 containsCategory(priorityCategories, PRIORITY_CATEGORY_MEDIA)
             } else {
                 true
             }
-        } else interruptionFilter == INTERRUPTION_FILTER_ALL || interruptionFilter == INTERRUPTION_FILTER_ALARMS
+        }
+        INTERRUPTION_FILTER_ALL, INTERRUPTION_FILTER_ALARMS -> true
+        else -> false
     }
 }
 

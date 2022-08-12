@@ -1,5 +1,6 @@
 package ru.rrtry.silentdroid.viewmodels
 
+import android.Manifest.permission.*
 import android.net.Uri
 import androidx.lifecycle.*
 import ru.rrtry.silentdroid.entities.AlarmRelation
@@ -27,10 +28,7 @@ import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUM
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.withContext
-import ru.rrtry.silentdroid.core.interruptionPolicyAllowsAlarmsStream
-import ru.rrtry.silentdroid.core.interruptionPolicyAllowsMediaStream
-import ru.rrtry.silentdroid.core.interruptionPolicyAllowsNotificationStream
-import ru.rrtry.silentdroid.core.interruptionPolicyAllowsRingerStream
+import ru.rrtry.silentdroid.core.*
 
 @HiltViewModel
 class ProfileDetailsViewModel @Inject constructor(
@@ -67,15 +65,15 @@ class ProfileDetailsViewModel @Inject constructor(
         object PhonePermissionRequestEvent: ViewEvent()
         object ShowPopupWindowEvent: ViewEvent()
         object StartContactsActivity: ViewEvent()
+        object StartConversationsActivity: ViewEvent()
         object WriteSystemSettingsRequestEvent: ViewEvent()
-        object ToggleFloatingActionMenu: ViewEvent()
 
         data class StartRingtonePlayback(val streamType: Int): ViewEvent()
         data class StopRingtonePlayback(val streamType: Int): ViewEvent()
         data class ResumeRingtonePlayback(val streamType: Int, val position: Int): ViewEvent()
 
         data class ShowDialogFragment(val dialogType: DialogType): ViewEvent()
-        data class ChangeRingerMode(val streamType: Int, val showSnackbar: Boolean, val vibrate: Boolean): ViewEvent()
+        data class ChangeRingerMode(val streamType: Int, val hasSeparateNotificationStream: Boolean): ViewEvent()
         data class GetDefaultRingtoneUri(val type: Int): ViewEvent()
         data class ChangeRingtoneEvent(val ringtoneType: Int): ViewEvent()
         data class ShowPopupWindow(val category: Int): ViewEvent()
@@ -134,6 +132,7 @@ class ProfileDetailsViewModel @Inject constructor(
     val musicRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val streamsUnlinked: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val notificationStreamIndependent: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val interruptionFilter: MutableStateFlow<Int> = MutableStateFlow(INTERRUPTION_FILTER_PRIORITY)
     val priorityCategories: MutableStateFlow<Int> = MutableStateFlow(0)
@@ -147,7 +146,7 @@ class ProfileDetailsViewModel @Inject constructor(
     val canWriteSettings: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val ringerMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_NORMAL)
-    val notificationMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_SILENT)
+    val notificationMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_NORMAL)
 
     val policyAllowsMediaStream: Flow<Boolean> = combine(
         interruptionFilter,
@@ -269,7 +268,7 @@ class ProfileDetailsViewModel @Inject constructor(
         profileUUID.value = uuid
     }
 
-    fun setNotificationSoundUri(uri: Uri?) {
+    fun setDefaultNotificationSoundUri(uri: Uri?) {
         uri?.let {
             if (notificationSoundUri.value == Uri.EMPTY) {
                 notificationSoundUri.value = uri
@@ -277,7 +276,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun setAlarmSoundUri(uri: Uri?) {
+    fun setDefaultAlarmSoundUri(uri: Uri?) {
         uri?.let {
             if (alarmSoundUri.value == Uri.EMPTY) {
                 alarmSoundUri.value = uri
@@ -285,10 +284,20 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun setPhoneSoundUri(uri: Uri?) {
+    fun setDefaultRingtoneUri(uri: Uri?) {
         uri?.let {
             if (phoneRingtoneUri.value == Uri.EMPTY) {
                 phoneRingtoneUri.value = uri
+            }
+        }
+    }
+
+    fun requestPermission(permission: String) {
+        viewModelScope.launch {
+            when (permission) {
+                ACCESS_NOTIFICATION_POLICY -> fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
+                WRITE_SETTINGS -> fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                READ_PHONE_STATE -> fragmentChannel.send(ViewEvent.PhonePermissionRequestEvent)
             }
         }
     }
@@ -347,9 +356,14 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
+    fun isStreamMute(streamType: Int): Boolean {
+        if (getStreamVolume(streamType) == 0) return true
+        return !isStreamAllowed(streamType)
+    }
+
     fun stopPlayback() {
         setPlaybackState(
-            getPlayingRingtone(),
+            getPlayingStream(),
             false
         )
     }
@@ -364,11 +378,11 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun isMediaPlaying(): Boolean {
-        return getPlayingRingtone() != -1
+    fun isRingtonePlaying(): Boolean {
+        return getPlayingStream() != -1
     }
 
-    fun getPlayingRingtone(): Int {
+    fun getPlayingStream(): Int {
         val streams: Map<Int, Boolean> = mapOf(
             STREAM_MUSIC to musicRingtonePlaying.value,
             STREAM_VOICE_CALL to voiceCallRingtonePlaying.value,
@@ -382,6 +396,18 @@ class ProfileDetailsViewModel @Inject constructor(
             }
         }
         return -1
+    }
+
+    fun savePlayerPosition(position: Int) {
+        playerPosition = position
+        resumePlayback = true
+    }
+
+    fun resumeRingtonePlayback() {
+        if (resumePlayback) {
+            onResumeRingtonePlayback(currentStreamType, playerPosition)
+        }
+        resumePlayback = false
     }
 
     fun onStopRingtonePlayback(streamType: Int) {
@@ -400,13 +426,15 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun onPlayRingtoneButtonClick(streamType: Int) {
         viewModelScope.launch {
-            val event: ViewEvent = if (isRingtonePlaying(streamType)) {
-                ViewEvent.StopRingtonePlayback(streamType)
-            } else {
-                ViewEvent.StartRingtonePlayback(streamType)
+            if (!isStreamMute(streamType)) {
+                val event: ViewEvent = if (isRingtonePlaying(streamType)) {
+                    ViewEvent.StopRingtonePlayback(streamType)
+                } else {
+                    ViewEvent.StartRingtonePlayback(streamType)
+                }
+                setPlaybackState(getPlayingStream(), false)
+                fragmentChannel.send(event)
             }
-            setPlaybackState(getPlayingRingtone(), false)
-            fragmentChannel.send(event)
         }
     }
 
@@ -479,32 +507,42 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun restoreRingerMode(initialValue: Int = 4) {
-        ringVolume.value = initialValue
+    private fun setRingVolume(value: Int = 4) {
+        ringVolume.value = value
         ringerMode.value = RINGER_MODE_NORMAL
+        if (notificationMode.value != RINGER_MODE_NORMAL &&
+            notificationStreamIndependent.value)
+        {
+            setNotificationVolume(value)
+        }
     }
 
-    private fun silenceRinger() {
-        ringVolume.value = 0
-        ringerMode.value = RINGER_MODE_SILENT
-        onStopRingtonePlayback(STREAM_RING)
-    }
-
-    private fun restoreNotificationMode(initialValue: Int) {
-        notificationVolume.value = initialValue
+    private fun setNotificationVolume(value: Int) {
+        notificationVolume.value = value
         notificationMode.value = RINGER_MODE_NORMAL
     }
 
-    private fun silenceNotifications() {
+    fun silenceRinger(mode: Int = RINGER_MODE_SILENT) {
+        ringVolume.value = 0
+        ringerMode.value = mode
+        onStopRingtonePlayback(STREAM_RING)
+        if (notificationMode.value != mode &&
+            notificationStreamIndependent.value)
+        {
+            silenceNotifications(mode)
+        }
+    }
+
+    fun silenceNotifications(mode: Int = RINGER_MODE_SILENT) {
         notificationVolume.value = 0
-        notificationMode.value = RINGER_MODE_SILENT
+        notificationMode.value = mode
         onStopRingtonePlayback(STREAM_NOTIFICATION)
     }
 
     fun onRingerIconClick() {
-        if (ringerStreamAllowed()) {
+        if (isRingStreamAllowed()) {
             if (ringerMode.value == RINGER_MODE_SILENT) {
-                restoreRingerMode(4)
+                setRingVolume(STREAM_RING_DEFAULT_VOLUME)
             } else {
                 silenceRinger()
             }
@@ -512,9 +550,9 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     fun onNotificationIconClick() {
-        if (notificationsStreamAllowed()) {
+        if (isNotificationStreamAllowed()) {
             if (notificationMode.value == RINGER_MODE_SILENT) {
-                restoreNotificationMode(4)
+                setNotificationVolume(STREAM_NOTIFICATION_DEFAULT_VOLUME)
             } else {
                 silenceNotifications()
             }
@@ -531,14 +569,14 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun onStreamMuted(streamType: Int, showSnackbar: Boolean = false, vibrate: Boolean = false) {
+    private fun onRingStreamMuted(streamType: Int) {
         viewModelScope.launch {
             if (streamType == STREAM_NOTIFICATION) {
                 notificationVolume.value = 0
             } else if (streamType == STREAM_RING) {
                 ringVolume.value = 0
             }
-            fragmentChannel.send(ViewEvent.ChangeRingerMode(streamType, showSnackbar, vibrate))
+            fragmentChannel.send(ViewEvent.ChangeRingerMode(streamType, notificationStreamIndependent.value))
             onStopRingtonePlayback(streamType)
         }
     }
@@ -546,15 +584,12 @@ class ProfileDetailsViewModel @Inject constructor(
     fun onAlertStreamVolumeChanged(value: Int, fromUser: Boolean, streamType: Int) {
         viewModelScope.launch {
             if (fromUser) {
-                val isMute: Boolean = value == 0
                 when {
-                    isMute -> onStreamMuted(streamType, showSnackbar = true, vibrate = true)
-                    streamType == STREAM_NOTIFICATION -> restoreNotificationMode(value)
-                    streamType == STREAM_RING -> restoreRingerMode(value)
+                    value == 0 -> onRingStreamMuted(streamType)
+                    streamType == STREAM_NOTIFICATION -> setNotificationVolume(value)
+                    streamType == STREAM_RING -> setRingVolume(value)
                 }
-                if (!isMute) {
-                    fragmentChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
-                }
+                if (value != 0) fragmentChannel.send(ViewEvent.StreamVolumeChanged(streamType, value))
             }
         }
     }
@@ -651,16 +686,45 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun notificationsStreamAllowed(): Boolean {
+    private fun isStreamAllowed(streamType: Int): Boolean {
+        return when (streamType) {
+            STREAM_MUSIC -> isMediaStreamAllowed()
+            STREAM_RING -> isRingStreamAllowed()
+            STREAM_NOTIFICATION -> isNotificationStreamAllowed()
+            STREAM_ALARM -> isAlarmStreamAllowed()
+            else -> true
+        }
+    }
+
+    private fun isAlarmStreamAllowed(): Boolean {
+        return interruptionPolicyAllowsAlarmsStream(
+            interruptionFilter.value,
+            priorityCategories.value,
+            notificationPolicyAccessGranted.value
+        )
+    }
+
+    private fun isMediaStreamAllowed(): Boolean {
+        return interruptionPolicyAllowsMediaStream(
+            interruptionFilter.value,
+            priorityCategories.value,
+            notificationPolicyAccessGranted.value
+        )
+    }
+
+    private fun isNotificationStreamAllowed(): Boolean {
         return interruptionPolicyAllowsNotificationStream(
             interruptionFilter.value,
             priorityCategories.value,
             notificationPolicyAccessGranted.value,
             streamsUnlinked.value
+        ) && !ringerModeMutesNotifications(
+            ringerMode.value,
+            notificationStreamIndependent.value
         )
     }
 
-    private fun ringerStreamAllowed(): Boolean {
+    private fun isRingStreamAllowed(): Boolean {
         return interruptionPolicyAllowsRingerStream(
             interruptionFilter.value,
             priorityCategories.value,

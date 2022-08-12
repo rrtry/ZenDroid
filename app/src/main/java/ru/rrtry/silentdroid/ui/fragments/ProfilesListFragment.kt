@@ -1,6 +1,9 @@
 package ru.rrtry.silentdroid.ui.fragments
 
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import ru.rrtry.silentdroid.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
@@ -9,7 +12,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
-import ru.rrtry.silentdroid.ui.activities.ProfileDetailsDetailsActivity
+import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity
 import ru.rrtry.silentdroid.eventBus.EventBus
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.viewmodels.MainActivityViewModel.ViewEvent.*
@@ -25,7 +28,7 @@ import ru.rrtry.silentdroid.adapters.ProfileAdapter
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.entities.LocationRelation
-import ru.rrtry.silentdroid.ui.activities.MainActivity.Companion.PROFILE_FRAGMENT
+import ru.rrtry.silentdroid.ui.activities.ViewPagerActivity.Companion.PROFILE_FRAGMENT
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -62,7 +65,6 @@ class ProfilesListFragment:
 
     override fun onPermissionResult(permission: String, granted: Boolean) {
         preferencesManager.getProfile()?.let {
-            showDeniedPermissionHint(it)
             profileManager.setProfile(it, true)
         }
     }
@@ -144,7 +146,7 @@ class ProfilesListFragment:
     override fun onEdit(entity: Profile, options: Bundle?) {
         startActivity(Intent(
             requireContext(),
-            ProfileDetailsDetailsActivity::class.java
+            ProfileDetailsActivity::class.java
         ).apply {
             putExtra(EXTRA_PROFILE, entity)
         }, options)
@@ -230,8 +232,6 @@ class ProfilesListFragment:
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
             profileAdapter.setSelection(profile, viewModel.lastSelected)
             notificationHelper.updateNotification(profile, scheduleManager.getCurrentAlarmInstance(alarms))
-
-            showDeniedPermissionHint(profile)
         }
     }
 
@@ -265,7 +265,7 @@ class ProfilesListFragment:
     }
 
     override fun onFabClick(fab: FloatingActionButton) {
-        startActivity(Intent(context, ProfileDetailsDetailsActivity::class.java))
+        startActivity(Intent(context, ProfileDetailsActivity::class.java))
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {

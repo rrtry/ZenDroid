@@ -13,13 +13,10 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings.System.TIME_12_24
 import android.provider.Settings.System.getUriFor
-import android.transition.*
 import android.view.Gravity
-import android.view.Window
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -52,7 +49,9 @@ import ru.rrtry.silentdroid.util.ContentUtil
 import ru.rrtry.silentdroid.util.TimeFormatChangeObserver
 
 @AndroidEntryPoint
-class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
+class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Alarm> {
+
+    override val slideDirection: Int get() = Gravity.BOTTOM
 
     private val viewModel: AlarmDetailsViewModel by viewModels()
     private var elapsedTime: Long = 0L
@@ -72,8 +71,8 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
     private var timeFormatChangeObserver: TimeFormatChangeObserver? = null
 
     private val exactAlarmPermissionStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            if (intent.action == ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED) {
                 viewModel.canScheduleExactAlarms = scheduleManager.canScheduleExactAlarms()
             }
         }
@@ -84,6 +83,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
             alarm.startDateTime = start
             alarm.endDateTime = end
+            alarm.title = alarm.title.trim().ifEmpty { resources.getString(R.string.no_title) }
 
             if (update) {
                 viewModel.updateAlarm(alarm)
@@ -125,27 +125,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-        with(window) {
 
-            sharedElementEnterTransition = ChangeBounds()
-            sharedElementExitTransition = ChangeBounds()
-
-            TransitionSet().also { transitionSet ->
-
-                transitionSet.ordering = TransitionSet.ORDERING_TOGETHER
-                transitionSet.duration = 350
-                transitionSet.addTransition(Fade())
-                transitionSet.addTransition(Slide(Gravity.BOTTOM))
-
-                transitionSet.excludeTarget(android.R.id.statusBarBackground, true)
-                transitionSet.excludeTarget(android.R.id.navigationBarBackground, true)
-
-                enterTransition = transitionSet
-                exitTransition = transitionSet
-            }
-            allowEnterTransitionOverlap = true
-        }
         binding = CreateAlarmActivityBinding.inflate(layoutInflater)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
@@ -274,7 +254,7 @@ class AlarmDetailsActivity: AppCompatActivity(), DetailsViewContract<Alarm> {
             .show(supportFragmentManager, null)
     }
 
-    override fun onBackPressed() {
+    override fun onBack() {
         if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
             onFinish(false)
         } else {

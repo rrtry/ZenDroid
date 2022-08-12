@@ -120,6 +120,13 @@
     <string name="profile_title">Profile title</string>
     <string name="new_profile_title">New profile</string>
     <string name="not_set">Not set</string>
+    <string name="close">Close</string>
+    <string name="permission_location">Location</string>
+    <string name="permission_background_location">Background location</string>
+    <string name="permission_system_settings_access">System settings</string>
+    <string name="permission_dnd_access">Do not disturb</string>
+    <string name="permission_phone">Phone</string>
+    <string name="notification_channel_name">Current profile</string>
 
     <plurals name="days">
         <item quantity="one">1 day</item>
@@ -226,19 +233,21 @@
         Enter a value between -180 and 180
     </string>
     <string name="phone_permission_explanation">
-        Phone state permission explanation
+        Since controlling ringer and notification volumes separately is not possible on your device, the application needs
+        access to phone state to provide this feature.The permission is required to detect incoming calls and adjusting volume accordingly
     </string>
     <string name="location_permission_explanation">
         Location permission explanation
     </string>
     <string name="background_location_access_explanation">
-        Background location permission explanation
+        Geofencing feature requires all-time precise location access
     </string>
     <string name="interruption_policy_access_explanation">
-        Do not disturb access permission explanation
+        Do not disturb access is required to manage notifications, i.e changing their sound or visibility.
+        This is the only necessary permission, others are optional.
     </string>
     <string name="system_settings_permission_explanation">
-        System settings permission explanation
+        Settings access is required to change system-wide preferences like ringtones or vibration settings
     </string>
     <string name="permission_denial_warning">
         Permission denial warning

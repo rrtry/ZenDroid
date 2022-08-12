@@ -8,8 +8,10 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import ru.rrtry.silentdroid.R
 import java.lang.IllegalArgumentException
 
 fun Fragment.checkPermission(permission: String): Boolean {
@@ -18,6 +20,12 @@ fun Fragment.checkPermission(permission: String): Boolean {
 
 fun Context.checkPermission(permission: String): Boolean {
     return checkSelfPermission(this, permission)
+}
+
+fun Context.openNotificationPolicySettingsActivity() {
+    startActivity(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+        addFlags(FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK)
+    })
 }
 
 fun Context.openPackageInfoActivity() {
@@ -39,15 +47,13 @@ fun canWriteSettings(context: Context): Boolean {
     return Settings.System.canWrite(context)
 }
 
-fun getCategoryName(permission: String): String {
+fun getCategoryName(context: Context, permission: String): String {
     return when (permission) {
-        ACCESS_FINE_LOCATION -> "Location"
-        ACCESS_BACKGROUND_LOCATION -> "Background location"
-        WRITE_SETTINGS -> "System settings"
-        ACCESS_NOTIFICATION_POLICY -> "Do not disturb access"
-        READ_PHONE_STATE -> "Phone"
-        else -> throw IllegalArgumentException(
-            "Unknown permission $permission"
-        )
+        ACCESS_FINE_LOCATION -> context.resources.getString(R.string.permission_location)
+        ACCESS_BACKGROUND_LOCATION -> context.resources.getString(R.string.permission_background_location)
+        WRITE_SETTINGS -> context.resources.getString(R.string.permission_system_settings_access)
+        ACCESS_NOTIFICATION_POLICY -> context.resources.getString(R.string.permission_dnd_access)
+        READ_PHONE_STATE -> context.resources.getString(R.string.permission_phone)
+        else -> throw IllegalArgumentException("Unknown permission $permission")
     }
 }

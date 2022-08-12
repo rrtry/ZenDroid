@@ -43,7 +43,7 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
     }
 
     fun getTriggerType(): Int {
-        return sharedPreferences.getInt(PREFS_TRIGGER_TYPE, -1)
+        return sharedPreferences.getInt(PREFS_TRIGGER_TYPE, TRIGGER_TYPE_MANUAL)
     }
 
     fun <T> getTrigger(): T {
@@ -52,11 +52,12 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         }
     }
 
-    private fun getType(triggeredBy: Int): Type {
-        return when (triggeredBy) {
+    private fun getType(triggerType: Int): Type {
+        return when (triggerType) {
             TRIGGER_TYPE_ALARM -> object : TypeToken<Alarm>() {}.rawType
             TRIGGER_TYPE_GEOFENCE_ENTER, TRIGGER_TYPE_GEOFENCE_EXIT -> object : TypeToken<Location>() {}.rawType
-            else -> object : TypeToken<Profile>() {}.rawType
+            TRIGGER_TYPE_MANUAL -> object : TypeToken<Profile>() {}.rawType
+            else -> throw IllegalArgumentException("Unknown trigger type: $triggerType")
         }
     }
 
@@ -72,11 +73,36 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         }
     }
 
-    fun <T> setTrigger(triggerType: Int, trigger: T?) {
+    private fun <T> setTrigger(triggerType: Int, trigger: T?) {
         sharedPreferences.edit().apply {
             setTrigger(triggerType, trigger)
             apply()
         }
+    }
+
+    fun isFirstSetup(): Boolean {
+        return sharedPreferences.getBoolean(PREFS_FIRST_SETUP, true)
+    }
+
+    fun getNotificationStreamType(): Int {
+        return sharedPreferences.getInt(
+            PREFS_NOTIFICATION_STREAM_TYPE,
+            PREFS_STREAM_TYPE_NOT_SET
+        )
+    }
+
+    fun setNotificationStreamType(type: Int) {
+        sharedPreferences
+            .edit()
+            .putInt(PREFS_NOTIFICATION_STREAM_TYPE, type)
+            .apply()
+    }
+
+    fun setFirstSetup() {
+        sharedPreferences
+            .edit()
+            .putBoolean(PREFS_FIRST_SETUP, false)
+            .apply()
     }
 
     fun setProfile(profile: Profile) {
@@ -89,6 +115,9 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         sharedPreferences.edit().apply {
             putString(PREFS_PROFILE, gson.toJson(profile))
             setTrigger(this, triggerType, trigger)
+            if (triggerType == TRIGGER_TYPE_MANUAL) {
+                putLong(PREFS_PROFILE_TIME, System.currentTimeMillis())
+            }
             apply()
         }
     }
@@ -102,14 +131,21 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
 
     companion object {
 
+        internal const val PREFS_STREAM_TYPE_NOT_SET: Int = -1
+        internal const val PREFS_STREAM_TYPE_INDEPENDENT: Int = 0
+        internal const val PREFS_STREAM_TYPE_ALIAS: Int = 1
+
         internal const val TRIGGER_TYPE_MANUAL: Int = 0
         internal const val TRIGGER_TYPE_ALARM: Int = 1
         internal const val TRIGGER_TYPE_GEOFENCE_ENTER: Int = 2
         internal const val TRIGGER_TYPE_GEOFENCE_EXIT: Int = 3
 
-        private const val SHARED_PREFS: String = "volumeprofiler_shared_prefs"
+        private const val SHARED_PREFS: String = "zendroid_shared_prefs"
         private const val PREFS_PROFILE: String = "profile"
+        private const val PREFS_PROFILE_TIME: String = "time"
         private const val PREFS_TRIGGER_TYPE: String = "trigger_type"
         private const val PREFS_TRIGGER: String = "trigger"
+        private const val PREFS_FIRST_SETUP: String = "first_setup"
+        private const val PREFS_NOTIFICATION_STREAM_TYPE: String = "stream_type"
     }
 }

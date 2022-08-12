@@ -11,6 +11,7 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.*
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.databinding.InverseBindingAdapter
@@ -88,7 +89,8 @@ object BindingAdapters {
         alarmInterruptionFilter: Int,
         priorityCategories: Int,
         policyAccessGranted: Boolean,
-        index: Int) {
+        index: Int)
+    {
         setAlarmIcon(imageView, interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter, priorityCategories, policyAccessGranted)
                 && !canMuteAlarmStream(index))
@@ -100,8 +102,8 @@ object BindingAdapters {
         viewGroup: View,
         mediaInterruptionFilter: Int,
         mediaPriorityCategories: Int,
-        policyAccessGranted: Boolean
-    ): Unit {
+        policyAccessGranted: Boolean)
+    {
         setEnabledState(viewGroup, interruptionPolicyAllowsMediaStream(
             mediaInterruptionFilter,
             mediaPriorityCategories,
@@ -115,8 +117,8 @@ object BindingAdapters {
         ringerInterruptionFilter: Int,
         ringerPriorityCategories: Int,
         policyAccessGranted: Boolean,
-        streamsUnlinked: Boolean
-    ): Unit {
+        streamsUnlinked: Boolean)
+    {
         setEnabledState(viewGroup, interruptionPolicyAllowsRingerStream(
             ringerInterruptionFilter,
             ringerPriorityCategories,
@@ -130,8 +132,8 @@ object BindingAdapters {
         viewGroup: View,
         alarmInterruptionFilter: Int,
         alarmPriorityCategories: Int,
-        policyAccessGranted: Boolean
-    ): Unit {
+        policyAccessGranted: Boolean)
+    {
         setEnabledState(viewGroup, interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter,
             alarmPriorityCategories,
@@ -146,7 +148,7 @@ object BindingAdapters {
         mediaPriorityCategories: Int,
         notificationAccessGranted: Boolean,
         mediaVolume: Int)
-    : Unit {
+    {
         if (!interruptionPolicyAllowsMediaStream(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)) {
             setMediaOffIcon(imageView)
         } else {
@@ -197,25 +199,34 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter( "interruptionFilter", "priorityCategories", "policyAccessGranted", "streamsUnlinked")
-    fun notificationLayoutTransition(
+    @BindingAdapter(
+        "ringerMode",
+        "interruptionFilter",
+        "priorityCategories",
+        "policyAccessGranted",
+        "streamsUnlinked",
+        "hasSeparateNotificationStream"
+    )
+    fun notificationLayout(
         view: View,
+        ringerMode: Int,
         interruptionFilter: Int,
         priorityCategories: Int,
         policyAccessGranted: Boolean,
-        streamsUnlinked: Boolean)
-    : Unit {
+        streamsUnlinked: Boolean,
+        hasSeparateNotificationStream: Boolean)
+    {
         setEnabledState(view, interruptionPolicyAllowsNotificationStream(
             interruptionFilter,
             priorityCategories,
             policyAccessGranted,
-            streamsUnlinked)
+            streamsUnlinked) && !ringerModeMutesNotifications(ringerMode, hasSeparateNotificationStream)
         )
     }
 
     @JvmStatic
     @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted",requireAll = false)
-    fun bindMediaSeekBar(view: SeekBar, mediaInterruptionFilter: Int, mediaPriorityCategories: Int, notificationAccessGranted: Boolean): Unit {
+    fun bindMediaSeekBar(view: SeekBar, mediaInterruptionFilter: Int, mediaPriorityCategories: Int, notificationAccessGranted: Boolean) {
         view.isEnabled = interruptionPolicyAllowsMediaStream(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)
     }
 
@@ -227,7 +238,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("playing")
-    fun bindPlayButton(imageButton: ImageButton, playing: Boolean): Unit {
+    fun bindPlayButton(imageButton: ImageButton, playing: Boolean) {
         val context: Context = imageButton.context
         val drawable: Drawable? = ResourcesCompat.getDrawable(
             context.resources,
@@ -238,38 +249,51 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("notificationInterruptionFilter", "notificationPriorityCategories", "notificationMode", "notificationAccessGranted", "streamsUnlinked")
+    @BindingAdapter(
+        "notificationInterruptionFilter",
+        "notificationPriorityCategories",
+        "ringerMode",
+        "notificationAccessGranted",
+        "streamsUnlinked",
+        "hasSeparateNotificationStream",
+    )
     fun bindNotificationSeekBar(
         view: SeekBar,
         notificationInterruptionFilter: Int,
         notificationPriorityCategories: Int,
-        notificationMode: Int,
+        ringerMode: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean): Unit {
-
+        streamsUnlinked: Boolean,
+        hasSeparateNotificationStream: Boolean)
+    {
         view.isEnabled = interruptionPolicyAllowsNotificationStream(
             notificationInterruptionFilter,
             notificationPriorityCategories,
             notificationAccessGranted,
-            streamsUnlinked)
+            streamsUnlinked) && !ringerModeMutesNotifications(ringerMode, hasSeparateNotificationStream)
     }
 
     @JvmStatic
-    @BindingAdapter("iconRingerMode", "ringerIconInterruptionFilter", "ringerPriorityCategories", "notificationAccessGranted", "streamsUnlinked")
+    @BindingAdapter("iconRingerMode",
+        "ringerIconInterruptionFilter",
+        "ringerPriorityCategories",
+        "notificationAccessGranted",
+        "streamsUnlinked"
+    )
     fun bindRingerIcon(
         icon: ImageView,
         ringerMode: Int,
         ringerIconInterruptionFilter: Int,
         ringerPriorityCategories: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean): Unit {
-
+        streamsUnlinked: Boolean)
+    {
         if (!interruptionPolicyAllowsRingerStream(
                 ringerIconInterruptionFilter,
                 ringerPriorityCategories,
                 notificationAccessGranted,
-                streamsUnlinked)
-        ) {
+                streamsUnlinked))
+        {
             setSilentIcon(icon)
         } else {
             when (ringerMode) {
@@ -281,20 +305,27 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("notificationMode", "notificationInterruptionFilter", "notificationPriorityCategories", "notificationAccessGranted", "streamsUnlinked")
+    @BindingAdapter(
+        "notificationMode",
+        "notificationInterruptionFilter",
+        "notificationPriorityCategories",
+        "notificationAccessGranted",
+        "streamsUnlinked"
+    )
     fun bindNotificationIcon(
         icon: ImageView,
         notificationMode: Int,
         notificationInterruptionFilter: Int,
         notificationPriorityCategories: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean): Unit {
+        streamsUnlinked: Boolean)
+    {
         if (!interruptionPolicyAllowsNotificationStream(
                 notificationInterruptionFilter,
                 notificationPriorityCategories,
                 notificationAccessGranted,
-                streamsUnlinked)
-        ) {
+                streamsUnlinked))
+        {
             setSilentIcon(icon)
         } else {
             when (notificationMode) {
@@ -307,19 +338,25 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("canWriteSettings")
-    fun bindVibrateForCallsLayout(viewGroup: View, canWriteSettings: Boolean): Unit {
+    fun bindVibrateForCallsLayout(viewGroup: View, canWriteSettings: Boolean) {
         setEnabledState(viewGroup, canWriteSettings, false)
     }
 
     @JvmStatic
-    @BindingAdapter("ringerMode", "ringerSeekBarInterruptionFilter", "ringerSeekBarPropertyCategories", "notificationAccessGranted", "streamsUnlinked")
+    @BindingAdapter("ringerMode",
+        "ringerSeekBarInterruptionFilter",
+        "ringerSeekBarPropertyCategories",
+        "notificationAccessGranted",
+        "streamsUnlinked"
+    )
     fun bindRingSeekBar(
         view: SeekBar,
         ringerMode: Int,
         ringerSeekBarInterruptionFilter: Int,
         ringerSeekBarPropertyCategories: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean): Unit {
+        streamsUnlinked: Boolean)
+    {
         if (notificationAccessGranted) {
             view.isEnabled = interruptionPolicyAllowsRingerStream(
                 ringerSeekBarInterruptionFilter,
@@ -333,7 +370,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted")
-    fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: Int, notificationAccessGranted: Boolean): Unit {
+    fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: Int, notificationAccessGranted: Boolean) {
         view.isEnabled = interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter,
             alarmPriorityCategories,
@@ -348,7 +385,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("notificationPolicyAccessGranted")
-    fun bindInterruptionFilterLayout(viewGroup: View, notificationPolicyAccessGranted: Boolean): Unit {
+    fun bindInterruptionFilterLayout(viewGroup: View, notificationPolicyAccessGranted: Boolean) {
         setEnabledState(viewGroup, notificationPolicyAccessGranted, false)
     }
 
@@ -364,7 +401,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("preferencesInterruptionFilter", "notificationPolicyAccess")
-    fun bindInterruptionPreferencesLayout(viewGroup: ViewGroup, interruptionFilter: Int, notificationPolicyAccess: Boolean): Unit {
+    fun bindInterruptionPreferencesLayout(viewGroup: ViewGroup, interruptionFilter: Int, notificationPolicyAccess: Boolean) {
         setEnabledState(
             viewGroup,
             interruptionFilter == INTERRUPTION_FILTER_PRIORITY && notificationPolicyAccess,
@@ -374,8 +411,14 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("streamsUnlinked")
-    fun bindUnlinkStreamsSwitch(switch: Switch, streamsUnlinked: Boolean): Unit {
+    fun bindUnlinkStreamsSwitch(switch: Switch, streamsUnlinked: Boolean) {
         switch.isChecked = streamsUnlinked
+    }
+
+    @JvmStatic
+    @BindingAdapter("handlesNotifications")
+    fun bindUnlinkStreamsLayout(layout: ConstraintLayout, handlesNotifications: Boolean) {
+        setEnabledState(layout, !handlesNotifications)
     }
 
     @JvmStatic

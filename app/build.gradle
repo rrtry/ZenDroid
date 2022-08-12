@@ -6,17 +6,16 @@ plugins {
 }
 
 apply plugin: 'kotlin-kapt'
-
 android {
     signingConfigs {
         release {
-            storeFile file('C:\\Users\\user\\releaseKeyStore.jks')
-            storePassword "$System.env.KSTOREPWD"
+            storeFile file('/home/fedor/releaseKeyStore.jks')
+            storePassword System.getenv("KSTOREPWD")
             keyAlias 'releaseKey'
-            keyPassword "$System.env.KEYPWD"
+            keyPassword System.getenv("KEYPWD")
         }
         debug {
-            storeFile file('C:\\Users\\user\\.android\\debug.keystore')
+            storeFile file('/home/fedor/.android/debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'

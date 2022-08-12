@@ -3,9 +3,13 @@ package ru.rrtry.silentdroid.core
 import android.app.NotificationManager
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
+import android.content.ComponentName
 import android.content.Context
 import android.media.AudioManager
 import android.content.Context.*
+import android.content.pm.PackageManager
+import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+import android.content.pm.PackageManager.DONT_KILL_APP
 import ru.rrtry.silentdroid.entities.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -17,16 +21,23 @@ import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.media.RingtoneManager.*
-import android.provider.Settings.System.MUTE_STREAMS_AFFECTED
 import android.provider.Settings.System.VIBRATE_WHEN_RINGING
 import android.telephony.TelephonyManager.CALL_STATE_RINGING
 import ru.rrtry.silentdroid.R
+import ru.rrtry.silentdroid.core.PreferencesManager.Companion.PREFS_STREAM_TYPE_INDEPENDENT
+import ru.rrtry.silentdroid.core.PreferencesManager.Companion.PREFS_STREAM_TYPE_NOT_SET
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
+import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
+import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
+import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
+import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUME
+import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.eventBus.EventBus
+import ru.rrtry.silentdroid.receivers.PhoneStateReceiver
 import java.util.*
 
 @Singleton
@@ -52,7 +63,9 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, 0)
         setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
 
-        if (profile.streamsUnlinked) {
+        if (profile.streamsUnlinked &&
+            !isNotificationStreamIndependent())
+        {
             if (isRinging()) {
                 setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
             } else {
@@ -60,6 +73,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
             }
         } else {
             setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
+            setStreamVolume(STREAM_NOTIFICATION, profile.notificationVolume, 0)
         }
 
         setNotificationPolicy(createNotificationPolicy(profile))
@@ -87,24 +101,17 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
 
         val currentAlarmInstance: CurrentAlarmInstance? = scheduleManager.getCurrentAlarmInstance(alarms)
-        val alarm: Alarm? = currentAlarmInstance?.relation?.alarm
+        val alarm: Alarm = currentAlarmInstance?.relation?.alarm ?: return
 
-        if (alarm != null) {
-            if (scheduleManager.hasPreviouslyFired(alarm)) {
-                if (scheduleManager.isAlarmValid(alarm)) {
-                    setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_ALARM, alarm)
-                } else {
-                    setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_MANUAL, null)
-                }
-                notificationHelper.updateNotification(currentAlarmInstance.profile, currentAlarmInstance)
+        if (scheduleManager.hasPreviouslyFired(alarm)) {
+            if (scheduleManager.isAlarmValid(alarm)) {
+                setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_ALARM, alarm)
             } else {
-                notificationHelper.updateNotification(preferencesManager.getProfile(), currentAlarmInstance)
+                setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_MANUAL, null)
             }
+            notificationHelper.updateNotification(currentAlarmInstance.profile, currentAlarmInstance)
         } else {
-            preferencesManager.getProfile()?.let { currentProfile ->
-                setProfile(currentProfile, TRIGGER_TYPE_MANUAL, null)
-                notificationHelper.updateNotification(currentProfile, null)
-            }
+            notificationHelper.updateNotification(preferencesManager.getProfile(), currentAlarmInstance)
         }
     }
 
@@ -146,16 +153,16 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         return Profile(
                 UUID.randomUUID(),
                 context.resources.getString(R.string.new_profile_title),
-                R.drawable.ic_baseline_do_not_disturb_on_24,
-                Profile.STREAM_MUSIC_DEFAULT_VOLUME,
-                Profile.STREAM_VOICE_CALL_DEFAULT_VOLUME,
-                Profile.STREAM_NOTIFICATION_DEFAULT_VOLUME,
-                Profile.STREAM_RING_DEFAULT_VOLUME,
-                Profile.STREAM_ALARM_DEFAULT_VOLUME,
+                R.drawable.ic_baseline_do_not_disturb_on_total_silence_24,
+                STREAM_MUSIC_DEFAULT_VOLUME,
+                STREAM_VOICE_CALL_DEFAULT_VOLUME,
+                STREAM_NOTIFICATION_DEFAULT_VOLUME,
+                STREAM_RING_DEFAULT_VOLUME,
+                STREAM_ALARM_DEFAULT_VOLUME,
                 getDefaultRingtoneUri(TYPE_RINGTONE),
                 getDefaultRingtoneUri(TYPE_NOTIFICATION),
                 getDefaultRingtoneUri(TYPE_ALARM),
-                false,
+                isNotificationStreamIndependent(),
                 INTERRUPTION_FILTER_ALL,
                 RINGER_MODE_NORMAL,
                 RINGER_MODE_NORMAL,
@@ -172,6 +179,49 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         if (audioManager.isStreamMute(streamType)) {
             audioManager.adjustStreamVolume(streamType, ADJUST_UNMUTE, 0)
         }
+    }
+
+    private fun toggleMuteState(streamType: Int) {
+        audioManager.adjustStreamVolume(
+            streamType,
+            ADJUST_TOGGLE_MUTE,
+            0
+        )
+    }
+
+    fun disablePhoneStateReceiver() {
+        context.packageManager.setComponentEnabledSetting(
+            ComponentName(context, PhoneStateReceiver::class.java),
+            COMPONENT_ENABLED_STATE_DISABLED,
+            DONT_KILL_APP
+        )
+    }
+
+    fun isNotificationStreamIndependent(): Boolean {
+
+        if (preferencesManager.getNotificationStreamType() != PREFS_STREAM_TYPE_NOT_SET) {
+            return preferencesManager.getNotificationStreamType() == PREFS_STREAM_TYPE_INDEPENDENT
+        }
+
+        val interruptionFilter: Int = notificationManager.currentInterruptionFilter
+        val notificationVol: Int = audioManager.getStreamVolume(STREAM_NOTIFICATION)
+        val ringVol: Int = audioManager.getStreamVolume(STREAM_RING)
+
+        if (notificationVol != ringVol) {
+            return true
+        }
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            return false
+        }
+        if (interruptionFilter != INTERRUPTION_FILTER_ALL) {
+            notificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL)
+        }
+
+        toggleMuteState(STREAM_NOTIFICATION)
+        val independent: Boolean = audioManager.isStreamMute(STREAM_RING) != audioManager.isStreamMute(STREAM_NOTIFICATION)
+        toggleMuteState(STREAM_NOTIFICATION)
+        notificationManager.setInterruptionFilter(interruptionFilter)
+        return independent
     }
 
     fun isRingerAudible(profile: Profile): Boolean {
@@ -191,7 +241,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         return notificationManager.isNotificationPolicyAccessGranted
     }
 
-    @Suppress("newApi")
     private fun createNotificationPolicy(profile: Profile): Policy {
         return when {
             Build.VERSION_CODES.N > Build.VERSION.SDK_INT -> {

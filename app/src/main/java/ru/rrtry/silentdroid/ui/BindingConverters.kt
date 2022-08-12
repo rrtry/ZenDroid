@@ -5,7 +5,7 @@ import android.app.NotificationManager.Policy.*
 import android.content.Context
 import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.core.containsCategory
-import ru.rrtry.silentdroid.core.getPriorityCategoriesList
+import ru.rrtry.silentdroid.core.getOtherInterruptionsList
 
 object BindingConverters {
 
@@ -55,7 +55,7 @@ object BindingConverters {
 
     @JvmStatic
     fun priorityCategoriesToString(context: Context, categories: Int): String {
-        val categoriesList: List<Int> = getPriorityCategoriesList(categories).sorted()
+        val categoriesList: List<Int> = getOtherInterruptionsList(categories).sorted()
         if (categoriesList.isEmpty()) return context.resources.getString(R.string.no_exceptions)
         return context.resources.getString(R.string.allow) + " " + categoriesList.joinToString(separator = ", ", transform = {
             when (it) {
@@ -64,7 +64,7 @@ object BindingConverters {
                 PRIORITY_CATEGORY_SYSTEM -> context.resources.getString(R.string.priority_category_system)
                 PRIORITY_CATEGORY_ALARMS -> context.resources.getString(R.string.priority_category_alarms)
                 PRIORITY_CATEGORY_MEDIA -> context.resources.getString(R.string.priority_category_media)
-                else -> throw IllegalArgumentException("Invalid priority category")
+                else -> throw IllegalArgumentException("Unknown priority category: $it")
             }
         })
     }

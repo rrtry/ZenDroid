@@ -28,12 +28,10 @@ import android.media.RingtoneManager.*
 import android.os.*
 import android.provider.Settings.System.canWrite
 import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import ru.rrtry.silentdroid.ui.activities.ProfileDetailsDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
-import ru.rrtry.silentdroid.services.PlaybackService
-import ru.rrtry.silentdroid.ui.activities.ProfileDetailsDetailsActivity.Companion.NOTIFICATION_RESTRICTIONS_FRAGMENT
+import androidx.lifecycle.*
+import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
+import ru.rrtry.silentdroid.services.RingtonePlaybackService
+import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity.Companion.NOTIFICATION_RESTRICTIONS_FRAGMENT
 import ru.rrtry.silentdroid.util.ViewUtil
 import ru.rrtry.silentdroid.util.checkPermission
 import kotlinx.coroutines.launch
@@ -55,28 +53,27 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private lateinit var systemPreferencesLauncher: ActivityResultLauncher<Intent>
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
 
-    private var callbacksDetails: ProfileDetailsActivityCallback? = null
+    private var callback: ProfileDetailsActivityCallback? = null
     private var vibrator: Vibrator? = null
+    private val savePlayerPosition: Boolean
+        get() {
+            return requireActivity().isChangingConfigurations &&
+                    viewModel.isRingtonePlaying()
+    }
 
-    private var mediaService: PlaybackService? = null
+    private var mediaService: RingtonePlaybackService? = null
     private val serviceConnection: ServiceConnection = object : ServiceConnection {
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            (service as PlaybackService.LocalBinder).apply {
+            (service as RingtonePlaybackService.LocalBinder).apply {
                 mediaService = getService()
-                if (viewModel.resumePlayback) {
-                    viewModel.onResumeRingtonePlayback(
-                        viewModel.currentStreamType,
-                        viewModel.playerPosition
-                    )
-                }
-                viewModel.resumePlayback = false
+                viewModel.resumeRingtonePlayback()
             }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             viewModel.setPlaybackState(
-                viewModel.getPlayingRingtone(),
+                viewModel.getPlayingStream(),
                 false
             )
             mediaService = null
@@ -92,19 +89,43 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         }
     }
 
+    private val lifecycleObserver: DefaultLifecycleObserver = object : DefaultLifecycleObserver {
+
+        override fun onResume(owner: LifecycleOwner) {
+            super.onResume(owner)
+            viewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
+            viewModel.canWriteSettings.value = canWrite(requireContext())
+            viewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
+        }
+
+        override fun onPause(owner: LifecycleOwner) {
+            super.onPause(owner)
+            if (savePlayerPosition) {
+                viewModel.savePlayerPosition(
+                    mediaService?.getCurrentPosition() ?: 0
+                )
+            }
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            super.onStop(owner)
+            viewModel.stopPlayback()
+        }
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
+        callback = requireActivity() as ProfileDetailsActivityCallback
         registerNotificationPolicyChangeReceiver()
         registerForRingtonePickerResult()
         registerForNotificationPolicyResult()
         registerForPhonePermissionResult()
         registerForSystemSettingsResult()
-        callbacksDetails = requireActivity() as ProfileDetailsActivityCallback
     }
 
+    @Suppress("deprecation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        @Suppress("deprecation")
         vibrator = requireContext().getSystemService(VIBRATOR_SERVICE) as Vibrator
     }
 
@@ -119,41 +140,33 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         super.onCreateView(inflater, container, savedInstanceState)
         viewBinding.viewModel = viewModel
         viewBinding.lifecycleOwner = viewLifecycleOwner
+        viewLifecycleOwner.lifecycle.addObserver(lifecycleObserver)
         return viewBinding.root
     }
 
     override fun onStart() {
         super.onStart()
-        requireActivity().also {
-            Intent(it, PlaybackService::class.java).also { intent ->
-                it.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        requireContext().also { context ->
+            Intent(context, RingtonePlaybackService::class.java).also { intent ->
+                context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
             }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        setNotificationPolicyAccessProperty()
-        setCanWriteSettingsProperty()
-        setPhonePermissionProperty()
-    }
-
     override fun onStop() {
         super.onStop()
-        if (requireActivity().isChangingConfigurations &&
-            viewModel.isMediaPlaying())
-        {
-            viewModel.playerPosition = mediaService?.getCurrentPosition() ?: 0
-            viewModel.resumePlayback = true
-        }
-        viewModel.stopPlayback()
-        requireActivity().unbindService(serviceConnection)
+        requireContext().unbindService(serviceConnection)
         mediaService = null
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewLifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
     }
 
     override fun onDetach() {
         super.onDetach()
-        callbacksDetails = null
+        callback = null
         unregisterNotificationPolicyChangeReceiver()
         ringtoneActivityLauncher.unregister()
         notificationPolicyLauncher.unregister()
@@ -205,72 +218,45 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     }
 
     private fun onChangeRingerMode(event: ChangeRingerMode) {
-        updateRingerMode(event.streamType)
-        if (event.vibrate) {
-            createVibrationEffect()
+
+        var ringerMode: Int = if (vibrator!!.hasVibrator()) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
+
+        when (event.streamType) {
+            STREAM_RING -> {
+                viewModel.silenceRinger(ringerMode)
+            }
+            STREAM_NOTIFICATION -> {
+                if (event.hasSeparateNotificationStream) ringerMode = RINGER_MODE_SILENT
+                viewModel.silenceNotifications(ringerMode)
+            }
         }
-        if (event.showSnackbar) {
-            // TODO: implement
-        }
-    }
-
-    private fun onRingerDisallowed(policyAllowsStream: Boolean) {
-        if (!policyAllowsStream) {
-
-            viewModel.ringVolume.value = 0
-            viewModel.ringerMode.value = RINGER_MODE_SILENT
-
-            viewModel.onStopRingtonePlayback(STREAM_RING)
-        }
-    }
-
-    private fun onNotificationsDisallowed(policyAllowsStream: Boolean) {
-        if (!policyAllowsStream) {
-
-            viewModel.notificationVolume.value = 0
-            viewModel.notificationMode.value = RINGER_MODE_SILENT
-
-            viewModel.onStopRingtonePlayback(STREAM_NOTIFICATION)
-        }
-    }
-
-    private fun onMediaDisallowed(policyAllowsStream: Boolean) {
-        if (!policyAllowsStream) {
-            viewModel.onStopRingtonePlayback(STREAM_MUSIC)
-        }
-    }
-
-    private fun onAlarmsDisallowed(policyAllowsStream: Boolean) {
-        if (!policyAllowsStream) {
-            viewModel.onStopRingtonePlayback(STREAM_ALARM)
-        }
+        if (ringerMode == RINGER_MODE_VIBRATE) createVibrationEffect()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        callbacksDetails?.setNestedScrollingEnabled(true)
-
+        callback?.setNestedScrollingEnabled(true)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.fragmentEventsFlow.collect {
-                        when (it) {
+                    viewModel.fragmentEventsFlow.collect { event ->
+                        when (event) {
 
-                            is ShowDialogFragment -> showDialogFragment(it.dialogType)
-                            is ResumeRingtonePlayback -> onResumeRingtonePlayback(it)
-                            is StopRingtonePlayback -> onStopRingtonePlayback(it)
-                            is StartRingtonePlayback -> onStartRingtonePlayback(it)
-                            is ChangeRingerMode -> onChangeRingerMode(it)
-                            is StreamVolumeChanged -> changePlaybackVolume(it.streamType, it.volume)
-                            is GetDefaultRingtoneUri -> setDefaultRingtoneUri(it.type)
-                            is ChangeRingtoneEvent -> startRingtonePickerActivity(it.ringtoneType)
+                            is ShowDialogFragment -> showDialogFragment(event.dialogType)
+                            is ResumeRingtonePlayback -> onResumeRingtonePlayback(event)
+                            is StopRingtonePlayback -> onStopRingtonePlayback(event)
+                            is StartRingtonePlayback -> onStartRingtonePlayback(event)
+                            is ChangeRingerMode -> onChangeRingerMode(event)
+                            is StreamVolumeChanged -> changePlaybackVolume(event.streamType, event.volume)
+                            is GetDefaultRingtoneUri -> setDefaultRingtoneUri(event.type)
+                            is ChangeRingtoneEvent -> startRingtonePickerActivity(event.ringtoneType)
 
                             PhonePermissionRequestEvent -> phonePermissionLauncher.launch(READ_PHONE_STATE)
                             NotificationPolicyRequestEvent -> startNotificationPolicyActivity()
                             WriteSystemSettingsRequestEvent -> startSystemSettingsActivity()
 
-                            ShowInterruptionFilterFragment -> callbacksDetails?.onFragmentReplace(INTERRUPTION_FILTER_FRAGMENT)
-                            ShowNotificationRestrictionsFragment -> callbacksDetails?.onFragmentReplace(NOTIFICATION_RESTRICTIONS_FRAGMENT)
+                            ShowInterruptionFilterFragment -> callback?.onFragmentReplace(INTERRUPTION_FILTER_FRAGMENT)
+                            ShowNotificationRestrictionsFragment -> callback?.onFragmentReplace(NOTIFICATION_RESTRICTIONS_FRAGMENT)
                             ShowPopupWindowEvent -> showPopupMenu()
 
                             else -> Log.i("EditProfileFragment", "unknown event")
@@ -279,22 +265,22 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                 }
                 launch {
                     viewModel.policyAllowsRingerStream.collect { policyAllowsStream ->
-                        onRingerDisallowed(policyAllowsStream)
+                        if (!policyAllowsStream) viewModel.onStopRingtonePlayback(STREAM_RING)
                     }
                 }
                 launch {
                     viewModel.policyAllowsNotificationsStream.collect { policyAllowsStream ->
-                        onNotificationsDisallowed(policyAllowsStream)
+                        if (!policyAllowsStream) viewModel.onStopRingtonePlayback(STREAM_NOTIFICATION)
                     }
                 }
                 launch {
-                    viewModel.policyAllowsMediaStream.collect {
-                        onMediaDisallowed(it)
+                    viewModel.policyAllowsMediaStream.collect { policyAllowsStream ->
+                        if (!policyAllowsStream) viewModel.onStopRingtonePlayback(STREAM_MUSIC)
                     }
                 }
                 launch {
-                    viewModel.policyAllowsAlarmStream.collect {
-                        onAlarmsDisallowed(it)
+                    viewModel.policyAllowsAlarmStream.collect { policyAllowsSteam ->
+                        if (!policyAllowsSteam) viewModel.onStopRingtonePlayback(STREAM_ALARM)
                     }
                 }
             }
@@ -325,36 +311,22 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         notificationPolicyLauncher.launch(Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
     }
 
-    private fun setNotificationPolicyAccessProperty() {
-        viewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
-    }
-
-    private fun setPhonePermissionProperty() {
-        viewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
-    }
-
-    private fun setCanWriteSettingsProperty() {
-        viewModel.canWriteSettings.value = canWrite(requireContext())
-    }
-
     private fun registerNotificationPolicyChangeReceiver() {
-        requireActivity().registerReceiver(
+        requireContext().registerReceiver(
             notificationPolicyReceiver,
             IntentFilter(ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED)
         )
     }
 
     private fun unregisterNotificationPolicyChangeReceiver() {
-        requireActivity().unregisterReceiver(notificationPolicyReceiver)
+        requireContext().unregisterReceiver(notificationPolicyReceiver)
     }
 
     private fun registerForSystemSettingsResult() {
         systemPreferencesLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            canWrite(requireContext()).let {
-                viewModel.canWriteSettings.value = it
-                if (!it) {
-                    ViewUtil.showSystemSettingsPermissionExplanation(requireActivity().supportFragmentManager)
-                }
+            canWrite(requireContext()).let { granted ->
+                viewModel.canWriteSettings.value = granted
+                if (!granted) ViewUtil.showSystemSettingsPermissionExplanation(requireActivity().supportFragmentManager)
             }
         }
     }
@@ -378,29 +350,25 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         notificationPolicyLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             profileManager.isNotificationPolicyAccessGranted().also { granted ->
                 viewModel.notificationPolicyAccessGranted.value = granted
-                if (!granted) {
-                    ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
-                }
+                if (!granted) ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
             }
         }
     }
 
     private fun registerForPhonePermissionResult() {
-        phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            viewModel.phonePermissionGranted.value = it
-            viewModel.streamsUnlinked.value = it
-            if (!it) {
-                ViewUtil.showPhoneStatePermissionExplanation(requireActivity().supportFragmentManager)
-            }
+        phonePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            viewModel.phonePermissionGranted.value = granted
+            viewModel.streamsUnlinked.value = granted
+            if (!granted) ViewUtil.showPhoneStatePermissionExplanation(requireActivity().supportFragmentManager)
         }
     }
 
     private fun setDefaultRingtoneUri(type: Int) {
         val uri: Uri? = getActualDefaultRingtoneUri(context, type)
         when (type) {
-            TYPE_NOTIFICATION -> viewModel.setNotificationSoundUri(uri)
-            TYPE_ALARM -> viewModel.setAlarmSoundUri(uri)
-            TYPE_RINGTONE -> viewModel.setPhoneSoundUri(uri)
+            TYPE_NOTIFICATION -> viewModel.setDefaultNotificationSoundUri(uri)
+            TYPE_ALARM -> viewModel.setDefaultAlarmSoundUri(uri)
+            TYPE_RINGTONE -> viewModel.setDefaultRingtoneUri(uri)
         }
     }
 
@@ -427,25 +395,6 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                 }
             }
         }
-    }
-
-    private fun updateRingerMode(streamType: Int, mode: Int) {
-        if (streamType == STREAM_NOTIFICATION) {
-            viewModel.notificationMode.value = mode
-        } else if (streamType == STREAM_RING) {
-            viewModel.ringerMode.value = mode
-        }
-    }
-
-    private fun updateRingerMode(streamType: Int) {
-        if (vibrator == null) {
-            updateRingerMode(streamType, RINGER_MODE_SILENT)
-            return
-        }
-        updateRingerMode(
-            streamType,
-            if (vibrator!!.hasVibrator()) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
-        )
     }
 
     private fun showPopupMenu() {
@@ -477,10 +426,8 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
     private fun showDialogFragment(dialogType: DialogType) {
         val dialogFragment: DialogFragment = when (dialogType) {
-            SUPPRESSED_EFFECTS_OFF ->
-                SuppressedEffectsOffDialog.newInstance(viewModel.getProfile())
-            SUPPRESSED_EFFECTS_ON ->
-                SuppressedEffectsOnDialog.newInstance(viewModel.getProfile())
+            SUPPRESSED_EFFECTS_OFF -> SuppressedEffectsOffDialog.newInstance(viewModel.getProfile())
+            SUPPRESSED_EFFECTS_ON -> SuppressedEffectsOnDialog.newInstance(viewModel.getProfile())
             else -> throw IllegalArgumentException("Unknown dialog type")
         }
         dialogFragment.show(
@@ -492,6 +439,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     companion object {
 
         private const val EXTRA_PROFILE = "profile"
+
         private val ringtoneMap: Map<Int, Int> = mapOf(
             STREAM_ALARM to TYPE_ALARM,
             STREAM_NOTIFICATION to TYPE_NOTIFICATION,

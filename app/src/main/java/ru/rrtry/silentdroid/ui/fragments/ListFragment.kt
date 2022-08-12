@@ -45,7 +45,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
     ActionModeProvider,
     ListViewContract<T> {
 
-    protected var callback: MainActivityCallback? = null
+    protected var callback: ViewPagerActivityCallback? = null
     protected open val hintRes: Int = -1
     private var actionMode: ActionMode?
         get() = callback?.actionMode
@@ -125,7 +125,7 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        callback = requireActivity() as MainActivityCallback
+        callback = requireActivity() as ViewPagerActivityCallback
 
         notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         powerManager = requireContext().getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -280,44 +280,6 @@ abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.Vie
                 mapSharedElements(names, sharedElements)
             }
         })
-    }
-
-    protected fun showDeniedPermissionHint(profile: Profile): Boolean {
-        if (!notificationManager.isNotificationPolicyAccessGranted) {
-            callback?.showSnackBar(
-                resources.getString(R.string.grant_dnd_access),
-                resources.getString(R.string.grant),
-                length = Snackbar.LENGTH_INDEFINITE)
-            {
-                notificationPolicySettingsLauncher.launch(
-                    Intent(ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
-                )
-            }
-            return true
-        } else if (!canWriteSettings(requireContext())) {
-            callback?.showSnackBar(
-                resources.getString(R.string.grant_system_settings_access),
-                resources.getString(R.string.grant),
-                length = Snackbar.LENGTH_INDEFINITE)
-            {
-                systemSettingsLauncher.launch(
-                    Intent(
-                        Settings.ACTION_MANAGE_WRITE_SETTINGS,
-                        Uri.parse("package:${requireContext().packageName}"))
-                )
-            }
-            return true
-        } else if (!checkPermission(READ_PHONE_STATE) && profile.streamsUnlinked) {
-            callback?.showSnackBar(
-                resources.getString(R.string.grant_phone_permission),
-                resources.getString(R.string.grant),
-                length = Snackbar.LENGTH_INDEFINITE)
-            {
-                phonePermissionLauncher.launch(READ_PHONE_STATE)
-            }
-            return true
-        }
-        return false
     }
 
     protected fun showPowerSaveModeHint(text: String) {

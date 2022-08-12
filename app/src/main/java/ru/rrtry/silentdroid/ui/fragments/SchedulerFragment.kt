@@ -23,11 +23,11 @@ import ru.rrtry.silentdroid.adapters.AlarmAdapter
 import ru.rrtry.silentdroid.core.PreferencesManager
 import ru.rrtry.silentdroid.ui.activities.AlarmDetailsActivity
 import ru.rrtry.silentdroid.ui.activities.AlarmDetailsActivity.Companion.EXTRA_ALARM_PROFILE_RELATION
-import ru.rrtry.silentdroid.ui.activities.MainActivity
+import ru.rrtry.silentdroid.ui.activities.ViewPagerActivity
 import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.core.ScheduleManager
 import ru.rrtry.silentdroid.eventBus.EventBus
-import ru.rrtry.silentdroid.ui.activities.MainActivity.Companion.SCHEDULER_FRAGMENT
+import ru.rrtry.silentdroid.ui.activities.ViewPagerActivity.Companion.SCHEDULER_FRAGMENT
 import ru.rrtry.silentdroid.util.TimeFormatChangeObserver
 import ru.rrtry.silentdroid.viewmodels.SchedulerViewModel
 import ru.rrtry.silentdroid.viewmodels.MainActivityViewModel
@@ -50,7 +50,7 @@ import ru.rrtry.silentdroid.interfaces.FabContainer
 class SchedulerFragment:
     ListFragment<AlarmRelation, AlarmsFragmentBinding, AlarmAdapter.AlarmViewHolder, AlarmItemViewBinding, AlarmAdapter>(),
     FabContainer,
-    MainActivity.MenuItemSelectedListener
+    ViewPagerActivity.MenuItemSelectedListener
 {
 
     override val listItem: Class<AlarmRelation> = AlarmRelation::class.java
@@ -91,7 +91,6 @@ class SchedulerFragment:
 
     override fun onPermissionResult(permission: String, granted: Boolean) {
         preferencesManager.getProfile()?.let {
-            showDeniedPermissionHint(it)
             profileManager.setProfile(it, true)
         }
     }

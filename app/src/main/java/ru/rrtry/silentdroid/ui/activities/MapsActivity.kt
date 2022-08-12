@@ -62,7 +62,7 @@ import java.lang.ref.WeakReference
 import kotlin.collections.HashSet
 
 @AndroidEntryPoint
-class MapsActivity : AppCompatActivity(),
+class MapsActivity : AppActivity(),
         OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener,
         GoogleMap.OnMapClickListener,
@@ -590,7 +590,7 @@ class MapsActivity : AppCompatActivity(),
         updatePosition(LatLng(marker.position.latitude, marker.position.longitude))
     }
 
-    override fun onBackPressed() {
+    override fun onBack() {
         if (binding.searchView.suggestionsVisible) {
             binding.searchView.closeSuggestions()
         } else if (bottomSheetBehavior.state != STATE_HIDDEN) {

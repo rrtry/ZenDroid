@@ -36,9 +36,10 @@ import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.DialogType.*
 @AndroidEntryPoint
 class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBinding>() {
 
+    private val detailsViewModel: ProfileDetailsViewModel by activityViewModels()
+
     @Inject
     lateinit var profileManager: ProfileManager
-    private val detailsViewModel: ProfileDetailsViewModel by activityViewModels()
 
     private var callback: ProfileDetailsActivityCallback? = null
 
@@ -56,9 +57,7 @@ class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBind
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         callback?.setNestedScrollingEnabled(false)
-
         viewLifecycleOwner.lifecycleScope.launch {
             detailsViewModel.fragmentEventsFlow.flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED).onEach {
                 when (it) {
@@ -100,6 +99,7 @@ class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBind
     private fun showConversationsPopupWindow(popupMenu: PopupMenu) {
         popupMenu.inflate(R.menu.dnd_conversations)
         popupMenu.setOnMenuItemClickListener {
+            if (it.itemId != R.id.none) detailsViewModel.addPriorityCategory(PRIORITY_CATEGORY_CONVERSATIONS)
             when (it.itemId) {
                 R.id.all_conversations -> {
                     detailsViewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_ANYONE
@@ -110,6 +110,7 @@ class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBind
                     true
                 }
                 R.id.none -> {
+                    detailsViewModel.removePriorityCategory(PRIORITY_CATEGORY_CONVERSATIONS)
                     detailsViewModel.primaryConversationSenders.value = CONVERSATION_SENDERS_NONE
                     true
                 }
@@ -139,9 +140,7 @@ class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBind
     private fun showExceptionsPopupWindow(popupMenu: PopupMenu, category: Int) {
         popupMenu.inflate(R.menu.dnd_exceptions)
         popupMenu.setOnMenuItemClickListener {
-            if (it.itemId != R.id.none) {
-                detailsViewModel.addPriorityCategory(category)
-            }
+            if (it.itemId != R.id.none) detailsViewModel.addPriorityCategory(category)
             when (it.itemId) {
                 R.id.anyone -> {
                     detailsViewModel.setAllowedSenders(category, PRIORITY_SENDERS_ANY)

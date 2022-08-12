@@ -47,7 +47,7 @@ class ProfileNameInputDialog: DialogFragment() {
         binding.textInputEditText.setText(viewModel.title.value)
         binding.positiveButton.setOnClickListener {
             binding.textInputEditText.text.toString().also { title ->
-                viewModel.title.value = title.trim().ifBlank { resources.getString(R.string.no_title) }
+                viewModel.title.value = title.trim().ifEmpty { resources.getString(R.string.no_title) }
             }
             dismiss()
         }

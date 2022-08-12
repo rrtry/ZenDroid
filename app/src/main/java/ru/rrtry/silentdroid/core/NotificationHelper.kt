@@ -40,6 +40,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     @Inject lateinit var preferencesManager: PreferencesManager
 
     private val notificationManager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val notificationChannelName: String = context.resources.getString(R.string.notification_channel_name)
 
     private fun notify(id: Int, notification: Notification) {
         notification.visibility = NotificationCompat.VISIBILITY_PUBLIC
@@ -120,66 +121,6 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         }
     }
 
-    fun createMissingPermissionNotification(permissions: List<String>): Notification {
-        val contentTitle: String = "Insufficient permissions"
-        val pNames: String = permissions.map { getCategoryName(it) }.toString().removeSurrounding("[", "]")
-        val contentText: String = pNames
-        val builder = NotificationCompat.Builder(context, PERMISSIONS_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(contentTitle)
-            .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_baseline_perm_device_information_24)
-            .setContentIntent(getApplicationSettingsIntent())
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel(
-                PERMISSIONS_NOTIFICATION_CHANNEL_ID,
-                PERMISSIONS_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH).also {
-                builder.setChannelId(it.id)
-            }
-        }
-        val notification: Notification = builder.build()
-        notification.flags = Notification.FLAG_AUTO_CANCEL
-        return notification
-    }
-
-    fun postSystemSettingsNotification() {
-        val builder = NotificationCompat.Builder(context, PERMISSIONS_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Write system settings")
-            .setContentText("Click to open settings")
-            .setContentIntent(getSystemSettingsPendingIntent())
-            .setSmallIcon(R.drawable.ic_baseline_perm_device_information_24)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel(
-                PERMISSIONS_NOTIFICATION_CHANNEL_ID,
-                PERMISSIONS_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH).also {
-                builder.setChannelId(it.id)
-            }
-        }
-        val notification: Notification = builder.build()
-        notification.flags = Notification.FLAG_AUTO_CANCEL
-        notify(ID_SYSTEM_SETTINGS, notification)
-    }
-
-    fun postInterruptionPolicyNotification() {
-        val builder = NotificationCompat.Builder(context, PERMISSIONS_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Do not disturb access")
-            .setContentText("Click to open settings")
-            .setContentIntent(getInterruptionPolicyPendingIntent())
-            .setSmallIcon(R.drawable.ic_baseline_perm_device_information_24)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel(
-                PERMISSIONS_NOTIFICATION_CHANNEL_ID,
-                PERMISSIONS_NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH).also {
-                builder.setChannelId(it.id)
-            }
-        }
-        val notification: Notification = builder.build()
-        notification.flags = Notification.FLAG_AUTO_CANCEL
-        notify(ID_INTERRUPTION_POLICY, notification)
-    }
-
     fun postGeofenceExitNotification(profileTitle: String, locationTitle: String) {
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(profileTitle)
@@ -188,7 +129,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
                 PROFILE_NOTIFICATION_CHANNEL_ID,
-                PROFILE_NOTIFICATION_CHANNEL_NAME,
+                notificationChannelName,
                 NotificationManager.IMPORTANCE_LOW).also {
                 builder.setChannelId(it.id)
             }
@@ -204,7 +145,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
                 PROFILE_NOTIFICATION_CHANNEL_ID,
-                PROFILE_NOTIFICATION_CHANNEL_NAME,
+                notificationChannelName,
                 NotificationManager.IMPORTANCE_LOW).also {
                 builder.setChannelId(it.id)
             }
@@ -229,7 +170,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
                 PROFILE_NOTIFICATION_CHANNEL_ID,
-                PROFILE_NOTIFICATION_CHANNEL_NAME,
+                notificationChannelName,
                 NotificationManager.IMPORTANCE_LOW).also {
                 builder.setChannelId(it.id)
             }
@@ -259,7 +200,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(
                 PROFILE_NOTIFICATION_CHANNEL_ID,
-                PROFILE_NOTIFICATION_CHANNEL_NAME,
+                notificationChannelName,
                 NotificationManager.IMPORTANCE_LOW).also {
                 builder.setChannelId(it.id)
             }

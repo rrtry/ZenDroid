@@ -162,7 +162,7 @@ class AlarmDetailsViewModel @Inject constructor(
     private fun getAlarm(): Alarm {
         return Alarm(
             id = if (alarmId != null) alarmId!! else 0,
-            title = title.value.trim().ifBlank { "No title" },
+            title = title.value,
             startProfileUUID = startProfile.value!!.id,
             endProfileUUID = endProfile.value!!.id,
             startTime = startTime.value,
