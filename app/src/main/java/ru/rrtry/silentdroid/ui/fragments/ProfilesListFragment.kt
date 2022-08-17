@@ -1,9 +1,6 @@
 package ru.rrtry.silentdroid.ui.fragments
 
-import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import ru.rrtry.silentdroid.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
@@ -216,7 +213,7 @@ class ProfilesListFragment:
         }
         notificationHelper.updateNotification(
             preferencesManager.getProfile(),
-            scheduleManager.getCurrentAlarmInstance(alarms)
+            scheduleManager.getPreviousAndNextTrigger(alarms)
         )
     }
 
@@ -231,7 +228,7 @@ class ProfilesListFragment:
 
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
             profileAdapter.setSelection(profile, viewModel.lastSelected)
-            notificationHelper.updateNotification(profile, scheduleManager.getCurrentAlarmInstance(alarms))
+            notificationHelper.updateNotification(profile, scheduleManager.getPreviousAndNextTrigger(alarms))
         }
     }
 

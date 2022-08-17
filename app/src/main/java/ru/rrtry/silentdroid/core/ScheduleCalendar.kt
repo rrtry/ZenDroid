@@ -2,7 +2,7 @@ package ru.rrtry.silentdroid.core
 
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
-import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
+import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile
 import java.time.*
 import java.time.temporal.TemporalAdjuster
@@ -186,7 +186,7 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         }
     }
 
-    fun getCurrentAlarmInstance(alarms: List<AlarmRelation>?): CurrentAlarmInstance? {
+    fun getCurrentAlarmInstance(alarms: List<AlarmRelation>?): PreviousAndNextTrigger? {
         if (alarms.isNullOrEmpty()) return null
         val nextAlarmTime: LocalDateTime? = getNextAlarmTime(alarms)
         return try {
@@ -200,7 +200,7 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 } else {
                     null
                 }
-                CurrentAlarmInstance(
+                PreviousAndNextTrigger(
                     profile,
                     nextAlarmTime,
                     previousAlarmTime,

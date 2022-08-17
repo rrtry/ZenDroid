@@ -18,7 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
-import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
+import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.util.ParcelableUtil
 import java.text.NumberFormat
@@ -52,6 +52,7 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         return false
     }
 
+    @Suppress("obsoleteSdkInt")
     private fun setAlarm(millis: Long, pendingIntent: PendingIntent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pendingIntent)
@@ -185,7 +186,7 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         return scheduleCalendar.isValid()
     }
 
-    fun getCurrentAlarmInstance(events: List<AlarmRelation>?): CurrentAlarmInstance? {
+    fun getPreviousAndNextTrigger(events: List<AlarmRelation>?): PreviousAndNextTrigger? {
         scheduleCalendar.now = ZonedDateTime.now()
         return scheduleCalendar.getCurrentAlarmInstance(events)
     }

@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.media.AudioManager
 import android.content.Context.*
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
 import android.content.pm.PackageManager.DONT_KILL_APP
 import ru.rrtry.silentdroid.entities.Profile
@@ -30,7 +29,7 @@ import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
-import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
+import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
@@ -38,6 +37,7 @@ import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUM
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.eventBus.EventBus
 import ru.rrtry.silentdroid.receivers.PhoneStateReceiver
+import java.time.LocalDateTime
 import java.util.*
 
 @Singleton
@@ -100,18 +100,24 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
 
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
 
-        val currentAlarmInstance: CurrentAlarmInstance? = scheduleManager.getCurrentAlarmInstance(alarms)
-        val alarm: Alarm = currentAlarmInstance?.relation?.alarm ?: return
+        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(alarms)
+        val alarm: Alarm = previousAndNextTrigger?.relation?.alarm ?: return
+        val profileDateTime: LocalDateTime? = preferencesManager.getLastProfileDateTime()
 
-        if (scheduleManager.hasPreviouslyFired(alarm)) {
+        var overrideCurrentProfile: Boolean = true
+        if (profileDateTime != null) overrideCurrentProfile = previousAndNextTrigger.from!! >= profileDateTime
+
+        if (scheduleManager.hasPreviouslyFired(alarm) &&
+            overrideCurrentProfile)
+        {
             if (scheduleManager.isAlarmValid(alarm)) {
-                setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_ALARM, alarm)
+                setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_ALARM, alarm)
             } else {
-                setProfile(currentAlarmInstance.profile!!, TRIGGER_TYPE_MANUAL, null)
+                setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_MANUAL, null)
             }
-            notificationHelper.updateNotification(currentAlarmInstance.profile, currentAlarmInstance)
+            notificationHelper.updateNotification(previousAndNextTrigger.profile, previousAndNextTrigger)
         } else {
-            notificationHelper.updateNotification(preferencesManager.getProfile(), currentAlarmInstance)
+            notificationHelper.updateNotification(preferencesManager.getProfile(), previousAndNextTrigger)
         }
     }
 

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.*
 import android.os.Build
-import android.util.Log
 import ru.rrtry.silentdroid.Application.Companion.ACTION_ALARM
 import ru.rrtry.silentdroid.core.NotificationHelper
 import ru.rrtry.silentdroid.core.PreferencesManager
@@ -16,7 +15,7 @@ import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.core.ScheduleManager
 import ru.rrtry.silentdroid.db.repositories.AlarmRepository
 import ru.rrtry.silentdroid.entities.Alarm
-import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
+import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.eventBus.EventBus
 import dagger.hilt.android.AndroidEntryPoint
@@ -72,14 +71,14 @@ class AlarmReceiver: BroadcastReceiver() {
         }
 
         val profile: Profile = getProfile(alarm, startProfile, endProfile)
-        val currentAlarmInstance: CurrentAlarmInstance? = scheduleManager.getCurrentAlarmInstance(alarmRepository.getEnabledAlarms())
+        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(alarmRepository.getEnabledAlarms())
 
         profileManager.setProfile<Alarm?>(
             profile,
-            if (currentAlarmInstance != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL,
-            if (currentAlarmInstance != null) alarm else null
+            if (previousAndNextTrigger != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL,
+            if (previousAndNextTrigger != null) alarm else null
         )
-        notificationHelper.updateNotification(profile, currentAlarmInstance)
+        notificationHelper.updateNotification(profile, previousAndNextTrigger)
     }
 
     private fun getProfile(alarm: Alarm, startProfile: Profile, endProfile: Profile): Profile {

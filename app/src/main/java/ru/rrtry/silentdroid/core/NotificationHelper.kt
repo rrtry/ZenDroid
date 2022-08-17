@@ -24,11 +24,10 @@ import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFE
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.Location
-import ru.rrtry.silentdroid.entities.CurrentAlarmInstance
+import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.util.TextUtil
 import ru.rrtry.silentdroid.util.ViewUtil.Companion.convertDipToPx
-import ru.rrtry.silentdroid.util.getCategoryName
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalTime
 import javax.inject.Inject
@@ -88,7 +87,7 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         notificationManager.cancel(ID_PROFILE)
     }
 
-    fun updateNotification(profile: Profile?, currentAlarmInstance: CurrentAlarmInstance?) {
+    fun updateNotification(profile: Profile?, previousAndNextTrigger: PreviousAndNextTrigger?) {
         if (profile != null) {
             when (preferencesManager.getTriggerType()) {
                 TRIGGER_TYPE_GEOFENCE_ENTER -> {
@@ -101,19 +100,19 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                     postProfileNotification(
                         profileTitle = profile.title,
                         iconRes = profile.iconRes,
-                        currentAlarmInstance = currentAlarmInstance)
+                        previousAndNextTrigger = previousAndNextTrigger)
                 }
                 TRIGGER_TYPE_ALARM -> {
                     postProfileNotification(
                         profileTitle = profile.title,
                         alarmTitle = preferencesManager.getTrigger<Alarm>().title,
                         iconRes = profile.iconRes,
-                        currentAlarmInstance = currentAlarmInstance
+                        previousAndNextTrigger = previousAndNextTrigger
                     )
                 }
             }
         } else {
-            currentAlarmInstance?.let { ongoingAlarm ->
+            previousAndNextTrigger?.let { ongoingAlarm ->
                 ongoingAlarm.relation.startProfile.also { profile ->
                     postNextProfileNotification(profile, ongoingAlarm)
                 }
@@ -155,13 +154,13 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
 
     private fun postNextProfileNotification(
         profile: Profile,
-        currentAlarmInstance: CurrentAlarmInstance
+        previousAndNextTrigger: PreviousAndNextTrigger
     ) {
 
         val contentText = context.resources.getString(
             R.string.next_scheduled_profile,
             profile.title,
-            TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until!!))
+            TextUtil.formatNextAlarmDateTime(context, previousAndNextTrigger.until!!))
 
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(context.resources.getString(R.string.next_profile))
@@ -182,16 +181,16 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
         profileTitle: String,
         alarmTitle: String? = null,
         iconRes: Int,
-        currentAlarmInstance: CurrentAlarmInstance?
+        previousAndNextTrigger: PreviousAndNextTrigger?
     ) {
-        val until: LocalTime? = currentAlarmInstance?.until?.toLocalTime()
+        val until: LocalTime? = previousAndNextTrigger?.until?.toLocalTime()
         val contentText: String = if (until == null) {
             context.resources.getString(R.string.active_profile, profileTitle)
         } else {
             context.resources.getString(
                 R.string.active_until,
                 profileTitle,
-                TextUtil.formatNextAlarmDateTime(context, currentAlarmInstance.until))
+                TextUtil.formatNextAlarmDateTime(context, previousAndNextTrigger.until))
         }
         val builder = NotificationCompat.Builder(context, PROFILE_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(alarmTitle ?: profileTitle)

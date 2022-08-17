@@ -78,7 +78,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
             profileManager.setProfile(profile, true)
             notificationHelper.updateNotification(
                 profile,
-                scheduleManager.getCurrentAlarmInstance(scheduledAlarms))
+                scheduleManager.getPreviousAndNextTrigger(scheduledAlarms))
         }
         geofenceManager.updateGeofenceProfile(registeredGeofences, profile)
         scheduleManager.updateAlarmProfile(scheduledAlarms, profile)

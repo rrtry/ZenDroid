@@ -11,6 +11,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.lang.reflect.Type
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -67,6 +68,7 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
                 remove(PREFS_TRIGGER)
                 putInt(PREFS_TRIGGER_TYPE, triggerType)
             } else {
+                remove(PREFS_PROFILE_DATE_TIME)
                 putInt(PREFS_TRIGGER_TYPE, triggerType)
                 putString(PREFS_TRIGGER, gson.toJson(trigger, getType(triggerType)))
             }
@@ -111,12 +113,17 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
             .apply()
     }
 
+    fun getLastProfileDateTime(): LocalDateTime? {
+        val dateTimeString: String = sharedPreferences.getString(PREFS_PROFILE_DATE_TIME, null) ?: return null
+        return LocalDateTime.parse(dateTimeString)
+    }
+
     fun <T> setProfile(profile: Profile, triggerType: Int = TRIGGER_TYPE_MANUAL, trigger: T?) {
         sharedPreferences.edit().apply {
             putString(PREFS_PROFILE, gson.toJson(profile))
             setTrigger(this, triggerType, trigger)
             if (triggerType == TRIGGER_TYPE_MANUAL) {
-                putLong(PREFS_PROFILE_TIME, System.currentTimeMillis())
+                putString(PREFS_PROFILE_DATE_TIME, LocalDateTime.now().toString())
             }
             apply()
         }
@@ -142,7 +149,7 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
 
         private const val SHARED_PREFS: String = "zendroid_shared_prefs"
         private const val PREFS_PROFILE: String = "profile"
-        private const val PREFS_PROFILE_TIME: String = "time"
+        private const val PREFS_PROFILE_DATE_TIME: String = "time"
         private const val PREFS_TRIGGER_TYPE: String = "trigger_type"
         private const val PREFS_TRIGGER: String = "trigger"
         private const val PREFS_FIRST_SETUP: String = "first_setup"
