@@ -34,14 +34,10 @@ class SchedulerViewModel @Inject constructor(
     fun scheduleAlarm(relation: AlarmRelation) {
         viewModelScope.launch {
             if (canScheduleExactAlarms) {
-                if (!ScheduleCalendar.isValid(ZonedDateTime.now(), relation.alarm)) {
-                    ScheduleCalendar.getStartAndEndDate(relation.alarm.startTime, relation.alarm.endTime).let { date ->
-                        relation.alarm = relation.alarm.apply {
-                            startDateTime = date.first
-                            endDateTime = date.second
-                        }
-                        alarmRepository.updateAlarm(relation.alarm)
-                    }
+                ScheduleCalendar.getStartAndEndDate(relation.alarm.startTime, relation.alarm.endTime).let { date ->
+                    relation.alarm.startDateTime = date.first
+                    relation.alarm.endDateTime = date.second
+                    alarmRepository.updateAlarm(relation.alarm)
                 }
                 alarmRepository.scheduleAlarm(relation.alarm)
                 channel.send(ViewEvent.OnAlarmSet(relation, getScheduledAlarms()))

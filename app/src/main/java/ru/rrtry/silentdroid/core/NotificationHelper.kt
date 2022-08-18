@@ -111,12 +111,12 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                     )
                 }
             }
-        } else {
-            previousAndNextTrigger?.let { ongoingAlarm ->
-                ongoingAlarm.relation.startProfile.also { profile ->
-                    postNextProfileNotification(profile, ongoingAlarm)
-                }
+        } else if (previousAndNextTrigger != null) {
+            previousAndNextTrigger.relation.startProfile.also { startProfile ->
+                postNextProfileNotification(startProfile, previousAndNextTrigger)
             }
+        } else {
+            cancelProfileNotification()
         }
     }
 

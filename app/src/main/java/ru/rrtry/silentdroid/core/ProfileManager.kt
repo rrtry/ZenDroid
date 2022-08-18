@@ -63,9 +63,10 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         setStreamVolume(STREAM_VOICE_CALL, profile.callVolume, 0)
         setStreamVolume(STREAM_ALARM, profile.alarmVolume, 0)
 
-        if (profile.streamsUnlinked &&
-            !isNotificationStreamIndependent())
-        {
+        if (isNotificationStreamIndependent()) {
+            setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
+            setStreamVolume(STREAM_NOTIFICATION, profile.notificationVolume, 0)
+        } else if (profile.streamsUnlinked) {
             if (isRinging()) {
                 setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
             } else {
@@ -73,7 +74,6 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
             }
         } else {
             setRingerMode(STREAM_RING, profile.ringVolume, profile.ringerMode)
-            setStreamVolume(STREAM_NOTIFICATION, profile.notificationVolume, 0)
         }
 
         setNotificationPolicy(createNotificationPolicy(profile))
@@ -100,20 +100,33 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
 
     fun updateScheduledProfile(alarms: List<AlarmRelation>?) {
 
+        var overrideCurrentProfile: Boolean = true
         val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(alarms)
-        val alarm: Alarm = previousAndNextTrigger?.relation?.alarm ?: return
         val profileDateTime: LocalDateTime? = preferencesManager.getLastProfileDateTime()
 
-        var overrideCurrentProfile: Boolean = true
-        if (profileDateTime != null) overrideCurrentProfile = previousAndNextTrigger.from!! >= profileDateTime
-
-        if (scheduleManager.hasPreviouslyFired(alarm) &&
-            overrideCurrentProfile)
-        {
-            if (scheduleManager.isAlarmValid(alarm)) {
-                setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_ALARM, alarm)
+        if (previousAndNextTrigger == null) {
+            notificationHelper.updateNotification(
+                preferencesManager.getProfile(),
+                previousAndNextTrigger
+            )
+            return
+        }
+        if (profileDateTime != null) {
+            overrideCurrentProfile = if (previousAndNextTrigger.from == null) {
+                false
             } else {
-                setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_MANUAL, null)
+                previousAndNextTrigger.from >= profileDateTime
+            }
+        }
+
+        val alarm: Alarm = previousAndNextTrigger.relation.alarm
+        if (scheduleManager.hasPreviouslyFired(alarm)) {
+            if (overrideCurrentProfile) {
+                if (scheduleManager.isAlarmValid(alarm)) {
+                    setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_ALARM, alarm)
+                } else {
+                    setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_MANUAL, null)
+                }
             }
             notificationHelper.updateNotification(previousAndNextTrigger.profile, previousAndNextTrigger)
         } else {
