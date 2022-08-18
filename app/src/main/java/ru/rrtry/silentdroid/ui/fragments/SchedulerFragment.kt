@@ -26,7 +26,7 @@ import ru.rrtry.silentdroid.ui.activities.AlarmDetailsActivity.Companion.EXTRA_A
 import ru.rrtry.silentdroid.ui.activities.ViewPagerActivity
 import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.core.ScheduleManager
-import ru.rrtry.silentdroid.eventBus.EventBus
+import ru.rrtry.silentdroid.event.EventBus
 import ru.rrtry.silentdroid.ui.activities.ViewPagerActivity.Companion.SCHEDULER_FRAGMENT
 import ru.rrtry.silentdroid.util.TimeFormatChangeObserver
 import ru.rrtry.silentdroid.viewmodels.SchedulerViewModel
@@ -254,8 +254,8 @@ class SchedulerFragment:
                     }
                 }
                 launch {
-                    eventBus.sharedFlow.collectLatest { event ->
-                        if (event is EventBus.Event.UpdateAlarmState) {
+                    eventBus.eventBus.collectLatest { event ->
+                        if (event is EventBus.Event.OnUpdateAlarmState) {
                             alarmAdapter.updateAlarmState(event.alarm)
                         }
                     }

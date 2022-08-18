@@ -1,9 +1,12 @@
 package ru.rrtry.silentdroid.ui.activities
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Bundle
 import android.transition.Fade
+import android.util.Log
 import android.view.*
 import androidx.activity.viewModels
 import androidx.core.content.res.ResourcesCompat
@@ -84,7 +87,6 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)

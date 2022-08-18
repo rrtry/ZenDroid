@@ -77,6 +77,7 @@ class ProfileDetailsViewModel @Inject constructor(
         data class GetDefaultRingtoneUri(val type: Int): ViewEvent()
         data class ChangeRingtoneEvent(val ringtoneType: Int): ViewEvent()
         data class ShowPopupWindow(val category: Int): ViewEvent()
+        data class ShowStreamMutedSnackbar(val streamType: Int): ViewEvent()
         data class StreamVolumeChanged(val streamType: Int, val volume: Int): ViewEvent()
 
         data class OnUpdateProfileEvent(val profile: Profile): ViewEvent()
@@ -356,7 +357,7 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun isStreamMute(streamType: Int): Boolean {
+    private fun isStreamMute(streamType: Int): Boolean {
         if (getStreamVolume(streamType) == 0) return true
         return !isStreamAllowed(streamType)
     }
@@ -434,6 +435,8 @@ class ProfileDetailsViewModel @Inject constructor(
                 }
                 setPlaybackState(getPlayingStream(), false)
                 fragmentChannel.send(event)
+            } else {
+                fragmentChannel.send(ViewEvent.ShowStreamMutedSnackbar(streamType))
             }
         }
     }

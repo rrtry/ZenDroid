@@ -17,7 +17,7 @@ import ru.rrtry.silentdroid.db.repositories.AlarmRepository
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile
-import ru.rrtry.silentdroid.eventBus.EventBus
+import ru.rrtry.silentdroid.event.EventBus
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import ru.rrtry.silentdroid.util.ParcelableUtil.Companion.getExtra

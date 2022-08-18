@@ -35,7 +35,7 @@ import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLU
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_RING_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT_VOLUME
-import ru.rrtry.silentdroid.eventBus.EventBus
+import ru.rrtry.silentdroid.event.EventBus
 import ru.rrtry.silentdroid.receivers.PhoneStateReceiver
 import java.time.LocalDateTime
 import java.util.*

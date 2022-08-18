@@ -127,6 +127,15 @@
     <string name="permission_dnd_access">Do not disturb</string>
     <string name="permission_phone">Phone</string>
     <string name="notification_channel_name">Current profile</string>
+    <string name="dnd_media_volume_muted">Do not disturb muted media volume</string>
+    <string name="dnd_ringer_volume_muted">Do not disturb muted ring volume</string>
+    <string name="dnd_notification_volume_muted">Do not disturb muted notification volume</string>
+    <string name="dnd_alarm_volume_muted">Do not disturb muted alarm volume</string>
+    <string name="media_volume_muted">Media volume muted</string>
+    <string name="ringer_volume_muted">Ring volume muted</string>
+    <string name="notification_volume_muted">Notification volume muted</string>
+    <string name="alarm_volume_muted">Alarm volume muted</string>
+    <string name="unmute">Unmute</string>
 
     <plurals name="days">
         <item quantity="one">1 day</item>

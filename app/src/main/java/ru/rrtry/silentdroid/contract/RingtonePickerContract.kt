@@ -9,7 +9,7 @@ import kotlin.properties.Delegates
 import android.media.RingtoneManager.*
 
 class RingtonePickerContract: ActivityResultContract<Int, Uri?>() {
-
+    
     var ringtoneType by Delegates.notNull<Int>()
     var existingUri: Uri = Uri.EMPTY
 

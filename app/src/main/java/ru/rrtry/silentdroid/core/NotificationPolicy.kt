@@ -3,11 +3,21 @@ package ru.rrtry.silentdroid.core
 import android.os.Build
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
-import android.media.AudioManager.RINGER_MODE_SILENT
-import android.media.AudioManager.RINGER_MODE_VIBRATE
+import android.media.AudioManager.*
+import ru.rrtry.silentdroid.R
 
 fun containsCategory(categories: Int, category: Int): Boolean {
     return (categories and category) != 0
+}
+
+fun getStreamMutedStringRes(streamType: Int, externalPolicy: Boolean): Int {
+    return when (streamType) {
+        STREAM_MUSIC -> if (externalPolicy) R.string.dnd_media_volume_muted else R.string.media_volume_muted
+        STREAM_RING -> if (externalPolicy) R.string.dnd_ringer_volume_muted else R.string.ringer_volume_muted
+        STREAM_NOTIFICATION -> if (externalPolicy) R.string.dnd_notification_volume_muted else R.string.notification_volume_muted
+        STREAM_ALARM -> if (externalPolicy) R.string.dnd_alarm_volume_muted else R.string.alarm_volume_muted
+        else -> throw IllegalArgumentException("Unknown stream type: $streamType")
+    }
 }
 
 fun getOtherInterruptionsList(mask: Int): List<Int> {
@@ -34,6 +44,17 @@ fun ringerModeMutesNotifications(
     return hasSeparateNotificationStream &&
             (ringerMode == RINGER_MODE_SILENT ||
             ringerMode == RINGER_MODE_VIBRATE)
+}
+
+fun externalInterruptionPolicyAllowsStream(streamType: Int, interruptionFilter: Int, policy: Policy): Boolean {
+    return when (streamType) {
+        STREAM_MUSIC -> interruptionPolicyAllowsMediaStream(interruptionFilter, policy.priorityCategories, true)
+        STREAM_VOICE_CALL -> true
+        STREAM_RING -> interruptionPolicyAllowsRingerStream(interruptionFilter, policy.priorityCategories, true, true)
+        STREAM_NOTIFICATION -> interruptionPolicyAllowsNotificationStream(interruptionFilter, policy.priorityCategories, true, true)
+        STREAM_ALARM -> interruptionPolicyAllowsAlarmsStream(interruptionFilter, policy.priorityCategories, true)
+        else -> throw IllegalArgumentException("Unknown stream type: $streamType")
+    }
 }
 
 fun interruptionPolicyAllowsNotificationStream(

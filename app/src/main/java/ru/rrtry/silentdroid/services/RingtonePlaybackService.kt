@@ -1,19 +1,30 @@
 package ru.rrtry.silentdroid.services
 
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.AudioManager
-import android.media.MediaPlayer
+import android.media.*
 import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
+import android.util.Log
+import dagger.hilt.android.AndroidEntryPoint
+import ru.rrtry.silentdroid.event.EventBus
 import java.lang.ref.WeakReference
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class RingtonePlaybackService: Service() {
 
+    @Inject
+    lateinit var eventBus: EventBus
+
     private lateinit var audioManager: AudioManager
+
+    private var streamVolume: Int = -1
+    private var streamType: Int = AudioManager.STREAM_MUSIC
+
     var mediaPlayer: MediaPlayer? = null
         private set
 
@@ -40,17 +51,51 @@ class RingtonePlaybackService: Service() {
         return super.onUnbind(intent)
     }
 
+    fun setStreamVolume(streamType: Int, streamVolume: Int, flags: Int = 0) {
+        audioManager.setStreamVolume(
+            streamType,
+            streamVolume,
+            flags
+        )
+    }
+
+    private fun restorePreviousVolume() {
+        if (streamVolume >= 0) {
+            if (streamVolume != audioManager.getStreamVolume(streamType)) {
+                try {
+                    setStreamVolume(
+                        streamType,
+                        streamVolume,
+                        AudioManager.FLAG_SHOW_UI
+                    )
+                } catch (e: SecurityException) {
+                    Log.e("RingtonePlayer", "Failed to restore volume")
+                }
+            }
+        }
+    }
+
     private fun prepareMediaPlayer(
         listener: MediaPlayer.OnCompletionListener,
         mediaUri: Uri,
-        streamType: Int,
-        streamVolume: Int)
+        type: Int,
+        volume: Int)
     {
         release()
+
+        streamType = type
+        streamVolume = audioManager.getStreamVolume(type)
+
+        setStreamVolume(
+            type,
+            volume,
+            AudioManager.FLAG_SHOW_UI
+        )
+
         mediaPlayer = MediaPlayer().apply {
             setAudioAttributes(
                 AudioAttributes.Builder()
-                .setLegacyStreamType(streamType)
+                .setLegacyStreamType(type)
                 .build()
             )
             setVolume(1f, 1f)
@@ -61,13 +106,12 @@ class RingtonePlaybackService: Service() {
     }
 
     fun start(listener: MediaPlayer.OnCompletionListener, mediaUri: Uri, streamType: Int, streamVolume: Int) {
-        audioManager.setStreamVolume(streamType, streamVolume, 0)
+        Log.i("RingtonePlayer", mediaUri.toString())
         prepareMediaPlayer(listener, mediaUri, streamType, streamVolume)
         mediaPlayer?.start()
     }
 
     fun resume(listener: MediaPlayer.OnCompletionListener, uri: Uri, streamType: Int, streamVolume: Int, position: Int) {
-        audioManager.setStreamVolume(streamType, streamVolume, 0)
         prepareMediaPlayer(listener, uri, streamType, streamVolume)
         mediaPlayer?.seekTo(position)
         mediaPlayer?.start()
@@ -82,8 +126,11 @@ class RingtonePlaybackService: Service() {
     }
 
     fun release() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        restorePreviousVolume()
+        mediaPlayer?.let { player ->
+            player.stop()
+            player.release()
+        }
         mediaPlayer = null
     }
 }

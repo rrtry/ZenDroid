@@ -1,6 +1,7 @@
 package ru.rrtry.silentdroid.ui.fragments
 
 import android.Manifest.permission.*
+import android.app.NotificationManager
 import android.util.Log
 import android.view.*
 import android.widget.PopupMenu
@@ -14,6 +15,7 @@ import ru.rrtry.silentdroid.contract.RingtonePickerContract
 import ru.rrtry.silentdroid.entities.Profile
 import android.app.NotificationManager.*
 import android.content.*
+import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Context.VIBRATOR_SERVICE
 import android.media.*
 import android.media.AudioManager.*
@@ -21,32 +23,37 @@ import android.net.Uri
 import android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS
 import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import ru.rrtry.silentdroid.interfaces.ProfileDetailsActivityCallback
-import ru.rrtry.silentdroid.core.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import android.media.RingtoneManager.*
 import android.os.*
 import android.provider.Settings.System.canWrite
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.*
+import com.google.android.material.snackbar.Snackbar
 import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
 import ru.rrtry.silentdroid.services.RingtonePlaybackService
 import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity.Companion.NOTIFICATION_RESTRICTIONS_FRAGMENT
 import ru.rrtry.silentdroid.util.ViewUtil
 import ru.rrtry.silentdroid.util.checkPermission
 import kotlinx.coroutines.launch
+import ru.rrtry.silentdroid.core.AppVibrator
+import ru.rrtry.silentdroid.core.externalInterruptionPolicyAllowsStream
+import ru.rrtry.silentdroid.core.getStreamMutedStringRes
 import ru.rrtry.silentdroid.databinding.CreateProfileFragmentBinding
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.ViewEvent.*
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.*
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.DialogType.*
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(), MediaPlayer.OnCompletionListener {
 
     @Inject
-    lateinit var profileManager: ProfileManager
+    lateinit var vibrator: AppVibrator
 
     private val viewModel: ProfileDetailsViewModel by activityViewModels()
+
+    private lateinit var notificationManager: NotificationManager
 
     private lateinit var ringtoneActivityLauncher: ActivityResultLauncher<Int>
     private lateinit var notificationPolicyLauncher: ActivityResultLauncher<Intent>
@@ -54,7 +61,6 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
 
     private var callback: ProfileDetailsActivityCallback? = null
-    private var vibrator: Vibrator? = null
     private val savePlayerPosition: Boolean
         get() {
             return requireActivity().isChangingConfigurations &&
@@ -83,8 +89,19 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private val notificationPolicyReceiver: BroadcastReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == ACTION_NOTIFICATION_POLICY_CHANGED) {
-                viewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
+            if (intent?.action == ACTION_NOTIFICATION_POLICY_CHANGED ||
+                intent?.action == ACTION_INTERRUPTION_FILTER_CHANGED)
+            {
+                val playingStream: Int = viewModel.getPlayingStream()
+                if (playingStream == -1) return
+
+                if (!externalInterruptionPolicyAllowsStream(
+                        viewModel.getPlayingStream(),
+                        notificationManager.currentInterruptionFilter,
+                        notificationManager.notificationPolicy))
+                {
+                    viewModel.onStopRingtonePlayback(playingStream)
+                }
             }
         }
     }
@@ -93,7 +110,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
         override fun onResume(owner: LifecycleOwner) {
             super.onResume(owner)
-            viewModel.notificationPolicyAccessGranted.value = profileManager.isNotificationPolicyAccessGranted()
+            viewModel.notificationPolicyAccessGranted.value = notificationManager.isNotificationPolicyAccessGranted
             viewModel.canWriteSettings.value = canWrite(requireContext())
             viewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
         }
@@ -116,7 +133,6 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as ProfileDetailsActivityCallback
-        registerNotificationPolicyChangeReceiver()
         registerForRingtonePickerResult()
         registerForNotificationPolicyResult()
         registerForPhonePermissionResult()
@@ -126,7 +142,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     @Suppress("deprecation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        vibrator = requireContext().getSystemService(VIBRATOR_SERVICE) as Vibrator
+        notificationManager = requireContext().getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
 
     override fun getBinding(
@@ -144,6 +160,11 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         return viewBinding.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        registerNotificationPolicyChangeReceiver()
+    }
+
     override fun onStart() {
         super.onStart()
         requireContext().also { context ->
@@ -151,6 +172,11 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                 context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterNotificationPolicyChangeReceiver()
     }
 
     override fun onStop() {
@@ -167,7 +193,6 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     override fun onDetach() {
         super.onDetach()
         callback = null
-        unregisterNotificationPolicyChangeReceiver()
         ringtoneActivityLauncher.unregister()
         notificationPolicyLauncher.unregister()
         systemPreferencesLauncher.unregister()
@@ -199,27 +224,44 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     }
 
     private fun onStartRingtonePlayback(event: StartRingtonePlayback) {
+
         val vol: Int = viewModel.getStreamVolume(event.streamType)
-        if (vol > 0) {
+        val uri: Uri = viewModel.getRingtoneUri(ringtones[event.streamType]!!)
 
-            viewModel.currentMediaUri = viewModel.getRingtoneUri(ringtoneMap[event.streamType]!!)
-            viewModel.currentStreamType = event.streamType
-            viewModel.currentMediaUri?.let { uri ->
-
-                mediaService?.start(
-                    this@ProfileDetailsFragment,
-                    uri,
-                    event.streamType,
-                    viewModel.getStreamVolume(event.streamType))
-
-                viewModel.setPlaybackState(event.streamType, true)
+        if (!externalInterruptionPolicyAllowsStream(
+                event.streamType,
+                notificationManager.currentInterruptionFilter,
+                notificationManager.notificationPolicy))
+        {
+            ViewUtil.showSnackbar(
+                viewBinding.constraintRoot,
+                resources.getString(getStreamMutedStringRes(event.streamType, true)),
+                Snackbar.LENGTH_LONG,
+                resources.getString(R.string.unmute))
+            {
+                if (notificationManager.isNotificationPolicyAccessGranted) {
+                    notificationManager.setInterruptionFilter(
+                        INTERRUPTION_FILTER_ALL
+                    )
+                }
             }
+            return
         }
+
+        viewModel.currentMediaUri = uri
+        viewModel.currentStreamType = event.streamType
+
+        mediaService?.start(
+            this@ProfileDetailsFragment,
+            uri,
+            event.streamType,
+            vol)
+        viewModel.setPlaybackState(event.streamType, true)
     }
 
     private fun onChangeRingerMode(event: ChangeRingerMode) {
 
-        var ringerMode: Int = if (vibrator!!.hasVibrator()) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
+        var ringerMode: Int = if (vibrator.hasVibrator()) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
 
         when (event.streamType) {
             STREAM_RING -> {
@@ -230,7 +272,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                 viewModel.silenceNotifications(ringerMode)
             }
         }
-        if (ringerMode == RINGER_MODE_VIBRATE) createVibrationEffect()
+        if (ringerMode == RINGER_MODE_VIBRATE) vibrator.createVibrationEffect()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -242,6 +284,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                     viewModel.fragmentEventsFlow.collect { event ->
                         when (event) {
 
+                            is ShowStreamMutedSnackbar -> showStreamMutedSnackbar(event)
                             is ShowDialogFragment -> showDialogFragment(event.dialogType)
                             is ResumeRingtonePlayback -> onResumeRingtonePlayback(event)
                             is StopRingtonePlayback -> onStopRingtonePlayback(event)
@@ -314,7 +357,10 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private fun registerNotificationPolicyChangeReceiver() {
         requireContext().registerReceiver(
             notificationPolicyReceiver,
-            IntentFilter(ACTION_NOTIFICATION_POLICY_ACCESS_GRANTED_CHANGED)
+            IntentFilter().apply {
+                addAction(ACTION_NOTIFICATION_POLICY_CHANGED)
+                addAction(ACTION_INTERRUPTION_FILTER_CHANGED)
+            }
         )
     }
 
@@ -333,14 +379,12 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
     private fun registerForRingtonePickerResult() {
         RingtonePickerContract().apply {
-            ringtoneActivityLauncher = registerForActivityResult(this) {
-                it?.also {
-                    when (ringtoneType) {
-                        TYPE_RINGTONE -> viewModel.phoneRingtoneUri.value = it
-                        TYPE_NOTIFICATION -> viewModel.notificationSoundUri.value = it
-                        TYPE_ALARM -> viewModel.alarmSoundUri.value = it
-                        else -> Log.i("EditProfileFragment", "unknown ringtone type")
-                    }
+            ringtoneActivityLauncher = registerForActivityResult(this) { uri ->
+                if (uri == null) return@registerForActivityResult
+                when (ringtoneType) {
+                    TYPE_RINGTONE -> viewModel.phoneRingtoneUri.value = uri
+                    TYPE_NOTIFICATION -> viewModel.notificationSoundUri.value = uri
+                    TYPE_ALARM -> viewModel.alarmSoundUri.value = uri
                 }
             }
         }
@@ -348,7 +392,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
     private fun registerForNotificationPolicyResult() {
         notificationPolicyLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            profileManager.isNotificationPolicyAccessGranted().also { granted ->
+            notificationManager.isNotificationPolicyAccessGranted.also { granted ->
                 viewModel.notificationPolicyAccessGranted.value = granted
                 if (!granted) ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
             }
@@ -372,24 +416,13 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         }
     }
 
-    @Suppress("deprecation")
-    private fun createVibrationEffect() {
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
-            }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
-                vibrator?.vibrate(VibrationEffect.createOneShot(100, 100))
-            }
-            else -> vibrator?.vibrate(100)
-        }
-    }
-
     private fun changePlaybackVolume(streamType: Int, vol: Int) {
-        mediaService?.let {
-            if (it.isPlaying() && streamType == viewModel.currentStreamType) {
+        mediaService?.let { player ->
+            if (player.isPlaying() &&
+                streamType == viewModel.currentStreamType)
+            {
                 if (vol > 0) {
-                    profileManager.setStreamVolume(streamType, vol, 0)
+                    mediaService?.setStreamVolume(streamType, vol, 0)
                 } else {
                     viewModel.onStopRingtonePlayback(streamType)
                 }
@@ -436,11 +469,19 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         )
     }
 
+    private fun showStreamMutedSnackbar(event: ShowStreamMutedSnackbar) {
+        ViewUtil.showSnackbar(
+            viewBinding.constraintRoot,
+            resources.getString(getStreamMutedStringRes(event.streamType, false)),
+            Snackbar.LENGTH_LONG
+        )
+    }
+
     companion object {
 
         private const val EXTRA_PROFILE = "profile"
 
-        private val ringtoneMap: Map<Int, Int> = mapOf(
+        private val ringtones: Map<Int, Int> = mapOf(
             STREAM_ALARM to TYPE_ALARM,
             STREAM_NOTIFICATION to TYPE_NOTIFICATION,
             STREAM_RING to TYPE_RINGTONE,

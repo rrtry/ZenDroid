@@ -1,16 +1,22 @@
 package ru.rrtry.silentdroid.ui.fragments
 
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.net.Uri
 import ru.rrtry.silentdroid.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
 import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity
-import ru.rrtry.silentdroid.eventBus.EventBus
+import ru.rrtry.silentdroid.event.EventBus
 import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.viewmodels.MainActivityViewModel.ViewEvent.*
 import ru.rrtry.silentdroid.viewmodels.MainActivityViewModel
@@ -35,6 +41,7 @@ import ru.rrtry.silentdroid.databinding.ProfileItemViewBinding
 import ru.rrtry.silentdroid.databinding.ProfilesListFragmentBinding
 import ru.rrtry.silentdroid.interfaces.FabContainer
 import ru.rrtry.silentdroid.interfaces.ProfileActionListener
+import java.io.File
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
@@ -122,8 +129,8 @@ class ProfilesListFragment:
                     }
                 }
                 launch {
-                    eventBus.sharedFlow.collectLatest {
-                        if (it is EventBus.Event.ProfileChanged) {
+                    eventBus.eventBus.collectLatest {
+                        if (it is EventBus.Event.OnProfileChanged) {
                             try {
                                 profileAdapter.currentList.first { profile ->
                                     profile.id == it.id

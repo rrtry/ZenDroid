@@ -128,6 +128,15 @@
     <string name="permission_dnd_access">Режим \'Не беспокоить\'</string>
     <string name="permission_phone">Телефон</string>
     <string name="notification_channel_name">Текущий профиль</string>
+    <string name="dnd_media_volume_muted">Режим \'Не беспокоить\' отключил звук медиа</string>
+    <string name="dnd_ringer_volume_muted">Режим \'Не беспокоить\' отключил звук звонка</string>
+    <string name="dnd_notification_volume_muted">Режим \'Не беспокоить\' отключил звук уведомлений</string>
+    <string name="dnd_alarm_volume_muted">Режим \'Не беспокоить\' отключил звук будильника</string>
+    <string name="media_volume_muted">Звук медиа отключен</string>
+    <string name="ringer_volume_muted">Звук звонка отключен</string>
+    <string name="notification_volume_muted">Звук уведомлений отключен</string>
+    <string name="alarm_volume_muted">Звук будильника отключен</string>
+    <string name="unmute">Включить</string>
 
     <plurals name="days">
         <item quantity="one" tools:ignore="ImpliedQuantity">1 день</item>
