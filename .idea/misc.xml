@@ -24,10 +24,19 @@
         <entry key="..\:/Users/user/ZenDroid/app/src/main/res/layout/maps_select_profiles_fragment.xml" value="0.75" />
         <entry key="..\:/Users/user/ZenDroid/app/src/main/res/layout/profile_item_view.xml" value="0.26003824091778205" />
         <entry key="..\:/Users/user/ZenDroid/app/src/main/res/layout/profiles_list_fragment.xml" value="0.5" />
-        <entry key="app/src/main/res/layout-v23/create_profile_fragment.xml" value="0.3078125" />
+        <entry key="app/src/main/res/drawable/baseline_vibration_black_24dp.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_baseline_phone_disabled_24.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_baseline_phonelink_ring_24.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_baseline_priority_high_24.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_baseline_speaker_notes_off_24.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_baseline_timelapse_24.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_baseline_volume_up_24.xml" value="0.311" />
+        <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.311" />
+        <entry key="app/src/main/res/layout-v23/create_profile_fragment.xml" value="0.13148148148148148" />
         <entry key="app/src/main/res/layout-v23/zen_preferences_fragment.xml" value="0.4203703703703704" />
         <entry key="app/src/main/res/layout-v24/create_profile_fragment.xml" value="0.5" />
-        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.3078125" />
+        <entry key="app/src/main/res/layout-v28/create_profile_fragment.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/create_profile_activity.xml" value="0.3078125" />
       </map>
     </option>
   </component>

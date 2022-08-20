@@ -90,7 +90,7 @@ class SchedulerFragment:
     }
 
     override fun onPermissionResult(permission: String, granted: Boolean) {
-        preferencesManager.getProfile()?.let {
+        profileManager.getProfile()?.let {
             profileManager.setProfile(it, true)
         }
     }
@@ -196,7 +196,6 @@ class SchedulerFragment:
             listOf(),
             viewBinding.recyclerView,
             WeakReference(this))
-
         super.onViewCreated(view, savedInstanceState)
 
         viewLifecycleOwner.lifecycleScope.launch {

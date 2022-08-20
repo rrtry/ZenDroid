@@ -6,7 +6,7 @@
     <data>
         <import type="ru.rrtry.silentdroid.ui.BindingConverters"/>
         <import type="ru.rrtry.silentdroid.ui.BindingAdapters"/>
-        <import type="ru.rrtry.silentdroid.core.ProfileManager"/>
+        <import type="ru.rrtry.silentdroid.core.AppAudioManager"/>
         <import type="android.app.NotificationManager.Policy"/>
         <import type="android.media.RingtoneManager"/>
         <import type="android.media.AudioManager"/>
@@ -22,12 +22,13 @@
         android:orientation="vertical"
         android:layout_height="wrap_content">
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/mediaSliderLayout"
             android:layout_width="match_parent"
             mediaInterruptionFilter="@{viewModel.interruptionFilter}"
             mediaPriorityCategories="@{viewModel.priorityCategories}"
             policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+            isFixedVolume="@{viewModel.isVolumeFixed}"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -40,6 +41,7 @@
                 mediaPriorityCategories="@{viewModel.priorityCategories}"
                 mediaVolume="@{viewModel.mediaVolume}"
                 notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="27dp"
@@ -53,11 +55,12 @@
                 mediaInterruptionFilter="@{viewModel.interruptionFilter}"
                 mediaPriorityCategories="@{viewModel.priorityCategories}"
                 notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="8dp"
-                android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_MUSIC)}"
+                android:max="@{AppAudioManager.getStreamMaxVolume(context, AudioManager.STREAM_MUSIC)}"
                 android:onProgressChanged="@{(seekbar, index, fromUser) -> viewModel.onMediaStreamVolumeChanged(index, fromUser)}"
                 android:progress="@{viewModel.mediaVolume}"
                 app:layout_constraintEnd_toStartOf="@+id/playMediaRingtone"
@@ -88,44 +91,72 @@
                 app:layout_constraintTop_toTopOf="@+id/mediaSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ImageView
-            android:id="@+id/imageView10"
-            android:layout_width="wrap_content"
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
+            android:id="@+id/callSliderLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="27dp"
-            app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
-            app:srcCompat="@drawable/baseline_call_deep_purple_300_24dp" />
-
-        <SeekBar
-            android:id="@+id/phoneSeekBar"
-            callInterruptionFilter="@{viewModel.interruptionFilter}"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_marginTop="8dp"
-            android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
-            android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser, ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_VOICE_CALL))}"
-            android:progress="@{viewModel.callVolume - ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_VOICE_CALL)}"
-            app:layout_constraintEnd_toStartOf="@+id/playCallRingtone"
-            app:layout_constraintStart_toEndOf="@+id/imageView10"
-            app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
-
-        <TextView
-            android:id="@+id/phoneBarTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            isFixedVolume="@{viewModel.isVolumeFixed}"
             android:layout_marginTop="32dp"
-            android:text="@string/call_volume"
-            android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintStart_toEndOf="@+id/imageView10"
-            app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout" />
+            app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+            <ImageView
+                android:id="@+id/imageView10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                isVolumeFixed="@{viewModel.isVolumeFixed}"
+                android:layout_marginStart="27dp"
+                app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
+                app:srcCompat="@drawable/baseline_call_deep_purple_300_24dp" />
+
+            <SeekBar
+                android:id="@+id/phoneSeekBar"
+                callInterruptionFilter="@{viewModel.interruptionFilter}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="8dp"
+                android:max="@{AppAudioManager.getStreamMaxVolume(context, AudioManager.STREAM_VOICE_CALL)}"
+                android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onVoiceCallStreamVolumeChanged(progress, fromUser, AppAudioManager.getStreamMinVolume(context, AudioManager.STREAM_VOICE_CALL))}"
+                android:progress="@{viewModel.callVolume - AppAudioManager.getStreamMinVolume(context, AudioManager.STREAM_VOICE_CALL)}"
+                app:layout_constraintEnd_toStartOf="@+id/playCallRingtone"
+                app:layout_constraintStart_toEndOf="@+id/imageView10"
+                app:layout_constraintTop_toBottomOf="@+id/phoneBarTitle" />
+
+            <TextView
+                android:id="@+id/phoneBarTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:text="@string/call_volume"
+                android:textColor="?android:attr/textColorPrimary"
+                app:layout_constraintStart_toEndOf="@+id/imageView10"
+                app:layout_constraintTop_toBottomOf="@+id/mediaSliderLayout" />
+
+            <ImageButton
+                android:id="@+id/playCallRingtone"
+                android:layout_width="40dp"
+                android:duplicateParentState="true"
+                android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_VOICE_CALL)}"
+                android:layout_height="40dp"
+                playing="@{viewModel.voiceCallRingtonePlaying}"
+                android:layout_marginEnd="16dp"
+                android:background="@null"
+                app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
+                app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
+
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/notificationSliderLayout"
             android:layout_width="match_parent"
             ringerMode="@{viewModel.ringerMode}"
@@ -134,10 +165,11 @@
             policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             streamsUnlinked="@{viewModel.streamsUnlinked}"
             hasSeparateNotificationStream="@{viewModel.notificationStreamIndependent}"
+            isFixedVolume="@{viewModel.isVolumeFixed}"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/phoneSeekBar"
+            app:layout_constraintTop_toBottomOf="@+id/callSliderLayout"
             android:layout_marginTop="32dp">
 
             <ImageView
@@ -147,6 +179,7 @@
                 notificationMode="@{viewModel.notificationMode}"
                 notificationPriorityCategories="@{viewModel.priorityCategories}"
                 streamsUnlinked="@{viewModel.streamsUnlinked}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:onClick="@{() -> viewModel.onNotificationIconClick()}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -164,11 +197,12 @@
                 notificationPriorityCategories="@{viewModel.priorityCategories}"
                 streamsUnlinked="@{viewModel.streamsUnlinked}"
                 hasSeparateNotificationStream="@{viewModel.notificationStreamIndependent}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="8dp"
-                android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_NOTIFICATION)}"
+                android:max="@{AppAudioManager.getStreamMaxVolume(context, AudioManager.STREAM_NOTIFICATION)}"
                 android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_NOTIFICATION)}"
                 android:progress="@{viewModel.notificationVolume}"
                 app:layout_constraintEnd_toStartOf="@+id/playNotificationRingtone"
@@ -199,15 +233,16 @@
                 app:layout_constraintTop_toTopOf="@+id/notificationSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/ringerSliderLayout"
             android:layout_width="match_parent"
             ringerInterruptionFilter="@{viewModel.interruptionFilter}"
             ringerPriorityCategories="@{viewModel.priorityCategories}"
             policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             streamsUnlinked="@{viewModel.streamsUnlinked}"
+            isFixedVolume="@{viewModel.isVolumeFixed}"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -221,6 +256,7 @@
                 ringerIconInterruptionFilter="@{viewModel.interruptionFilter}"
                 ringerPriorityCategories="@{viewModel.priorityCategories}"
                 streamsUnlinked="@{viewModel.streamsUnlinked}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:onClick="@{() -> viewModel.onRingerIconClick()}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -237,11 +273,12 @@
                 ringerSeekBarInterruptionFilter="@{viewModel.interruptionFilter}"
                 ringerSeekBarPropertyCategories="@{viewModel.priorityCategories}"
                 streamsUnlinked="@{viewModel.streamsUnlinked}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:layout_marginTop="8dp"
-                android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_RING)}"
+                android:max="@{AppAudioManager.getStreamMaxVolume(context, AudioManager.STREAM_RING)}"
                 android:onProgressChanged="@{(seekbar, value, fromUser) -> viewModel.onAlertStreamVolumeChanged(value, fromUser, AudioManager.STREAM_RING)}"
                 android:progress="@{viewModel.ringVolume}"
                 app:layout_constraintEnd_toStartOf="@+id/playIncomingCallRingtone"
@@ -273,9 +310,9 @@
                 app:layout_constraintTop_toTopOf="@+id/ringerSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/unlinkStreamsLayout"
             android:layout_width="match_parent"
             android:layout_height="60dp"
@@ -284,6 +321,7 @@
             android:orientation="horizontal"
             android:visibility="visible"
             handlesNotifications="@{viewModel.notificationStreamIndependent}"
+            isFixedVolume="@{viewModel.isVolumeFixed}"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/alarmSliderLayout">
@@ -313,14 +351,15 @@
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="UseSwitchCompatOrMaterialXml" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/alarmSliderLayout"
             android:layout_width="match_parent"
             alarmInterruptionFilter="@{viewModel.interruptionFilter}"
             alarmPriorityCategories="@{viewModel.priorityCategories}"
             policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+            isFixedVolume="@{viewModel.isVolumeFixed}"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -332,6 +371,7 @@
                 priorityCategories="@{viewModel.priorityCategories}"
                 policyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
                 index="@{viewModel.alarmVolume}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:id="@+id/alarmIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -357,13 +397,14 @@
                 alarmInterruptionFilter="@{viewModel.interruptionFilter}"
                 alarmPriorityCategories="@{viewModel.priorityCategories}"
                 notificationAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
+                isFixedVolume="@{viewModel.isVolumeFixed}"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
-                android:max="@{ProfileManager.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
-                android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser, ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_ALARM))}"
-                android:progress="@{viewModel.alarmVolume - ProfileManager.getStreamMinVolume(context, AudioManager.STREAM_ALARM)}"
+                android:max="@{AppAudioManager.getStreamMaxVolume(context, AudioManager.STREAM_ALARM)}"
+                android:onProgressChanged="@{(seekbar, progress, fromUser) -> viewModel.onAlarmStreamVolumeChanged(progress, fromUser, AppAudioManager.getStreamMinVolume(context, AudioManager.STREAM_ALARM))}"
+                android:progress="@{viewModel.alarmVolume - AppAudioManager.getStreamMinVolume(context, AudioManager.STREAM_ALARM)}"
                 app:layout_constraintEnd_toStartOf="@+id/playAlarmRingtone"
                 app:layout_constraintStart_toEndOf="@+id/alarmIcon"
                 app:layout_constraintTop_toBottomOf="@+id/alarmBarTitle" />
@@ -382,7 +423,7 @@
                 app:layout_constraintTop_toTopOf="@+id/alarmSeekBar"
                 app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
         <View
             android:id="@+id/separator1"
@@ -407,7 +448,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/separator1" />
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/interruptionFilterLayout"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             android:layout_width="match_parent"
@@ -448,9 +489,9 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/doNotDisturbTitle" />
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/phoneRingtoneLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -490,9 +531,9 @@
                 app:layout_constraintStart_toStartOf="@+id/phoneRingtoneTitle"
                 app:layout_constraintTop_toBottomOf="@+id/phoneRingtoneTitle" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/notificationSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -533,9 +574,9 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/notificationSoundTitle" />
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/alarmSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
             android:layout_width="match_parent"
@@ -575,9 +616,9 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/alarmSoundTitle" />
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/interruptionFilterPreferencesLayout"
             notificationPolicyAccess="@{viewModel.notificationPolicyAccessGranted}"
             android:layout_width="match_parent"
@@ -618,9 +659,9 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/doNotDisturbPreferencesTitle" />
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/vibrateForCallsLayout"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -658,21 +699,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
-
-        <ImageButton
-            android:id="@+id/playCallRingtone"
-            android:layout_width="40dp"
-            android:duplicateParentState="true"
-            android:onClick="@{() -> viewModel.onPlayRingtoneButtonClick(AudioManager.STREAM_VOICE_CALL)}"
-            android:layout_height="40dp"
-            playing="@{viewModel.voiceCallRingtonePlaying}"
-            android:layout_marginEnd="16dp"
-            android:background="@null"
-            app:layout_constraintBottom_toBottomOf="@+id/phoneSeekBar"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/phoneSeekBar"
-            app:srcCompat="@drawable/ic_baseline_play_arrow_24" />
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
         <View
             android:id="@+id/separator2"
@@ -699,7 +726,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/separator2" />
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/blockWhenScreenIsOnLayout"
             android:background="?attr/selectableItemBackground"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
@@ -748,9 +775,9 @@
                 android:layout_toRightOf="@+id/blockWhenScreenIsOnDescription"
                 android:clickable="false" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
-        <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+        <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/blockWhenScreenIsOffLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -801,6 +828,6 @@
                 app:layout_constraintTop_toTopOf="@+id/blockWhenScreenIsOffTitle"
                 tools:ignore="UseSwitchCompatOrMaterialXml" />
 
-        </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+        </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

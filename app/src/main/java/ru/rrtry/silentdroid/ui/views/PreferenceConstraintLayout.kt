@@ -9,20 +9,20 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.constraintlayout.widget.ConstraintLayout
 
-class SwitchableConstraintLayout @JvmOverloads constructor(
+class PreferenceConstraintLayout @JvmOverloads constructor(
         context: Context,
         attrs: AttributeSet? = null,
         defStyleAttr: Int = 0) : ConstraintLayout(context, attrs, defStyleAttr) {
 
+    private val paint = Paint()
     var disabled = false
         set(value) {
             field = value
             requestLayout()
         }
 
-    private val paint = Paint()
     init {
-        val colorMatrix = ColorMatrix()
+        val colorMatrix: ColorMatrix = ColorMatrix()
         colorMatrix.set(
                 floatArrayOf(
                         0.33f, 0.33f, 0.33f, 0f, 0f,
@@ -34,31 +34,25 @@ class SwitchableConstraintLayout @JvmOverloads constructor(
         paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
     }
 
-    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-        return disabled
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean = disabled
+
+    private fun saveLayer(canvas: Canvas?) {
+        if (disabled) canvas?.saveLayer(null, paint)
     }
 
-    private fun drawToOffScreenBuffer(canvas: Canvas?): Unit {
-        if (disabled) {
-            canvas?.saveLayer(null, paint)
-        }
-    }
-
-    private fun restoreFromOffScreenBuffer(canvas: Canvas?): Unit {
-        if (disabled) {
-            canvas?.restore()
-        }
+    private fun restoreLayer(canvas: Canvas?) {
+        if (disabled) canvas?.restore()
     }
 
     override fun dispatchDraw(canvas: Canvas?) {
-        drawToOffScreenBuffer(canvas)
+        saveLayer(canvas)
         super.dispatchDraw(canvas)
-        restoreFromOffScreenBuffer(canvas)
+        restoreLayer(canvas)
     }
 
     override fun draw(canvas: Canvas?) {
-        drawToOffScreenBuffer(canvas)
+        saveLayer(canvas)
         super.draw(canvas)
-        restoreFromOffScreenBuffer(canvas)
+        restoreLayer(canvas)
     }
 }

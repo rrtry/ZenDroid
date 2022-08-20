@@ -67,7 +67,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+            <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
                 android:id="@+id/repeatCallersLayout"
                 callSenders="@{viewModel.priorityCallSenders}"
                 priorityCategories="@{viewModel.priorityCategories}"
@@ -119,7 +119,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/repeatCallersDescription" />
-            </ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout>
+            </ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout>
 
             <View
                 android:id="@+id/separator2"

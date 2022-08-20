@@ -28,6 +28,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.content.Context
+import android.view.Gravity
+import androidx.transition.Fade
+import androidx.transition.Slide
+import androidx.transition.TransitionSet
 import ru.rrtry.silentdroid.databinding.ZenPreferencesFragmentBinding
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.ViewEvent.*
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.DialogType.*
@@ -46,6 +50,18 @@ class InterruptionFilterFragment: ViewBindingFragment<ZenPreferencesFragmentBind
     override fun onAttach(context: Context) {
         super.onAttach(context)
         callback = requireActivity() as ProfileDetailsActivityCallback
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        TransitionSet().apply {
+
+            addTransition(Fade())
+            addTransition(Slide(Gravity.END))
+
+            enterTransition = this
+            exitTransition = this
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

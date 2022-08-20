@@ -20,6 +20,7 @@ import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.event.EventBus
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.util.ParcelableUtil.Companion.getExtra
 import ru.rrtry.silentdroid.util.WakeLock
 import javax.inject.Inject
@@ -45,16 +46,14 @@ class AlarmReceiver: BroadcastReceiver() {
                     )
                 }
             }
-            ACTION_TIMEZONE_CHANGED, ACTION_LOCKED_BOOT_COMPLETED, ACTION_TIME_CHANGED, ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
+            ACTION_TIMEZONE_CHANGED, ACTION_TIME_CHANGED, ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
                 goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                    scheduleAlarmInstances()
+                    scheduleAlarmInstances(true)
                 }
             }
-            ACTION_BOOT_COMPLETED -> {
-                if (Build.VERSION_CODES.N > Build.VERSION.SDK_INT) {
-                    goAsync(context!!, GlobalScope, Dispatchers.IO) {
-                        scheduleAlarmInstances()
-                    }
+            BOOT_COMPLETED -> {
+                goAsync(context!!, GlobalScope, Dispatchers.IO) {
+                    scheduleAlarmInstances(false)
                 }
             }
         }
@@ -62,16 +61,16 @@ class AlarmReceiver: BroadcastReceiver() {
 
     private suspend fun onAlarm(alarm: Alarm, startProfile: Profile, endProfile: Profile) {
 
-        scheduleManager.scheduleAlarm(alarm, startProfile, endProfile).also { scheduled ->
-            if (!scheduled) {
-                scheduleManager.cancelAlarm(alarm)
-                alarmRepository.cancelAlarm(alarm)
-                eventBus.updateAlarmState(alarm)
-            }
-        }
+        setNextAlarm(
+            alarm,
+            startProfile,
+            endProfile
+        )
 
         val profile: Profile = getProfile(alarm, startProfile, endProfile)
-        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(alarmRepository.getEnabledAlarms())
+        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(
+            alarmRepository.getEnabledAlarms()
+        )
 
         profileManager.setProfile<Alarm?>(
             profile,
@@ -82,21 +81,47 @@ class AlarmReceiver: BroadcastReceiver() {
     }
 
     private fun getProfile(alarm: Alarm, startProfile: Profile, endProfile: Profile): Profile {
-        return if (scheduleManager.meetsSchedule() && scheduleManager.isAlarmValid(alarm)) startProfile else endProfile
+        return if (scheduleManager.meetsSchedule() &&
+            scheduleManager.isAlarmValid(alarm)) startProfile else endProfile
     }
 
-    private suspend fun scheduleAlarmInstances() {
+    private suspend fun scheduleAlarmInstances(enforceScheduledProfile: Boolean) {
         alarmRepository.getEnabledAlarms()?.let { enabledAlarms ->
-            enabledAlarms.forEach {
-                scheduleManager.scheduleAlarm(it.alarm, it.startProfile, it.endProfile).also { scheduled ->
-                    if (!scheduled) {
-                        scheduleManager.cancelAlarm(it.alarm)
-                        alarmRepository.cancelAlarm(it.alarm)
-                    }
-                }
+            enabledAlarms.forEach { relation ->
+                setNextAlarm(relation)
             }
-            profileManager.updateScheduledProfile(enabledAlarms)
+            profileManager.updateScheduledProfile(enabledAlarms, enforceScheduledProfile)
         }
+    }
+
+    private suspend fun setNextAlarm(relation: AlarmRelation) {
+        scheduleManager.scheduleAlarm(
+            relation.alarm,
+            relation.startProfile,
+            relation.endProfile
+        ).also { scheduled ->
+            if (!scheduled) cancelAlarm(relation.alarm)
+        }
+    }
+
+    private suspend fun setNextAlarm(
+        alarm: Alarm,
+        startProfile: Profile,
+        endProfile: Profile)
+    {
+        scheduleManager.scheduleAlarm(
+            alarm,
+            startProfile,
+            endProfile
+        ).also { scheduled ->
+            if (!scheduled) cancelAlarm(alarm)
+        }
+    }
+
+    private suspend fun cancelAlarm(alarm: Alarm) {
+        scheduleManager.cancelAlarm(alarm)
+        alarmRepository.cancelAlarm(alarm)
+        eventBus.updateAlarmState(alarm)
     }
 
     companion object {
@@ -114,6 +139,12 @@ class AlarmReceiver: BroadcastReceiver() {
                 WakeLock.release()
                 pendingResult.finish()
             }
+        }
+
+        private val BOOT_COMPLETED: String = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ACTION_LOCKED_BOOT_COMPLETED
+        } else {
+            ACTION_BOOT_COMPLETED
         }
 
         internal const val EXTRA_ALARM: String = "extra_alarm"

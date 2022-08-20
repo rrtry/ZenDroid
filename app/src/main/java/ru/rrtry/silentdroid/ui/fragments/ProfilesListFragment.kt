@@ -1,17 +1,11 @@
 package ru.rrtry.silentdroid.ui.fragments
 
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.RingtoneManager
-import android.net.Uri
 import ru.rrtry.silentdroid.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
@@ -41,7 +35,6 @@ import ru.rrtry.silentdroid.databinding.ProfileItemViewBinding
 import ru.rrtry.silentdroid.databinding.ProfilesListFragmentBinding
 import ru.rrtry.silentdroid.interfaces.FabContainer
 import ru.rrtry.silentdroid.interfaces.ProfileActionListener
-import java.io.File
 import java.lang.ref.WeakReference
 import kotlin.NoSuchElementException
 
@@ -68,7 +61,7 @@ class ProfilesListFragment:
     override val selectionId: String = SELECTION_ID
 
     override fun onPermissionResult(permission: String, granted: Boolean) {
-        preferencesManager.getProfile()?.let {
+        profileManager.getProfile()?.let {
             profileManager.setProfile(it, true)
         }
     }
@@ -177,7 +170,7 @@ class ProfilesListFragment:
     }
 
     override fun isEnabled(entity: Profile): Boolean {
-        return preferencesManager.isProfileEnabled(entity)
+        return profileManager.isProfileSet(entity)
     }
 
     private fun cancelAlarms(alarms: List<AlarmRelation>?) {
@@ -214,12 +207,12 @@ class ProfilesListFragment:
         if (profile.id == viewModel.lastSelected) {
             viewModel.lastSelected = null
         }
-        if (preferencesManager.isProfileEnabled(profile)) {
+        if (profileManager.isProfileSet(profile)) {
             preferencesManager.clearPreferences()
             notificationHelper.cancelProfileNotification()
         }
         notificationHelper.updateNotification(
-            preferencesManager.getProfile(),
+            profileManager.getProfile(),
             scheduleManager.getPreviousAndNextTrigger(alarms)
         )
     }
@@ -231,7 +224,7 @@ class ProfilesListFragment:
         val profile: Profile = event.profile
         val alarms: List<AlarmRelation> = event.alarms
 
-        if (!preferencesManager.isProfileEnabled(profile)) {
+        if (!profileManager.isProfileSet(profile)) {
 
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
             profileAdapter.setSelection(profile, viewModel.lastSelected)

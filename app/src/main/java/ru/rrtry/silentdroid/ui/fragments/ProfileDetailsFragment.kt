@@ -29,6 +29,9 @@ import android.os.*
 import android.provider.Settings.System.canWrite
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.*
+import androidx.transition.Fade
+import androidx.transition.Slide
+import androidx.transition.TransitionSet
 import com.google.android.material.snackbar.Snackbar
 import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity.Companion.INTERRUPTION_FILTER_FRAGMENT
 import ru.rrtry.silentdroid.services.RingtonePlaybackService
@@ -142,6 +145,14 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     @Suppress("deprecation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        TransitionSet().apply {
+
+            addTransition(Fade())
+            addTransition(Slide(Gravity.START))
+
+            enterTransition = this
+            exitTransition = this
+        }
         notificationManager = requireContext().getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
 
@@ -261,7 +272,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
     private fun onChangeRingerMode(event: ChangeRingerMode) {
 
-        var ringerMode: Int = if (vibrator.hasVibrator()) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
+        var ringerMode: Int = if (vibrator.hasVibrator) RINGER_MODE_VIBRATE else RINGER_MODE_SILENT
 
         when (event.streamType) {
             STREAM_RING -> {

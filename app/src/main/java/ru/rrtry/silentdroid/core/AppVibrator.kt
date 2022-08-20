@@ -1,6 +1,8 @@
 package ru.rrtry.silentdroid.core
 
 import android.content.Context
+import android.content.Context.VIBRATOR_MANAGER_SERVICE
+import android.content.Context.VIBRATOR_SERVICE
 import android.os.*
 import android.os.VibrationEffect.createOneShot
 import android.os.VibrationEffect.createPredefined
@@ -11,17 +13,16 @@ import javax.inject.Inject
 @ActivityScoped
 class AppVibrator @Inject constructor(@ActivityContext private val context: Context) {
 
-    private val appVibrator: Vibrator
-    get() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            return vibratorManager.defaultVibrator
-        }
-        return context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }
+    private val appVibrator: Vibrator get() = getDefaultVibrator()
+    val hasVibrator: Boolean get() = appVibrator.hasVibrator()
 
-    fun hasVibrator(): Boolean {
-        return appVibrator.hasVibrator()
+    private fun getDefaultVibrator(): Vibrator {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val vibratorManager: VibratorManager = context.getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            context.getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
     }
 
     fun createVibrationEffect() {

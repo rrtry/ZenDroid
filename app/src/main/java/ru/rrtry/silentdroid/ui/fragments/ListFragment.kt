@@ -6,15 +6,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.Uri
 import androidx.core.util.Pair
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Parcelable
 import android.os.PowerManager
-import android.provider.Settings
-import android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,14 +28,11 @@ import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy.
 import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.entities.Hint
 import ru.rrtry.silentdroid.entities.ListItem
-import ru.rrtry.silentdroid.entities.Profile
 import ru.rrtry.silentdroid.util.ViewUtil.Companion.isViewPartiallyVisible
 import ru.rrtry.silentdroid.util.canWriteSettings
 import ru.rrtry.silentdroid.util.checkPermission
-import com.google.android.material.snackbar.Snackbar
 import ru.rrtry.silentdroid.interfaces.*
 
-@Suppress("unchecked_cast")
 abstract class ListFragment<T: Parcelable, VB: ViewBinding, VH: RecyclerView.ViewHolder, IB: ViewBinding, AD>:
     ViewBindingFragment<VB>(),
     FragmentStateListener,

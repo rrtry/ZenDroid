@@ -106,7 +106,6 @@ class RingtonePlaybackService: Service() {
     }
 
     fun start(listener: MediaPlayer.OnCompletionListener, mediaUri: Uri, streamType: Int, streamVolume: Int) {
-        Log.i("RingtonePlayer", mediaUri.toString())
         prepareMediaPlayer(listener, mediaUri, streamType, streamVolume)
         mediaPlayer?.start()
     }

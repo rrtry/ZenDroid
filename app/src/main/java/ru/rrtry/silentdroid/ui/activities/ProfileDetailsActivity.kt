@@ -15,7 +15,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction.TRANSIT_FRAGMENT_OPEN
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -38,6 +37,7 @@ import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.DialogType.*
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.ViewEvent.*
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import ru.rrtry.silentdroid.core.*
@@ -59,12 +59,13 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     private lateinit var binding: CreateProfileActivityBinding
 
     @Inject lateinit var preferencesManager: PreferencesManager
+    @Inject lateinit var appAudioManager: AppAudioManager
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var notificationHelper: NotificationHelper
 
-    private var showExplanationDialog: Boolean = false
+    private var showFixedVolumeSnackbar: Boolean = true
     private var elapsedTime: Long = 0L
     private var verticalOffset: Int = 0
     private val withTransition: Boolean
@@ -74,7 +75,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     private var registeredGeofences: List<LocationRelation>? = null
 
     override fun onUpdate(profile: Profile) {
-        if (preferencesManager.isProfileEnabled(profile)) {
+        if (profileManager.isProfileSet(profile)) {
             profileManager.setProfile(profile, true)
             notificationHelper.updateNotification(
                 profile,
@@ -119,7 +120,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
 
         savedInstanceState?.let {
             elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
-            showExplanationDialog = it.getBoolean(EXTRA_SHOW_DIALOG, false)
+            showFixedVolumeSnackbar = it.getBoolean(EXTRA_SHOW_FIXED_VOLUME_HINT, false)
         }
 
         binding = CreateProfileActivityBinding.inflate(layoutInflater)
@@ -172,13 +173,15 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
             intent.getParcelableExtra<Profile>(EXTRA_PROFILE) ?: profileManager.getDefaultProfile(),
             intent.extras != null
         )
-        viewModel.notificationStreamIndependent.value = profileManager.isNotificationStreamIndependent()
+        viewModel.notificationStreamIndependent.value = appAudioManager.isNotificationStreamIndependent()
+        viewModel.isVolumeFixed.value = appAudioManager.isVolumeFixed
+        viewModel.isVoiceCapable.value = appAudioManager.isVoicePlatform
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putLong(EXTRA_ELAPSED_TIME, elapsedTime)
-        outState.putBoolean(EXTRA_SHOW_DIALOG, showExplanationDialog)
+        outState.putBoolean(EXTRA_SHOW_FIXED_VOLUME_HINT, showFixedVolumeSnackbar)
     }
 
     override fun onStart() {
@@ -186,6 +189,20 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
         binding.toolbar.setNavigationOnClickListener { onBack() }
         binding.appBar.addOnOffsetChangedListener(this)
         supportFragmentManager.addOnBackStackChangedListener(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (appAudioManager.isVolumeFixed &&
+            showFixedVolumeSnackbar)
+        {
+            showSnackbar(
+                binding.coordinatorLayout,
+                resources.getString(R.string.fixed_volume_policy),
+                Snackbar.LENGTH_INDEFINITE
+            )
+            showFixedVolumeSnackbar = false
+        }
     }
 
     override fun onStop() {
@@ -212,7 +229,6 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     private fun openInterruptionsFilterFragment() {
         supportFragmentManager
             .beginTransaction()
-            .setTransition(TRANSIT_FRAGMENT_OPEN)
             .replace(R.id.fragmentContainer, InterruptionFilterFragment(), null)
             .addToBackStack(null)
             .commit()
@@ -278,7 +294,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     companion object {
 
         private const val EXTRA_ELAPSED_TIME: String = "key_elapsed_time"
-        private const val EXTRA_SHOW_DIALOG: String = "extra_show_dialog"
+        private const val EXTRA_SHOW_FIXED_VOLUME_HINT: String = "extra_show_fixed_volume_hint"
         private const val DELAY: Long = 700
 
         const val TAG_PROFILE_FRAGMENT: String = "tag_profile_fragment"

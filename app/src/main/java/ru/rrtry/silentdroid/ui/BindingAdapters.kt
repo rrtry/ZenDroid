@@ -3,7 +3,7 @@ package ru.rrtry.silentdroid.ui
 import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.databinding.BindingAdapter
-import ru.rrtry.silentdroid.ui.views.SwitchableConstraintLayout
+import ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
 import android.media.AudioManager.*
 import android.app.NotificationManager.Policy.*
 import android.app.NotificationManager.*
@@ -35,128 +35,150 @@ object BindingAdapters {
     private const val DRAWABLE_RINGER_NORMAL: Int = R.drawable.baseline_notifications_active_black_24dp
     private const val DRAWABLE_START_PLAYBACK: Int = R.drawable.ic_baseline_play_arrow_24
     private const val DRAWABLE_STOP_PLAYBACK: Int = R.drawable.ic_baseline_pause_24
+    private const val DRAWABLE_VOICE_CALL_DISABLED: Int = R.drawable.ic_baseline_phone_disabled_24
+    private const val DRAWABLE_VOICE_CALL_ENABLED: Int = R.drawable.baseline_call_deep_purple_300_24dp
 
     @JvmStatic
     private fun setEnabledState(layout: View, enabled: Boolean, setViewState: Boolean = true) {
-        (layout as SwitchableConstraintLayout).apply {
-            if (setViewState) {
-                isEnabled = enabled
-            }
+        (layout as PreferenceConstraintLayout).apply {
+            if (setViewState) isEnabled = enabled
             disabled = !enabled
         }
     }
 
     @JvmStatic
-    private fun setAlarmIcon(imageView: ImageView, enabled: Boolean) {
-        imageView.setImageDrawable(ResourcesCompat.getDrawable(
-            imageView.context.resources, if (enabled) DRAWABLE_ALARM_ON else DRAWABLE_ALARM_OFF, imageView.context.theme))
+    private fun setAlarmIcon(view: ImageView, enabled: Boolean) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(
+            view.context.resources, if (enabled) DRAWABLE_ALARM_ON else DRAWABLE_ALARM_OFF, view.context.theme))
     }
 
     @JvmStatic
-    private fun setSilentIcon(icon: ImageView) {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_NOTIFICATIONS_OFF, icon.context.theme))
+    private fun setSilentIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(view.context.resources, DRAWABLE_NOTIFICATIONS_OFF, view.context.theme))
     }
 
     @JvmStatic
-    private fun setVibrateIcon(icon: ImageView) {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_RINGER_VIBRATE, icon.context.theme))
+    private fun setVibrateIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(view.context.resources, DRAWABLE_RINGER_VIBRATE, view.context.theme))
     }
 
     @JvmStatic
-    private fun setNormalNotificationIcon(icon: ImageView) {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_NOTIFICATIONS_ON, icon.context.theme))
+    private fun setNormalNotificationIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(view.context.resources, DRAWABLE_NOTIFICATIONS_ON, view.context.theme))
     }
 
     @JvmStatic
-    private fun setMediaOffIcon(icon: ImageView) {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_MUSIC_OFF, icon.context.theme))
+    private fun setMediaOffIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(view.context.resources, DRAWABLE_MUSIC_OFF, view.context.theme))
     }
 
     @JvmStatic
-    private fun setMediaOnIcon(icon: ImageView) {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_MUSIC_ON, icon.context.theme))
+    private fun setMediaOnIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(view.context.resources, DRAWABLE_MUSIC_ON, view.context.theme))
     }
 
     @JvmStatic
-    private fun setNormalRingerIcon(icon: ImageView) {
-        icon.setImageDrawable(ResourcesCompat.getDrawable(icon.context.resources, DRAWABLE_RINGER_NORMAL, icon.context.theme))
+    private fun setNormalRingerIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(view.context.resources, DRAWABLE_RINGER_NORMAL, view.context.theme))
     }
 
     @JvmStatic
-    @BindingAdapter("alarmInterruptionFilter", "priorityCategories", "policyAccessGranted", "index")
+    private fun setDisallowVoiceCallIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(
+            view.context.resources, DRAWABLE_VOICE_CALL_DISABLED, view.context.theme
+        ))
+    }
+
+    @JvmStatic
+    private fun setAllowVoiceCallIcon(view: ImageView) {
+        view.setImageDrawable(ResourcesCompat.getDrawable(
+            view.context.resources, DRAWABLE_VOICE_CALL_ENABLED, view.context.theme
+        ))
+    }
+
+    @JvmStatic
+    @BindingAdapter("alarmInterruptionFilter", "priorityCategories", "policyAccessGranted", "index", "isFixedVolume")
     fun bindAlarmIcon(
         imageView: ImageView,
         alarmInterruptionFilter: Int,
         priorityCategories: Int,
         policyAccessGranted: Boolean,
-        index: Int)
+        index: Int,
+        isFixedVolume: Boolean)
     {
         setAlarmIcon(imageView, interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter, priorityCategories, policyAccessGranted)
-                && !canMuteAlarmStream(index))
+                && !canMuteAlarmStream(index)
+                && !isFixedVolume)
     }
 
     @JvmStatic
-    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "policyAccessGranted")
-    fun bindMediaSliderLayout(
+    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "policyAccessGranted", "isFixedVolume")
+    fun bindMediaSeekbarLayout(
         viewGroup: View,
         mediaInterruptionFilter: Int,
         mediaPriorityCategories: Int,
-        policyAccessGranted: Boolean)
+        policyAccessGranted: Boolean,
+        isFixedVolume: Boolean)
     {
         setEnabledState(viewGroup, interruptionPolicyAllowsMediaStream(
             mediaInterruptionFilter,
             mediaPriorityCategories,
-            policyAccessGranted))
+            policyAccessGranted) && !isFixedVolume)
     }
 
     @JvmStatic
-    @BindingAdapter("ringerInterruptionFilter", "ringerPriorityCategories", "policyAccessGranted", "streamsUnlinked")
-    fun bindRingerSliderLayout(
+    @BindingAdapter("ringerInterruptionFilter", "ringerPriorityCategories", "policyAccessGranted", "streamsUnlinked", "isFixedVolume")
+    fun bindRingerSeekbarLayout(
         viewGroup: View,
         ringerInterruptionFilter: Int,
         ringerPriorityCategories: Int,
         policyAccessGranted: Boolean,
-        streamsUnlinked: Boolean)
+        streamsUnlinked: Boolean,
+        isFixedVolume: Boolean)
     {
         setEnabledState(viewGroup, interruptionPolicyAllowsRingerStream(
             ringerInterruptionFilter,
             ringerPriorityCategories,
             policyAccessGranted,
-            streamsUnlinked))
+            streamsUnlinked) && !isFixedVolume)
     }
 
     @JvmStatic
-    @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "policyAccessGranted")
-    fun bindAlarmSliderLayout(
+    @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "policyAccessGranted", "isFixedVolume")
+    fun bindAlarmSeekbarLayout(
         viewGroup: View,
         alarmInterruptionFilter: Int,
         alarmPriorityCategories: Int,
-        policyAccessGranted: Boolean)
+        policyAccessGranted: Boolean,
+        isFixedVolume: Boolean)
     {
         setEnabledState(viewGroup, interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter,
             alarmPriorityCategories,
-            policyAccessGranted))
+            policyAccessGranted) && !isFixedVolume)
     }
 
     @JvmStatic
-    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted", "mediaVolume")
+    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted", "mediaVolume", "isFixedVolume")
     fun bindMediaIcon(
         imageView: ImageView,
         mediaInterruptionFilter: Int,
         mediaPriorityCategories: Int,
         notificationAccessGranted: Boolean,
-        mediaVolume: Int)
+        mediaVolume: Int,
+        isFixedVolume: Boolean)
     {
-        if (!interruptionPolicyAllowsMediaStream(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)) {
+        val isMute: Boolean = mediaVolume == 0
+        val policyAllows: Boolean = interruptionPolicyAllowsMediaStream(
+            mediaInterruptionFilter,
+            mediaPriorityCategories,
+            notificationAccessGranted
+        )
+        if (!policyAllows || isMute || isFixedVolume) {
             setMediaOffIcon(imageView)
         } else {
-            if (mediaVolume > 0) {
-                setMediaOnIcon(imageView)
-            } else {
-                setMediaOffIcon(imageView)
-            }
+            setMediaOnIcon(imageView)
         }
     }
 
@@ -205,35 +227,67 @@ object BindingAdapters {
         "priorityCategories",
         "policyAccessGranted",
         "streamsUnlinked",
-        "hasSeparateNotificationStream"
+        "hasSeparateNotificationStream",
+        "isFixedVolume"
     )
-    fun notificationLayout(
+    fun bindNotificationSeekbarLayout(
         view: View,
         ringerMode: Int,
         interruptionFilter: Int,
         priorityCategories: Int,
         policyAccessGranted: Boolean,
         streamsUnlinked: Boolean,
-        hasSeparateNotificationStream: Boolean)
+        hasSeparateNotificationStream: Boolean,
+        isFixedVolume: Boolean)
     {
         setEnabledState(view, interruptionPolicyAllowsNotificationStream(
             interruptionFilter,
             priorityCategories,
             policyAccessGranted,
-            streamsUnlinked) && !ringerModeMutesNotifications(ringerMode, hasSeparateNotificationStream)
+            streamsUnlinked)
+                && !ringerModeMutesNotifications(ringerMode, hasSeparateNotificationStream)
+                && !isFixedVolume
         )
     }
 
     @JvmStatic
-    @BindingAdapter("mediaInterruptionFilter", "mediaPriorityCategories", "notificationAccessGranted",requireAll = false)
-    fun bindMediaSeekBar(view: SeekBar, mediaInterruptionFilter: Int, mediaPriorityCategories: Int, notificationAccessGranted: Boolean) {
-        view.isEnabled = interruptionPolicyAllowsMediaStream(mediaInterruptionFilter, mediaPriorityCategories, notificationAccessGranted)
+    @BindingAdapter("mediaInterruptionFilter",
+        "mediaPriorityCategories",
+        "notificationAccessGranted",
+        "isFixedVolume",
+        requireAll = false)
+    fun bindMediaSeekBar(view: SeekBar,
+                         mediaInterruptionFilter: Int,
+                         mediaPriorityCategories: Int,
+                         notificationAccessGranted: Boolean,
+                         isFixedVolume: Boolean)
+    {
+        view.isEnabled = interruptionPolicyAllowsMediaStream(
+            mediaInterruptionFilter,
+            mediaPriorityCategories,
+            notificationAccessGranted) && !isFixedVolume
     }
 
     @JvmStatic
-    @BindingAdapter("callInterruptionFilter")
-    fun bindCallSeekBar(view: SeekBar, callInterruptionFilter: Int): Unit {
+    @BindingAdapter("isVolumeFixed")
+    fun bindCallIcon(view: ImageView, isVolumeFixed: Boolean) {
+        if (isVolumeFixed) {
+            setDisallowVoiceCallIcon(view)
+        } else {
+            setAllowVoiceCallIcon(view)
+        }
+    }
 
+    @JvmStatic
+    @BindingAdapter("callInterruptionFilter", "isFixedVolume")
+    fun bindCallSeekBar(view: SeekBar, callInterruptionFilter: Int, isFixedVolume: Boolean) {
+        view.isEnabled = !isFixedVolume
+    }
+
+    @JvmStatic
+    @BindingAdapter("isFixedVolume")
+    fun bindCallSeekbarLayout(view: PreferenceConstraintLayout, isFixedVolume: Boolean) {
+        setEnabledState(view, !isFixedVolume)
     }
 
     @JvmStatic
@@ -256,6 +310,7 @@ object BindingAdapters {
         "notificationAccessGranted",
         "streamsUnlinked",
         "hasSeparateNotificationStream",
+        "isFixedVolume"
     )
     fun bindNotificationSeekBar(
         view: SeekBar,
@@ -264,13 +319,16 @@ object BindingAdapters {
         ringerMode: Int,
         notificationAccessGranted: Boolean,
         streamsUnlinked: Boolean,
-        hasSeparateNotificationStream: Boolean)
+        hasSeparateNotificationStream: Boolean,
+        isFixedVolume: Boolean)
     {
         view.isEnabled = interruptionPolicyAllowsNotificationStream(
             notificationInterruptionFilter,
             notificationPriorityCategories,
             notificationAccessGranted,
-            streamsUnlinked) && !ringerModeMutesNotifications(ringerMode, hasSeparateNotificationStream)
+            streamsUnlinked)
+                && !ringerModeMutesNotifications(ringerMode, hasSeparateNotificationStream)
+                && !isFixedVolume
     }
 
     @JvmStatic
@@ -278,7 +336,8 @@ object BindingAdapters {
         "ringerIconInterruptionFilter",
         "ringerPriorityCategories",
         "notificationAccessGranted",
-        "streamsUnlinked"
+        "streamsUnlinked",
+        "isFixedVolume"
     )
     fun bindRingerIcon(
         icon: ImageView,
@@ -286,13 +345,14 @@ object BindingAdapters {
         ringerIconInterruptionFilter: Int,
         ringerPriorityCategories: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean)
+        streamsUnlinked: Boolean,
+        isFixedVolume: Boolean)
     {
         if (!interruptionPolicyAllowsRingerStream(
                 ringerIconInterruptionFilter,
                 ringerPriorityCategories,
                 notificationAccessGranted,
-                streamsUnlinked))
+                streamsUnlinked) || isFixedVolume)
         {
             setSilentIcon(icon)
         } else {
@@ -310,7 +370,8 @@ object BindingAdapters {
         "notificationInterruptionFilter",
         "notificationPriorityCategories",
         "notificationAccessGranted",
-        "streamsUnlinked"
+        "streamsUnlinked",
+        "isFixedVolume"
     )
     fun bindNotificationIcon(
         icon: ImageView,
@@ -318,13 +379,14 @@ object BindingAdapters {
         notificationInterruptionFilter: Int,
         notificationPriorityCategories: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean)
+        streamsUnlinked: Boolean,
+        isFixedVolume: Boolean)
     {
         if (!interruptionPolicyAllowsNotificationStream(
                 notificationInterruptionFilter,
                 notificationPriorityCategories,
                 notificationAccessGranted,
-                streamsUnlinked))
+                streamsUnlinked) || isFixedVolume)
         {
             setSilentIcon(icon)
         } else {
@@ -347,7 +409,8 @@ object BindingAdapters {
         "ringerSeekBarInterruptionFilter",
         "ringerSeekBarPropertyCategories",
         "notificationAccessGranted",
-        "streamsUnlinked"
+        "streamsUnlinked",
+        "isFixedVolume"
     )
     fun bindRingSeekBar(
         view: SeekBar,
@@ -355,26 +418,28 @@ object BindingAdapters {
         ringerSeekBarInterruptionFilter: Int,
         ringerSeekBarPropertyCategories: Int,
         notificationAccessGranted: Boolean,
-        streamsUnlinked: Boolean)
+        streamsUnlinked: Boolean,
+        isFixedVolume: Boolean)
     {
-        if (notificationAccessGranted) {
-            view.isEnabled = interruptionPolicyAllowsRingerStream(
-                ringerSeekBarInterruptionFilter,
-                ringerSeekBarPropertyCategories,
-                notificationAccessGranted,
-                streamsUnlinked)
-        } else {
-            view.isEnabled = true
-        }
+        view.isEnabled = (interruptionPolicyAllowsRingerStream(
+            ringerSeekBarInterruptionFilter,
+            ringerSeekBarPropertyCategories,
+            notificationAccessGranted,
+            streamsUnlinked) && !isFixedVolume)
     }
 
     @JvmStatic
-    @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted")
-    fun bindAlarmSeekBar(view: SeekBar, alarmInterruptionFilter: Int, alarmPriorityCategories: Int, notificationAccessGranted: Boolean) {
-        view.isEnabled = interruptionPolicyAllowsAlarmsStream(
+    @BindingAdapter("alarmInterruptionFilter", "alarmPriorityCategories", "notificationAccessGranted", "isFixedVolume")
+    fun bindAlarmSeekBar(view: SeekBar,
+                         alarmInterruptionFilter: Int,
+                         alarmPriorityCategories: Int,
+                         notificationAccessGranted: Boolean,
+                         isFixedVolume: Boolean)
+    {
+        view.isEnabled = (interruptionPolicyAllowsAlarmsStream(
             alarmInterruptionFilter,
             alarmPriorityCategories,
-            notificationAccessGranted)
+            notificationAccessGranted) && !isFixedVolume)
     }
 
     @JvmStatic
@@ -416,9 +481,9 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("handlesNotifications")
-    fun bindUnlinkStreamsLayout(layout: ConstraintLayout, handlesNotifications: Boolean) {
-        setEnabledState(layout, !handlesNotifications)
+    @BindingAdapter("handlesNotifications", "isFixedVolume")
+    fun bindUnlinkStreamsLayout(layout: ConstraintLayout, handlesNotifications: Boolean, isFixedVolume: Boolean) {
+        setEnabledState(layout, !handlesNotifications && !isFixedVolume)
     }
 
     @JvmStatic

@@ -1,9 +1,7 @@
 package ru.rrtry.silentdroid.ui.activities
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import android.os.Bundle
 import android.transition.Fade
 import android.util.Log
@@ -16,7 +14,6 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.common.ConnectionResult.SUCCESS
 import com.google.android.gms.common.GoogleApiAvailability
-import ru.rrtry.silentdroid.core.GeofenceManager
 import ru.rrtry.silentdroid.ui.fragments.LocationsListFragment
 import ru.rrtry.silentdroid.ui.fragments.ProfilesListFragment
 import ru.rrtry.silentdroid.ui.fragments.SchedulerFragment
@@ -28,12 +25,11 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import ru.rrtry.silentdroid.R
+import ru.rrtry.silentdroid.core.*
 import ru.rrtry.silentdroid.core.GeofenceManager.Companion.REQUEST_ENABLE_LOCATION_SERVICES
-import ru.rrtry.silentdroid.core.PreferencesManager
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.PREFS_STREAM_TYPE_ALIAS
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.PREFS_STREAM_TYPE_INDEPENDENT
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.PREFS_STREAM_TYPE_NOT_SET
-import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.databinding.ActivityMainBinding
 import ru.rrtry.silentdroid.ui.fragments.NotificationPolicyAccessDialog
 import javax.inject.Inject
@@ -44,6 +40,8 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var profileManager: ProfileManager
+    @Inject lateinit var appAudioManager: AppAudioManager
+    @Inject lateinit var notificationPolicyManager: NotificationPolicyManager
 
     interface MenuItemSelectedListener {
 
@@ -122,17 +120,14 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
 
     override fun onStart() {
         super.onStart()
-        if (profileManager.isNotificationPolicyAccessGranted()) {
+        if (notificationPolicyManager.isPolicyAccessGranted) {
             if (preferencesManager.isFirstSetup()) {
                 preferencesManager.setFirstSetup()
             }
-            if (preferencesManager.getNotificationStreamType() == PREFS_STREAM_TYPE_NOT_SET) {
-                val independent: Boolean = profileManager.isNotificationStreamIndependent()
+            if (appAudioManager.getNotificationStreamType() == PREFS_STREAM_TYPE_NOT_SET) {
+                val independent: Boolean = appAudioManager.isNotificationStreamIndependent()
                 val streamType: Int = if (independent) PREFS_STREAM_TYPE_INDEPENDENT else PREFS_STREAM_TYPE_ALIAS
-                preferencesManager.setNotificationStreamType(streamType)
-                if (independent) {
-                    profileManager.disablePhoneStateReceiver()
-                }
+                appAudioManager.setNotificationStreamType(streamType)
             }
         } else if (preferencesManager.isFirstSetup()) {
             NotificationPolicyAccessDialog().show(

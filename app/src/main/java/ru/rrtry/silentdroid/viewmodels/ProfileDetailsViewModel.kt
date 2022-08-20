@@ -97,12 +97,12 @@ class ProfileDetailsViewModel @Inject constructor(
     private val profileUUID = MutableStateFlow<UUID?>(null)
 
     @FlowPreview
-    val alarmsFlow: Flow<List<AlarmRelation>?> = profileUUID.flatMapConcat {
-        if (it != null) alarmRepository.observeScheduledAlarmsByProfileId(it) else flowOf(listOf())
+    val alarmsFlow: Flow<List<AlarmRelation>?> = profileUUID.flatMapConcat { uuid ->
+        if (uuid != null) alarmRepository.observeScheduledAlarmsByProfileId(uuid) else flowOf(listOf())
     }
     @FlowPreview
-    val geofencesFlow: Flow<List<LocationRelation>?> = profileUUID.flatMapConcat {
-        if (it != null) locationRepository.observeLocationsByProfileId(it) else flowOf(listOf())
+    val geofencesFlow: Flow<List<LocationRelation>?> = profileUUID.flatMapConcat { uuid ->
+        if (uuid != null) locationRepository.observeLocationsByProfileId(uuid) else flowOf(listOf())
     }
 
     val title: MutableStateFlow<String> = MutableStateFlow("My profile")
@@ -132,6 +132,8 @@ class ProfileDetailsViewModel @Inject constructor(
     val voiceCallRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val musicRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
+    val isVoiceCapable: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    val isVolumeFixed: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val streamsUnlinked: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationStreamIndependent: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
@@ -511,9 +513,13 @@ class ProfileDetailsViewModel @Inject constructor(
     }
 
     private fun setRingVolume(value: Int = 4) {
+        val prevRingerMode: Int = ringerMode.value
+
         ringVolume.value = value
         ringerMode.value = RINGER_MODE_NORMAL
+
         if (notificationMode.value != RINGER_MODE_NORMAL &&
+            prevRingerMode != RINGER_MODE_NORMAL &&
             notificationStreamIndependent.value)
         {
             setNotificationVolume(value)
@@ -704,7 +710,7 @@ class ProfileDetailsViewModel @Inject constructor(
             interruptionFilter.value,
             priorityCategories.value,
             notificationPolicyAccessGranted.value
-        )
+        ) && !isVolumeFixed.value
     }
 
     private fun isMediaStreamAllowed(): Boolean {
@@ -712,7 +718,7 @@ class ProfileDetailsViewModel @Inject constructor(
             interruptionFilter.value,
             priorityCategories.value,
             notificationPolicyAccessGranted.value
-        )
+        ) && !isVolumeFixed.value
     }
 
     private fun isNotificationStreamAllowed(): Boolean {
@@ -720,11 +726,9 @@ class ProfileDetailsViewModel @Inject constructor(
             interruptionFilter.value,
             priorityCategories.value,
             notificationPolicyAccessGranted.value,
-            streamsUnlinked.value
-        ) && !ringerModeMutesNotifications(
-            ringerMode.value,
-            notificationStreamIndependent.value
-        )
+            streamsUnlinked.value)
+                && !ringerModeMutesNotifications(ringerMode.value, notificationStreamIndependent.value)
+                && !isVolumeFixed.value
     }
 
     private fun isRingStreamAllowed(): Boolean {
@@ -733,7 +737,7 @@ class ProfileDetailsViewModel @Inject constructor(
             priorityCategories.value,
             notificationPolicyAccessGranted.value,
             streamsUnlinked.value
-        )
+        ) && !isVolumeFixed.value
     }
 
     override fun onCleared() {

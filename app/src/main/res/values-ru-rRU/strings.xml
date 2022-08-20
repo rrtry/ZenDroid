@@ -137,6 +137,7 @@
     <string name="notification_volume_muted">Звук уведомлений отключен</string>
     <string name="alarm_volume_muted">Звук будильника отключен</string>
     <string name="unmute">Включить</string>
+    <string name="fixed_volume_policy">Невозможно изменить уровень громкости. На вашем устройстве установлена политика фиксированной громкости.</string>
 
     <plurals name="days">
         <item quantity="one" tools:ignore="ImpliedQuantity">1 день</item>

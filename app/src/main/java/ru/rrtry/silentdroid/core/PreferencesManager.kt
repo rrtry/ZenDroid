@@ -30,7 +30,7 @@ class PreferencesManager @Inject constructor (@ApplicationContext private val co
         .excludeFieldsWithoutExposeAnnotation()
         .create()
 
-    fun isProfileEnabled(profile: Profile): Boolean {
+    fun isProfileSet(profile: Profile): Boolean {
         return profile.id == getProfile()?.id
     }
 
