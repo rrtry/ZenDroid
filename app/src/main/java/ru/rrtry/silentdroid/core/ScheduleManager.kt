@@ -16,10 +16,12 @@ import ru.rrtry.silentdroid.receivers.AlarmReceiver.Companion.EXTRA_END_PROFILE
 import ru.rrtry.silentdroid.receivers.AlarmReceiver.Companion.EXTRA_START_PROFILE
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ru.rrtry.silentdroid.R
+import ru.rrtry.silentdroid.db.repositories.AlarmRepository
 import ru.rrtry.silentdroid.entities.Alarm
 import ru.rrtry.silentdroid.entities.AlarmRelation
 import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
 import ru.rrtry.silentdroid.entities.Profile
+import ru.rrtry.silentdroid.event.EventBus
 import ru.rrtry.silentdroid.util.ParcelableUtil
 import java.text.NumberFormat
 import java.time.*
@@ -30,8 +32,12 @@ import javax.inject.Singleton
 @Singleton
 class ScheduleManager @Inject constructor(@ApplicationContext private val context: Context) {
 
+    @Inject lateinit var alarmRepository: AlarmRepository
+    @Inject lateinit var eventBus: EventBus
+
     private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val scheduleCalendar: ScheduleCalendar = ScheduleCalendar(ZonedDateTime.now())
+    val meetsSchedule: Boolean get() = scheduleCalendar.meetsSchedule
 
     fun scheduleAlarm(alarm: Alarm, startProfile: Profile, endProfile: Profile): Boolean {
 
@@ -61,6 +67,52 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
         }
     }
 
+    suspend fun updateSchedule(alarms: List<AlarmRelation>?) {
+        alarms?.forEach { relation ->
+            setNextAlarm(relation)
+        }
+    }
+
+    suspend fun getPreviousAndNextTrigger(): PreviousAndNextTrigger? {
+        scheduleCalendar.now = ZonedDateTime.now()
+        return scheduleCalendar.getCurrentAlarmInstance(alarmRepository.getEnabledAlarms())
+    }
+
+    fun getPreviousAndNextTrigger(alarms: List<AlarmRelation>?): PreviousAndNextTrigger? {
+        scheduleCalendar.now = ZonedDateTime.now()
+        return scheduleCalendar.getCurrentAlarmInstance(alarms)
+    }
+
+    private suspend fun setNextAlarm(relation: AlarmRelation) {
+        scheduleAlarm(
+            relation.alarm,
+            relation.startProfile,
+            relation.endProfile
+        ).also { scheduled ->
+            if (!scheduled) setAlarmStateCancelled(relation.alarm)
+        }
+    }
+
+    suspend fun setNextAlarm(
+        alarm: Alarm,
+        startProfile: Profile,
+        endProfile: Profile)
+    {
+        scheduleAlarm(
+            alarm,
+            startProfile,
+            endProfile
+        ).also { scheduled ->
+            if (!scheduled) setAlarmStateCancelled(alarm)
+        }
+    }
+
+    private suspend fun setAlarmStateCancelled(alarm: Alarm) {
+        cancelAlarm(alarm)
+        alarmRepository.cancelAlarm(alarm)
+        eventBus.updateAlarmState(alarm)
+    }
+
     fun cancelAlarm(alarm: Alarm): Boolean {
         getPendingIntent(alarm, create = false)?.let {
             alarmManager.cancel(it)
@@ -71,6 +123,32 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
 
     fun cancelAlarms(alarms: List<AlarmRelation>?) {
         alarms?.forEach { alarm -> cancelAlarm(alarm.alarm) }
+    }
+
+    fun hasPreviouslyFired(alarm: Alarm): Boolean {
+        scheduleCalendar.now = ZonedDateTime.now()
+        scheduleCalendar.alarm = alarm
+        return scheduleCalendar.getPreviousOccurrence() != null
+    }
+
+    fun isAlarmValid(alarm: Alarm): Boolean {
+        scheduleCalendar.now = ZonedDateTime.now()
+        scheduleCalendar.alarm = alarm
+        return scheduleCalendar.isValid()
+    }
+
+    fun updateAlarms(scheduledAlarms: List<AlarmRelation>?, profile: Profile) {
+        scheduledAlarms?.forEach { relation ->
+            if (relation.startProfile.id == profile.id ||
+                relation.endProfile.id == profile.id)
+            {
+                scheduleAlarm(
+                    relation.alarm,
+                    relation.startProfile,
+                    relation.endProfile
+                )
+            }
+        }
     }
 
     private fun getPendingIntent(
@@ -148,47 +226,6 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
             R.string.time_remaining,
             displayProfile,
             templates[index].format(days, hours, minutes))
-    }
-
-    fun updateAlarmProfile(scheduledAlarms: List<AlarmRelation>?, profile: Profile) {
-        scheduledAlarms?.forEach { alarmRelation ->
-            if (alarmRelation.startProfile.id == profile.id) {
-                scheduleAlarm(
-                    alarmRelation.alarm,
-                    profile,
-                    alarmRelation.endProfile,
-                )
-            } else {
-                scheduleAlarm(
-                    alarmRelation.alarm,
-                    alarmRelation.startProfile,
-                    profile
-                )
-            }
-        }
-    }
-
-    fun meetsSchedule(): Boolean = scheduleCalendar.meetsSchedule
-
-    fun hasPreviouslyFired(alarm: Alarm): Boolean {
-
-        scheduleCalendar.now = ZonedDateTime.now()
-        scheduleCalendar.alarm = alarm
-
-        return scheduleCalendar.getPreviousOccurrence() != null
-    }
-
-    fun isAlarmValid(alarm: Alarm): Boolean {
-
-        scheduleCalendar.now = ZonedDateTime.now()
-        scheduleCalendar.alarm = alarm
-
-        return scheduleCalendar.isValid()
-    }
-
-    fun getPreviousAndNextTrigger(events: List<AlarmRelation>?): PreviousAndNextTrigger? {
-        scheduleCalendar.now = ZonedDateTime.now()
-        return scheduleCalendar.getCurrentAlarmInstance(events)
     }
 
     companion object {

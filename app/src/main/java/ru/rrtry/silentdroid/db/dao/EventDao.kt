@@ -16,11 +16,11 @@ interface EventDao {
     suspend fun getEvent(id: UUID): Event
 
     @Insert
-    suspend fun insertEvent(event: Event): Unit
+    suspend fun insertEvent(event: Event)
 
     @Update
-    suspend fun updateEvent(event: Event): Unit
+    suspend fun updateEvent(event: Event)
 
     @Delete
-    suspend fun deleteEvent(event: Event): Unit
+    suspend fun deleteEvent(event: Event)
 }

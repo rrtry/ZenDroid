@@ -16,7 +16,6 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestMultiple
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -24,8 +23,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import ru.rrtry.silentdroid.core.FileManager
 import ru.rrtry.silentdroid.core.GeofenceManager
-import ru.rrtry.silentdroid.core.GeofenceManager.Companion.ACCESS_LOCATION
-import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.entities.Location
 import ru.rrtry.silentdroid.entities.LocationRelation
 import ru.rrtry.silentdroid.entities.LocationSuggestion
@@ -55,6 +52,7 @@ import ru.rrtry.silentdroid.ui.views.AddressSearchView
 import com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
+import ru.rrtry.silentdroid.core.AppGeocoder
 import ru.rrtry.silentdroid.databinding.GoogleMapsActivityBinding
 import ru.rrtry.silentdroid.util.*
 import java.lang.Runnable
@@ -81,9 +79,8 @@ class MapsActivity : AppActivity(),
     }
 
     @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var fileManager: FileManager
-    @Inject lateinit var geocoderUtil: GeocoderUtil
+    @Inject lateinit var appGeocoder: AppGeocoder
 
     private val viewModel: GeofenceSharedViewModel by viewModels()
 
@@ -127,7 +124,7 @@ class MapsActivity : AppActivity(),
     override fun onQueryTextChange(query: String?) {
         lifecycleScope.launch {
             val savedQueries: HashSet<AddressWrapper> = viewModel.getSuggestions(query).toHashSet()
-            val results: List<AddressWrapper> = geocoderUtil.queryAddresses(query) ?: listOf()
+            val results: List<AddressWrapper> = appGeocoder.queryAddresses(query) ?: listOf()
             binding.searchView.updateAdapter((savedQueries + results).toList())
         }
     }
@@ -440,7 +437,7 @@ class MapsActivity : AppActivity(),
 
     private fun setAddress(latLng: LatLng) {
         lifecycleScope.launch {
-            geocoderUtil.getAddressFromLocation(latLng)?.let {
+            appGeocoder.getAddressFromLocation(latLng)?.let {
                 viewModel.address.value = it
                 marker?.title = it
             }

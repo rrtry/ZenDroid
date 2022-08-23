@@ -81,12 +81,14 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
                 profile,
                 scheduleManager.getPreviousAndNextTrigger(scheduledAlarms))
         }
-        geofenceManager.updateGeofenceProfile(registeredGeofences, profile)
-        scheduleManager.updateAlarmProfile(scheduledAlarms, profile)
 
         lifecycleScope.launch {
             viewModel.updateProfile(profile)
+            scheduledAlarms = viewModel.getScheduledAlarms()
+            registeredGeofences = viewModel.getRegisteredGeofences()
         }.invokeOnCompletion {
+            geofenceManager.updateGeofences(registeredGeofences, profile)
+            scheduleManager.updateAlarms(scheduledAlarms, profile)
             onFinish(true)
         }
     }
@@ -144,13 +146,13 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
                     }
                 }
                 launch {
-                    viewModel.geofencesFlow.collect {
-                        registeredGeofences = it
+                    viewModel.geofencesFlow.collect { geofences ->
+                        registeredGeofences = geofences
                     }
                 }
                 launch {
-                    viewModel.alarmsFlow.collect {
-                        scheduledAlarms = it
+                    viewModel.alarmsFlow.collect { alarms ->
+                        scheduledAlarms = alarms
                     }
                 }
             }
@@ -158,13 +160,13 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     }
 
     override fun onBackStackChanged() {
-        (supportFragmentManager.backStackEntryCount > 0).let {
-            if (it) {
+        (supportFragmentManager.backStackEntryCount > 0).let { hasBackStack ->
+            if (hasBackStack) {
                 binding.appBar.setExpanded(false, true)
             } else {
                 binding.appBar.setExpanded(true, true)
             }
-            Animations.scale(binding.toolbarEditTitleButton, !it)
+            Animations.scale(binding.toolbarEditTitleButton, !hasBackStack)
         }
     }
 

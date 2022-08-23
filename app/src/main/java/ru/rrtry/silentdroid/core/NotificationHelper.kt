@@ -112,9 +112,10 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                 }
             }
         } else if (previousAndNextTrigger != null) {
-            previousAndNextTrigger.relation.startProfile.also { startProfile ->
-                postNextProfileNotification(startProfile, previousAndNextTrigger)
-            }
+            postNextProfileNotification(
+                previousAndNextTrigger.relation.startProfile,
+                previousAndNextTrigger
+            )
         } else {
             cancelProfileNotification()
         }

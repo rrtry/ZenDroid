@@ -314,7 +314,7 @@ class SchedulerFragment:
             relation.startProfile,
             relation.endProfile
         )
-        profileManager.updateScheduledProfile(alarms)
+        profileManager.updateProfile(alarms)
         callback?.showSnackBar(
             scheduleManager.getNextOccurrenceFormatted(
                 relation
@@ -324,12 +324,12 @@ class SchedulerFragment:
 
     private fun onAlarmCancelled(alarmRelation: AlarmRelation, alarms: List<AlarmRelation>) {
         scheduleManager.cancelAlarm(alarmRelation.alarm)
-        profileManager.updateScheduledProfile(alarms)
+        profileManager.updateProfile(alarms)
     }
 
     private fun onAlarmRemoved(alarmRelation: AlarmRelation, alarms: List<AlarmRelation>) {
         scheduleManager.cancelAlarm(alarmRelation.alarm)
-        profileManager.updateScheduledProfile(alarms)
+        profileManager.updateProfile(alarms)
     }
 
     private fun onFragmentSwiped(fragment: Int) {

@@ -50,31 +50,28 @@ class GeofenceManager @Inject constructor(
     }
 
     suspend fun registerGeofences() {
-        repository.getLocations().filter {
-            it.location.enabled
-        }.forEach {
+        if (!context.checkPermission(ACCESS_FINE_LOCATION)) return
+        repository.getLocations().filter { relation ->
+            relation.location.enabled
+        }.forEach { relation ->
             addGeofence(
-                it.location,
-                it.onEnterProfile,
-                it.onExitProfile
+                relation.location,
+                relation.onEnterProfile,
+                relation.onExitProfile
             )
         }
     }
 
-    @SuppressLint("MissingPermission")
-    fun updateGeofenceProfile(registeredGeofences: List<LocationRelation>?, profile: Profile) {
+    fun updateGeofences(registeredGeofences: List<LocationRelation>?, profile: Profile) {
+        if (!context.checkPermission(ACCESS_FINE_LOCATION)) return
         registeredGeofences?.forEach { locationRelation ->
-            if (locationRelation.onEnterProfile.id == profile.id) {
-                addGeofence(
-                    locationRelation.location,
-                    profile,
-                    locationRelation.onExitProfile
-                )
-            } else {
+            if (locationRelation.onEnterProfile.id == profile.id ||
+                locationRelation.onExitProfile.id == profile.id)
+            {
                 addGeofence(
                     locationRelation.location,
                     locationRelation.onEnterProfile,
-                    profile
+                    locationRelation.onExitProfile
                 )
             }
         }
@@ -88,14 +85,6 @@ class GeofenceManager @Inject constructor(
             true
         }
         return foregroundLocationApproved && backgroundLocationApproved
-    }
-
-    fun shouldShowPermissionRequestRationale(activity: Activity): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return activity.shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION) &&
-                    activity.shouldShowRequestPermissionRationale(ACCESS_BACKGROUND_LOCATION)
-        }
-        return activity.shouldShowRequestPermissionRationale(ACCESS_LOCATION)
     }
 
     @RequiresPermission(ACCESS_FINE_LOCATION)

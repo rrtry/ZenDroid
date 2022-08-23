@@ -3,7 +3,6 @@ package ru.rrtry.silentdroid.core
 import android.app.NotificationManager.*
 import android.app.NotificationManager.Policy.*
 import android.content.Context
-import ru.rrtry.silentdroid.entities.Profile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,12 +10,13 @@ import android.media.AudioManager.*
 import android.provider.Settings
 import android.media.RingtoneManager.*
 import android.provider.Settings.System.VIBRATE_WHEN_RINGING
+import com.google.android.gms.location.Geofence
 import ru.rrtry.silentdroid.R
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_ALARM
+import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFENCE_ENTER
+import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_GEOFENCE_EXIT
 import ru.rrtry.silentdroid.core.PreferencesManager.Companion.TRIGGER_TYPE_MANUAL
-import ru.rrtry.silentdroid.entities.Alarm
-import ru.rrtry.silentdroid.entities.AlarmRelation
-import ru.rrtry.silentdroid.entities.PreviousAndNextTrigger
+import ru.rrtry.silentdroid.entities.*
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_ALARM_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_MUSIC_DEFAULT_VOLUME
 import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_NOTIFICATION_DEFAULT_VOLUME
@@ -86,7 +86,58 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         eventBus.onProfileChanged(profile.id)
     }
 
-    fun updateScheduledProfile(alarms: List<AlarmRelation>?, enforceScheduledProfile: Boolean = true) {
+    suspend fun updateProfileAsync(resetScheduledProfile: Boolean) {
+        val alarms: List<AlarmRelation>? = scheduleManager.alarmRepository.getEnabledAlarms()
+        scheduleManager.updateSchedule(alarms)
+        updateProfile(
+            alarms,
+            resetScheduledProfile
+        )
+    }
+
+    fun onGeofenceTrigger(
+        geofence: Location,
+        transitionType: Int,
+        enterProfile: Profile,
+        exitProfile: Profile)
+    {
+        when (transitionType) {
+            Geofence.GEOFENCE_TRANSITION_ENTER, Geofence.GEOFENCE_TRANSITION_DWELL -> {
+                setProfile(enterProfile, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
+                notificationHelper.postGeofenceEnterNotification(enterProfile.title, geofence.title)
+            }
+            Geofence.GEOFENCE_TRANSITION_EXIT -> {
+                setProfile(exitProfile, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
+                notificationHelper.postGeofenceExitNotification(exitProfile.title, geofence.title)
+            }
+        }
+    }
+
+    suspend fun onTimeTrigger(alarm: Alarm, startProfile: Profile, endProfile: Profile) {
+
+        scheduleManager.setNextAlarm(
+            alarm,
+            startProfile,
+            endProfile
+        )
+
+        val profile: Profile = getProfile(alarm, startProfile, endProfile)
+        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger()
+
+        setProfile<Alarm?>(
+            profile,
+            if (previousAndNextTrigger != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL,
+            if (previousAndNextTrigger != null) alarm else null
+        )
+        notificationHelper.updateNotification(profile, previousAndNextTrigger)
+    }
+
+    private fun getProfile(alarm: Alarm, startProfile: Profile, endProfile: Profile): Profile {
+        return if (scheduleManager.meetsSchedule &&
+            scheduleManager.isAlarmValid(alarm)) startProfile else endProfile
+    }
+
+    fun updateProfile(alarms: List<AlarmRelation>?, resetScheduledProfile: Boolean = true) {
 
         var overrideCurrentProfile: Boolean = true
         val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(alarms)
@@ -100,7 +151,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
             return
         }
         if (profileDateTime != null &&
-            !enforceScheduledProfile)
+            !resetScheduledProfile)
         {
             overrideCurrentProfile = (previousAndNextTrigger.from ?: LocalDateTime.MIN) >= profileDateTime
         }

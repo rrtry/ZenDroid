@@ -99,7 +99,7 @@ class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Ala
             } else {
                 scheduleManager.cancelAlarm(alarm)
             }
-            profileManager.updateScheduledProfile(viewModel.getEnabledAlarms())
+            profileManager.updateProfile(viewModel.getEnabledAlarms())
         }.invokeOnCompletion {
             onFinish(update)
         }

@@ -186,6 +186,24 @@ class ProfileDetailsViewModel @Inject constructor(
     var currentMediaUri: Uri? = null
     var playerPosition: Int = -1
 
+    suspend fun getScheduledAlarms(): List<AlarmRelation>? {
+        return withContext(viewModelScope.coroutineContext) {
+            if (profileUUID.value != null) {
+                alarmRepository.getScheduledAlarmsByProfileId(profileUUID.value!!)
+            }
+            null
+        }
+    }
+
+    suspend fun getRegisteredGeofences(): List<LocationRelation>? {
+        return withContext(viewModelScope.coroutineContext) {
+            if (profileUUID.value != null) {
+                locationRepository.getLocationsByProfileId(profileUUID.value!!)
+            }
+            null
+        }
+    }
+
     suspend fun addProfile(profile: Profile) {
         withContext(viewModelScope.coroutineContext) {
             profileRepository.addProfile(profile)

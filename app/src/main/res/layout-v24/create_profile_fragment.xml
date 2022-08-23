@@ -729,6 +729,7 @@
         <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/blockWhenScreenIsOnLayout"
             android:background="?attr/selectableItemBackground"
+            visualsInterruptionFilter="@{viewModel.interruptionFilter}"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             app:layout_constraintTop_toBottomOf="@+id/Title2"
             android:onClick="@{(view) -> viewModel.onSuppressedEffectsLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_ON)}"
@@ -782,6 +783,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
+            visualsInterruptionFilter="@{viewModel.interruptionFilter}"
             notificationPolicyAccessGranted="@{viewModel.notificationPolicyAccessGranted}"
             android:background="?attr/selectableItemBackground"
             android:onClick="@{(view) -> viewModel.onSuppressedEffectsLayoutClick(Policy.SUPPRESSED_EFFECT_SCREEN_OFF)}"

@@ -69,8 +69,12 @@ class AlarmRepository @Inject constructor(
         }
     }
 
-    fun observeAlarms(): Flow<List<AlarmRelation>> = alarmRelationDao.observeAlarms()
+    fun observeAlarms(): Flow<List<AlarmRelation>> {
+        return alarmRelationDao.observeAlarms()
+    }
 
-    fun observeScheduledAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?> = alarmRelationDao.observeScheduledAlarmsByProfileId(id)
+    fun observeScheduledAlarmsByProfileId(id: UUID): Flow<List<AlarmRelation>?> {
+        return alarmRelationDao.observeScheduledAlarmsByProfileId(id)
+    }
 
 }
