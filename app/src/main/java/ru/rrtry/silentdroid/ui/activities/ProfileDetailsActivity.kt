@@ -63,7 +63,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var scheduleManager: ScheduleManager
     @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var appNotificationManager: AppNotificationManager
 
     private var showFixedVolumeSnackbar: Boolean = true
     private var elapsedTime: Long = 0L
@@ -77,9 +77,9 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     override fun onUpdate(profile: Profile) {
         if (profileManager.isProfileSet(profile)) {
             profileManager.setProfile(profile, true)
-            notificationHelper.updateNotification(
+            appNotificationManager.updateNotification(
                 profile,
-                scheduleManager.getPreviousAndNextTrigger(scheduledAlarms))
+                scheduleManager.getPreviousAndNextTriggers(scheduledAlarms))
         }
 
         lifecycleScope.launch {

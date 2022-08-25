@@ -186,7 +186,7 @@ class ScheduleCalendar(var now: ZonedDateTime) {
         }
     }
 
-    fun getCurrentAlarmInstance(alarms: List<AlarmRelation>?): PreviousAndNextTrigger? {
+    fun getPreviousAndNextTriggers(alarms: List<AlarmRelation>?): PreviousAndNextTrigger? {
         if (alarms.isNullOrEmpty()) return null
         val nextAlarmTime: LocalDateTime? = getNextAlarmTime(alarms)
         return try {
@@ -195,13 +195,14 @@ class ScheduleCalendar(var now: ZonedDateTime) {
                 alarm = relation.alarm
 
                 val previousAlarmTime: LocalDateTime? = getPreviousOccurrence()?.toLocalDateTime()
-                val profile: Profile? = if (isRecurring() || previousAlarmTime != null) {
+                val hasPreviousInstance: Boolean = isRecurring() || previousAlarmTime != null
+                val currentProfile: Profile? = if (hasPreviousInstance) {
                     if (meetsSchedule) relation.startProfile else relation.endProfile
                 } else {
                     null
                 }
                 PreviousAndNextTrigger(
-                    profile,
+                    currentProfile,
                     nextAlarmTime,
                     previousAlarmTime,
                     relation

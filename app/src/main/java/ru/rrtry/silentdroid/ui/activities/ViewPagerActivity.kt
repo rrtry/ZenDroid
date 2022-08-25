@@ -37,6 +37,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManager.LocationRequestListener {
 
+    private val viewModel: MainActivityViewModel by viewModels()
+
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var profileManager: ProfileManager
@@ -47,8 +49,6 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
 
         fun onMenuOptionSelected(itemId: Int)
     }
-
-    private val viewModel: MainActivityViewModel by viewModels()
 
     private lateinit var binding: ActivityMainBinding
     private var snackbar: Snackbar? = null

@@ -75,12 +75,12 @@ class ScheduleManager @Inject constructor(@ApplicationContext private val contex
 
     suspend fun getPreviousAndNextTrigger(): PreviousAndNextTrigger? {
         scheduleCalendar.now = ZonedDateTime.now()
-        return scheduleCalendar.getCurrentAlarmInstance(alarmRepository.getEnabledAlarms())
+        return scheduleCalendar.getPreviousAndNextTriggers(alarmRepository.getEnabledAlarms())
     }
 
-    fun getPreviousAndNextTrigger(alarms: List<AlarmRelation>?): PreviousAndNextTrigger? {
+    fun getPreviousAndNextTriggers(alarms: List<AlarmRelation>?): PreviousAndNextTrigger? {
         scheduleCalendar.now = ZonedDateTime.now()
-        return scheduleCalendar.getCurrentAlarmInstance(alarms)
+        return scheduleCalendar.getPreviousAndNextTriggers(alarms)
     }
 
     private suspend fun setNextAlarm(relation: AlarmRelation) {

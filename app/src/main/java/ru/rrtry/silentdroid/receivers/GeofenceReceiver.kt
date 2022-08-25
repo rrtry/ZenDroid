@@ -8,7 +8,7 @@ import android.os.Build
 import android.util.Log
 import ru.rrtry.silentdroid.Application.Companion.ACTION_GEOFENCE_TRANSITION
 import ru.rrtry.silentdroid.core.GeofenceManager
-import ru.rrtry.silentdroid.core.NotificationHelper
+import ru.rrtry.silentdroid.core.AppNotificationManager
 import ru.rrtry.silentdroid.core.PreferencesManager
 import ru.rrtry.silentdroid.core.ProfileManager
 import ru.rrtry.silentdroid.db.repositories.LocationRepository
@@ -29,7 +29,7 @@ class GeofenceReceiver: BroadcastReceiver() {
     @Inject lateinit var profileManager: ProfileManager
     @Inject lateinit var repository: LocationRepository
     @Inject lateinit var geofenceManager: GeofenceManager
-    @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var appNotificationManager: AppNotificationManager
     @Inject lateinit var preferencesManager: PreferencesManager
 
     override fun onReceive(context: Context?, intent: Intent?) {

@@ -55,7 +55,7 @@ class ProfilesListFragment:
     @Inject lateinit var geofenceManager: GeofenceManager
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var fileManager: FileManager
-    @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var appNotificationManager: AppNotificationManager
 
     override val listItem: Class<Profile> = Profile::class.java
     override val selectionId: String = SELECTION_ID
@@ -209,11 +209,11 @@ class ProfilesListFragment:
         }
         if (profileManager.isProfileSet(profile)) {
             preferencesManager.clearPreferences()
-            notificationHelper.cancelProfileNotification()
+            appNotificationManager.cancelProfileNotification()
         }
-        notificationHelper.updateNotification(
+        appNotificationManager.updateNotification(
             profileManager.getProfile(),
-            scheduleManager.getPreviousAndNextTrigger(alarms)
+            scheduleManager.getPreviousAndNextTriggers(alarms)
         )
     }
 
@@ -228,7 +228,7 @@ class ProfilesListFragment:
 
             profileManager.setProfile(profile, TRIGGER_TYPE_MANUAL, null)
             profileAdapter.setSelection(profile, viewModel.lastSelected)
-            notificationHelper.updateNotification(profile, scheduleManager.getPreviousAndNextTrigger(alarms))
+            appNotificationManager.updateNotification(profile, scheduleManager.getPreviousAndNextTriggers(alarms))
         }
     }
 

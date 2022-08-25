@@ -32,7 +32,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var scheduleManager: ScheduleManager
-    @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var appNotificationManager: AppNotificationManager
     @Inject lateinit var audioManager: AppAudioManager
     @Inject lateinit var notificationPolicyManager: NotificationPolicyManager
     @Inject lateinit var ringtoneManager: AppRingtoneManager
@@ -104,11 +104,11 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
         when (transitionType) {
             Geofence.GEOFENCE_TRANSITION_ENTER, Geofence.GEOFENCE_TRANSITION_DWELL -> {
                 setProfile(enterProfile, TRIGGER_TYPE_GEOFENCE_ENTER, geofence)
-                notificationHelper.postGeofenceEnterNotification(enterProfile.title, geofence.title)
+                appNotificationManager.postGeofenceEnterNotification(enterProfile.title, geofence.title)
             }
             Geofence.GEOFENCE_TRANSITION_EXIT -> {
                 setProfile(exitProfile, TRIGGER_TYPE_GEOFENCE_EXIT, geofence)
-                notificationHelper.postGeofenceExitNotification(exitProfile.title, geofence.title)
+                appNotificationManager.postGeofenceExitNotification(exitProfile.title, geofence.title)
             }
         }
     }
@@ -129,7 +129,7 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
             if (previousAndNextTrigger != null) TRIGGER_TYPE_ALARM else TRIGGER_TYPE_MANUAL,
             if (previousAndNextTrigger != null) alarm else null
         )
-        notificationHelper.updateNotification(profile, previousAndNextTrigger)
+        appNotificationManager.updateNotification(profile, previousAndNextTrigger)
     }
 
     private fun getProfile(alarm: Alarm, startProfile: Profile, endProfile: Profile): Profile {
@@ -140,11 +140,11 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
     fun updateProfile(alarms: List<AlarmRelation>?, resetScheduledProfile: Boolean = true) {
 
         var overrideCurrentProfile: Boolean = true
-        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTrigger(alarms)
+        val previousAndNextTrigger: PreviousAndNextTrigger? = scheduleManager.getPreviousAndNextTriggers(alarms)
         val profileDateTime: LocalDateTime? = preferencesManager.getLastProfileDateTime()
 
         if (previousAndNextTrigger == null) {
-            notificationHelper.updateNotification(
+            appNotificationManager.updateNotification(
                 preferencesManager.getProfile(),
                 previousAndNextTrigger
             )
@@ -165,12 +165,12 @@ class ProfileManager @Inject constructor (@ApplicationContext private val contex
                     setProfile(previousAndNextTrigger.profile!!, TRIGGER_TYPE_MANUAL, null)
                 }
             }
-            notificationHelper.updateNotification(
+            appNotificationManager.updateNotification(
                 if (overrideCurrentProfile) previousAndNextTrigger.profile else getProfile(),
                 previousAndNextTrigger
             )
         } else {
-            notificationHelper.updateNotification(preferencesManager.getProfile(), previousAndNextTrigger)
+            appNotificationManager.updateNotification(preferencesManager.getProfile(), previousAndNextTrigger)
         }
     }
 
