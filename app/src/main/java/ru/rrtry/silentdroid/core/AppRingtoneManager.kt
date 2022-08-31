@@ -37,12 +37,16 @@ class AppRingtoneManager @Inject constructor(@ApplicationContext private val con
     }
 
     fun getDefaultRingtoneUri(type: Int): Uri {
-        return when (type) {
-            TYPE_RINGTONE -> Settings.System.DEFAULT_RINGTONE_URI
-            TYPE_NOTIFICATION -> Settings.System.DEFAULT_NOTIFICATION_URI
-            TYPE_ALARM -> Settings.System.DEFAULT_ALARM_ALERT_URI
+        return RingtoneManager.getActualDefaultRingtoneUri(context, type)
+        /*
+        val setting: String = when (type) {
+            TYPE_RINGTONE -> Settings.System.RINGTONE
+            TYPE_NOTIFICATION -> Settings.System.NOTIFICATION_SOUND
+            TYPE_ALARM -> Settings.System.ALARM_ALERT
             else -> throw IllegalArgumentException("Unknown ringtone type")
         }
+        val uriString: String = Settings.System.getString(context.contentResolver, setting)
+        return Uri.parse(uriString) */
     }
 
     fun setVibrateWhenRingingState(state: Int) {

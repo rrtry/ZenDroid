@@ -38,6 +38,7 @@ import ru.rrtry.silentdroid.ui.activities.ProfileDetailsActivity.Companion.NOTIF
 import ru.rrtry.silentdroid.util.ViewUtil
 import ru.rrtry.silentdroid.util.checkPermission
 import kotlinx.coroutines.launch
+import ru.rrtry.silentdroid.core.AppRingtoneManager
 import ru.rrtry.silentdroid.core.AppVibrator
 import ru.rrtry.silentdroid.core.externalInterruptionPolicyAllowsStream
 import ru.rrtry.silentdroid.core.getStreamMutedStringRes
@@ -51,8 +52,9 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(), MediaPlayer.OnCompletionListener {
 
-    @Inject
-    lateinit var vibrator: AppVibrator
+
+    @Inject lateinit var vibrator: AppVibrator
+    @Inject lateinit var ringtoneManager: AppRingtoneManager
 
     private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
@@ -429,7 +431,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     }
 
     private fun setDefaultRingtoneUri(type: Int) {
-        val uri: Uri? = getActualDefaultRingtoneUri(context, type)
+        val uri: Uri = ringtoneManager.getDefaultRingtoneUri(type)
         when (type) {
             TYPE_NOTIFICATION -> viewModel.setDefaultNotificationSoundUri(uri)
             TYPE_ALARM -> viewModel.setDefaultAlarmSoundUri(uri)

@@ -18,6 +18,7 @@ import javax.inject.Inject
 import android.app.NotificationManager.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import android.media.RingtoneManager.*
+import android.util.Log
 import ru.rrtry.silentdroid.db.repositories.LocationRepository
 import ru.rrtry.silentdroid.db.repositories.ProfileRepository
 import ru.rrtry.silentdroid.entities.LocationRelation
@@ -47,12 +48,7 @@ class ProfileDetailsViewModel @Inject constructor(
     val activityEventsFlow: Flow<ViewEvent> = activityChannel.receiveAsFlow()
 
     init {
-        viewModelScope.launch {
-            val ringtoneType: List<Int> = listOf(TYPE_ALARM, TYPE_NOTIFICATION, TYPE_RINGTONE)
-            for (i in ringtoneType) {
-                fragmentChannel.send(ViewEvent.GetDefaultRingtoneUri(i))
-            }
-        }
+        setDefaultSoundUri()
     }
 
     private var isEntitySet: Boolean = false
@@ -74,7 +70,6 @@ class ProfileDetailsViewModel @Inject constructor(
         data class StartRingtonePlayback(val streamType: Int): ViewEvent()
         data class StopRingtonePlayback(val streamType: Int): ViewEvent()
         data class ResumeRingtonePlayback(val streamType: Int, val position: Int): ViewEvent()
-        data class GrantPermissionButtonClickedEvent(val permission: String, val redirectToSettings: Boolean = false): ViewEvent()
 
         data class ShowDialogFragment(val dialogType: DialogType): ViewEvent()
         data class ChangeRingerMode(val streamType: Int, val hasSeparateNotificationStream: Boolean): ViewEvent()
@@ -307,6 +302,15 @@ class ProfileDetailsViewModel @Inject constructor(
 
     private fun setProfileUUID(uuid : UUID) {
         profileUUID.value = uuid
+    }
+
+    private fun setDefaultSoundUri() {
+        viewModelScope.launch {
+            val ringtoneType: List<Int> = listOf(TYPE_ALARM, TYPE_NOTIFICATION, TYPE_RINGTONE)
+            for (type in ringtoneType) {
+                fragmentChannel.send(ViewEvent.GetDefaultRingtoneUri(type))
+            }
+        }
     }
 
     fun setDefaultNotificationSoundUri(uri: Uri?) {
