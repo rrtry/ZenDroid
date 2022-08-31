@@ -126,6 +126,7 @@
     <string name="permission_system_settings_access">System settings</string>
     <string name="permission_dnd_access">Do not disturb</string>
     <string name="permission_phone">Phone</string>
+    <string name="permission_storage">Storage</string>
     <string name="notification_channel_name">Current profile</string>
     <string name="dnd_media_volume_muted">Do not disturb muted media volume</string>
     <string name="dnd_ringer_volume_muted">Do not disturb muted ring volume</string>
@@ -137,6 +138,7 @@
     <string name="alarm_volume_muted">Alarm volume muted</string>
     <string name="unmute">Unmute</string>
     <string name="fixed_volume_policy" tools:ignore="ExtraTranslation">Cannot change volume level.Your device implements fixed volume policy.</string>
+    <string name="grant_storage_permission">Grant storage permission</string>
 
     <plurals name="days">
         <item quantity="one">1 day</item>
@@ -241,6 +243,9 @@
     </string>
     <string name="longitude_text_input_error">
         Enter a value between -180 and 180
+    </string>
+    <string name="storage_permission_explanation">
+        Storage permission is required to read and play media files on your device, like ringtones or music.
     </string>
     <string name="phone_permission_explanation">
         Since controlling ringer and notification volumes separately is not possible on your device, the application needs

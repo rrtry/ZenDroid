@@ -54,6 +54,7 @@ fun getCategoryName(context: Context, permission: String): String {
         WRITE_SETTINGS -> context.resources.getString(R.string.permission_system_settings_access)
         ACCESS_NOTIFICATION_POLICY -> context.resources.getString(R.string.permission_dnd_access)
         READ_PHONE_STATE -> context.resources.getString(R.string.permission_phone)
+        READ_EXTERNAL_STORAGE -> context.resources.getString(R.string.permission_storage)
         else -> throw IllegalArgumentException("Unknown permission $permission")
     }
 }

@@ -493,6 +493,7 @@
         <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/phoneRingtoneLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
+            storagePermissionGranted="@{viewModel.storagePermissionGranted}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -535,6 +536,7 @@
         <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/notificationSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
+            storagePermissionGranted="@{viewModel.storagePermissionGranted}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -577,6 +579,7 @@
         <ru.rrtry.silentdroid.ui.views.PreferenceConstraintLayout
             android:id="@+id/alarmSoundLayout"
             canWriteSettings="@{viewModel.canWriteSettings}"
+            storagePermissionGranted="@{viewModel.storagePermissionGranted}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"

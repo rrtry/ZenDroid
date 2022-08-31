@@ -16,6 +16,7 @@
     <uses-permission-sdk-23 android:name="android.permission.WRITE_SETTINGS"/>
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application
         android:name="ru.rrtry.silentdroid.Application"
@@ -25,7 +26,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.VolumeProfiler.NoActionBar">
-        <activity android:name="ru.rrtry.silentdroid.ui.activities.IntroActivity"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

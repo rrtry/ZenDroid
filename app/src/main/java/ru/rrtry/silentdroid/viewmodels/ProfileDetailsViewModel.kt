@@ -29,6 +29,8 @@ import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.withContext
 import ru.rrtry.silentdroid.core.*
+import ru.rrtry.silentdroid.entities.Event
+import ru.rrtry.silentdroid.util.canWriteSettings
 
 @HiltViewModel
 class ProfileDetailsViewModel @Inject constructor(
@@ -62,15 +64,17 @@ class ProfileDetailsViewModel @Inject constructor(
         object ShowInterruptionFilterFragment: ViewEvent()
         object ShowNotificationRestrictionsFragment: ViewEvent()
         object NotificationPolicyRequestEvent: ViewEvent()
-        object PhonePermissionRequestEvent: ViewEvent()
         object ShowPopupWindowEvent: ViewEvent()
         object StartContactsActivity: ViewEvent()
-        object StartConversationsActivity: ViewEvent()
+        object PhonePermissionRequestEvent: ViewEvent()
+        object StoragePermissionRequestEvent: ViewEvent()
         object WriteSystemSettingsRequestEvent: ViewEvent()
+        object StartPermissionsActivity: ViewEvent()
 
         data class StartRingtonePlayback(val streamType: Int): ViewEvent()
         data class StopRingtonePlayback(val streamType: Int): ViewEvent()
         data class ResumeRingtonePlayback(val streamType: Int, val position: Int): ViewEvent()
+        data class GrantPermissionButtonClickedEvent(val permission: String, val redirectToSettings: Boolean = false): ViewEvent()
 
         data class ShowDialogFragment(val dialogType: DialogType): ViewEvent()
         data class ChangeRingerMode(val streamType: Int, val hasSeparateNotificationStream: Boolean): ViewEvent()
@@ -117,15 +121,6 @@ class ProfileDetailsViewModel @Inject constructor(
     val notificationSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
     val alarmSoundUri: MutableStateFlow<Uri> = MutableStateFlow(Uri.EMPTY)
 
-    val phoneRingtoneTitle: StateFlow<String> = phoneRingtoneUri.map { uri ->  contentUtil.getRingtoneTitle(uri, TYPE_RINGTONE) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "Not set")
-
-    val notificationRingtoneTitle: StateFlow<String> = notificationSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "Not set")
-
-    val alarmRingtoneTitle: StateFlow<String> = alarmSoundUri.map { uri -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM) }
-        .stateIn(viewModelScope, WhileSubscribed(1000), "Not set")
-
     val alarmRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val phoneRingtonePlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -145,11 +140,36 @@ class ProfileDetailsViewModel @Inject constructor(
     val primaryConversationSenders: MutableStateFlow<Int> = MutableStateFlow(CONVERSATION_SENDERS_ANYONE)
 
     val phonePermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val storagePermissionGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val notificationPolicyAccessGranted: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val canWriteSettings: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val ringerMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_NORMAL)
     val notificationMode: MutableStateFlow<Int> = MutableStateFlow(RINGER_MODE_NORMAL)
+
+    val phoneRingtoneTitle: StateFlow<String> = combine(
+        phoneRingtoneUri,
+        storagePermissionGranted,
+        canWriteSettings)
+    {
+            uri, _, _ -> contentUtil.getRingtoneTitle(uri, TYPE_RINGTONE)
+    }.stateIn(viewModelScope, WhileSubscribed(1000), "")
+
+    val notificationRingtoneTitle: StateFlow<String> = combine(
+        notificationSoundUri,
+        storagePermissionGranted,
+        canWriteSettings)
+    {
+            uri, _, _ -> contentUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION)
+    }.stateIn(viewModelScope, WhileSubscribed(1000), "")
+
+    val alarmRingtoneTitle: StateFlow<String> = combine(
+        alarmSoundUri,
+        storagePermissionGranted,
+        canWriteSettings)
+    {
+            uri, _, _ -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM)
+    }.stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val policyAllowsMediaStream: Flow<Boolean> = combine(
         interruptionFilter,
@@ -313,12 +333,20 @@ class ProfileDetailsViewModel @Inject constructor(
         }
     }
 
-    fun requestPermission(permission: String) {
+    fun requestPermission(permission: String, redirectToSettings: Boolean) {
         viewModelScope.launch {
-            when (permission) {
-                ACCESS_NOTIFICATION_POLICY -> fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
-                WRITE_SETTINGS -> fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
-                READ_PHONE_STATE -> fragmentChannel.send(ViewEvent.PhonePermissionRequestEvent)
+            if (redirectToSettings &&
+                (permission == READ_EXTERNAL_STORAGE ||
+                permission == READ_PHONE_STATE))
+            {
+                fragmentChannel.send(ViewEvent.StartPermissionsActivity)
+            } else {
+                when (permission) {
+                    ACCESS_NOTIFICATION_POLICY -> fragmentChannel.send(ViewEvent.NotificationPolicyRequestEvent)
+                    WRITE_SETTINGS -> fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+                    READ_PHONE_STATE -> fragmentChannel.send(ViewEvent.PhonePermissionRequestEvent)
+                    READ_EXTERNAL_STORAGE -> fragmentChannel.send(ViewEvent.StoragePermissionRequestEvent)
+                }
             }
         }
     }
@@ -347,10 +375,12 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun onNotificationSoundLayoutClick() {
         viewModelScope.launch {
-            if (canWriteSettings.value) {
-                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_NOTIFICATION))
-            } else {
+            if (!storagePermissionGranted.value) {
+                fragmentChannel.send(ViewEvent.StoragePermissionRequestEvent)
+            } else if (!canWriteSettings.value) {
                 fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+            } else {
+                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_NOTIFICATION))
             }
         }
     }
@@ -447,7 +477,11 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun onPlayRingtoneButtonClick(streamType: Int) {
         viewModelScope.launch {
-            if (!isStreamMute(streamType)) {
+            if (!storagePermissionGranted.value) {
+                fragmentChannel.send(ViewEvent.StoragePermissionRequestEvent)
+            } else if (isStreamMute(streamType)) {
+                fragmentChannel.send(ViewEvent.ShowStreamMutedSnackbar(streamType))
+            } else {
                 val event: ViewEvent = if (isRingtonePlaying(streamType)) {
                     ViewEvent.StopRingtonePlayback(streamType)
                 } else {
@@ -455,18 +489,18 @@ class ProfileDetailsViewModel @Inject constructor(
                 }
                 setPlaybackState(getPlayingStream(), false)
                 fragmentChannel.send(event)
-            } else {
-                fragmentChannel.send(ViewEvent.ShowStreamMutedSnackbar(streamType))
             }
         }
     }
 
     fun onRingtoneLayoutClick() {
         viewModelScope.launch {
-            if (canWriteSettings.value) {
-                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_RINGTONE))
-            } else {
+            if (!storagePermissionGranted.value) {
+                fragmentChannel.send(ViewEvent.StoragePermissionRequestEvent)
+            } else if (!canWriteSettings.value) {
                 fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+            } else {
+                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_RINGTONE))
             }
         }
     }
@@ -483,10 +517,12 @@ class ProfileDetailsViewModel @Inject constructor(
 
     fun onAlarmSoundLayoutClick() {
         viewModelScope.launch {
-            if (canWriteSettings.value) {
-                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_ALARM))
-            } else {
+            if (!storagePermissionGranted.value) {
+                fragmentChannel.send(ViewEvent.StoragePermissionRequestEvent)
+            } else if (!canWriteSettings.value) {
                 fragmentChannel.send(ViewEvent.WriteSystemSettingsRequestEvent)
+            } else {
+                fragmentChannel.send(ViewEvent.ChangeRingtoneEvent(TYPE_ALARM))
             }
         }
     }

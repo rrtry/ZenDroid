@@ -33,7 +33,7 @@ class PermissionRequestDialog: DialogFragment() {
             builder.setTitle(permissionDisplayName)
                 .setMessage(message)
                 .setPositiveButton(getActionDescription(permission)) { _, _ ->
-                    viewModel.requestPermission(permission)
+                    viewModel.requestPermission(permission, !shouldShowRequestPermissionRationale(permission))
                     dismiss()
                 }
                 .setNegativeButton(resources.getString(R.string.close)) { dialog, id ->

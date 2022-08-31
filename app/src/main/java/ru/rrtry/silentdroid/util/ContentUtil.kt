@@ -1,5 +1,6 @@
 package ru.rrtry.silentdroid.util
 
+import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
@@ -161,6 +162,9 @@ class ContentUtil @Inject constructor(
 
     suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
         if (uri == Uri.EMPTY) return context.getString(R.string.not_set)
+        if (!context.checkPermission(READ_EXTERNAL_STORAGE)) return context.resources.getString(R.string.grant_storage_permission)
+        if (!canWriteSettings(context)) return context.resources.getString(R.string.grant_system_settings_access)
+
         val contentResolver: ContentResolver = context.contentResolver
         val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
 

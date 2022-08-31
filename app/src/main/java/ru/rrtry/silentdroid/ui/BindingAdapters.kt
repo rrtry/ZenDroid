@@ -183,12 +183,6 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("storagePermissionGranted")
-    fun bindRingtoneLayout(view: View, storagePermissionGranted: Boolean): Unit {
-        setEnabledState(view, storagePermissionGranted)
-    }
-
-    @JvmStatic
     @Suppress("deprecation")
     @BindingAdapter("suppressedEffectScreenOn")
     fun bindSuppressedEffectScreenOnSwitch(view: Switch, suppressedEffectScreenOn: Int): Unit {
@@ -402,6 +396,12 @@ object BindingAdapters {
     @BindingAdapter("canWriteSettings")
     fun bindVibrateForCallsLayout(viewGroup: View, canWriteSettings: Boolean) {
         setEnabledState(viewGroup, canWriteSettings, false)
+    }
+
+    @JvmStatic
+    @BindingAdapter("canWriteSettings", "storagePermissionGranted")
+    fun bindRingtoneLayout(viewGroup: View, canWriteSettings: Boolean, storagePermissionGranted: Boolean) {
+        setEnabledState(viewGroup, canWriteSettings && storagePermissionGranted, false)
     }
 
     @JvmStatic

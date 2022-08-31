@@ -1,6 +1,7 @@
 package ru.rrtry.silentdroid.util
 
 import android.Manifest
+import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_SETTINGS
 import android.content.Context
 import android.view.View
@@ -86,6 +87,15 @@ class ViewUtil {
                 WRITE_SETTINGS,
                 R.string.system_settings_permission_explanation,
                 R.drawable.ic_baseline_settings_24
+            )
+        }
+
+        fun showStoragePermissionExplanation(fragmentManager: FragmentManager) {
+            showPermissionRationaleDialog(
+                fragmentManager,
+                READ_EXTERNAL_STORAGE,
+                R.string.storage_permission_explanation,
+                R.drawable.ic_baseline_sd_storage_24
             )
         }
 

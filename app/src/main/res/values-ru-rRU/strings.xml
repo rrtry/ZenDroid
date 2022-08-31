@@ -127,6 +127,7 @@
     <string name="permission_system_settings_access">Доступ к системным настройкам</string>
     <string name="permission_dnd_access">Режим \'Не беспокоить\'</string>
     <string name="permission_phone">Телефон</string>
+    <string name="permission_storage">Хранилище</string>
     <string name="notification_channel_name">Текущий профиль</string>
     <string name="dnd_media_volume_muted">Режим \'Не беспокоить\' отключил звук медиа</string>
     <string name="dnd_ringer_volume_muted">Режим \'Не беспокоить\' отключил звук звонка</string>
@@ -138,6 +139,7 @@
     <string name="alarm_volume_muted">Звук будильника отключен</string>
     <string name="unmute">Включить</string>
     <string name="fixed_volume_policy">Невозможно изменить уровень громкости. На вашем устройстве установлена политика фиксированной громкости.</string>
+    <string name="grant_storage_permission" tools:ignore="DuplicateDefinition">Требуется доступ к настройкам</string>
 
     <plurals name="days">
         <item quantity="one" tools:ignore="ImpliedQuantity">1 день</item>
@@ -204,6 +206,9 @@
     </string>
     <string name="longitude_text_input_error">
         Введите значение от -180 до 180
+    </string>
+    <string name="storage_permission_explanation">
+        Доступ к хранилищу требуется для чтения и проигрывания медиафайлов, таких как музыка или рингтоны
     </string>
     <string name="phone_permission_explanation">
         Поскольку отдельное управление громкостью звонка и уведомлений на вашем устройстве невозможно, приложению необходим

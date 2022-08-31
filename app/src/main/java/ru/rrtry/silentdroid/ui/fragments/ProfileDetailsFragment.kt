@@ -16,7 +16,6 @@ import ru.rrtry.silentdroid.entities.Profile
 import android.app.NotificationManager.*
 import android.content.*
 import android.content.Context.NOTIFICATION_SERVICE
-import android.content.Context.VIBRATOR_SERVICE
 import android.media.*
 import android.media.AudioManager.*
 import android.net.Uri
@@ -43,6 +42,7 @@ import ru.rrtry.silentdroid.core.AppVibrator
 import ru.rrtry.silentdroid.core.externalInterruptionPolicyAllowsStream
 import ru.rrtry.silentdroid.core.getStreamMutedStringRes
 import ru.rrtry.silentdroid.databinding.CreateProfileFragmentBinding
+import ru.rrtry.silentdroid.util.openPackageInfoActivity
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.ViewEvent.*
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.*
 import ru.rrtry.silentdroid.viewmodels.ProfileDetailsViewModel.DialogType.*
@@ -62,6 +62,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private lateinit var notificationPolicyLauncher: ActivityResultLauncher<Intent>
     private lateinit var systemPreferencesLauncher: ActivityResultLauncher<Intent>
     private lateinit var phonePermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var storagePermissionLauncher: ActivityResultLauncher<String>
 
     private var callback: ProfileDetailsActivityCallback? = null
     private val savePlayerPosition: Boolean
@@ -113,9 +114,10 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
 
         override fun onResume(owner: LifecycleOwner) {
             super.onResume(owner)
+            viewModel.storagePermissionGranted.value = checkPermission(READ_EXTERNAL_STORAGE)
+            viewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
             viewModel.notificationPolicyAccessGranted.value = notificationManager.isNotificationPolicyAccessGranted
             viewModel.canWriteSettings.value = canWrite(requireContext())
-            viewModel.phonePermissionGranted.value = checkPermission(READ_PHONE_STATE)
         }
 
         override fun onPause(owner: LifecycleOwner) {
@@ -139,6 +141,7 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
         registerForRingtonePickerResult()
         registerForNotificationPolicyResult()
         registerForPhonePermissionResult()
+        registerForStoragePermissionResult()
         registerForSystemSettingsResult()
     }
 
@@ -304,14 +307,14 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                             is StreamVolumeChanged -> changePlaybackVolume(event.streamType, event.volume)
                             is GetDefaultRingtoneUri -> setDefaultRingtoneUri(event.type)
                             is ChangeRingtoneEvent -> startRingtonePickerActivity(event.ringtoneType)
-
-                            PhonePermissionRequestEvent -> phonePermissionLauncher.launch(READ_PHONE_STATE)
-                            NotificationPolicyRequestEvent -> startNotificationPolicyActivity()
-                            WriteSystemSettingsRequestEvent -> startSystemSettingsActivity()
-
-                            ShowInterruptionFilterFragment -> callback?.onFragmentReplace(INTERRUPTION_FILTER_FRAGMENT)
-                            ShowNotificationRestrictionsFragment -> callback?.onFragmentReplace(NOTIFICATION_RESTRICTIONS_FRAGMENT)
-                            ShowPopupWindowEvent -> showPopupMenu()
+                            is StoragePermissionRequestEvent -> storagePermissionLauncher.launch(READ_EXTERNAL_STORAGE)
+                            is PhonePermissionRequestEvent -> phonePermissionLauncher.launch(READ_PHONE_STATE)
+                            is NotificationPolicyRequestEvent -> startNotificationPolicyActivity()
+                            is WriteSystemSettingsRequestEvent -> startSystemSettingsActivity()
+                            is StartPermissionsActivity -> context?.openPackageInfoActivity()
+                            is ShowInterruptionFilterFragment -> callback?.onFragmentReplace(INTERRUPTION_FILTER_FRAGMENT)
+                            is ShowNotificationRestrictionsFragment -> callback?.onFragmentReplace(NOTIFICATION_RESTRICTIONS_FRAGMENT)
+                            is ShowPopupWindowEvent -> showPopupMenu()
 
                             else -> Log.i("EditProfileFragment", "unknown event")
                         }
@@ -407,6 +410,13 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
                 viewModel.notificationPolicyAccessGranted.value = granted
                 if (!granted) ViewUtil.showInterruptionPolicyAccessExplanation(requireActivity().supportFragmentManager)
             }
+        }
+    }
+
+    private fun registerForStoragePermissionResult() {
+        storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            viewModel.storagePermissionGranted.value = granted
+            if (!granted) ViewUtil.showStoragePermissionExplanation(requireActivity().supportFragmentManager)
         }
     }
 
