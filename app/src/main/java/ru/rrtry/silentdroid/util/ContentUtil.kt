@@ -5,12 +5,11 @@ import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
-import android.provider.MediaStore
-import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import android.annotation.SuppressLint
 import android.content.ContentUris
+import android.media.RingtoneManager
 import android.provider.CalendarContract
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -160,27 +159,16 @@ class ContentUtil @Inject constructor(
         return title
     }
 
-    suspend fun getRingtoneTitle(uri: Uri, type: Int): String {
-        if (uri == Uri.EMPTY) return context.getString(R.string.not_set)
-        if (!context.checkPermission(READ_EXTERNAL_STORAGE)) return context.resources.getString(R.string.grant_storage_permission)
-        if (!canWriteSettings(context)) return context.resources.getString(R.string.grant_system_settings_access)
-
-        val contentResolver: ContentResolver = context.contentResolver
-        val projection: Array<String> = arrayOf(MediaStore.MediaColumns.TITLE)
-
-        return withContext(Dispatchers.IO) {
-            var title: String = context.getString(R.string.not_set)
-            try {
-                val cursor: Cursor? = contentResolver.query(uri, projection, null, null, null)
-                cursor?.use {
-                    if (cursor.moveToFirst()) {
-                        title = cursor.getString(0)
-                    }
-                }
-            } catch (exception: IllegalArgumentException) {
-                Log.e("ContentResolverUtil", "Unknown column for query", exception)
-            }
-            title
+    fun getRingtoneTitle(uri: Uri, type: Int): String {
+        if (uri == Uri.EMPTY) {
+            return context.getString(R.string.not_set)
         }
+        if (!context.checkPermission(READ_EXTERNAL_STORAGE)) {
+            return context.resources.getString(R.string.grant_storage_permission)
+        }
+        if (!canWriteSettings(context)) {
+            return context.resources.getString(R.string.grant_system_settings_access)
+        }
+        return RingtoneManager.getRingtone(context, uri).getTitle(context)
     }
 }

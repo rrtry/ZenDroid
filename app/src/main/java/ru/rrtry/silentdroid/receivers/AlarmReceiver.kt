@@ -10,7 +10,6 @@ import ru.rrtry.silentdroid.Application.Companion.ACTION_ALARM
 import ru.rrtry.silentdroid.core.ProfileManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
-import ru.rrtry.silentdroid.core.ScheduleManager
 import ru.rrtry.silentdroid.util.ParcelableUtil.Companion.getExtra
 import ru.rrtry.silentdroid.util.WakeLock
 import javax.inject.Inject
