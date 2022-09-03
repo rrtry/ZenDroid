@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import ru.rrtry.silentdroid.viewmodels.MainActivityViewModel.ViewEvent.*
 import androidx.core.view.isVisible
@@ -362,7 +363,21 @@ class SchedulerFragment:
             )
             return
         }
-        startActivity(Intent(context, AlarmDetailsActivity::class.java))
+
+        val source: View = requireView()
+
+        val startX: Int = source.width / 2
+        val startY: Int = source.height / 2
+
+        val startWidth: Int = fab.measuredWidth
+        val startHeight: Int = fab.measuredHeight
+
+        startActivity(
+            Intent(context, AlarmDetailsActivity::class.java),
+            ActivityOptionsCompat.makeClipRevealAnimation(
+                source, startX, startY, startWidth, startHeight
+            ).toBundle()
+        )
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {

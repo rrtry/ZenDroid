@@ -46,7 +46,7 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 @AndroidEntryPoint
-class ProfileDetailsActivity: DetailsTransitionActivity(),
+class ProfileDetailsActivity: DetailsSlideTransitionActivity<CreateProfileActivityBinding>(),
     ProfileDetailsActivityCallback,
     ActivityCompat.OnRequestPermissionsResultCallback,
     DetailsViewContract<Profile>,
@@ -56,7 +56,6 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     override val slideDirection: Int get() = Gravity.END
 
     private val viewModel by viewModels<ProfileDetailsViewModel>()
-    private lateinit var binding: CreateProfileActivityBinding
 
     @Inject lateinit var preferencesManager: PreferencesManager
     @Inject lateinit var appAudioManager: AppAudioManager
@@ -73,6 +72,10 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
 
     private var scheduledAlarms: List<AlarmRelation>? = null
     private var registeredGeofences: List<LocationRelation>? = null
+
+    override fun getBinding(): CreateProfileActivityBinding {
+        return CreateProfileActivityBinding.inflate(layoutInflater)
+    }
 
     override fun onUpdate(profile: Profile) {
         if (profileManager.isProfileSet(profile)) {
@@ -120,15 +123,14 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        savedInstanceState?.let {
-            elapsedTime = it.getLong(EXTRA_ELAPSED_TIME, 0)
-            showFixedVolumeSnackbar = it.getBoolean(EXTRA_SHOW_FIXED_VOLUME_HINT, false)
+        savedInstanceState?.let { bundle ->
+            elapsedTime = bundle.getLong(EXTRA_ELAPSED_TIME, 0)
+            showFixedVolumeSnackbar = bundle.getBoolean(EXTRA_SHOW_FIXED_VOLUME_HINT, false)
         }
 
-        binding = CreateProfileActivityBinding.inflate(layoutInflater)
-        binding.viewModel = viewModel
-        binding.lifecycleOwner = this
-        setContentView(binding.root)
+        viewBinding.viewModel = viewModel
+        viewBinding.lifecycleOwner = this
+
         setEntity()
         openProfileDetailsFragment()
 
@@ -162,11 +164,11 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     override fun onBackStackChanged() {
         (supportFragmentManager.backStackEntryCount > 0).let { hasBackStack ->
             if (hasBackStack) {
-                binding.appBar.setExpanded(false, true)
+                viewBinding.appBar.setExpanded(false, true)
             } else {
-                binding.appBar.setExpanded(true, true)
+                viewBinding.appBar.setExpanded(true, true)
             }
-            Animations.scale(binding.toolbarEditTitleButton, !hasBackStack)
+            Animations.scale(viewBinding.toolbarEditTitleButton, !hasBackStack)
         }
     }
 
@@ -188,8 +190,8 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
 
     override fun onStart() {
         super.onStart()
-        binding.toolbar.setNavigationOnClickListener { onBack() }
-        binding.appBar.addOnOffsetChangedListener(this)
+        viewBinding.toolbar.setNavigationOnClickListener { onBack() }
+        viewBinding.appBar.addOnOffsetChangedListener(this)
         supportFragmentManager.addOnBackStackChangedListener(this)
     }
 
@@ -199,7 +201,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
             showFixedVolumeSnackbar)
         {
             showSnackbar(
-                binding.coordinatorLayout,
+                viewBinding.coordinatorLayout,
                 resources.getString(R.string.fixed_volume_policy),
                 Snackbar.LENGTH_INDEFINITE
             )
@@ -214,7 +216,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
             )
         }
         super.onStop()
-        binding.appBar.removeOnOffsetChangedListener(this)
+        viewBinding.appBar.removeOnOffsetChangedListener(this)
         supportFragmentManager.removeOnBackStackChangedListener(this)
     }
 
@@ -255,29 +257,29 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
     }
 
     override fun setNestedScrollingEnabled(enabled: Boolean) {
-        ViewCompat.setNestedScrollingEnabled(binding.nestedScrollView, enabled)
+        ViewCompat.setNestedScrollingEnabled(viewBinding.nestedScrollView, enabled)
     }
 
     private fun detachFloatingActionButton() {
-        (binding.saveChangesButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
+        (viewBinding.saveChangesButton.layoutParams as CoordinatorLayout.LayoutParams).apply {
             behavior = null
         }
-        binding.saveChangesButton.hide()
+        viewBinding.saveChangesButton.hide()
     }
 
     private fun isToolbarContentVisible(): Boolean {
-        return binding.toolbarLayout.scrimVisibleHeightTrigger + abs(verticalOffset) > binding.toolbarLayout.height
+        return viewBinding.toolbarLayout.scrimVisibleHeightTrigger + abs(verticalOffset) > viewBinding.toolbarLayout.height
     }
 
     private fun dispatchNestedScrollToTop() {
 
-        val toolbarHeight: Int = binding.toolbar.height
+        val toolbarHeight: Int = viewBinding.toolbar.height
 
-        binding.nestedScrollView.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL)
-        binding.nestedScrollView.dispatchNestedPreScroll(0, toolbarHeight, null, null)
-        binding.nestedScrollView.dispatchNestedScroll(0, 0, 0, 0, intArrayOf(0, -toolbarHeight))
-        binding.nestedScrollView.smoothScrollTo(0, binding.nestedScrollView.top - toolbarHeight)
-        binding.appBar.setExpanded(true, true)
+        viewBinding.nestedScrollView.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL)
+        viewBinding.nestedScrollView.dispatchNestedPreScroll(0, toolbarHeight, null, null)
+        viewBinding.nestedScrollView.dispatchNestedScroll(0, 0, 0, 0, intArrayOf(0, -toolbarHeight))
+        viewBinding.nestedScrollView.smoothScrollTo(0, viewBinding.nestedScrollView.top - toolbarHeight)
+        viewBinding.appBar.setExpanded(true, true)
     }
 
     override fun onBack() {
@@ -288,7 +290,7 @@ class ProfileDetailsActivity: DetailsTransitionActivity(),
         if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
             onFinish(false)
         } else {
-            showSnackbar(binding.root, resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
+            showSnackbar(viewBinding.root, resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
         }
         elapsedTime = System.currentTimeMillis()
     }

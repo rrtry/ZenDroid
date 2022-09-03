@@ -9,7 +9,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import android.annotation.SuppressLint
 import android.content.ContentUris
+<<<<<<< HEAD
 import android.media.RingtoneManager
+=======
+import android.media.Ringtone
+>>>>>>> temp
 import android.provider.CalendarContract
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -158,6 +162,7 @@ class ContentUtil @Inject constructor(
         }
         return title
     }
+<<<<<<< HEAD
 
     fun getRingtoneTitle(uri: Uri, type: Int): String {
         if (uri == Uri.EMPTY) {
@@ -171,4 +176,6 @@ class ContentUtil @Inject constructor(
         }
         return RingtoneManager.getRingtone(context, uri).getTitle(context)
     }
+=======
+>>>>>>> temp
 }

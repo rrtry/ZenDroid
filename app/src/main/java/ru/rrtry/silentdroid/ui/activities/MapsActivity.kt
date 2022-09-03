@@ -60,7 +60,7 @@ import java.lang.ref.WeakReference
 import kotlin.collections.HashSet
 
 @AndroidEntryPoint
-class MapsActivity : AppActivity(),
+class MapsActivity : ViewBindingActivity<GoogleMapsActivityBinding>(),
         OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener,
         GoogleMap.OnMapClickListener,
@@ -88,9 +88,6 @@ class MapsActivity : AppActivity(),
     private var marker: Marker? = null
     private var circle: Circle? = null
 
-    private var bindingImpl: GoogleMapsActivityBinding? = null
-    private val binding: GoogleMapsActivityBinding get() = bindingImpl!!
-
     private var floatingMenuVisible: Boolean = false
     private var elapsedTime: Long = 0
 
@@ -103,6 +100,10 @@ class MapsActivity : AppActivity(),
     private lateinit var floatingActionMenuController: FloatingActionMenuController
     private lateinit var networkObserver: NetworkStateObserver
 
+    override fun getBinding(): GoogleMapsActivityBinding {
+        return GoogleMapsActivityBinding.inflate(layoutInflater)
+    }
+
     override fun onSuggestionSelected(address: AddressWrapper) {
         viewModel.address.value = address.address
         viewModel.latLng.value = Pair(LatLng(address.latitude, address.longitude), false)
@@ -111,12 +112,10 @@ class MapsActivity : AppActivity(),
                 LocationSuggestion(
                 address.address,
                 address.latitude,
-                address.longitude
-            )
-            )
+                address.longitude))
         }
-        binding.searchView.setQuery(address.address, false)
-        binding.searchView.closeSuggestions()
+        viewBinding.searchView.setQuery(address.address, false)
+        viewBinding.searchView.closeSuggestions()
     }
 
     override fun onSuggestionRemoved(address: AddressWrapper) = Unit
@@ -125,7 +124,7 @@ class MapsActivity : AppActivity(),
         lifecycleScope.launch {
             val savedQueries: HashSet<AddressWrapper> = viewModel.getSuggestions(query).toHashSet()
             val results: List<AddressWrapper> = appGeocoder.queryAddresses(query) ?: listOf()
-            binding.searchView.updateAdapter((savedQueries + results).toList())
+            viewBinding.searchView.updateAdapter((savedQueries + results).toList())
         }
     }
 
@@ -188,6 +187,8 @@ class MapsActivity : AppActivity(),
         elapsedTime = savedInstanceState.getLong(EXTRA_ELAPSED_TIME, 0)
     }
 
+    override fun setWindowTransitions() = Unit
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -195,10 +196,9 @@ class MapsActivity : AppActivity(),
             floatingMenuVisible = it.getBoolean(EXTRA_FLOATING_ACTION_MENU_VISIBLE, false)
         }
 
-        bindingImpl = GoogleMapsActivityBinding.inflate(layoutInflater)
-        binding.viewModel = viewModel
-        binding.lifecycleOwner = this
-        setContentView(binding.root)
+        viewBinding.viewModel = viewModel
+        viewBinding.lifecycleOwner = this
+
         setEntity()
 
         networkObserver = NetworkStateObserver(WeakReference(this))
@@ -287,14 +287,14 @@ class MapsActivity : AppActivity(),
 
     private fun toggleFloatingActionMenuVisibility() {
         floatingActionMenuController.toggle(
-            binding.expandableFab,
-            binding.overlay,
-            binding.saveGeofenceButton,
-            binding.saveChangesLabel,
-            binding.overlayOptionsFab,
-            binding.mapOverlayLabel,
-            binding.currentLocationFab,
-            binding.currentLocationLabel
+            viewBinding.expandableFab,
+            viewBinding.overlay,
+            viewBinding.saveGeofenceButton,
+            viewBinding.saveChangesLabel,
+            viewBinding.overlayOptionsFab,
+            viewBinding.mapOverlayLabel,
+            viewBinding.currentLocationFab,
+            viewBinding.currentLocationLabel
         )
     }
 
@@ -309,21 +309,21 @@ class MapsActivity : AppActivity(),
     }
 
     private fun setSearchListeners() {
-        binding.searchView.queryListener = this
-        binding.searchView.adapter = AddressSearchView.AddressAdapter(this)
-        binding.searchView.selectionListener = this
+        viewBinding.searchView.queryListener = this
+        viewBinding.searchView.adapter = AddressSearchView.AddressAdapter(this)
+        viewBinding.searchView.selectionListener = this
     }
 
     private fun setBottomNavigationListeners() {
-        binding.bottomNavigation.doOnLayout {
-            bottomSheetBehavior.peekHeight = binding.bottomNavigation.height + convertDipToPx(
+        viewBinding.bottomNavigation.doOnLayout {
+            bottomSheetBehavior.peekHeight = viewBinding.bottomNavigation.height + convertDipToPx(
                 BOTTOM_SHEET_OFFSET
             )
         }
-        binding.bottomNavigation.setOnItemReselectedListener {
+        viewBinding.bottomNavigation.setOnItemReselectedListener {
             bottomSheetBehavior.state = STATE_EXPANDED
         }
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
+        viewBinding.bottomNavigation.setOnItemSelectedListener { item ->
             supportFragmentManager.findFragmentById(R.id.containerBottomSheet)?.let {
                 (it as ItemSelectedListener).onItemSelected(item.itemId)
             }
@@ -333,7 +333,7 @@ class MapsActivity : AppActivity(),
     }
 
     private fun setBottomSheetBehavior() {
-        bottomSheetBehavior = from(binding.containerBottomSheet)
+        bottomSheetBehavior = from(viewBinding.containerBottomSheet)
         bottomSheetBehavior.isFitToContents = false
         bottomSheetBehavior.halfExpandedRatio = 0.5f
     }
@@ -359,7 +359,7 @@ class MapsActivity : AppActivity(),
         super.onNewIntent(intent)
         if (intent?.action == ACTION_SEARCH) {
             intent.getStringExtra(SearchManager.QUERY)?.also { query ->
-                binding.searchView.setQuery(query, false)
+                viewBinding.searchView.setQuery(query, false)
             }
         }
     }
@@ -557,7 +557,7 @@ class MapsActivity : AppActivity(),
 
     private fun onMapInteraction() {
         bottomSheetBehavior.state = STATE_HIDDEN
-        binding.searchView.closeSuggestions()
+        viewBinding.searchView.closeSuggestions()
     }
 
     override fun onInfoWindowLongClick(p0: Marker) {
@@ -588,8 +588,8 @@ class MapsActivity : AppActivity(),
     }
 
     override fun onBack() {
-        if (binding.searchView.suggestionsVisible) {
-            binding.searchView.closeSuggestions()
+        if (viewBinding.searchView.suggestionsVisible) {
+            viewBinding.searchView.closeSuggestions()
         } else if (bottomSheetBehavior.state != STATE_HIDDEN) {
             bottomSheetBehavior.state = STATE_HIDDEN
         } else {

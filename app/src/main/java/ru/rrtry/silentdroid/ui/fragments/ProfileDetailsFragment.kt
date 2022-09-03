@@ -52,9 +52,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(), MediaPlayer.OnCompletionListener {
 
-
-    @Inject lateinit var vibrator: AppVibrator
     @Inject lateinit var ringtoneManager: AppRingtoneManager
+    @Inject lateinit var vibrator: AppVibrator
 
     private val viewModel: ProfileDetailsViewModel by activityViewModels()
 
@@ -358,9 +357,9 @@ class ProfileDetailsFragment: ViewBindingFragment<CreateProfileFragmentBinding>(
     private fun startRingtonePickerActivity(type: Int) {
         val contract: RingtonePickerContract = ringtoneActivityLauncher.contract as RingtonePickerContract
         when (type) {
-            TYPE_RINGTONE -> contract.existingUri = viewModel.phoneRingtoneUri.value
-            TYPE_NOTIFICATION -> contract.existingUri = viewModel.notificationSoundUri.value
-            TYPE_ALARM -> contract.existingUri = viewModel.alarmSoundUri.value
+            TYPE_RINGTONE -> contract.uri = viewModel.phoneRingtoneUri.value
+            TYPE_NOTIFICATION -> contract.uri = viewModel.notificationSoundUri.value
+            TYPE_ALARM -> contract.uri = viewModel.alarmSoundUri.value
             else -> Log.i("EditProfileFragment", "unknown ringtone type")
         }
         ringtoneActivityLauncher.launch(type)

@@ -6,13 +6,13 @@ import android.transition.Fade
 import android.transition.Slide
 import android.transition.TransitionSet
 import android.view.Window
+import androidx.viewbinding.ViewBinding
 
-abstract class DetailsTransitionActivity: AppActivity() {
+abstract class DetailsSlideTransitionActivity <T: ViewBinding>: ViewBindingActivity<T>() {
 
     abstract val slideDirection: Int
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun setWindowTransitions() {
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
 
@@ -22,6 +22,7 @@ abstract class DetailsTransitionActivity: AppActivity() {
             TransitionSet().apply {
                 ordering = TransitionSet.ORDERING_TOGETHER
                 duration = TRANSITION_DURATION
+
                 addTransition(Fade())
                 addTransition(Slide(slideDirection))
 
