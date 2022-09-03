@@ -5,6 +5,7 @@ import ru.rrtry.silentdroid.viewmodels.ProfilesListViewModel.ViewEvent.*
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.*
@@ -262,7 +263,21 @@ class ProfilesListFragment:
     }
 
     override fun onFabClick(fab: FloatingActionButton) {
-        startActivity(Intent(context, ProfileDetailsActivity::class.java))
+
+        val source: View = requireView()
+
+        val startX: Int = source.width / 2
+        val startY: Int = source.height / 2
+
+        val startWidth: Int = fab.measuredWidth
+        val startHeight: Int = fab.measuredHeight
+
+        startActivity(
+            Intent(context, ProfileDetailsActivity::class.java),
+            ActivityOptionsCompat.makeClipRevealAnimation(
+                source, startX, startY, startWidth, startHeight
+            ).toBundle()
+        )
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {

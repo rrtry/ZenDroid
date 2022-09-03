@@ -29,15 +29,13 @@ import ru.rrtry.silentdroid.entities.Profile.Companion.STREAM_VOICE_CALL_DEFAULT
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.withContext
 import ru.rrtry.silentdroid.core.*
-import ru.rrtry.silentdroid.entities.Event
-import ru.rrtry.silentdroid.util.canWriteSettings
 
 @HiltViewModel
 class ProfileDetailsViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val alarmRepository: AlarmRepository,
     private val locationRepository: LocationRepository,
-    private val contentUtil: ContentUtil
+    private val ringtoneManager: AppRingtoneManager
 ): ViewModel() {
 
     private val activityChannel: Channel<ViewEvent> = Channel(Channel.BUFFERED)
@@ -152,7 +150,7 @@ class ProfileDetailsViewModel @Inject constructor(
         storagePermissionGranted,
         canWriteSettings)
     {
-            uri, _, _ -> contentUtil.getRingtoneTitle(uri, TYPE_RINGTONE)
+            uri, _, _ -> ringtoneManager.getRingtoneTitle(uri, TYPE_RINGTONE)
     }.stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val notificationRingtoneTitle: StateFlow<String> = combine(
@@ -160,7 +158,7 @@ class ProfileDetailsViewModel @Inject constructor(
         storagePermissionGranted,
         canWriteSettings)
     {
-            uri, _, _ -> contentUtil.getRingtoneTitle(uri, TYPE_NOTIFICATION)
+            uri, _, _ -> ringtoneManager.getRingtoneTitle(uri, TYPE_NOTIFICATION)
     }.stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val alarmRingtoneTitle: StateFlow<String> = combine(
@@ -168,7 +166,7 @@ class ProfileDetailsViewModel @Inject constructor(
         storagePermissionGranted,
         canWriteSettings)
     {
-            uri, _, _ -> contentUtil.getRingtoneTitle(uri, TYPE_ALARM)
+            uri, _, _ -> ringtoneManager.getRingtoneTitle(uri, TYPE_ALARM)
     }.stateIn(viewModelScope, WhileSubscribed(1000), "")
 
     val policyAllowsMediaStream: Flow<Boolean> = combine(

@@ -49,14 +49,13 @@ import ru.rrtry.silentdroid.util.ContentUtil
 import ru.rrtry.silentdroid.util.TimeFormatChangeObserver
 
 @AndroidEntryPoint
-class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Alarm> {
+class AlarmDetailsActivity: DetailsSlideTransitionActivity<CreateAlarmActivityBinding>(), DetailsViewContract<Alarm> {
 
     override val slideDirection: Int get() = Gravity.BOTTOM
 
     private val viewModel: AlarmDetailsViewModel by viewModels()
     private var elapsedTime: Long = 0L
 
-    private lateinit var binding: CreateAlarmActivityBinding
     private lateinit var exactAlarmPermissionLauncher: ActivityResultLauncher<Intent>
 
     @Inject lateinit var scheduleManager: ScheduleManager
@@ -76,6 +75,10 @@ class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Ala
                 viewModel.canScheduleExactAlarms = scheduleManager.canScheduleExactAlarms()
             }
         }
+    }
+
+    override fun getBinding(): CreateAlarmActivityBinding {
+        return CreateAlarmActivityBinding.inflate(layoutInflater)
     }
 
     private fun onApply(alarm: Alarm, update: Boolean) {
@@ -126,11 +129,9 @@ class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Ala
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = CreateAlarmActivityBinding.inflate(layoutInflater)
-        binding.viewModel = viewModel
-        binding.lifecycleOwner = this
+        viewBinding.viewModel = viewModel
+        viewBinding.lifecycleOwner = this
 
-        setContentView(binding.root)
         setEntity()
         registerTimeFormatChangeObserver()
         registerExactAlarmPermissionReceiver()
@@ -198,7 +199,7 @@ class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Ala
         exactAlarmPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (!scheduleManager.canScheduleExactAlarms()) {
                 showSnackbar(
-                    binding.root,
+                    viewBinding.root,
                     resources.getString(R.string.snackbar_alarm_permission_explanation),
                     Snackbar.LENGTH_INDEFINITE,
                     resources.getString(R.string.open_settings)
@@ -220,7 +221,7 @@ class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Ala
         timeFormatChangeObserver = TimeFormatChangeObserver(
             Handler(Looper.getMainLooper()))
         {
-            binding.invalidateAll()
+            viewBinding.invalidateAll()
         }
         contentResolver.registerContentObserver(getUriFor(TIME_12_24), true, timeFormatChangeObserver!!)
     }
@@ -258,7 +259,7 @@ class AlarmDetailsActivity: DetailsTransitionActivity(), DetailsViewContract<Ala
         if (elapsedTime + DISMISS_TIME_WINDOW > System.currentTimeMillis()) {
             onFinish(false)
         } else {
-            showSnackbar(binding.root, resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
+            showSnackbar(viewBinding.root, resources.getString(R.string.confirm_change_dismissal), LENGTH_LONG)
         }
         elapsedTime = System.currentTimeMillis()
     }

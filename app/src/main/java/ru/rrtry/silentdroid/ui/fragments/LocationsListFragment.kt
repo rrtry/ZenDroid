@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -69,8 +70,22 @@ class LocationsListFragment:
 
     override fun onPermissionResult(permission: String, granted: Boolean) = Unit
 
-    private fun startMapActivity(locationRelation: LocationRelation? = null) {
-        startActivity(MapsActivity.newIntent(requireContext(), locationRelation))
+    private fun startMapActivity(fab: FloatingActionButton, locationRelation: LocationRelation? = null) {
+
+        val source: View = requireView()
+
+        val startX: Int = source.width / 2
+        val startY: Int = source.height / 2
+
+        val startWidth: Int = fab.measuredWidth
+        val startHeight: Int = fab.measuredHeight
+
+        startActivity(
+            MapsActivity.newIntent(requireContext(), locationRelation),
+            ActivityOptionsCompat.makeClipRevealAnimation(
+                source, startX, startY, startWidth, startHeight
+            ).toBundle()
+        )
     }
 
     private fun updateAdapterData(list: List<LocationRelation>) {
@@ -192,7 +207,7 @@ class LocationsListFragment:
     }
 
     override fun onEdit(entity: LocationRelation, options: Bundle?) {
-        startMapActivity(entity)
+        startMapActivity(callback!!.getFloatingActionButton(), entity)
     }
 
     override fun onEnable(entity: LocationRelation) {
@@ -243,7 +258,7 @@ class LocationsListFragment:
             requireActivity().requestPermissions(arrayOf(ACCESS_COARSE_LOCATION), 162)
             return
         }
-        startMapActivity()
+        startMapActivity(callback!!.getFloatingActionButton())
     }
 
     override fun onUpdateFab(fab: FloatingActionButton) {

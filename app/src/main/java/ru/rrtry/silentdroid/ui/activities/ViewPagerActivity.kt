@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.transition.Fade
-import android.util.Log
 import android.view.*
 import androidx.activity.viewModels
 import androidx.core.content.res.ResourcesCompat
@@ -35,7 +34,7 @@ import ru.rrtry.silentdroid.ui.fragments.NotificationPolicyAccessDialog
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManager.LocationRequestListener {
+class ViewPagerActivity: ViewBindingActivity<ActivityMainBinding>(), ViewPagerActivityCallback, GeofenceManager.LocationRequestListener {
 
     private val viewModel: MainActivityViewModel by viewModels()
 
@@ -50,7 +49,6 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
         fun onMenuOptionSelected(itemId: Int)
     }
 
-    private lateinit var binding: ActivityMainBinding
     private var snackbar: Snackbar? = null
     override var actionMode: ActionMode? = null
     private val isGoogleServicesPresent: Boolean
@@ -63,7 +61,7 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
             if (viewModel.currentFragment.value != position) {
                 viewModel.onFragmentSwiped()
             }
-            onPrepareOptionsMenu(binding.toolbar.menu)
+            onPrepareOptionsMenu(viewBinding.toolbar.menu)
             viewModel.animateFloatingActionButton(position)
             viewModel.currentFragment.value = position
         }
@@ -83,21 +81,25 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun getBinding(): ActivityMainBinding {
+        return ActivityMainBinding.inflate(layoutInflater)
+    }
+
+    override fun setWindowTransitions() {
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         with(window) {
             exitTransition = Fade(Fade.OUT)
             enterTransition = Fade(Fade.IN)
         }
+    }
 
-        binding = ActivityMainBinding.inflate(LayoutInflater.from(this))
-        setContentView(binding.root)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-        binding.pager.adapter = ScreenSlidePagerAdapter(this)
-        binding.pager.registerOnPageChangeCallback(onPageChangeCallback)
+        viewBinding.pager.adapter = ScreenSlidePagerAdapter(this)
+        viewBinding.pager.registerOnPageChangeCallback(onPageChangeCallback)
 
-        TabLayoutMediator(binding.tabs, binding.pager) { tab, position ->
+        TabLayoutMediator(viewBinding.tabs, viewBinding.pager) { tab, position ->
             when (position) {
                 PROFILE_FRAGMENT -> {
                     tab.text = resources.getString(R.string.tab_profiles)
@@ -113,8 +115,8 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
                 }
             }
         }.attach()
-        binding.fab.setOnClickListener {
-            viewModel.onFloatingActionButtonClicked(binding.pager.currentItem)
+        viewBinding.fab.setOnClickListener {
+            viewModel.onFloatingActionButtonClicked(viewBinding.pager.currentItem)
         }
     }
 
@@ -155,7 +157,7 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
 
     override fun onDestroy() {
         super.onDestroy()
-        binding.pager.unregisterOnPageChangeCallback(onPageChangeCallback)
+        viewBinding.pager.unregisterOnPageChangeCallback(onPageChangeCallback)
     }
 
     override fun removeSnackbar() {
@@ -164,7 +166,7 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
 
     override fun showSnackBar(text: String, actionText: String, length: Int, action: (() -> Unit)?) {
         snackbar = Snackbar.make(
-            binding.coordinatorLayout,
+            viewBinding.coordinatorLayout,
             text,
             length
         ).apply {
@@ -175,7 +177,7 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
     }
 
     override fun getFloatingActionButton(): FloatingActionButton {
-        return binding.fab
+        return viewBinding.fab
     }
 
     override fun onLocationRequestSuccess() = Unit
@@ -191,10 +193,10 @@ class ViewPagerActivity: AppActivity(), ViewPagerActivityCallback, GeofenceManag
     }
 
     override fun onBack() {
-        if (binding.pager.currentItem == 0) {
+        if (viewBinding.pager.currentItem == 0) {
             finish()
         } else {
-            binding.pager.currentItem =- 1
+            viewBinding.pager.currentItem =- 1
         }
     }
 
