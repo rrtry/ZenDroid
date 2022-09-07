@@ -12,6 +12,7 @@ abstract class ViewBindingActivity <T: ViewBinding>: AppCompatActivity() {
 
     abstract fun getBinding(): T
     abstract fun setWindowTransitions()
+    abstract fun onBack()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +32,4 @@ abstract class ViewBindingActivity <T: ViewBinding>: AppCompatActivity() {
         super.onDestroy()
         viewBindingImpl = null
     }
-
-    abstract fun onBack()
 }

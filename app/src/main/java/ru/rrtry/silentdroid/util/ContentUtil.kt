@@ -1,7 +1,5 @@
 package ru.rrtry.silentdroid.util
 
-import android.Manifest.permission.READ_EXTERNAL_STORAGE
-import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
@@ -9,15 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import android.annotation.SuppressLint
 import android.content.ContentUris
-<<<<<<< HEAD
-import android.media.RingtoneManager
-=======
-import android.media.Ringtone
->>>>>>> temp
 import android.provider.CalendarContract
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import ru.rrtry.silentdroid.R
 import java.time.*
 import javax.inject.Singleton
 
@@ -142,40 +132,4 @@ class ContentUtil @Inject constructor(
         }
         return Pair(startTime, endTime)
     }
-
-    suspend fun getEventTitle(eventId: Int): String {
-        val contentResolver: ContentResolver = context.contentResolver
-        val projection: Array<String> = arrayOf(CalendarContract.Events.TITLE, CalendarContract.Events._ID)
-        val title: String = withContext(Dispatchers.IO) {
-            try {
-                val cursor: Cursor? = contentResolver.query(
-                    CalendarContract.Events.CONTENT_URI, projection, "${CalendarContract.Events._ID} = $eventId", null, null)
-                cursor?.use {
-                    if (cursor.moveToFirst()) {
-                        cursor.getString(0)
-                    }
-                }
-                "Unknown"
-            } catch (e: java.lang.IllegalArgumentException) {
-                "Unknown"
-            }
-        }
-        return title
-    }
-<<<<<<< HEAD
-
-    fun getRingtoneTitle(uri: Uri, type: Int): String {
-        if (uri == Uri.EMPTY) {
-            return context.getString(R.string.not_set)
-        }
-        if (!context.checkPermission(READ_EXTERNAL_STORAGE)) {
-            return context.resources.getString(R.string.grant_storage_permission)
-        }
-        if (!canWriteSettings(context)) {
-            return context.resources.getString(R.string.grant_system_settings_access)
-        }
-        return RingtoneManager.getRingtone(context, uri).getTitle(context)
-    }
-=======
->>>>>>> temp
 }
